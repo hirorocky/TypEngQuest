@@ -2,6 +2,133 @@ import chalk from 'chalk';
 import { Map } from '../world/map';
 import { Location } from '../world/location';
 
+export interface CommandResult {
+  success: boolean;
+  message: string;
+}
+
+export class NavigationCommands {
+  private map: Map;
+
+  constructor(map: Map) {
+    this.map = map;
+  }
+
+  pwd(): CommandResult {
+    return {
+      success: true,
+      message: this.map.getCurrentPath(),
+    };
+  }
+
+  ls(options?: string): CommandResult {
+    try {
+      const currentPath = this.map.getCurrentPath();
+      const locations = this.map.getLocations(currentPath);
+
+      if (locations.length === 0) {
+        return {
+          success: true,
+          message: '(empty)',
+        };
+      }
+
+      const includeHidden = options?.includes('a') || false;
+      const showDetails = options?.includes('l') || false;
+
+      const filteredLocations = includeHidden
+        ? locations
+        : locations.filter(loc => !loc.isHidden());
+
+      if (showDetails) {
+        const detailLines = filteredLocations.map(loc => {
+          const type = loc.isDirectory() ? 'drw-r--r--' : '-rw-r--r--';
+          const size = loc.isFile() ? '1024' : '4096';
+          const name = loc.getName();
+          return `${type} 1 user user ${size.padStart(8)} Jan 1 12:00 ${name}`;
+        });
+        return {
+          success: true,
+          message: detailLines.join('\n'),
+        };
+      } else {
+        const names = filteredLocations.map(loc => loc.getName());
+        return {
+          success: true,
+          message: names.join('  '),
+        };
+      }
+    } catch {
+      return {
+        success: false,
+        message: `ls: Cannot access '${this.map.getCurrentPath()}': No such file or directory`,
+      };
+    }
+  }
+
+  cd(path?: string): CommandResult {
+    try {
+      // 特別なパスの処理
+      if (this.isSpecialPath(path)) {
+        return this.handleSpecialPath(path);
+      }
+
+      // 通常のパス移動
+      const result = this.map.navigateTo(path!);
+
+      if (!result.success) {
+        return this.createErrorResult(path!);
+      }
+
+      return {
+        success: true,
+        message: `${this.map.getCurrentPath()}`,
+      };
+    } catch {
+      return {
+        success: false,
+        message: `cd: ${path}: No such file or directory`,
+      };
+    }
+  }
+
+  private isSpecialPath(path?: string): boolean {
+    return !path || path === '~' || (path === '..' && this.map.getCurrentPath() === '/');
+  }
+
+  private handleSpecialPath(path?: string): CommandResult {
+    if (!path || path === '~') {
+      const result = this.map.navigateTo('/');
+      return {
+        success: result.success,
+        message: result.success ? '' : result.error || 'Navigation failed',
+      };
+    }
+
+    // ルートディレクトリから..への移動
+    return {
+      success: true,
+      message: '/',
+    };
+  }
+
+  private createErrorResult(path: string): CommandResult {
+    const targetLocation = this.map.findLocation(this.map.resolvePath(path));
+
+    if (targetLocation && targetLocation.isFile()) {
+      return {
+        success: false,
+        message: `cd: ${path}: Not a directory`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `cd: ${path}: No such file or directory`,
+      };
+    }
+  }
+}
+
 export class NavigationHandler {
   private map: Map;
 
@@ -155,7 +282,6 @@ export class NavigationHandler {
       }
     }
   }
-
 
   /**
    * 危険度レベルをフォーマット

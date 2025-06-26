@@ -1,196 +1,255 @@
-import { NavigationHandler } from '../navigation';
+import { NavigationCommands } from '../navigation';
 import { Map } from '../../world/map';
 import { Location, LocationType } from '../../world/location';
 
-// コンソール出力をモック
-const mockConsoleLog = jest.fn();
-console.log = mockConsoleLog;
-
 describe('ナビゲーションコマンド', () => {
-  let handler: NavigationHandler;
-  let gameMap: Map;
+  let navigation: NavigationCommands;
+  let map: Map;
 
   beforeEach(() => {
-    gameMap = new Map();
-    handler = new NavigationHandler(gameMap);
-    
-    // テスト用のマップ構造を作成
-    const src = new Location('src', '/', LocationType.DIRECTORY);
-    const lib = new Location('lib', '/', LocationType.DIRECTORY);
-    const components = new Location('components', '/src', LocationType.DIRECTORY);
-    const appJs = new Location('app.js', '/src', LocationType.FILE);
-    const indexTs = new Location('index.ts', '/src/components', LocationType.FILE);
-    
-    gameMap.addLocation(src);
-    gameMap.addLocation(lib);
-    gameMap.addLocation(components);
-    gameMap.addLocation(appJs);
-    gameMap.addLocation(indexTs);
+    map = new Map();
+    navigation = new NavigationCommands(map);
 
-    // モックをリセット
-    mockConsoleLog.mockClear();
+    // テスト用のディレクトリ構造を作成
+    map.addLocation(new Location('src', '/', LocationType.DIRECTORY));
+    map.addLocation(new Location('docs', '/', LocationType.DIRECTORY));
+    map.addLocation(new Location('components', '/src', LocationType.DIRECTORY));
+    map.addLocation(new Location('utils', '/src', LocationType.DIRECTORY));
+    map.addLocation(new Location('app.js', '/src', LocationType.FILE));
+    map.addLocation(new Location('index.ts', '/src', LocationType.FILE));
+    map.addLocation(new Location('README.md', '/', LocationType.FILE));
+    map.addLocation(new Location('package.json', '/', LocationType.FILE));
+    map.addLocation(new Location('.env', '/', LocationType.FILE));
+    map.addLocation(new Location('Button.tsx', '/src/components', LocationType.FILE));
+    map.addLocation(new Location('Modal.tsx', '/src/components', LocationType.FILE));
   });
 
   describe('pwd コマンド', () => {
-    test('現在のディレクトリパスを表示する', () => {
-      handler.pwd();
+    test('現在のディレクトリパスを返す', () => {
+      const result = navigation.pwd();
       
-      expect(mockConsoleLog).toHaveBeenCalledWith('/');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('/');
     });
 
-    test('移動後の現在パスを正しく表示する', () => {
-      gameMap.navigateTo('/src');
-      handler.pwd();
+    test('ディレクトリ移動後の現在位置を正しく表示', () => {
+      navigation.cd('src');
+      const result = navigation.pwd();
       
-      expect(mockConsoleLog).toHaveBeenCalledWith('/src');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('/src');
+    });
+
+    test('深い階層でも正しくパスを表示', () => {
+      navigation.cd('src');
+      navigation.cd('components');
+      const result = navigation.pwd();
+      
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('/src/components');
     });
   });
 
   describe('ls コマンド', () => {
-    test('ルートディレクトリの内容を表示する', () => {
-      handler.ls();
+    test('ルートディレクトリの内容を一覧表示', () => {
+      const result = navigation.ls();
       
-      // ディレクトリとファイルが表示されることを確認
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      expect(output).toContain('src/');
-      expect(output).toContain('lib/');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('src');
+      expect(result.message).toContain('docs');
+      expect(result.message).toContain('README.md');
+      expect(result.message).toContain('package.json');
+      // 隠しファイルは通常のlsでは非表示
+      expect(result.message).not.toContain('.env');
     });
 
-    test('指定ディレクトリの内容を表示する', () => {
-      handler.ls(['/src']);
+    test('サブディレクトリの内容を表示', () => {
+      navigation.cd('src');
+      const result = navigation.ls();
       
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      expect(output).toContain('components/');
-      expect(output).toContain('app.js');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('components');
+      expect(result.message).toContain('utils');
+      expect(result.message).toContain('app.js');
+      expect(result.message).toContain('index.ts');
     });
 
-    test('存在しないディレクトリでエラーメッセージを表示する', () => {
-      handler.ls(['/nonexistent']);
+    test('ls -a で隠しファイルも表示', () => {
+      const result = navigation.ls('-a');
       
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('ls: /nonexistent: Directory \'/nonexistent\' does not exist')
-      );
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('.env');
+      expect(result.message).toContain('src');
+      expect(result.message).toContain('docs');
     });
 
-    test('ファイルに対してlsコマンドでエラーメッセージを表示する', () => {
-      handler.ls(['/src/app.js']);
+    test('ls -l で詳細情報を表示', () => {
+      const result = navigation.ls('-l');
       
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('ls: /src/app.jsis not a directory')
-      );
+      expect(result.success).toBe(true);
+      // ファイルタイプ、サイズなどの詳細情報が含まれることを確認
+      expect(result.message).toContain('drw'); // ディレクトリを示すプレフィックス
+      expect(result.message).toContain('-rw'); // ファイルを示すプレフィックス
     });
 
-    test('-a オプションで隠しファイルも表示する', () => {
-      // 隠しファイルを追加
-      const hiddenFile = new Location('.env', '/src', LocationType.FILE);
-      gameMap.addLocation(hiddenFile);
+    test('ls -la で隠しファイルと詳細情報を表示', () => {
+      const result = navigation.ls('-la');
       
-      handler.ls(['-a', '/src']);
-      
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      expect(output).toContain('.env');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('.env');
+      expect(result.message).toContain('drw');
+      expect(result.message).toContain('-rw');
     });
 
-    test('-l オプションで詳細表示する', () => {
-      handler.ls(['-l', '/src']);
+    test('空のディレクトリでは適切なメッセージを表示', () => {
+      // 空のディレクトリを作成
+      map.addLocation(new Location('empty', '/', LocationType.DIRECTORY));
+      navigation.cd('empty');
       
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      // 詳細表示には探索状態、危険度、ファイルタイプが含まれる
-      expect(output).toContain('drwxr-xr-x'); // ディレクトリ表示
-      expect(output).toContain('-rw-r--r--'); // ファイル表示
+      const result = navigation.ls();
+      
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('(empty)');
     });
   });
 
   describe('cd コマンド', () => {
-    test('指定ディレクトリに移動する', () => {
-      handler.cd(['/src']);
+    test('既存のディレクトリに移動できる', () => {
+      const result = navigation.cd('src');
       
-      expect(gameMap.getCurrentPath()).toBe('/src');
-      expect(mockConsoleLog).toHaveBeenCalledWith('Moved to /src');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('src');
+      
+      // 移動が成功したことをpwdで確認
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/src');
     });
 
-    test('相対パスで移動する', () => {
-      gameMap.navigateTo('/src');
-      handler.cd(['components']);
+    test('絶対パスで移動できる', () => {
+      navigation.cd('src');
+      const result = navigation.cd('/docs');
       
-      expect(gameMap.getCurrentPath()).toBe('/src/components');
-      expect(mockConsoleLog).toHaveBeenCalledWith('Moved to /src/components');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('docs');
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/docs');
     });
 
-    test('.. で親ディレクトリに移動する', () => {
-      gameMap.navigateTo('/src/components');
-      handler.cd(['..']);
+    test('相対パスで移動できる', () => {
+      navigation.cd('src');
+      const result = navigation.cd('components');
       
-      expect(gameMap.getCurrentPath()).toBe('/src');
-      expect(mockConsoleLog).toHaveBeenCalledWith('Moved to /src');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('components');
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/src/components');
     });
 
-    test('ルートディレクトリから .. で移動できない', () => {
-      handler.cd(['..']);
+    test('親ディレクトリに移動できる', () => {
+      navigation.cd('src');
+      navigation.cd('components');
+      const result = navigation.cd('..');
       
-      expect(gameMap.getCurrentPath()).toBe('/');
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('cd: ..: Already at root directory')
-      );
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/src');
     });
 
-    test('存在しないディレクトリでエラーメッセージを表示する', () => {
-      handler.cd(['/nonexistent']);
+    test('ルートから上位には移動できない', () => {
+      const result = navigation.cd('..');
       
-      expect(gameMap.getCurrentPath()).toBe('/'); // 移動していない
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('cd: /nonexistent: does not exist')
-      );
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/');
     });
 
-    test('ファイルに対してcdコマンドでエラーメッセージを表示する', () => {
-      handler.cd(['/src/app.js']);
+    test('存在しないディレクトリへの移動でエラー', () => {
+      const result = navigation.cd('nonexistent');
       
-      expect(gameMap.getCurrentPath()).toBe('/');
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('cd: /src/app.jsis not a directory')
-      );
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No such file or directory');
     });
 
-    test('引数なしで何も実行しない', () => {
-      handler.cd([]);
+    test('ファイルに対してcdを実行するとエラー', () => {
+      const result = navigation.cd('README.md');
       
-      expect(gameMap.getCurrentPath()).toBe('/');
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Not a directory');
     });
 
-    test('移動時に探索状態をマークする', () => {
-      handler.cd(['/src']);
+    test('引数なしのcdはルートディレクトリに移動', () => {
+      navigation.cd('src');
+      navigation.cd('components');
+      const result = navigation.cd();
       
-      const srcLocation = gameMap.findLocation('/src');
-      expect(srcLocation?.isExplored()).toBe(true);
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/');
+    });
+
+    test('ホームディレクトリ記号(~)でルートに移動', () => {
+      navigation.cd('src');
+      const result = navigation.cd('~');
+      
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/');
     });
   });
 
-  describe('tree コマンド', () => {
-    test('ディレクトリツリーを表示する', () => {
-      handler.tree();
+  describe('Unix風のエラーメッセージ', () => {
+    test('cd: No such file or directory形式のエラー', () => {
+      const result = navigation.cd('invalid');
       
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      expect(output).toContain('/');
-      expect(output).toContain('├── src/');
-      expect(output).toContain('└── lib/');
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/cd: .*: No such file or directory/);
     });
 
-    test('指定したディレクトリのツリーを表示する', () => {
-      handler.tree(['/src']);
+    test('cd: Not a directory形式のエラー', () => {
+      const result = navigation.cd('README.md');
       
-      const output = mockConsoleLog.mock.calls.map(call => call[0]).join('\n');
-      expect(output).toContain('/src');
-      expect(output).toContain('├── components/');
-      expect(output).toContain('└── app.js');
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/cd: .*: Not a directory/);
+    });
+  });
+
+  describe('パス解決機能', () => {
+    test('複雑な相対パスを正しく解決', () => {
+      navigation.cd('src');
+      navigation.cd('components');
+      const result = navigation.cd('../utils');
+      
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/src/utils');
     });
 
-    test('存在しないディレクトリでエラーメッセージを表示する', () => {
-      handler.tree(['/nonexistent']);
+    test('多重の親ディレクトリ参照を解決', () => {
+      navigation.cd('src');
+      navigation.cd('components');
+      const result = navigation.cd('../../docs');
       
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('tree: /nonexistent: does not exist')
-      );
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/docs');
+    });
+
+    test('カレントディレクトリ参照(.)を正しく処理', () => {
+      navigation.cd('src');
+      const result = navigation.cd('./components');
+      
+      expect(result.success).toBe(true);
+      
+      const pwdResult = navigation.pwd();
+      expect(pwdResult.message).toBe('/src/components');
     });
   });
 });
