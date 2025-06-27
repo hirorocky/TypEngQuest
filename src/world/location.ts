@@ -1,9 +1,15 @@
 /* eslint-disable no-unused-vars */
+/**
+ * 場所のタイプ（ディレクトリまたはファイル）
+ */
 export enum LocationType {
   DIRECTORY = 'directory',
   FILE = 'file',
 }
 
+/**
+ * マップ要素のタイプ（モンスター、宝箱等）
+ */
 export enum ElementType {
   MONSTER = 'monster',
   TREASURE = 'treasure',
@@ -12,11 +18,17 @@ export enum ElementType {
 }
 /* eslint-enable no-unused-vars */
 
+/**
+ * マップ要素の情報
+ */
 export interface Element {
   type: ElementType;
   data: Record<string, unknown>;
 }
 
+/**
+ * 場所の表示情報
+ */
 export interface LocationDisplayInfo {
   name: string;
   path: string;
@@ -29,6 +41,9 @@ export interface LocationDisplayInfo {
   element?: Element;
 }
 
+/**
+ * 場所クラス - ファイルシステム風の場所（ディレクトリ・ファイル）と要素を管理する
+ */
 export class Location {
   private name: string;
   private parentPath: string;

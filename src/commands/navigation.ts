@@ -2,18 +2,32 @@ import chalk from 'chalk';
 import { Map } from '../world/map';
 import { Location } from '../world/location';
 
+/**
+ * コマンド実行結果の型定義
+ */
 export interface CommandResult {
   success: boolean;
   message: string;
 }
 
+/**
+ * ナビゲーションコマンドクラス - Unix風のファイルシステムナビゲーションコマンドを提供する
+ */
 export class NavigationCommands {
   private map: Map;
 
+  /**
+   * NavigationCommandsインスタンスを初期化する
+   * @param map - 操作対象のマップインスタンス
+   */
   constructor(map: Map) {
     this.map = map;
   }
 
+  /**
+   * 現在のパスを表示する（print working directory）
+   * @returns コマンド実行結果
+   */
   pwd(): CommandResult {
     return {
       success: true,
@@ -21,6 +35,11 @@ export class NavigationCommands {
     };
   }
 
+  /**
+   * ディレクトリの内容を一覧表示する
+   * @param options - オプションフラグ（-a, -l, -la等）
+   * @returns コマンド実行結果
+   */
   ls(options?: string): CommandResult {
     try {
       const currentPath = this.map.getCurrentPath();
@@ -66,6 +85,11 @@ export class NavigationCommands {
     }
   }
 
+  /**
+   * ディレクトリを移動する（change directory）
+   * @param path - 移動先のパス（省略時はルートディレクトリ）
+   * @returns コマンド実行結果
+   */
   cd(path?: string): CommandResult {
     try {
       // 特別なパスの処理

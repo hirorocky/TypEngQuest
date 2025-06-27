@@ -1,3 +1,6 @@
+/**
+ * プレイヤーの全ステータス情報を表すインターフェース
+ */
 export interface PlayerStats {
   level: number;
   experience: number;
@@ -24,13 +27,18 @@ export interface PlayerStats {
   maxMana: number;
 }
 
+/**
+ * 装備スロットの情報を表すインターフェース
+ */
 export interface EquipmentSlot {
   slotNumber: number;
   word: string | null;
   wordType: 'article' | 'adjective' | 'noun' | 'verb' | 'adverb' | null;
 }
 
-// ワールド履歴情報の型定義
+/**
+ * ワールド履歴情報の型定義
+ */
 export interface WorldHistory {
   name: string;
   level: number;
@@ -39,6 +47,9 @@ export interface WorldHistory {
   exploredLocations: number;
 }
 
+/**
+ * プレイヤークラス - ゲーム内のプレイヤー情報、ステータス、装備、鍵、ワールド履歴を管理する
+ */
 export class Player {
   private stats: PlayerStats;
   private equipment: EquipmentSlot[];
@@ -51,6 +62,10 @@ export class Player {
   // ワールド履歴システム
   private worldHistory: WorldHistory[] = [];
 
+  /**
+   * プレイヤーインスタンスを初期化する
+   * @param name - プレイヤー名（デフォルト: 'Code Warrior'）
+   */
   constructor(name: string = 'Code Warrior') {
     this.name = name;
     this.stats = this.initializeStats();
@@ -58,6 +73,10 @@ export class Player {
     this.inventory = this.initializeInventory();
   }
 
+  /**
+   * 初期ステータスを設定する
+   * @returns 初期化されたプレイヤーステータス
+   */
   private initializeStats(): PlayerStats {
     return {
       level: 1,
@@ -83,6 +102,10 @@ export class Player {
     };
   }
 
+  /**
+   * 装備スロットを初期化する（5スロット全て空の状態）
+   * @returns 初期化された装備スロット配列
+   */
   private initializeEquipment(): EquipmentSlot[] {
     return [
       { slotNumber: 1, word: null, wordType: null },
@@ -93,29 +116,55 @@ export class Player {
     ];
   }
 
+  /**
+   * 初期インベントリを設定する（スターター単語セット）
+   * @returns 初期化されたインベントリ配列
+   */
   private initializeInventory(): string[] {
     // Starting words for new players
     return ['the', 'quick', 'brown', 'fox', 'jumps'];
   }
 
   // Getters
+  /**
+   * プレイヤー名を取得する
+   * @returns プレイヤー名
+   */
   getName(): string {
     return this.name;
   }
 
+  /**
+   * プレイヤーの全ステータス情報を取得する
+   * @returns プレイヤーステータス
+   */
   getStats(): PlayerStats {
     return { ...this.stats };
   }
 
+  /**
+   * 装備スロット情報を取得する
+   * @returns 装備スロット配列のコピー
+   */
   getEquipment(): EquipmentSlot[] {
     return [...this.equipment];
   }
 
+  /**
+   * インベントリ内の単語一覧を取得する
+   * @returns インベントリ配列のコピー
+   */
   getInventory(): string[] {
     return [...this.inventory];
   }
 
   // Equipment Management
+  /**
+   * 指定スロットに単語を装備する
+   * @param slotNumber - 装備スロット番号（1-5）
+   * @param word - 装備する単語
+   * @returns 装備成功時true、失敗時false
+   */
   equipWord(slotNumber: number, word: string): boolean {
     if (slotNumber < 1 || slotNumber > 5) {
       return false;
@@ -144,6 +193,11 @@ export class Player {
     return true;
   }
 
+  /**
+   * 指定スロットから単語を外す
+   * @param slotNumber - 装備スロット番号（1-5）
+   * @returns 装備解除成功時true、失敗時false
+   */
   unequipWord(slotNumber: number): boolean {
     if (slotNumber < 1 || slotNumber > 5) {
       return false;

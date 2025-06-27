@@ -134,8 +134,8 @@ describe('Worldクラス', () => {
       // いくつかの場所を探索済みにする
       const srcLocation = map.findLocation('/src');
       const appLocation = map.findLocation('/src/app.js');
-      srcLocation?.markAsExplored();
-      appLocation?.markAsExplored();
+      srcLocation?.markExplored();
+      appLocation?.markExplored();
       
       expect(world.getExploredLocationCount()).toBe(2);
     });
@@ -158,8 +158,8 @@ describe('Worldクラス', () => {
       // 2つの場所を探索済みにする
       const srcLocation = map.findLocation('/src');
       const appLocation = map.findLocation('/src/app.js');
-      srcLocation?.markAsExplored();
-      appLocation?.markAsExplored();
+      srcLocation?.markExplored();
+      appLocation?.markExplored();
       
       expect(world.getExplorationProgress()).toBe(0.5); // 2/4 = 0.5
     });
@@ -173,8 +173,8 @@ describe('Worldクラス', () => {
       // 探索を進める
       map.addLocation(new Location('src', '/', LocationType.DIRECTORY));
       map.addLocation(new Location('app.js', '/src', LocationType.FILE));
-      map.findLocation('/src')?.markAsExplored();
-      map.findLocation('/src/app.js')?.markAsExplored();
+      map.findLocation('/src')?.markExplored();
+      map.findLocation('/src/app.js')?.markExplored();
       
       world.defeatBoss();
       

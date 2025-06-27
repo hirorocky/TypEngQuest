@@ -1,17 +1,26 @@
 import { Location, LocationType } from './location';
 
+/**
+ * ナビゲーション結果の型定義
+ */
 export interface NavigationResult {
   success: boolean;
   error?: string;
   previousPath?: string;
 }
 
+/**
+ * ディレクトリ一覧結果の型定義
+ */
 export interface DirectoryListResult {
   success: boolean;
   contents?: Location[];
   error?: string;
 }
 
+/**
+ * マップ統計情報の型定義
+ */
 export interface MapStatistics {
   totalLocations: number;
   directories: number;
@@ -21,6 +30,9 @@ export interface MapStatistics {
   fullyInspectedLocations: number;
 }
 
+/**
+ * マップクラス - ファイルシステム風のナビゲーションと場所管理を行う
+ */
 export class Map {
   private locations: globalThis.Map<string, Location[]> = new globalThis.Map();
   private currentPath = '/';
@@ -89,6 +101,25 @@ export class Map {
       count += locationList.length;
     }
     return count;
+  }
+
+  getAllLocations(): Location[] {
+    const allLocations: Location[] = [];
+    for (const locationList of this.locations.values()) {
+      allLocations.push(...locationList);
+    }
+    return allLocations;
+  }
+
+  getMaxDepth(): number {
+    let maxDepth = 0;
+    for (const locationList of this.locations.values()) {
+      for (const location of locationList) {
+        const depth = location.getPath().split('/').length - 1;
+        maxDepth = Math.max(maxDepth, depth);
+      }
+    }
+    return maxDepth;
   }
 
   // Navigation

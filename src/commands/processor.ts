@@ -1,13 +1,24 @@
 import chalk from 'chalk';
 import type { Game } from '../core/game';
 
+/**
+ * コマンドプロセッサークラス - ユーザー入力コマンドを解析・実行する
+ */
 export class CommandProcessor {
   private game: Game;
 
+  /**
+   * CommandProcessorインスタンスを初期化する
+   * @param game - ゲームインスタンス
+   */
   constructor(game: Game) {
     this.game = game;
   }
 
+  /**
+   * 入力されたコマンドを処理する
+   * @param command - 実行するコマンド文字列
+   */
   async process(command: string): Promise<void> {
     if (!command) return;
 
@@ -15,6 +26,12 @@ export class CommandProcessor {
     this.executeCommand(mainCommand, args, command);
   }
 
+  /**
+   * コマンドを実行する
+   * @param mainCommand - メインコマンド
+   * @param args - コマンド引数配列
+   * @param originalCommand - 元のコマンド文字列
+   */
   private executeCommand(mainCommand: string, args: string[], originalCommand: string): void {
     const commands: Record<string, () => void> = {
       help: () => this.showHelp(),

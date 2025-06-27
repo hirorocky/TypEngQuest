@@ -4,7 +4,7 @@ describe('Bossクラス', () => {
   let boss: Boss;
 
   beforeEach(() => {
-    boss = new Boss('TestBoss', 'スタックオーバーフロードラゴン', 150, 25);
+    boss = Boss.createForLevel(1, 'TestBoss', 'スタックオーバーフロードラゴン');
   });
 
   describe('基本プロパティ', () => {
@@ -17,12 +17,12 @@ describe('Bossクラス', () => {
     });
 
     test('初期HPを正しく設定できる', () => {
-      expect(boss.getMaxHealth()).toBe(150);
-      expect(boss.getCurrentHealth()).toBe(150);
+      expect(boss.getMaxHealth()).toBe(100);
+      expect(boss.getCurrentHealth()).toBe(100);
     });
 
     test('攻撃力を正しく設定できる', () => {
-      expect(boss.getAttackPower()).toBe(25);
+      expect(boss.getAttackPower()).toBe(20);
     });
 
     test('初期状態では未撃破', () => {
@@ -35,13 +35,13 @@ describe('Bossクラス', () => {
     test('ダメージを受けることができる', () => {
       boss.takeDamage(50);
       
-      expect(boss.getCurrentHealth()).toBe(100);
+      expect(boss.getCurrentHealth()).toBe(50);
       expect(boss.isAlive()).toBe(true);
       expect(boss.isDefeated()).toBe(false);
     });
 
     test('致命的ダメージで撃破される', () => {
-      boss.takeDamage(150);
+      boss.takeDamage(100);
       
       expect(boss.getCurrentHealth()).toBe(0);
       expect(boss.isAlive()).toBe(false);
@@ -57,13 +57,13 @@ describe('Bossクラス', () => {
     test('負のダメージは無視される', () => {
       boss.takeDamage(-10);
       
-      expect(boss.getCurrentHealth()).toBe(150);
+      expect(boss.getCurrentHealth()).toBe(100);
     });
 
     test('0ダメージは無視される', () => {
       boss.takeDamage(0);
       
-      expect(boss.getCurrentHealth()).toBe(150);
+      expect(boss.getCurrentHealth()).toBe(100);
     });
   });
 
@@ -72,18 +72,18 @@ describe('Bossクラス', () => {
       boss.takeDamage(50);
       boss.heal(30);
       
-      expect(boss.getCurrentHealth()).toBe(130);
+      expect(boss.getCurrentHealth()).toBe(80);
     });
 
     test('最大HPを超える回復はできない', () => {
       boss.takeDamage(20);
       boss.heal(50);
       
-      expect(boss.getCurrentHealth()).toBe(150);
+      expect(boss.getCurrentHealth()).toBe(100);
     });
 
     test('撃破された後は回復できない', () => {
-      boss.takeDamage(150);
+      boss.takeDamage(100);
       boss.heal(50);
       
       expect(boss.getCurrentHealth()).toBe(0);
@@ -95,17 +95,17 @@ describe('Bossクラス', () => {
     test('HPパーセンテージを正しく計算する', () => {
       expect(boss.getHealthPercentage()).toBe(1.0);
       
-      boss.takeDamage(75);
+      boss.takeDamage(50);
       expect(boss.getHealthPercentage()).toBe(0.5);
       
-      boss.takeDamage(75);
+      boss.takeDamage(50);
       expect(boss.getHealthPercentage()).toBe(0.0);
     });
 
     test('残りHPを取得できる', () => {
       boss.takeDamage(40);
       
-      expect(boss.getRemainingHealth()).toBe(110);
+      expect(boss.getRemainingHealth()).toBe(60);
     });
   });
 
@@ -135,18 +135,18 @@ describe('Bossクラス', () => {
     test('HP割合に応じて戦闘フェーズが変化する', () => {
       expect(boss.getBattlePhase()).toBe('normal');
       
-      boss.takeDamage(50); // HP 66%
+      boss.takeDamage(30); // HP 70%
       expect(boss.getBattlePhase()).toBe('normal');
       
-      boss.takeDamage(50); // HP 33%
+      boss.takeDamage(30); // HP 40%
       expect(boss.getBattlePhase()).toBe('critical');
       
-      boss.takeDamage(25); // HP 16%
+      boss.takeDamage(25); // HP 15%
       expect(boss.getBattlePhase()).toBe('desperate');
     });
 
     test('撃破されたボスのフェーズはdefeated', () => {
-      boss.takeDamage(150);
+      boss.takeDamage(100);
       
       expect(boss.getBattlePhase()).toBe('defeated');
     });
@@ -184,18 +184,18 @@ describe('Bossクラス', () => {
       const status = boss.getStatusString();
       
       expect(status).toContain('スタックオーバーフロードラゴン');
-      expect(status).toContain('100/150');
-      expect(status).toContain('66%');
-      expect(status).toContain('normal');
+      expect(status).toContain('50/100');
+      expect(status).toContain('50%');
+      expect(status).toContain('critical');
     });
 
     test('撃破されたボスの状態表示', () => {
-      boss.takeDamage(150);
+      boss.takeDamage(100);
       
       const status = boss.getStatusString();
       
       expect(status).toContain('DEFEATED');
-      expect(status).toContain('0/150');
+      expect(status).toContain('0/100');
     });
   });
 });
