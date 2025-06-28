@@ -51,3 +51,6 @@ npm run check  # 全品質チェック (Lint + Format + Test)
 
 ### 現在時刻
 現在の時刻は`date`コマンドで取得してください。
+
+### Git
+きりの良いfeature毎に`git commit`してください。
