@@ -31,6 +31,17 @@
 - Game統合: マップ・ワールド・戦闘システム完全統合
 - 21個の新規テスト (🔴Red → 🟢Green移行成功)
 
+**実装されたコンポーネント**:
+- `src/battle/typingChallenge.ts` - タイピングチャレンジシステム
+- `src/battle/battleCommands.ts` - ターン制戦闘管理
+- `src/battle/__tests__/` - 戦闘システムのテスト (42テスト)
+- `src/core/game.ts` - マップ・ワールド・戦闘システム統合
+- `src/commands/processor.ts` - battle/attack/fleeコマンド追加
+
+**コマンド使用例**: `battle app.js` → `attack function` → `flee`
+
+**注意点**: タイピング精度がダメージに直結、ワールドレベル連動難易度調整
+
 ### 🔧 品質チェック
 実装変更後は必ず以下を実行：
 ```bash
@@ -49,3 +60,4 @@ npm run check  # 全品質チェック (Lint + Format + Test)
 
 ### Git
 きりの良いfeature毎に`git commit`してください。
+
