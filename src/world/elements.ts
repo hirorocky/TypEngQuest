@@ -185,6 +185,7 @@ export class ElementManager {
       data: {
         name,
         health,
+        maxHealth: health,
         attack,
         defeated: false,
       },

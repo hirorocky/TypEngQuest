@@ -42,6 +42,9 @@ export class CommandProcessor {
       unequip: () => this.unequipWord(args),
       validate: () => this.validateEquipment(),
       start: () => this.startGame(),
+      battle: () => this.startBattle(args),
+      attack: () => this.performAttack(args),
+      flee: () => this.fleeBattle(),
       quit: () => this.game.quit(),
       exit: () => this.game.quit(),
     };
@@ -75,8 +78,14 @@ export class CommandProcessor {
     console.log('  unequip <slot>     - Remove word from slot');
     console.log('  validate           - Check sentence grammar');
 
+    console.log(chalk.cyan('\n⚡ Battle Commands:'));
+    console.log('  battle <filename>  - Start battle with enemy');
+    console.log('  attack <word>      - Perform typing attack');
+    console.log('  flee               - Escape from battle');
+
     console.log(chalk.gray('\n💡 Example: equip 1 the'));
-    console.log(chalk.gray('         equip 2 quick\n'));
+    console.log(chalk.gray('         battle app.js'));
+    console.log(chalk.gray('         attack function\n'));
   }
 
   private showStatus(): void {
@@ -249,5 +258,71 @@ export class CommandProcessor {
     console.log(chalk.green('🎮 Starting adventure...'));
     console.log(chalk.gray('(Game mechanics coming soon!)'));
     // TODO: Implement actual game start logic
+  }
+
+  // Battle Commands
+  private startBattle(args: string[]): void {
+    if (args.length === 0) {
+      console.log(chalk.red('Usage: battle <filename>'));
+      console.log(chalk.gray('Example: battle app.js'));
+      return;
+    }
+
+    const filename = args[0];
+    const battleCommands = this.game.getBattleCommands();
+    const result = battleCommands.startBattle(filename);
+
+    if (result.success) {
+      console.log(chalk.green(result.output));
+      this.game.setScreen('battle');
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private performAttack(args: string[]): void {
+    const battleCommands = this.game.getBattleCommands();
+
+    if (!battleCommands.isInBattle()) {
+      console.log(chalk.red('Not in battle. Use "battle <filename>" to start a battle.'));
+      return;
+    }
+
+    if (args.length === 0) {
+      const challenge = battleCommands.getCurrentChallenge();
+      if (challenge) {
+        console.log(chalk.yellow(`Current challenge: "${challenge.word}"`));
+        console.log(chalk.gray(`Time limit: ${challenge.timeLimit}s`));
+        console.log(chalk.gray('Usage: attack <typed_word> [time_used]'));
+      }
+      return;
+    }
+
+    const typedWord = args.join(' ');
+    const timeUsed = args.length > 1 ? parseFloat(args[args.length - 1]) : 2.0;
+
+    const result = battleCommands.performTypingAttack(typedWord, timeUsed);
+
+    if (result.success) {
+      console.log(chalk.cyan(result.output));
+
+      if (!battleCommands.isInBattle()) {
+        this.game.setScreen('game');
+      }
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private fleeBattle(): void {
+    const battleCommands = this.game.getBattleCommands();
+    const result = battleCommands.fleeBattle();
+
+    if (result.success) {
+      console.log(chalk.yellow(result.output));
+      this.game.setScreen('game');
+    } else {
+      console.log(chalk.red(result.output));
+    }
   }
 }

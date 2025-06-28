@@ -158,6 +158,14 @@ export class Player {
     return [...this.inventory];
   }
 
+  /**
+   * インベントリに単語を追加する
+   * @param word - 追加する単語
+   */
+  addToInventory(word: string): void {
+    this.inventory.push(word);
+  }
+
   // Equipment Management
   /**
    * 指定スロットに単語を装備する

@@ -2,11 +2,19 @@ import chalk from 'chalk';
 import { input } from '@inquirer/prompts';
 import { Player } from './player';
 import { CommandProcessor } from '../commands/processor';
+import { Map } from '../world/map';
+import { World } from '../world/world';
+import { ElementManager } from '../world/elements';
+import { BattleCommands } from '../battle/battleCommands';
 
 export interface GameState {
   isRunning: boolean;
   currentScreen: 'menu' | 'game' | 'battle' | 'equipment' | 'quit';
   player: Player;
+  map: Map;
+  world: World;
+  elementManager: ElementManager;
+  battleCommands: BattleCommands;
 }
 
 export class Game {
@@ -14,10 +22,20 @@ export class Game {
   private commandProcessor: CommandProcessor;
 
   constructor() {
+    const player = new Player();
+    const map = new Map();
+    const world = new World('Development World', 1, map);
+    const elementManager = new ElementManager();
+    const battleCommands = new BattleCommands(player, map, world, elementManager);
+
     this.state = {
       isRunning: false,
       currentScreen: 'menu',
-      player: new Player(),
+      player,
+      map,
+      world,
+      elementManager,
+      battleCommands,
     };
     this.commandProcessor = new CommandProcessor(this);
   }
@@ -53,6 +71,26 @@ export class Game {
     return this.state;
   }
 
+  getPlayer(): Player {
+    return this.state.player;
+  }
+
+  getMap(): Map {
+    return this.state.map;
+  }
+
+  getWorld(): World {
+    return this.state.world;
+  }
+
+  getElementManager(): ElementManager {
+    return this.state.elementManager;
+  }
+
+  getBattleCommands(): BattleCommands {
+    return this.state.battleCommands;
+  }
+
   setState(newState: Partial<GameState>): void {
     this.state = { ...this.state, ...newState };
   }
@@ -70,10 +108,5 @@ export class Game {
 
   getCurrentScreen(): GameState['currentScreen'] {
     return this.state.currentScreen;
-  }
-
-  // Player Access
-  getPlayer(): Player {
-    return this.state.player;
   }
 }

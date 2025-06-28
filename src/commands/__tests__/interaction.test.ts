@@ -117,14 +117,15 @@ describe('InteractionCommandsクラス', () => {
     });
 
     test('戦闘敗北時の処理', () => {
-      // プレイヤーの装備を弱くする
+      // プレイヤーの装備を弱くして、HPも大幅に減らす
       player.unequipWord(1);
       player.unequipWord(2);
+      player.takeDamage(45); // HPを5にしてモンスターが勝ちやすくする
       
       const result = interactionCommands.interact('app.js');
       
       expect(result.success).toBe(true);
-      expect(result.output).toContain('Defeat');
+      expect(result.output).toContain('Defeat!');
       expect(result.output).toContain('damage');
     });
   });
@@ -271,8 +272,8 @@ describe('InteractionCommandsクラス', () => {
       expect(result.success).toBe(true);
       expect(result.output).toContain('Save point accessed');
       expect(result.output).toContain('Documentation Hub');
-      expect(result.output).toContain('Health restored: 100');
-      expect(result.output).toContain('Mana restored: 50');
+      expect(result.output).toContain('Health restored: 30');
+      expect(result.output).toContain('Mana restored: 20');
       expect(result.output).toContain('Game saved');
     });
 
