@@ -45,6 +45,9 @@ export class CommandProcessor {
       battle: () => this.startBattle(args),
       attack: () => this.performAttack(args),
       flee: () => this.fleeBattle(),
+      avoid: () => this.avoidEvent(args),
+      skip: () => this.skipEvent(),
+      events: () => this.showEventStats(),
       quit: () => this.game.quit(),
       exit: () => this.game.quit(),
     };
@@ -83,9 +86,14 @@ export class CommandProcessor {
     console.log('  attack <word>      - Perform typing attack');
     console.log('  flee               - Escape from battle');
 
+    console.log(chalk.cyan('\n🎲 Event Commands:'));
+    console.log('  avoid <word> <time> - Avoid bad event with typing');
+    console.log('  skip               - Skip event (accept consequences)');
+    console.log('  events             - Show event statistics');
+
     console.log(chalk.gray('\n💡 Example: equip 1 the'));
     console.log(chalk.gray('         battle app.js'));
-    console.log(chalk.gray('         attack function\n'));
+    console.log(chalk.gray('         avoid function 2.5\n'));
   }
 
   private showStatus(): void {
@@ -324,5 +332,97 @@ export class CommandProcessor {
     } else {
       console.log(chalk.red(result.output));
     }
+  }
+
+  // Random Event Commands
+  private avoidEvent(args: string[]): void {
+    if (args.length < 1) {
+      console.log(chalk.red('Usage: avoid <word> [time_used]'));
+      console.log(chalk.gray('Example: avoid function 2.5'));
+      return;
+    }
+
+    const word = args[0];
+    const timeUsed = args.length > 1 ? parseFloat(args[1]) : 3.0;
+
+    // InteractionCommandsからRandomEventManagerにアクセス
+    const gameState = this.game.getState();
+    if (!gameState.interactionCommands) {
+      console.log(chalk.red('Event system not available.'));
+      return;
+    }
+
+    const result = gameState.interactionCommands.avoidEvent(word, timeUsed);
+
+    if (result.success) {
+      console.log(chalk.cyan(result.output));
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private skipEvent(): void {
+    // InteractionCommandsからRandomEventManagerにアクセス
+    const gameState = this.game.getState();
+    if (!gameState.interactionCommands) {
+      console.log(chalk.red('Event system not available.'));
+      return;
+    }
+
+    const result = gameState.interactionCommands.skipEvent();
+
+    if (result.success) {
+      console.log(chalk.yellow(result.output));
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private showEventStats(): void {
+    // InteractionCommandsからRandomEventManagerにアクセス
+    const gameState = this.game.getState();
+    if (!gameState.interactionCommands) {
+      console.log(chalk.red('Event system not available.'));
+      return;
+    }
+
+    const eventManager = gameState.interactionCommands.getRandomEventManager();
+    const stats = eventManager.getEventStats();
+    const history = eventManager.getEventHistory();
+    const activeBuffs = eventManager.getActiveBuffs();
+    const activeDebuffs = eventManager.getActiveDebuffs();
+
+    console.log(chalk.yellow('\n📊 Event Statistics:'));
+    console.log(chalk.gray('─'.repeat(40)));
+    console.log(`Total Events: ${stats.totalEvents}`);
+    console.log(`Good Events: ${stats.goodEvents}`);
+    console.log(`Bad Events: ${stats.badEvents}`);
+    console.log(`Avoidance Success Rate: ${Math.round(stats.avoidanceSuccessRate * 100)}%`);
+
+    if (activeBuffs.length > 0) {
+      console.log(chalk.green('\n✨ Active Buffs:'));
+      activeBuffs.forEach(buff => {
+        console.log(`  ${buff.statType}: +${buff.value} (${buff.duration} turns left)`);
+      });
+    }
+
+    if (activeDebuffs.length > 0) {
+      console.log(chalk.red('\n💔 Active Debuffs:'));
+      activeDebuffs.forEach(debuff => {
+        console.log(`  ${debuff.statType}: ${debuff.value} (${debuff.duration} turns left)`);
+      });
+    }
+
+    if (history.length > 0) {
+      console.log(chalk.cyan('\n📝 Recent Events:'));
+      const recent = history.slice(-5).reverse();
+      recent.forEach(event => {
+        const typeColor = event.type === 'good' ? chalk.green : chalk.red;
+        const timestamp = event.timestamp.toLocaleTimeString();
+        console.log(`  ${timestamp} - ${typeColor(event.type.toUpperCase())} event`);
+      });
+    }
+
+    console.log('');
   }
 }

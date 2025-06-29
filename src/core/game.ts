@@ -6,6 +6,7 @@ import { Map } from '../world/map';
 import { World } from '../world/world';
 import { ElementManager } from '../world/elements';
 import { BattleCommands } from '../battle/battleCommands';
+import { InteractionCommands } from '../commands/interaction';
 
 export interface GameState {
   isRunning: boolean;
@@ -15,6 +16,7 @@ export interface GameState {
   world: World;
   elementManager: ElementManager;
   battleCommands: BattleCommands;
+  interactionCommands: InteractionCommands;
 }
 
 export class Game {
@@ -27,6 +29,7 @@ export class Game {
     const world = new World('Development World', 1, map);
     const elementManager = new ElementManager();
     const battleCommands = new BattleCommands(player, map, world, elementManager);
+    const interactionCommands = new InteractionCommands(map, elementManager, player, world);
 
     this.state = {
       isRunning: false,
@@ -36,6 +39,7 @@ export class Game {
       world,
       elementManager,
       battleCommands,
+      interactionCommands,
     };
     this.commandProcessor = new CommandProcessor(this);
   }
@@ -89,6 +93,10 @@ export class Game {
 
   getBattleCommands(): BattleCommands {
     return this.state.battleCommands;
+  }
+
+  getInteractionCommands(): InteractionCommands {
+    return this.state.interactionCommands;
   }
 
   setState(newState: Partial<GameState>): void {

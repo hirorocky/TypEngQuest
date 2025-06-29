@@ -3,6 +3,7 @@ import { ElementManager } from '../world/elements';
 import { Player } from '../core/player';
 import { World } from '../world/world';
 import { LocationType, ElementType, Element } from '../world/location';
+import { RandomEventManager } from '../events/randomEventManager';
 
 /**
  * コマンド実行結果の型定義
@@ -29,12 +30,14 @@ export class InteractionCommands {
   private elementManager: ElementManager;
   private player: Player;
   private world: World;
+  private randomEventManager: RandomEventManager;
 
   constructor(map: Map, elementManager: ElementManager, player: Player, world: World) {
     this.map = map;
     this.elementManager = elementManager;
     this.player = player;
     this.world = world;
+    this.randomEventManager = new RandomEventManager(player, world);
   }
 
   /**
@@ -239,16 +242,32 @@ export class InteractionCommands {
       };
     }
 
-    const eventType = element.data.eventType as string;
-    const description = element.data.description as string;
-    const effects = element.data.effects as Record<string, number>;
-
     element.data.triggered = true;
 
-    if (eventType === 'good') {
-      return this.handleGoodEvent(description, effects);
+    // ファイル拡張子を取得
+    const extension = this.getFileExtension(filename);
+
+    // RandomEventManagerでイベントを生成
+    const randomEvent = this.randomEventManager.generateEventForFile(extension);
+
+    if (randomEvent.type === 'good') {
+      return this.randomEventManager.processGoodEvent(randomEvent);
     } else {
-      return this.handleBadEvent(description, effects);
+      // 悪いイベントの場合はタイピング回避チャレンジを提供
+      const challenge = this.randomEventManager.generateAvoidanceChallenge(randomEvent);
+
+      let output = `Dangerous event: ${randomEvent.description}\n`;
+      output += `Type "${challenge.word}" within ${challenge.timeLimit} seconds to avoid damage!\n`;
+      output += `Use "avoid <word> <time_used>" to attempt avoidance.\n`;
+      output += `Or use "skip" to accept full consequences.`;
+
+      // 一時的にイベントを保存（回避コマンド用）
+      this.storePendingEvent(randomEvent);
+
+      return {
+        success: true,
+        output,
+      };
     }
   }
 
@@ -397,5 +416,142 @@ export class InteractionCommands {
       success: true,
       output,
     };
+  }
+
+  // ランダムイベント用のヘルパーメソッド
+  private pendingEvent: any = null; // 保留中の悪いイベント
+
+  /**
+   * ファイル拡張子を取得する
+   * @param filename - ファイル名
+   * @returns ファイル拡張子
+   */
+  private getFileExtension(filename: string): string {
+    const lastDot = filename.lastIndexOf('.');
+    return lastDot >= 0 ? filename.substring(lastDot) : '';
+  }
+
+  /**
+   * 保留中のイベントを保存する
+   * @param event - 保留するイベント
+   */
+  private storePendingEvent(event: any): void {
+    this.pendingEvent = event;
+  }
+
+  /**
+   * タイピング回避コマンド
+   * @param input - タイピング入力
+   * @param timeUsed - 使用時間
+   * @returns 回避結果
+   */
+  avoidEvent(input: string, timeUsed: number): CommandResult {
+    if (!this.pendingEvent) {
+      return {
+        success: false,
+        output: 'No pending event to avoid.',
+      };
+    }
+
+    const challenge = this.randomEventManager.generateAvoidanceChallenge(this.pendingEvent);
+
+    // タイピング結果を評価
+    const typingResult = {
+      input,
+      accuracy: this.calculateAccuracy(challenge.word, input),
+      speed: this.calculateWPM(input, timeUsed),
+      timeUsed,
+      perfect: input === challenge.word,
+    };
+
+    // 回避処理
+    const avoidanceResult = this.randomEventManager.processTypingAvoidance(
+      this.pendingEvent,
+      typingResult
+    );
+    const result = this.randomEventManager.processBadEvent(this.pendingEvent, avoidanceResult);
+
+    // イベントをクリア
+    this.pendingEvent = null;
+
+    return result;
+  }
+
+  /**
+   * イベントをスキップする（回避を諦める）
+   * @returns スキップ結果
+   */
+  skipEvent(): CommandResult {
+    if (!this.pendingEvent) {
+      return {
+        success: false,
+        output: 'No pending event to skip.',
+      };
+    }
+
+    // 完全失敗として処理
+    const failedTyping = {
+      input: '',
+      accuracy: 0,
+      speed: 0,
+      timeUsed: 999,
+      perfect: false,
+    };
+
+    const avoidanceResult = this.randomEventManager.processTypingAvoidance(
+      this.pendingEvent,
+      failedTyping
+    );
+    const result = this.randomEventManager.processBadEvent(this.pendingEvent, avoidanceResult);
+
+    // イベントをクリア
+    this.pendingEvent = null;
+
+    return result;
+  }
+
+  /**
+   * 精度を計算する
+   * @param target - 正解文字列
+   * @param input - 入力文字列
+   * @returns 精度（0-100）
+   */
+  private calculateAccuracy(target: string, input: string): number {
+    if (target.length === 0) return input.length === 0 ? 100 : 0;
+    if (input.length === 0) return 0;
+
+    let correctChars = 0;
+    const maxLength = Math.max(target.length, input.length);
+
+    for (let i = 0; i < maxLength; i++) {
+      if (target[i] && input[i] && target[i] === input[i]) {
+        correctChars++;
+      }
+    }
+
+    return Math.round((correctChars / target.length) * 100);
+  }
+
+  /**
+   * WPMを計算する
+   * @param input - 入力文字列
+   * @param timeUsed - 使用時間（秒）
+   * @returns WPM
+   */
+  private calculateWPM(input: string, timeUsed: number): number {
+    if (timeUsed <= 0 || input.length === 0) return 0;
+
+    const wordsTyped = input.length / 5;
+    const timeInMinutes = timeUsed / 60;
+
+    return Math.round(wordsTyped / timeInMinutes);
+  }
+
+  /**
+   * RandomEventManagerにアクセスする（外部からの使用用）
+   * @returns RandomEventManager
+   */
+  getRandomEventManager(): RandomEventManager {
+    return this.randomEventManager;
   }
 }
