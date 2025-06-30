@@ -9,6 +9,7 @@ import { BattleCommands } from '../battle/battleCommands';
 import { InteractionCommands } from '../commands/interaction';
 import { SaveManager } from './saveManager';
 import { SaveData } from './saveData';
+import { EnhancedCli } from '../cli/enhancedCli';
 
 export interface GameState {
   isRunning: boolean;
@@ -25,6 +26,7 @@ export interface GameState {
 export class Game {
   private state: GameState;
   private commandProcessor: CommandProcessor;
+  private enhancedCli?: EnhancedCli;
 
   constructor() {
     const player = new Player();
@@ -55,7 +57,12 @@ export class Game {
     console.log(chalk.green('Welcome to CodeQuest RPG!'));
     console.log(chalk.gray('Type "help" for available commands.\n'));
 
-    await this.mainLoop();
+    // 拡張CLIモードを使用するかどうかを確認
+    if (process.env.ENHANCED_CLI === 'true' || process.argv.includes('--enhanced')) {
+      this.startEnhancedCli();
+    } else {
+      await this.mainLoop();
+    }
   }
 
   private async mainLoop(): Promise<void> {
@@ -108,8 +115,20 @@ export class Game {
     return this.state.saveManager;
   }
 
+  getCommandProcessor(): CommandProcessor {
+    return this.commandProcessor;
+  }
+
   setState(newState: Partial<GameState>): void {
     this.state = { ...this.state, ...newState };
+  }
+
+  /**
+   * 拡張CLIモードを開始する
+   */
+  private startEnhancedCli(): void {
+    this.enhancedCli = new EnhancedCli(this);
+    this.enhancedCli.start();
   }
 
   quit(): void {

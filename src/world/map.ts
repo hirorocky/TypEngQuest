@@ -45,7 +45,7 @@ export class Map {
     const root = new Location('', '', LocationType.DIRECTORY);
     this.addLocation(root);
     this.locations.set('/', []);
-    
+
     // Generate file system content automatically
     this.generateFileSystem();
   }

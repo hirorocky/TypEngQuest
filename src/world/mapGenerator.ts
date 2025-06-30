@@ -184,7 +184,8 @@ export class MapGenerator {
     const maxAttempts = 100;
 
     while (attempts < maxAttempts) {
-      const name = this.directoryNames[Math.floor(this.randomFunction() * this.directoryNames.length)];
+      const name =
+        this.directoryNames[Math.floor(this.randomFunction() * this.directoryNames.length)];
       if (!usedNames.has(name)) {
         usedNames.add(name);
         return name;
@@ -215,11 +216,13 @@ export class MapGenerator {
 
       if (isHidden) {
         // 隠しファイルを生成
-        fileName = this.hiddenFileNames[Math.floor(this.randomFunction() * this.hiddenFileNames.length)];
+        fileName =
+          this.hiddenFileNames[Math.floor(this.randomFunction() * this.hiddenFileNames.length)];
       } else {
         // 通常ファイルを生成
         const baseName = this.fileNames[Math.floor(this.randomFunction() * this.fileNames.length)];
-        const extension = config.fileTypes[Math.floor(this.randomFunction() * config.fileTypes.length)];
+        const extension =
+          config.fileTypes[Math.floor(this.randomFunction() * config.fileTypes.length)];
         fileName = `${baseName}${extension}`;
       }
 
