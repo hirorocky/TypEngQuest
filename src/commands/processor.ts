@@ -1,11 +1,13 @@
 import chalk from 'chalk';
 import type { Game } from '../core/game';
+import { SaveCommands } from './saveCommands';
 
 /**
  * コマンドプロセッサークラス - ユーザー入力コマンドを解析・実行する
  */
 export class CommandProcessor {
   private game: Game;
+  private saveCommands: SaveCommands;
 
   /**
    * CommandProcessorインスタンスを初期化する
@@ -13,6 +15,7 @@ export class CommandProcessor {
    */
   constructor(game: Game) {
     this.game = game;
+    this.saveCommands = new SaveCommands(game.getSaveManager());
   }
 
   /**
@@ -23,7 +26,7 @@ export class CommandProcessor {
     if (!command) return;
 
     const [mainCommand, ...args] = command.toLowerCase().split(' ');
-    this.executeCommand(mainCommand, args, command);
+    await this.executeCommand(mainCommand, args, command);
   }
 
   /**
@@ -32,8 +35,12 @@ export class CommandProcessor {
    * @param args - コマンド引数配列
    * @param originalCommand - 元のコマンド文字列
    */
-  private executeCommand(mainCommand: string, args: string[], originalCommand: string): void {
-    const commands: Record<string, () => void> = {
+  private async executeCommand(
+    mainCommand: string,
+    args: string[],
+    originalCommand: string
+  ): Promise<void> {
+    const commands: Record<string, () => void | Promise<void>> = {
       help: () => this.showHelp(),
       status: () => this.showStatus(),
       inventory: () => this.showInventory(),
@@ -48,13 +55,18 @@ export class CommandProcessor {
       avoid: () => this.avoidEvent(args),
       skip: () => this.skipEvent(),
       events: () => this.showEventStats(),
+      save: () => this.saveGame(args),
+      load: () => this.loadGame(args),
+      saves: () => this.listSaves(),
+      deletesave: () => this.deleteSave(args),
+      autosave: () => this.toggleAutoSave(args),
       quit: () => this.game.quit(),
       exit: () => this.game.quit(),
     };
 
     const commandHandler = commands[mainCommand];
     if (commandHandler) {
-      commandHandler();
+      await commandHandler();
     } else {
       this.showUnknownCommand(originalCommand);
     }
@@ -91,9 +103,16 @@ export class CommandProcessor {
     console.log('  skip               - Skip event (accept consequences)');
     console.log('  events             - Show event statistics');
 
+    console.log(chalk.cyan('\n💾 Save Commands:'));
+    console.log('  save <slot> [desc] - Save game to slot (1-9)');
+    console.log('  load <slot>        - Load game from slot (1-10)');
+    console.log('  saves              - List all save files');
+    console.log('  deletesave <slot>  - Delete save file');
+    console.log('  autosave [on/off]  - Toggle auto-save');
+
     console.log(chalk.gray('\n💡 Example: equip 1 the'));
-    console.log(chalk.gray('         battle app.js'));
-    console.log(chalk.gray('         avoid function 2.5\n'));
+    console.log(chalk.gray('         save 1 "Before boss"'));
+    console.log(chalk.gray('         load 1\n'));
   }
 
   private showStatus(): void {
@@ -424,5 +443,68 @@ export class CommandProcessor {
     }
 
     console.log('');
+  }
+
+  // Save Commands
+  private async saveGame(args: string[]): Promise<void> {
+    const gameState = this.game.getState();
+    const result = await this.saveCommands.saveGame(
+      args,
+      gameState.player,
+      gameState.world,
+      gameState.map,
+      gameState.elementManager,
+      gameState.battleCommands
+    );
+
+    console.log(result.output);
+  }
+
+  private async loadGame(args: string[]): Promise<void> {
+    const result = await this.saveCommands.loadGame(args);
+    console.log(result.output);
+
+    // ロードが成功した場合、ゲーム状態を復元する
+    if (result.success && result.loadResult?.saveData) {
+      console.log(chalk.cyan('\n🔄 Restoring game state...'));
+      
+      const restoreSuccess = await this.game.restoreGameState(result.loadResult.saveData);
+      
+      if (restoreSuccess) {
+        console.log(chalk.green('🎮 Ready to continue your adventure!'));
+        console.log(chalk.gray('Type "status" to check your current state.'));
+      } else {
+        console.log(chalk.red('⚠️  Game state restoration failed.'));
+        console.log(chalk.gray('Some data may not have been restored correctly.'));
+      }
+    }
+  }
+
+  private async listSaves(): Promise<void> {
+    const result = await this.saveCommands.listSaves();
+    console.log(result.output);
+  }
+
+  private async deleteSave(args: string[]): Promise<void> {
+    const result = await this.saveCommands.deleteSave(args);
+    console.log(result.output);
+  }
+
+  private toggleAutoSave(args: string[]): void {
+    if (args.length === 0) {
+      // 現在の状態を表示
+      console.log(this.saveCommands.getAutoSaveStatus());
+      return;
+    }
+
+    const setting = args[0].toLowerCase();
+    if (setting === 'on' || setting === 'enable') {
+      console.log(this.saveCommands.setAutoSaveEnabled(true));
+    } else if (setting === 'off' || setting === 'disable') {
+      console.log(this.saveCommands.setAutoSaveEnabled(false));
+    } else {
+      console.log(chalk.red('Usage: autosave [on/off]'));
+      console.log(chalk.gray('Example: autosave on'));
+    }
   }
 }
