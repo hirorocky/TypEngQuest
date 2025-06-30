@@ -4,6 +4,7 @@ import { Location, LocationType } from './location';
 // マップ生成設定
 export interface MapGeneratorConfig {
   maxDepth: number; // 最大階層深度
+  minDepth?: number; // 最小階層深度（デフォルト: 1）
   maxFilesPerDirectory: number; // ディレクトリあたりの最大ファイル数
   maxDirectoriesPerLevel: number; // レベルあたりの最大ディレクトリ数
   fileTypes: string[]; // 生成するファイルタイプ
@@ -105,6 +106,7 @@ export class MapGenerator {
     // デフォルト設定
     const defaultConfig: MapGeneratorConfig = {
       maxDepth: 4,
+      minDepth: 1,
       maxFilesPerDirectory: 6,
       maxDirectoriesPerLevel: 4,
       fileTypes: ['.js', '.ts', '.json', '.md', '.txt'],
@@ -126,6 +128,13 @@ export class MapGenerator {
   private validateConfig(config: MapGeneratorConfig): void {
     if (config.maxDepth <= 0) {
       throw new Error('maxDepth must be greater than 0');
+    }
+    const minDepth = config.minDepth ?? 1;
+    if (minDepth < 1) {
+      throw new Error('minDepth must be at least 1');
+    }
+    if (minDepth > config.maxDepth) {
+      throw new Error('minDepth cannot be greater than maxDepth');
     }
     if (config.maxFilesPerDirectory < 0) {
       throw new Error('maxFilesPerDirectory must be non-negative');
@@ -152,11 +161,16 @@ export class MapGenerator {
       return;
     }
 
+    const minDepth = config.minDepth ?? 1;
+
     // ディレクトリを生成
     const numDirectories = Math.floor(this.randomFunction() * (config.maxDirectoriesPerLevel + 1));
     const usedDirNames = new Set<string>();
 
-    for (let i = 0; i < numDirectories && currentDepth < config.maxDepth; i++) {
+    // 最小深度に達していない場合は、必ずディレクトリを1つ以上生成
+    const minDirectories = currentDepth < minDepth ? Math.max(1, numDirectories) : numDirectories;
+
+    for (let i = 0; i < minDirectories && currentDepth < config.maxDepth; i++) {
       const dirName = this.getUniqueDirectoryName(usedDirNames);
       const dirLocation = new Location(dirName, parentPath, LocationType.DIRECTORY);
       map.addLocation(dirLocation);
@@ -169,7 +183,11 @@ export class MapGenerator {
     const numFiles = Math.floor(this.randomFunction() * (config.maxFilesPerDirectory + 1));
     const usedFileNames = new Set<string>();
 
-    for (let i = 0; i < numFiles; i++) {
+    // ルートディレクトリまたは最小深度に達した場合は、必ずファイルを1つ以上生成
+    const minFiles =
+      currentDepth === 1 || currentDepth >= minDepth ? Math.max(1, numFiles) : numFiles;
+
+    for (let i = 0; i < minFiles; i++) {
       const fileName = this.getUniqueFileName(usedFileNames, config);
       const fileLocation = new Location(fileName, parentPath, LocationType.FILE);
       map.addLocation(fileLocation);

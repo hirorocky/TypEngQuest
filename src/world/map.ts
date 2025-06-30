@@ -39,7 +39,7 @@ export class Map {
   private currentPath = '/';
   private randomFunction: () => number;
 
-  constructor(randomFunction: () => number = Math.random) {
+  constructor(randomFunction: () => number = Math.random, worldLevel: number = 1) {
     this.randomFunction = randomFunction;
     // Initialize with root directory
     const root = new Location('', '', LocationType.DIRECTORY);
@@ -47,19 +47,25 @@ export class Map {
     this.locations.set('/', []);
 
     // Generate file system content automatically
-    this.generateFileSystem();
+    this.generateFileSystem(worldLevel);
   }
 
   /**
    * ファイルシステム構造を自動生成する
+   * @param worldLevel - ワールドレベル（デフォルト: 1）
    */
-  private generateFileSystem(): void {
+  private generateFileSystem(worldLevel: number = 1): void {
     const generator = new MapGenerator(this.randomFunction);
+
+    // ワールドレベルに応じた深度設定
+    const maxDepth = worldLevel === 1 ? 1 : Math.min(3 + Math.floor(worldLevel / 2), 6);
+
     // より多様性のある設定でファイルシステムを生成
     generator.generateFileSystem(this, {
-      maxDepth: 3,
+      maxDepth,
+      minDepth: 1,
       maxFilesPerDirectory: 4,
-      maxDirectoriesPerLevel: 3,
+      maxDirectoriesPerLevel: worldLevel === 1 ? 0 : 3, // レベル1では子ディレクトリなし
       fileTypes: ['.ts', '.js', '.json', '.md', '.txt', '.py', '.java', '.cpp', '.html', '.css'],
       hiddenFileRatio: 0.2,
     });

@@ -32,6 +32,7 @@ describe('MapGenerator', () => {
 
       const config = {
         maxDepth: 2,
+        minDepth: 2, // 深度2まで必ずディレクトリ生成
         maxFilesPerDirectory: 5,
         maxDirectoriesPerLevel: 3,
         fileTypes: ['.js', '.ts', '.md', '.json'],
@@ -62,6 +63,7 @@ describe('MapGenerator', () => {
 
       const config = {
         maxDepth: 3,
+        minDepth: 2, // 最小深度2を指定してディレクトリを確実に生成
         maxFilesPerDirectory: 2,
         maxDirectoriesPerLevel: 2,
         fileTypes: ['.js', '.ts'],
@@ -81,23 +83,13 @@ describe('MapGenerator', () => {
     });
 
     test('指定されたファイルタイプのファイルのみ生成する', () => {
-      // ファイルが確実に生成されるようにモック
-      Math.random = jest.fn()
-        .mockReturnValueOnce(0.1) // ディレクトリ数を少なく
-        .mockReturnValueOnce(0.9) // ファイル数を多く
-        .mockReturnValueOnce(0.3) // 隠しファイルでない
-        .mockReturnValueOnce(0.2) // ファイル名選択
-        .mockReturnValueOnce(0.0) // 拡張子選択 (.ts)
-        .mockReturnValueOnce(0.3) // 隠しファイルでない
-        .mockReturnValueOnce(0.5) // ファイル名選択
-        .mockReturnValueOnce(0.99) // 拡張子選択 (.json)
-        .mockReturnValue(0.4);
-
       const config = {
-        maxDepth: 2,
-        maxFilesPerDirectory: 10,
-        maxDirectoriesPerLevel: 1,
+        maxDepth: 1,
+        minDepth: 1,
+        maxFilesPerDirectory: 5,
+        maxDirectoriesPerLevel: 0, // ディレクトリを生成しない
         fileTypes: ['.ts', '.json'],
+        hiddenFileRatio: 0, // 隠しファイルを無効にして通常ファイルのみ生成
       };
 
       generator.generateFileSystem(map, config);
@@ -105,9 +97,13 @@ describe('MapGenerator', () => {
       const allFiles = getAllFiles(map, '/');
       const fileExtensions = allFiles.map((file: Location) => file.getFileExtension());
       
+      // 生成されたファイル拡張子が指定されたタイプのみであることを確認
       for (const ext of fileExtensions) {
-        expect(['.ts', '.json', '']).toContain(ext); // 空文字は拡張子なしファイル用
+        expect(config.fileTypes.concat('')).toContain(ext); // 空文字は拡張子なしファイル用
       }
+      
+      // 少なくとも1つは指定されたファイルタイプが生成されることを確認
+      expect(fileExtensions.some(ext => config.fileTypes.includes(ext))).toBe(true);
     });
   });
 
@@ -126,6 +122,7 @@ describe('MapGenerator', () => {
 
       const config = {
         maxDepth: 2,
+        minDepth: 2, // ディレクトリを確実に生成
         maxFilesPerDirectory: 5,
         maxDirectoriesPerLevel: 3,
         fileTypes: ['.js', '.ts'],

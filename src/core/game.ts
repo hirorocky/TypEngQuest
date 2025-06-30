@@ -30,8 +30,9 @@ export class Game {
 
   constructor() {
     const player = new Player();
-    const map = new Map();
-    const world = new World('Development World', 1, map);
+    const defaultWorldLevel = 1;
+    const map = new Map(undefined, defaultWorldLevel);
+    const world = new World('Development World', defaultWorldLevel, map);
     const elementManager = new ElementManager();
     const battleCommands = new BattleCommands(player, map, world, elementManager);
     const interactionCommands = new InteractionCommands(map, elementManager, player, world);

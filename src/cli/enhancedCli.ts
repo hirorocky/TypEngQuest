@@ -85,7 +85,7 @@ export class EnhancedCli {
   private replaceCurrentLine(text: string): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rlInterface = this.rl as any;
-    
+
     // 現在の行をクリアして新しいテキストを設定
     rlInterface.line = text;
     rlInterface.cursor = text.length;
@@ -109,14 +109,14 @@ export class EnhancedCli {
       suggestions.forEach((suggestion, index) => {
         console.log(chalk.gray(`  ${index + 1}. `) + chalk.cyan(suggestion));
       });
-      
+
       // 共通プレフィックスがあれば部分補完
       const commonPrefix = this.findCommonPrefix(suggestions);
       const lastWord = currentLine.trim().split(' ').pop() || '';
       if (commonPrefix && commonPrefix.length > lastWord.length) {
         this.replaceCurrentLine(this.getFullCompletion(currentLine, commonPrefix));
       }
-      
+
       // プロンプトを再表示
       console.log(); // 空行
       this.showPrompt();
@@ -146,7 +146,6 @@ export class EnhancedCli {
     this.replaceCurrentLine(nextCommand);
   }
 
-
   /**
    * 単一候補の完全補完文字列を生成する
    * @param currentLine - 現在の入力行
@@ -155,19 +154,19 @@ export class EnhancedCli {
    */
   private getFullCompletion(currentLine: string, suggestion: string): string {
     const trimmed = currentLine.trim();
-    
+
     // 末尾にスペースがある場合（引数補完）
     if (currentLine.endsWith(' ')) {
       return trimmed + ' ' + suggestion;
     }
-    
+
     // コマンドまたは引数の部分補完
     const parts = trimmed.split(' ');
     const lastPart = parts[parts.length - 1];
-    
+
     // 最後の部分を補完候補で置き換え
     parts[parts.length - 1] = suggestion;
-    
+
     return parts.join(' ');
   }
 
