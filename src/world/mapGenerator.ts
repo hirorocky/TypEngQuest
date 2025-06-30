@@ -11,6 +11,12 @@ export interface MapGeneratorConfig {
 }
 
 export class MapGenerator {
+  private randomFunction: () => number;
+
+  constructor(randomFunction: () => number = Math.random) {
+    this.randomFunction = randomFunction;
+  }
+
   // プログラミング関連のディレクトリ名
   private readonly directoryNames = [
     'src',
@@ -147,7 +153,7 @@ export class MapGenerator {
     }
 
     // ディレクトリを生成
-    const numDirectories = Math.floor(Math.random() * (config.maxDirectoriesPerLevel + 1));
+    const numDirectories = Math.floor(this.randomFunction() * (config.maxDirectoriesPerLevel + 1));
     const usedDirNames = new Set<string>();
 
     for (let i = 0; i < numDirectories && currentDepth < config.maxDepth; i++) {
@@ -160,7 +166,7 @@ export class MapGenerator {
     }
 
     // ファイルを生成
-    const numFiles = Math.floor(Math.random() * (config.maxFilesPerDirectory + 1));
+    const numFiles = Math.floor(this.randomFunction() * (config.maxFilesPerDirectory + 1));
     const usedFileNames = new Set<string>();
 
     for (let i = 0; i < numFiles; i++) {
@@ -178,7 +184,7 @@ export class MapGenerator {
     const maxAttempts = 100;
 
     while (attempts < maxAttempts) {
-      const name = this.directoryNames[Math.floor(Math.random() * this.directoryNames.length)];
+      const name = this.directoryNames[Math.floor(this.randomFunction() * this.directoryNames.length)];
       if (!usedNames.has(name)) {
         usedNames.add(name);
         return name;
@@ -200,7 +206,7 @@ export class MapGenerator {
    * 重複しないファイル名を取得
    */
   private getUniqueFileName(usedNames: Set<string>, config: MapGeneratorConfig): string {
-    const isHidden = Math.random() < (config.hiddenFileRatio || 0);
+    const isHidden = this.randomFunction() < (config.hiddenFileRatio || 0);
     let attempts = 0;
     const maxAttempts = 100;
 
@@ -209,11 +215,11 @@ export class MapGenerator {
 
       if (isHidden) {
         // 隠しファイルを生成
-        fileName = this.hiddenFileNames[Math.floor(Math.random() * this.hiddenFileNames.length)];
+        fileName = this.hiddenFileNames[Math.floor(this.randomFunction() * this.hiddenFileNames.length)];
       } else {
         // 通常ファイルを生成
-        const baseName = this.fileNames[Math.floor(Math.random() * this.fileNames.length)];
-        const extension = config.fileTypes[Math.floor(Math.random() * config.fileTypes.length)];
+        const baseName = this.fileNames[Math.floor(this.randomFunction() * this.fileNames.length)];
+        const extension = config.fileTypes[Math.floor(this.randomFunction() * config.fileTypes.length)];
         fileName = `${baseName}${extension}`;
       }
 
@@ -226,7 +232,7 @@ export class MapGenerator {
 
     // フォールバック: 番号付きファイル名
     let counter = 1;
-    const extension = config.fileTypes[Math.floor(Math.random() * config.fileTypes.length)];
+    const extension = config.fileTypes[Math.floor(this.randomFunction() * config.fileTypes.length)];
     while (usedNames.has(`file${counter}${extension}`)) {
       counter++;
     }

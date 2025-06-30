@@ -29,6 +29,52 @@ describe('CommandProcessor', () => {
     player = game.getPlayer();
   });
 
+  describe('Case Sensitivity', () => {
+    test('should preserve case in file name arguments', async () => {
+      // 大文字を含むファイル名でfileコマンドを実行
+      await processor.process('file CHANGELOG.cpp');
+      
+      // エラーメッセージが小文字変換されていないことを確認
+      const output = mockConsoleLog.mock.calls.map(call => call[0]).join(' ');
+      expect(output).toContain('CHANGELOG.cpp'); // 大文字が保持されている
+      expect(output).not.toContain('changelog.cpp'); // 小文字に変換されていない
+    });
+
+    test('should preserve case in file name arguments for cat command', async () => {
+      // 大文字を含むファイル名でcatコマンドを実行
+      await processor.process('cat README.MD');
+      
+      // エラーメッセージが小文字変換されていないことを確認
+      const output = mockConsoleLog.mock.calls.map(call => call[0]).join(' ');
+      expect(output).toContain('README.MD'); // 大文字が保持されている
+      expect(output).not.toContain('readme.md'); // 小文字に変換されていない
+    });
+
+    test('should preserve case in directory name arguments for cd command', async () => {
+      // 大文字を含むディレクトリ名でcdコマンドを実行
+      await processor.process('cd MyProject');
+      
+      // エラーメッセージが小文字変換されていないことを確認
+      const output = mockConsoleLog.mock.calls.map(call => call[0]).join(' ');
+      expect(output).toContain('MyProject'); // 大文字が保持されている
+      expect(output).not.toContain('myproject'); // 小文字に変換されていない
+    });
+
+    test('should still handle commands case-insensitively', async () => {
+      // コマンド自体は大文字小文字を区別しない
+      await processor.process('FILE test.txt');
+      await processor.process('Cat test.txt');
+      await processor.process('CD src');
+      
+      // どのコマンドもエラーなく実行される（コマンド名の大文字小文字は無視される）
+      const errorMessages = mockConsoleLog.mock.calls
+        .map(call => call[0])
+        .filter(msg => msg.includes('Unknown command'));
+      
+      expect(errorMessages).toHaveLength(0);
+    });
+  });
+
   describe('Command Processing', () => {
     test('should handle empty command gracefully', async () => {
       await processor.process('');
@@ -197,7 +243,7 @@ describe('CommandProcessor', () => {
   describe('Game Control Commands', () => {
     test('should handle start command', async () => {
       await processor.process('start');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Starting adventure'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Starting TypEngQuest Adventure'));
     });
 
     test('should handle quit command', async () => {

@@ -1,6 +1,12 @@
 import chalk from 'chalk';
 import type { Game } from '../core/game';
 import { SaveCommands } from './saveCommands';
+import { NavigationCommands } from './navigation';
+import { FileInvestigationCommands } from './fileInvestigation';
+import { Map } from '../world/map';
+import { World } from '../world/world';
+import { BattleCommands } from '../battle/battleCommands';
+import { InteractionCommands } from './interaction';
 
 /**
  * コマンドプロセッサークラス - ユーザー入力コマンドを解析・実行する
@@ -8,6 +14,8 @@ import { SaveCommands } from './saveCommands';
 export class CommandProcessor {
   private game: Game;
   private saveCommands: SaveCommands;
+  private navigationCommands: NavigationCommands;
+  private fileInvestigationCommands: FileInvestigationCommands;
 
   /**
    * CommandProcessorインスタンスを初期化する
@@ -16,6 +24,11 @@ export class CommandProcessor {
   constructor(game: Game) {
     this.game = game;
     this.saveCommands = new SaveCommands(game.getSaveManager());
+    this.navigationCommands = new NavigationCommands(game.getMap());
+    this.fileInvestigationCommands = new FileInvestigationCommands(
+      game.getMap(),
+      game.getElementManager()
+    );
   }
 
   /**
@@ -25,8 +38,9 @@ export class CommandProcessor {
   async process(command: string): Promise<void> {
     if (!command) return;
 
-    const [mainCommand, ...args] = command.toLowerCase().split(' ');
-    await this.executeCommand(mainCommand, args, command);
+    // コマンドを分割してからメインコマンドのみ小文字化（引数の大文字小文字は保持）
+    const [mainCommand, ...args] = command.split(' ');
+    await this.executeCommand(mainCommand.toLowerCase(), args, command);
   }
 
   /**
@@ -49,6 +63,15 @@ export class CommandProcessor {
       unequip: () => this.unequipWord(args),
       validate: () => this.validateEquipment(),
       start: () => this.startGame(),
+      world: () => this.showWorldInfo(),
+      newworld: () => this.startNewWorld(args),
+      cd: () => this.changeDirectory(args),
+      ls: () => this.listDirectory(args),
+      pwd: () => this.showCurrentPath(),
+      file: () => this.investigateFile(args),
+      cat: () => this.readFile(args),
+      head: () => this.previewFile(args),
+      interact: () => this.interactWithElement(args),
       battle: () => this.startBattle(args),
       attack: () => this.performAttack(args),
       flee: () => this.fleeBattle(),
@@ -84,7 +107,20 @@ export class CommandProcessor {
     console.log(chalk.cyan('🎮 Game Commands:'));
     console.log('  start              - Begin adventure');
     console.log('  status             - Show player stats');
+    console.log('  world              - Show world information');
+    console.log('  newworld [level]   - Start new world');
     console.log('  quit / exit        - Exit game');
+
+    console.log(chalk.cyan('\n🗺️  Navigation Commands:'));
+    console.log('  cd <path>          - Change directory');
+    console.log('  ls [options]       - List directory contents');
+    console.log('  pwd                - Show current path');
+
+    console.log(chalk.cyan('\n🔍 File Investigation Commands:'));
+    console.log('  file <filename>    - Investigate file type and hints');
+    console.log('  cat <filename>     - Read file and trigger elements');
+    console.log('  head <filename>    - Preview file contents');
+    console.log('  interact <filename> - Interact with map elements');
 
     console.log(chalk.cyan('\n⚔️  Equipment Commands:'));
     console.log('  inventory          - Show available words');
@@ -111,6 +147,11 @@ export class CommandProcessor {
     console.log('  autosave [on/off]  - Toggle auto-save');
 
     console.log(chalk.gray('\n💡 Example: equip 1 the'));
+    console.log(chalk.gray('         cd src/components'));
+    console.log(chalk.gray('         ls -la'));
+    console.log(chalk.gray('         file app.js'));
+    console.log(chalk.gray('         cat app.js'));
+    console.log(chalk.gray('         interact app.js'));
     console.log(chalk.gray('         save 1 "Before boss"'));
     console.log(chalk.gray('         load 1\n'));
   }
@@ -141,6 +182,47 @@ export class CommandProcessor {
     console.log(
       `  Critical: ${stats.baseCritical} + ${stats.equipmentCritical} = ${totalStats.critical}\n`
     );
+  }
+
+  private showWorldInfo(): void {
+    const world = this.game.getWorld();
+    const map = this.game.getMap();
+    const player = this.game.getPlayer();
+
+    console.log(chalk.yellow(`\n🌍 ${world.getName()} - Level ${world.getLevel()}`));
+    console.log(chalk.gray('─'.repeat(40)));
+
+    console.log(chalk.cyan(`📍 Current Location: ${map.getCurrentPath()}`));
+
+    // ワールド統計
+    const allLocations = map.getAllLocations();
+    const exploredLocations = allLocations.filter(loc => loc.isExplored());
+    const maxDepth = map.getMaxDepth();
+
+    console.log(
+      chalk.green(`🗺️  Exploration: ${exploredLocations.length}/${allLocations.length} locations`)
+    );
+    console.log(chalk.blue(`📊 World Depth: ${maxDepth} levels`));
+
+    // ボス状態
+    if (world.isCleared()) {
+      console.log(chalk.green('👑 Boss Status: DEFEATED ✅'));
+      console.log(
+        chalk.yellow('🎉 World Cleared! You can start a new world or continue exploring.')
+      );
+    } else {
+      console.log(chalk.red('👹 Boss Status: ALIVE'));
+      console.log(chalk.gray('   Find and defeat the boss to clear this world!'));
+    }
+
+    // プレイヤーの鍵状態
+    if (player.hasKey()) {
+      console.log(chalk.magenta('🗝️  You have a key - find the boss chamber!'));
+    } else {
+      console.log(chalk.gray('🗝️  No key - explore and battle to find one'));
+    }
+
+    console.log();
   }
 
   private showInventory(): void {
@@ -282,9 +364,94 @@ export class CommandProcessor {
   }
 
   private startGame(): void {
-    console.log(chalk.green('🎮 Starting adventure...'));
-    console.log(chalk.gray('(Game mechanics coming soon!)'));
-    // TODO: Implement actual game start logic
+    console.log(chalk.green('🎮 Starting TypEngQuest Adventure!'));
+    console.log(chalk.gray('─'.repeat(50)));
+
+    const player = this.game.getPlayer();
+    const world = this.game.getWorld();
+    const map = this.game.getMap();
+
+    // ゲーム状態を開始モードに設定
+    this.game.setScreen('game');
+
+    // 現在のゲーム状況を表示
+    console.log(chalk.yellow(`🌟 Welcome to ${world.getName()} (Level ${world.getLevel()})`));
+    console.log(chalk.cyan(`📍 Current location: ${map.getCurrentPath()}`));
+    console.log(chalk.green(`⚔️  ${player.getName()} - Level ${player.getStats().level}`));
+    console.log(
+      chalk.blue(`💚 HP: ${player.getStats().currentHealth}/${player.getStats().maxHealth}`)
+    );
+    console.log(
+      chalk.magenta(`💙 MP: ${player.getStats().currentMana}/${player.getStats().maxMana}`)
+    );
+
+    console.log(chalk.yellow('\n🎯 Objective:'));
+    console.log('  • Explore the file system using cd, ls, pwd');
+    console.log('  • Investigate files with file, cat, head commands');
+    console.log('  • Interact with discovered elements using interact');
+    console.log('  • Battle monsters and collect treasures');
+    console.log('  • Find and defeat the boss to clear the world');
+
+    console.log(chalk.gray('\n💡 Start by typing "ls" to see what\'s around you'));
+    console.log(chalk.gray('   Or use "help" to see all available commands\n'));
+  }
+
+  private startNewWorld(args: string[]): void {
+    const currentWorld = this.game.getWorld();
+
+    // 現在のワールドがクリアされているか確認
+    if (!currentWorld.isCleared()) {
+      console.log(chalk.red('❌ Cannot start new world - current world boss not defeated!'));
+      console.log(chalk.gray('   Complete the current world first.'));
+      return;
+    }
+
+    // 新しいワールドレベルを決定
+    let newLevel = currentWorld.getLevel() + 1;
+    if (args.length > 0) {
+      const inputLevel = parseInt(args[0]);
+      if (!isNaN(inputLevel) && inputLevel >= 1) {
+        newLevel = inputLevel;
+      }
+    }
+
+    // プレイヤーにレベル調整の選択肢を提供
+    console.log(chalk.yellow(`🌟 Starting new world - Level ${newLevel}`));
+    console.log(chalk.cyan('Choose your approach:'));
+    console.log('  • "maintain" - Keep current level');
+    console.log('  • "adjust" - Adjust level to world difficulty');
+    console.log('  • "decline" - Start at lower level for extra challenge');
+    console.log(chalk.gray('Type your choice after this command...'));
+
+    // 新しいワールドとマップを作成
+    const newMap = new Map();
+    const newWorldName = `Development World ${newLevel}`;
+    const newWorld = new World(newWorldName, newLevel, newMap);
+
+    // プレイヤーを新しいワールド用にリセット
+    const player = this.game.getPlayer();
+    player.resetForNewWorld();
+
+    // ゲーム状態を更新
+    const elementManager = this.game.getElementManager();
+    const battleCommands = new BattleCommands(player, newMap, newWorld, elementManager);
+    const interactionCommands = new InteractionCommands(newMap, elementManager, player, newWorld);
+
+    this.game.setState({
+      world: newWorld,
+      map: newMap,
+      battleCommands,
+      interactionCommands,
+    });
+
+    // 新しいコマンドインスタンスを作成
+    this.navigationCommands = new NavigationCommands(newMap);
+    this.fileInvestigationCommands = new FileInvestigationCommands(newMap, elementManager);
+
+    console.log(chalk.green(`✅ New world created: ${newWorldName}`));
+    console.log(chalk.cyan(`📍 Starting location: ${newMap.getCurrentPath()}`));
+    console.log(chalk.yellow('🎯 New adventure begins! Good luck, adventurer!'));
+    console.log(chalk.gray('Type "world" to see world information.\n'));
   }
 
   // Battle Commands
@@ -467,9 +634,9 @@ export class CommandProcessor {
     // ロードが成功した場合、ゲーム状態を復元する
     if (result.success && result.loadResult?.saveData) {
       console.log(chalk.cyan('\n🔄 Restoring game state...'));
-      
+
       const restoreSuccess = await this.game.restoreGameState(result.loadResult.saveData);
-      
+
       if (restoreSuccess) {
         console.log(chalk.green('🎮 Ready to continue your adventure!'));
         console.log(chalk.gray('Type "status" to check your current state.'));
@@ -505,6 +672,109 @@ export class CommandProcessor {
     } else {
       console.log(chalk.red('Usage: autosave [on/off]'));
       console.log(chalk.gray('Example: autosave on'));
+    }
+  }
+
+  // Navigation Commands
+  private changeDirectory(args: string[]): void {
+    const path = args.length > 0 ? args[0] : undefined;
+    const result = this.navigationCommands.cd(path);
+
+    if (result.success) {
+      if (result.message) {
+        console.log(chalk.green(`📁 ${result.message}`));
+      }
+    } else {
+      console.log(chalk.red(result.message));
+    }
+  }
+
+  private listDirectory(args: string[]): void {
+    const options = args.join(' ');
+    const result = this.navigationCommands.ls(options);
+
+    if (result.success) {
+      if (result.message) {
+        console.log(result.message);
+      }
+    } else {
+      console.log(chalk.red(result.message));
+    }
+  }
+
+  private showCurrentPath(): void {
+    const result = this.navigationCommands.pwd();
+    console.log(chalk.cyan(result.message));
+  }
+
+  // File Investigation Commands
+  private investigateFile(args: string[]): void {
+    if (args.length === 0) {
+      console.log(chalk.red('Usage: file <filename>'));
+      console.log(chalk.gray('Example: file app.js'));
+      return;
+    }
+
+    const filename = args[0];
+    const result = this.fileInvestigationCommands.file(filename);
+
+    if (result.success) {
+      console.log(result.output);
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private readFile(args: string[]): void {
+    if (args.length === 0) {
+      console.log(chalk.red('Usage: cat <filename>'));
+      console.log(chalk.gray('Example: cat app.js'));
+      return;
+    }
+
+    const filename = args[0];
+    const result = this.fileInvestigationCommands.cat(filename);
+
+    if (result.success) {
+      console.log(result.output);
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  private previewFile(args: string[]): void {
+    if (args.length === 0) {
+      console.log(chalk.red('Usage: head <filename>'));
+      console.log(chalk.gray('Example: head app.js'));
+      return;
+    }
+
+    const filename = args[0];
+    const result = this.fileInvestigationCommands.head(filename);
+
+    if (result.success) {
+      console.log(result.output);
+    } else {
+      console.log(chalk.red(result.output));
+    }
+  }
+
+  // Element Interaction Commands
+  private interactWithElement(args: string[]): void {
+    if (args.length === 0) {
+      console.log(chalk.red('Usage: interact <filename>'));
+      console.log(chalk.gray('Example: interact app.js'));
+      return;
+    }
+
+    const filename = args[0];
+    const interactionCommands = this.game.getInteractionCommands();
+    const result = interactionCommands.interact(filename);
+
+    if (result.success) {
+      console.log(result.output);
+    } else {
+      console.log(chalk.red(result.output));
     }
   }
 }

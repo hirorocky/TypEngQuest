@@ -1,4 +1,5 @@
 import { Location, LocationType } from './location';
+import { MapGenerator } from './mapGenerator';
 
 /**
  * ナビゲーション結果の型定義
@@ -36,12 +37,32 @@ export interface MapStatistics {
 export class Map {
   private locations: globalThis.Map<string, Location[]> = new globalThis.Map();
   private currentPath = '/';
+  private randomFunction: () => number;
 
-  constructor() {
+  constructor(randomFunction: () => number = Math.random) {
+    this.randomFunction = randomFunction;
     // Initialize with root directory
     const root = new Location('', '', LocationType.DIRECTORY);
     this.addLocation(root);
     this.locations.set('/', []);
+    
+    // Generate file system content automatically
+    this.generateFileSystem();
+  }
+
+  /**
+   * ファイルシステム構造を自動生成する
+   */
+  private generateFileSystem(): void {
+    const generator = new MapGenerator(this.randomFunction);
+    // より多様性のある設定でファイルシステムを生成
+    generator.generateFileSystem(this, {
+      maxDepth: 3,
+      maxFilesPerDirectory: 4,
+      maxDirectoriesPerLevel: 3,
+      fileTypes: ['.ts', '.js', '.json', '.md', '.txt', '.py', '.java', '.cpp', '.html', '.css'],
+      hiddenFileRatio: 0.2,
+    });
   }
 
   // Location Management
