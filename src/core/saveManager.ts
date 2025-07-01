@@ -19,6 +19,17 @@ import { BattleCommands } from '../battle/battleCommands';
 // import { RandomEventManager } from '../events/randomEventManager'; // 将来の実装で使用予定
 
 /**
+ * ゲームコンテキスト（セーブ・ロード処理で使用するゲーム状態）
+ */
+export interface GameContext {
+  player: Player;
+  world: World;
+  map: Map;
+  elementManager: ElementManager;
+  battleCommands: BattleCommands;
+}
+
+/**
  * セーブ・ロードシステムの管理クラス
  * ゲーム状態の永続化と復元を担当
  */
@@ -51,24 +62,18 @@ export class SaveManager {
   /**
    * ゲームをセーブする
    * @param slot - セーブスロット番号（1-9: 手動セーブ, 10: 自動セーブ）
-   * @param player - プレイヤーオブジェクト
-   * @param world - ワールドオブジェクト
-   * @param map - マップオブジェクト
-   * @param elementManager - 要素マネージャー
-   * @param battleCommands - 戦闘コマンド
+   * @param gameContext - ゲームコンテキスト（プレイヤー、ワールド、マップ等）
    * @param description - セーブの説明（オプション）
    * @returns セーブ結果
    */
   async saveGame(
     slot: number,
-    player: Player,
-    world: World,
-    map: Map,
-    elementManager: ElementManager,
-    battleCommands: BattleCommands,
+    gameContext: GameContext,
     description?: string
   ): Promise<SaveResult> {
     try {
+      const { player, world, map, elementManager, battleCommands } = gameContext;
+
       // 入力検証
       if (!this.isValidSlot(slot)) {
         return {
@@ -288,20 +293,10 @@ export class SaveManager {
 
   /**
    * 自動セーブを実行する
-   * @param player - プレイヤーオブジェクト
-   * @param world - ワールドオブジェクト
-   * @param map - マップオブジェクト
-   * @param elementManager - 要素マネージャー
-   * @param battleCommands - 戦闘コマンド
+   * @param gameContext - ゲームコンテキスト（プレイヤー、ワールド、マップ等）
    * @returns セーブ結果
    */
-  async autoSave(
-    player: Player,
-    world: World,
-    map: Map,
-    elementManager: ElementManager,
-    battleCommands: BattleCommands
-  ): Promise<SaveResult> {
+  async autoSave(gameContext: GameContext): Promise<SaveResult> {
     if (!this.autoSaveEnabled) {
       return {
         success: false,
@@ -309,7 +304,7 @@ export class SaveManager {
       };
     }
 
-    return this.saveGame(10, player, world, map, elementManager, battleCommands, 'Auto-save');
+    return this.saveGame(10, gameContext, 'Auto-save');
   }
 
   /**

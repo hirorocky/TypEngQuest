@@ -21,6 +21,8 @@ describe('SaveManagerクラス', () => {
   let battleCommands: BattleCommands;
   const mockSavesDir = './test-saves';
 
+  let gameContext: { player: Player; world: World; map: Map; elementManager: ElementManager; battleCommands: BattleCommands };
+
   beforeEach(() => {
     // テスト環境のセットアップ
     player = new Player('TestPlayer');
@@ -28,6 +30,7 @@ describe('SaveManagerクラス', () => {
     world = new World('TestWorld', 1, map);
     elementManager = new ElementManager();
     battleCommands = new BattleCommands(player, map, world, elementManager);
+    gameContext = { player, world, map, elementManager, battleCommands };
 
     saveManager = new SaveManager(mockSavesDir);
 
@@ -69,7 +72,7 @@ describe('SaveManagerクラス', () => {
       const mockWriteFileSync = fs.writeFileSync as jest.MockedFunction<typeof fs.writeFileSync>;
       mockWriteFileSync.mockImplementation(() => {});
 
-      const result = await saveManager.saveGame(1, player, world, map, elementManager, battleCommands);
+      const result = await saveManager.saveGame(1, gameContext);
 
       expect(result.success).toBe(true);
       expect(result.slot).toBe(1);
@@ -85,7 +88,7 @@ describe('SaveManagerクラス', () => {
         savedData = data as string;
       });
 
-      await saveManager.saveGame(1, player, world, map, elementManager, battleCommands);
+      await saveManager.saveGame(1, gameContext);
 
       const saveData: SaveData = JSON.parse(savedData);
 
@@ -100,11 +103,11 @@ describe('SaveManagerクラス', () => {
     });
 
     test('セーブスロット番号の検証', async () => {
-      const result1 = await saveManager.saveGame(0, player, world, map, elementManager, battleCommands);
+      const result1 = await saveManager.saveGame(0, gameContext);
       expect(result1.success).toBe(false);
       expect(result1.message).toContain('Invalid slot');
 
-      const result2 = await saveManager.saveGame(11, player, world, map, elementManager, battleCommands);
+      const result2 = await saveManager.saveGame(11, gameContext);
       expect(result2.success).toBe(false);
       expect(result2.message).toContain('Invalid slot');
     });
@@ -115,7 +118,7 @@ describe('SaveManagerクラス', () => {
         throw new Error('Permission denied');
       });
 
-      const result = await saveManager.saveGame(1, player, world, map, elementManager, battleCommands);
+      const result = await saveManager.saveGame(1, gameContext);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Failed to save');
@@ -129,7 +132,7 @@ describe('SaveManagerクラス', () => {
         filePath = path as string;
       });
 
-      await saveManager.saveGame(3, player, world, map, elementManager, battleCommands);
+      await saveManager.saveGame(3, gameContext);
 
       expect(filePath).toContain('save-3.json');
     });
@@ -448,7 +451,7 @@ describe('SaveManagerクラス', () => {
       const mockWriteFileSync = fs.writeFileSync as jest.MockedFunction<typeof fs.writeFileSync>;
       mockWriteFileSync.mockImplementation(() => {});
 
-      const result = await saveManager.autoSave(player, world, map, elementManager, battleCommands);
+      const result = await saveManager.autoSave(gameContext);
 
       expect(result.success).toBe(true);
       expect(result.slot).toBe(10); // 自動セーブ専用スロット
@@ -468,7 +471,8 @@ describe('SaveManagerクラス', () => {
 
   describe('エラーハンドリング', () => {
     test('無効な引数での処理', async () => {
-      const result = await saveManager.saveGame(1, null as any, world, map, elementManager, battleCommands);
+      const invalidGameContext = { player: null as any, world, map, elementManager, battleCommands };
+      const result = await saveManager.saveGame(1, invalidGameContext);
       expect(result.success).toBe(false);
       expect(result.message).toContain('Invalid');
     });

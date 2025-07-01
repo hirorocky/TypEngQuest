@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { Game } from '../core/game';
-import { SaveCommands } from './saveCommands';
+import { SaveCommands, type GameContext } from './saveCommands';
 import { NavigationCommands } from './navigation';
 import { FileInvestigationCommands } from './fileInvestigation';
 import { Map } from '../world/map';
@@ -615,15 +615,15 @@ export class CommandProcessor {
   // Save Commands
   private async saveGame(args: string[]): Promise<void> {
     const gameState = this.game.getState();
-    const result = await this.saveCommands.saveGame(
-      args,
-      gameState.player,
-      gameState.world,
-      gameState.map,
-      gameState.elementManager,
-      gameState.battleCommands
-    );
+    const gameContext: GameContext = {
+      player: gameState.player,
+      world: gameState.world,
+      map: gameState.map,
+      elementManager: gameState.elementManager,
+      battleCommands: gameState.battleCommands,
+    };
 
+    const result = await this.saveCommands.saveGame(args, gameContext);
     console.log(result.output);
   }
 

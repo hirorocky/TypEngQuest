@@ -53,16 +53,11 @@ export class BattleCommands {
   private battleState: BattleState;
 
   constructor(
-    private player: Player,
-    private map: Map,
-    private world: World,
-    private elementManager: ElementManager
+    private _player: Player,
+    private _map: Map,
+    private _world: World,
+    private _elementManager: ElementManager
   ) {
-    // プライベートプロパティは将来の機能拡張で使用予定
-    void this.player;
-    void this.map;
-    void this.world;
-    void this.elementManager;
     this.typingChallenge = new TypingChallenge();
     this.battleState = {
       isActive: false,
@@ -87,7 +82,7 @@ export class BattleCommands {
     }
 
     const location =
-      this.map.findLocation('/' + filename) || this.map.findLocation('/src/' + filename);
+      this._map.findLocation('/' + filename) || this._map.findLocation('/src/' + filename);
     if (!location) {
       return {
         success: false,
@@ -230,14 +225,14 @@ export class BattleCommands {
 
     const enemyName = this.battleState.enemy.data.name as string;
     const enemyAttack = this.battleState.enemy.data.attack as number;
-    const playerStats = this.player.getStats();
+    const playerStats = this._player.getStats();
     const playerDefense = playerStats.baseDefense + playerStats.equipmentDefense;
 
     const damage = Math.max(1, enemyAttack - playerDefense);
-    this.player.takeDamage(damage);
+    this._player.takeDamage(damage);
 
     let output = `${enemyName} attacks you for ${damage} damage!\n`;
-    output += `Your health: ${this.player.getStats().currentHealth}/${this.player.getStats().maxHealth}`;
+    output += `Your health: ${this._player.getStats().currentHealth}/${this._player.getStats().maxHealth}`;
 
     return {
       success: true,
@@ -255,7 +250,7 @@ export class BattleCommands {
     }
 
     // プレイヤー敗北チェック
-    if (!this.player.isAlive()) {
+    if (!this._player.isAlive()) {
       this.endBattle();
       return {
         status: 'defeat',
@@ -272,7 +267,7 @@ export class BattleCommands {
       this.battleState.enemy.data.defeated = true;
 
       // 経験値獲得
-      const levelUp = this.player.addExperience(experience);
+      const levelUp = this._player.addExperience(experience);
 
       this.endBattle();
 
@@ -366,7 +361,7 @@ export class BattleCommands {
    * @returns 計算されたダメージ
    */
   calculateDamage(typingResult: TypingResult): number {
-    const playerStats = this.player.getStats();
+    const playerStats = this._player.getStats();
     const baseAttack = playerStats.baseAttack + playerStats.equipmentAttack;
 
     const typingMultiplier = this.typingChallenge.calculateDamageMultiplier(typingResult);
@@ -390,7 +385,7 @@ export class BattleCommands {
    * @returns チャレンジ難易度
    */
   private getDifficultyForCurrentWorld(): ChallengeDifficulty {
-    const worldLevel = this.world.getLevel();
+    const worldLevel = this._world.getLevel();
 
     if (worldLevel >= 5) return ChallengeDifficulty.EXPERT;
     if (worldLevel >= 4) return ChallengeDifficulty.PROGRAMMING;

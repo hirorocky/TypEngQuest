@@ -2,11 +2,11 @@
  * タイピングチャレンジの難易度レベル
  */
 export enum ChallengeDifficulty {
-  BASIC = 1, // 基本単語（3-6文字）
-  INTERMEDIATE = 2, // 中級単語（6-10文字）
-  ADVANCED = 3, // 上級単語（10-15文字）
-  PROGRAMMING = 4, // プログラミング用語（関数名、クラス名等）
-  EXPERT = 5, // 専門用語・複雑な文章
+  BASIC = 1,
+  INTERMEDIATE = 2,
+  ADVANCED = 3,
+  PROGRAMMING = 4,
+  EXPERT = 5,
 }
 
 // 将来の拡張で使用予定のため、使用していない定数を明示的にエクスポート

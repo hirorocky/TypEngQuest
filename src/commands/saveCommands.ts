@@ -8,6 +8,17 @@ import { ElementManager } from '../world/elements';
 import { BattleCommands } from '../battle/battleCommands';
 
 /**
+ * ゲームコンテキスト（セーブ・ロード処理で使用するゲーム状態）
+ */
+export interface GameContext {
+  player: Player;
+  world: World;
+  map: Map;
+  elementManager: ElementManager;
+  battleCommands: BattleCommands;
+}
+
+/**
  * セーブ・ロードコマンドの実行結果
  */
 export interface SaveCommandResult {
@@ -29,21 +40,10 @@ export class SaveCommands {
   /**
    * saveコマンド - ゲームをセーブする
    * @param args - コマンド引数 [slot, description?]
-   * @param player - プレイヤーオブジェクト
-   * @param world - ワールドオブジェクト
-   * @param map - マップオブジェクト
-   * @param elementManager - 要素マネージャー
-   * @param battleCommands - 戦闘コマンド
+   * @param gameContext - ゲームコンテキスト（プレイヤー、ワールド、マップ等）
    * @returns コマンド実行結果
    */
-  async saveGame(
-    args: string[],
-    player: Player,
-    world: World,
-    map: Map,
-    elementManager: ElementManager,
-    battleCommands: BattleCommands
-  ): Promise<SaveCommandResult> {
+  async saveGame(args: string[], gameContext: GameContext): Promise<SaveCommandResult> {
     if (args.length === 0) {
       return {
         success: false,
@@ -68,15 +68,8 @@ ${chalk.gray('Slot 10:')} Auto-save (reserved)`,
     const description = args.slice(1).join(' ') || undefined;
 
     try {
-      const result = await this.saveManager.saveGame(
-        slot,
-        player,
-        world,
-        map,
-        elementManager,
-        battleCommands,
-        description
-      );
+      const { player, world } = gameContext;
+      const result = await this.saveManager.saveGame(slot, gameContext, description);
 
       if (result.success) {
         return {
@@ -106,6 +99,32 @@ ${chalk.gray('World:')} ${world.getName()} (Level ${world.getLevel()})${descript
    * @returns コマンド実行結果とロードデータ
    */
   async loadGame(args: string[]): Promise<SaveCommandResult & { loadResult?: LoadResult }> {
+    const validationResult = this.validateLoadArgs(args);
+    if (!validationResult.success) {
+      return validationResult;
+    }
+
+    const slot = validationResult.slot;
+
+    try {
+      const result = await this.saveManager.loadGame(slot);
+      return this.processLoadResult(result, slot);
+    } catch (error) {
+      return {
+        success: false,
+        output: `${chalk.red('❌ Load error:')} ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * ロード引数の検証
+   * @param args - コマンド引数
+   * @returns 検証結果
+   */
+  private validateLoadArgs(args: string[]): 
+    | { success: true; slot: number } 
+    | SaveCommandResult {
     if (args.length === 0) {
       return {
         success: false,
@@ -125,34 +144,38 @@ ${chalk.gray('Slots:')} 1-10 (10 is auto-save)`,
       };
     }
 
-    try {
-      const result = await this.saveManager.loadGame(slot);
+    return { success: true, slot };
+  }
 
-      if (result.success && result.saveData) {
-        const saveData = result.saveData;
-        const playTimeHours = Math.floor(saveData.playTime / 3600);
-        const playTimeMinutes = Math.floor((saveData.playTime % 3600) / 60);
+  /**
+   * ロード結果の処理
+   * @param result - セーブマネージャーからのロード結果
+   * @param slot - スロット番号
+   * @returns 処理結果
+   */
+  private processLoadResult(
+    result: LoadResult,
+    slot: number
+  ): SaveCommandResult & { loadResult?: LoadResult } {
+    if (result.success && result.saveData) {
+      const saveData = result.saveData;
+      const playTimeHours = Math.floor(saveData.playTime / 3600);
+      const playTimeMinutes = Math.floor((saveData.playTime % 3600) / 60);
 
-        return {
-          success: true,
-          output: `${chalk.green('✅ Game loaded successfully!')}
+      return {
+        success: true,
+        output: `${chalk.green('✅ Game loaded successfully!')}
 ${chalk.gray('Slot:')} ${slot}${slot === 10 ? ' (Auto-save)' : ''}
 ${chalk.gray('Player:')} ${saveData.player.name} (Level ${saveData.player.stats.level})
 ${chalk.gray('World:')} ${saveData.world.name} (Level ${saveData.world.level})
 ${chalk.gray('Play Time:')} ${playTimeHours}h ${playTimeMinutes}m
 ${chalk.gray('Saved:')} ${new Date(saveData.timestamp).toLocaleString()}${saveData.metadata.saveDescription ? `\n${chalk.gray('Description:')} ${saveData.metadata.saveDescription}` : ''}`,
-          loadResult: result,
-        };
-      } else {
-        return {
-          success: false,
-          output: `${chalk.red('❌ Load failed:')} ${result.message}`,
-        };
-      }
-    } catch (error) {
+        loadResult: result,
+      };
+    } else {
       return {
         success: false,
-        output: `${chalk.red('❌ Load error:')} ${error instanceof Error ? error.message : 'Unknown error'}`,
+        output: `${chalk.red('❌ Load failed:')} ${result.message}`,
       };
     }
   }
@@ -272,21 +295,11 @@ ${chalk.gray('Slot:')} ${slot}`,
 
   /**
    * 自動セーブを実行する
-   * @param player - プレイヤーオブジェクト
-   * @param world - ワールドオブジェクト
-   * @param map - マップオブジェクト
-   * @param elementManager - 要素マネージャー
-   * @param battleCommands - 戦闘コマンド
+   * @param gameContext - ゲームコンテキスト（プレイヤー、ワールド、マップ等）
    * @returns 自動セーブ結果
    */
-  async performAutoSave(
-    player: Player,
-    world: World,
-    map: Map,
-    elementManager: ElementManager,
-    battleCommands: BattleCommands
-  ): Promise<SaveResult> {
-    return this.saveManager.autoSave(player, world, map, elementManager, battleCommands);
+  async performAutoSave(gameContext: GameContext): Promise<SaveResult> {
+    return this.saveManager.autoSave(gameContext);
   }
 
   /**

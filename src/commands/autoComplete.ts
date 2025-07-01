@@ -105,29 +105,24 @@ export class AutoComplete {
       return this.completeFiles(args[0] || '');
     }
 
-    // 特定コマンドの処理
-    switch (lowerCommand) {
-      case 'cd':
-        return this.completeDirectories(args[0] || '');
-      case 'ls':
-        return this.completeFilesAndDirectories(args[0] || '');
-      case 'equip':
-        return this.completeEquipCommand(args);
-      case 'unequip':
-        return this.completeSlotNumbers(args, 5);
-      case 'deletesave':
-        return this.completeSlotNumbers(args, 10);
-      case 'save':
-        return this.completeSaveCommand(args);
-      case 'load':
-        return this.completeLoadCommand(args);
-      case 'newworld':
-        return this.completeWorldLevel(args);
-      case 'autosave':
-        return this.completeAutoSaveOptions(args);
-      default:
-        return [];
-    }
+    return this.completeSpecificCommand(lowerCommand, args);
+  }
+
+  private completeSpecificCommand(command: string, args: string[]): string[] {
+    const commandHandlers = {
+      cd: () => this.completeDirectories(args[0] || ''),
+      ls: () => this.completeFilesAndDirectories(args[0] || ''),
+      equip: () => this.completeEquipCommand(args),
+      unequip: () => this.completeSlotNumbers(args, 5),
+      deletesave: () => this.completeSlotNumbers(args, 10),
+      save: () => this.completeSaveCommand(args),
+      load: () => this.completeLoadCommand(args),
+      newworld: () => this.completeWorldLevel(args),
+      autosave: () => this.completeAutoSaveOptions(args),
+    };
+
+    const handler = commandHandlers[command as keyof typeof commandHandlers];
+    return handler ? handler() : [];
   }
 
   /**
