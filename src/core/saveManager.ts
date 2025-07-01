@@ -16,7 +16,7 @@ import { World } from '../world/world';
 import { Map } from '../world/map';
 import { ElementManager } from '../world/elements';
 import { BattleCommands } from '../battle/battleCommands';
-import { RandomEventManager } from '../events/randomEventManager';
+// import { RandomEventManager } from '../events/randomEventManager'; // 将来の実装で使用予定
 
 /**
  * セーブ・ロードシステムの管理クラス
@@ -94,7 +94,7 @@ export class SaveManager {
         world: this.convertWorldData(world),
         gameState: this.convertGameState(battleCommands),
         mapLocations: this.convertMapData(map),
-        eventSystem: this.convertEventData(elementManager),
+        eventSystem: this.convertEventData(),
         metadata: {
           gameName: 'TypEngQuest',
           saveDescription: description,
@@ -218,7 +218,8 @@ export class SaveManager {
           if (slot >= 1 && slot <= this.maxSlots) {
             try {
               const filePath = path.join(this.savesDirectory, fileName);
-              const stats = fs.statSync(filePath);
+              // statsは将来のメタデータ取得で使用予定
+              // const stats = fs.statSync(filePath);
               const content = fs.readFileSync(filePath, 'utf8');
               const saveData: SaveData = JSON.parse(content);
 
@@ -432,10 +433,9 @@ export class SaveManager {
 
   /**
    * イベントシステムデータをセーブ用に変換する
-   * @param elementManager - 要素マネージャー
    * @returns セーブ用イベントデータ
    */
-  convertEventData(elementManager: ElementManager): SavedEventData {
+  convertEventData(): SavedEventData {
     // 実際の実装では、InteractionCommandsからRandomEventManagerにアクセスして
     // バフ・デバフ・イベント履歴を取得する必要がある
     // 現在はプレースホルダーデータを返す

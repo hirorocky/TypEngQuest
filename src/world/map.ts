@@ -1,5 +1,6 @@
 import { Location, LocationType } from './location';
 import { MapGenerator } from './mapGenerator';
+import { ElementManager } from './elements';
 
 /**
  * ナビゲーション結果の型定義
@@ -39,7 +40,11 @@ export class Map {
   private currentPath = '/';
   private randomFunction: () => number;
 
-  constructor(randomFunction: () => number = Math.random, worldLevel: number = 1) {
+  constructor(
+    randomFunction: () => number = Math.random,
+    worldLevel: number = 1,
+    autogenerate: boolean = true
+  ) {
     this.randomFunction = randomFunction;
     // Initialize with root directory
     const root = new Location('', '', LocationType.DIRECTORY);
@@ -47,7 +52,9 @@ export class Map {
     this.locations.set('/', []);
 
     // Generate file system content automatically
-    this.generateFileSystem(worldLevel);
+    if (autogenerate) {
+      this.generateFileSystem(worldLevel);
+    }
   }
 
   /**
@@ -56,6 +63,7 @@ export class Map {
    */
   private generateFileSystem(worldLevel: number = 1): void {
     const generator = new MapGenerator(this.randomFunction);
+    const elementManager = new ElementManager();
 
     // ワールドレベルに応じた深度設定
     const maxDepth = worldLevel === 1 ? 1 : Math.min(3 + Math.floor(worldLevel / 2), 6);
@@ -69,6 +77,9 @@ export class Map {
       fileTypes: ['.ts', '.js', '.json', '.md', '.txt', '.py', '.java', '.cpp', '.html', '.css'],
       hiddenFileRatio: 0.2,
     });
+
+    // ボスと鍵を必須配置
+    generator.placeBossAndKey(this, worldLevel, elementManager);
   }
 
   // Location Management

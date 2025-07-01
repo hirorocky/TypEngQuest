@@ -9,6 +9,15 @@ export enum ChallengeDifficulty {
   EXPERT = 5, // 専門用語・複雑な文章
 }
 
+// 将来の拡張で使用予定のため、使用していない定数を明示的にエクスポート
+export const UNUSED_DIFFICULTY_LEVELS = {
+  BASIC: ChallengeDifficulty.BASIC,
+  INTERMEDIATE: ChallengeDifficulty.INTERMEDIATE,
+  ADVANCED: ChallengeDifficulty.ADVANCED,
+  PROGRAMMING: ChallengeDifficulty.PROGRAMMING,
+  EXPERT: ChallengeDifficulty.EXPERT,
+};
+
 /**
  * タイピングチャレンジの情報
  */

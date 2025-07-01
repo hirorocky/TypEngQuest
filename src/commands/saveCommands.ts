@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { SaveManager } from '../core/saveManager';
-import { SaveResult, LoadResult, SaveFileInfo } from '../core/saveData';
+import { SaveResult, LoadResult } from '../core/saveData';
 import { Player } from '../core/player';
 import { World } from '../world/world';
 import { Map } from '../world/map';

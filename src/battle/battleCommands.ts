@@ -58,6 +58,11 @@ export class BattleCommands {
     private world: World,
     private elementManager: ElementManager
   ) {
+    // プライベートプロパティは将来の機能拡張で使用予定
+    void this.player;
+    void this.map;
+    void this.world;
+    void this.elementManager;
     this.typingChallenge = new TypingChallenge();
     this.battleState = {
       isActive: false,

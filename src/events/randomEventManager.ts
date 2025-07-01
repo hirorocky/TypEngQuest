@@ -179,6 +179,9 @@ export class RandomEventManager {
     private player: Player,
     private world: World
   ) {
+    // プライベートプロパティは将来の機能拡張で使用予定
+    void this.player;
+    void this.world;
     this.typingChallenge = new TypingChallenge();
   }
 

@@ -1,4 +1,5 @@
 import { Element, ElementType, Location, LocationType } from './location';
+import { Boss } from './boss';
 
 /**
  * 要素確率情報の型定義
@@ -40,8 +41,8 @@ export class ElementManager {
    */
   private initializeFileTypeProbabilities(): void {
     this.fileTypeProbabilities = {
-      '.exe': { monster: 80, treasure: 5, randomEvent: 10, savePoint: 5 },
-      '.bin': { monster: 75, treasure: 10, randomEvent: 10, savePoint: 5 },
+      '.exe': { monster: 80, treasure: 0, randomEvent: 10, savePoint: 5 },
+      '.bin': { monster: 75, treasure: 0, randomEvent: 10, savePoint: 5 },
       '.js': { monster: 60, treasure: 15, randomEvent: 20, savePoint: 5 },
       '.ts': { monster: 60, treasure: 15, randomEvent: 20, savePoint: 5 },
       '.py': { monster: 55, treasure: 20, randomEvent: 20, savePoint: 5 },
@@ -348,6 +349,107 @@ export class ElementManager {
     const manaRestore = Math.floor(Math.random() * 30) + 20; // 20-50
 
     return this.createSavePointElement(name, healthRestore, manaRestore);
+  }
+
+  /**
+   * 鍵要素を作成する
+   * @param name - 鍵の名前
+   * @param description - 鍵の説明
+   * @returns 鍵要素
+   */
+  createKeyElement(name: string, description: string): Element {
+    return {
+      type: ElementType.KEY,
+      data: {
+        name,
+        description,
+        collected: false,
+      },
+    };
+  }
+
+  /**
+   * ワールドレベルに応じた鍵を生成する
+   * @param worldLevel - ワールドレベル
+   * @returns 鍵要素
+   */
+  generateKeyForWorld(worldLevel: number): Element {
+    const keyNames = [
+      'Bronze Key',
+      'Silver Key',
+      'Gold Key',
+      'Platinum Key',
+      'Diamond Key',
+      'Master Key',
+    ];
+
+    const descriptions = [
+      'A simple bronze key that unlocks basic areas',
+      'A sturdy silver key for intermediate areas',
+      'A gleaming gold key for advanced areas',
+      'A rare platinum key for expert areas',
+      'A precious diamond key for master areas',
+      'The ultimate master key for legendary areas',
+    ];
+
+    // ワールドレベルに応じて鍵のタイプを決定（上限6）
+    const keyIndex = Math.min(worldLevel - 1, keyNames.length - 1);
+
+    return this.createKeyElement(keyNames[keyIndex], descriptions[keyIndex]);
+  }
+
+  /**
+   * ボス要素を作成する
+   * @param boss - ボスインスタンス
+   * @param description - ボスの説明
+   * @returns ボス要素
+   */
+  createBossElement(boss: Boss, description: string): Element {
+    return {
+      type: ElementType.BOSS,
+      data: {
+        boss,
+        description,
+        encountered: false,
+        defeated: false,
+      },
+    };
+  }
+
+  /**
+   * ワールドレベルに応じたボスを生成する
+   * @param worldLevel - ワールドレベル
+   * @returns ボス要素
+   */
+  generateBossForWorld(worldLevel: number): Element {
+    const bossNames = [
+      'Code Rookie',
+      'Script Warrior',
+      'Debug Master',
+      'Architecture Lord',
+      'System Overlord',
+      'The Compiler',
+    ];
+
+    const descriptions = [
+      'A beginner-level boss with basic coding challenges',
+      'An intermediate boss skilled in scripting techniques',
+      'A debugging expert with complex error patterns',
+      'A master of system architecture and design',
+      'An overlord commanding advanced system knowledge',
+      'The ultimate boss - master of all compilation',
+    ];
+
+    // ワールドレベルに応じてボス名と説明を決定
+    const bossIndex = Math.min(worldLevel - 1, bossNames.length - 1);
+    const bossName = bossNames[bossIndex];
+    const description = descriptions[bossIndex];
+
+    // Boss.createForLevelを使用してボスを生成
+    const bossId = `boss_world_${worldLevel}`;
+    const boss = Boss.createForLevel(worldLevel, bossId, bossName);
+
+    return this.createBossElement(boss, description);
   }
 
   /**

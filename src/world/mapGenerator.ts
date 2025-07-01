@@ -1,5 +1,6 @@
 import { Map } from './map';
 import { Location, LocationType } from './location';
+import { ElementManager } from './elements';
 
 // マップ生成設定
 export interface MapGeneratorConfig {
@@ -120,6 +121,68 @@ export class MapGenerator {
 
     // ルートディレクトリから再帰的に生成
     this.generateDirectoryContents(map, '/', 1, finalConfig);
+  }
+
+  /**
+   * ワールドにボスと鍵を必須配置する
+   * @param map - マップインスタンス
+   * @param worldLevel - ワールドレベル
+   * @param elementManager - 要素管理インスタンス
+   */
+  placeBossAndKey(map: Map, worldLevel: number, elementManager: ElementManager): void {
+    const allLocations = map.getAllLocations();
+    const fileLocations = allLocations.filter(loc => loc.getType() === LocationType.FILE);
+
+    if (fileLocations.length === 0) {
+      throw new Error('No file locations available for boss and key placement');
+    }
+
+    // ボス配置: 最深部にあるファイルに配置
+    const bossLocation = this.findDeepestLocation(fileLocations);
+    const bossElement = elementManager.generateBossForWorld(worldLevel);
+    bossLocation.setElement(bossElement);
+
+    // 鍵配置: ボス以外のランダムなファイルに配置
+    const keyLocation = this.findRandomLocationExcluding(fileLocations, bossLocation);
+    if (keyLocation) {
+      const keyElement = elementManager.generateKeyForWorld(worldLevel);
+      keyLocation.setElement(keyElement);
+    } else {
+      throw new Error('No suitable location found for key placement');
+    }
+  }
+
+  /**
+   * 最深部の場所を見つける
+   * @param locations - 場所の配列
+   * @returns 最深部の場所
+   */
+  private findDeepestLocation(locations: Location[]): Location {
+    return locations.reduce((deepest, current) => {
+      const currentDepth = current.getPath().split('/').length - 1;
+      const deepestDepth = deepest.getPath().split('/').length - 1;
+      return currentDepth > deepestDepth ? current : deepest;
+    });
+  }
+
+  /**
+   * 指定された場所を除外してランダムな場所を見つける
+   * @param locations - 場所の配列
+   * @param excludeLocation - 除外する場所
+   * @returns ランダムな場所（除外場所以外）
+   */
+  private findRandomLocationExcluding(
+    locations: Location[],
+    excludeLocation: Location
+  ): Location | null {
+    const availableLocations = locations.filter(loc => loc !== excludeLocation);
+
+    if (availableLocations.length === 0) {
+      return null;
+    }
+
+    const randomIndex = Math.floor(this.randomFunction() * availableLocations.length);
+    return availableLocations[randomIndex];
   }
 
   /**

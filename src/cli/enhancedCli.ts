@@ -162,7 +162,8 @@ export class EnhancedCli {
 
     // コマンドまたは引数の部分補完
     const parts = trimmed.split(' ');
-    const lastPart = parts[parts.length - 1];
+    // lastPartは将来のデバッグ用に保持
+    // const lastPart = parts[parts.length - 1];
 
     // 最後の部分を補完候補で置き換え
     parts[parts.length - 1] = suggestion;

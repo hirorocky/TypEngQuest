@@ -15,6 +15,8 @@ export enum ElementType {
   TREASURE = 'treasure',
   RANDOM_EVENT = 'random_event',
   SAVE_POINT = 'save_point',
+  KEY = 'key',
+  BOSS = 'boss',
 }
 /* eslint-enable no-unused-vars */
 
@@ -106,8 +108,22 @@ export class Location {
     return this.element;
   }
 
-  setElement(type: ElementType, data: Record<string, unknown>): void {
-    this.element = { type, data };
+  setElement(element: Element): void;
+  setElement(type: ElementType, data: Record<string, unknown>): void;
+  setElement(elementOrType: Element | ElementType, data?: Record<string, unknown>): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _element = elementOrType;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _type = elementOrType;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _data = data;
+    if (typeof elementOrType === 'object') {
+      // Element オブジェクトが渡された場合
+      this.element = elementOrType;
+    } else {
+      // 個別の引数が渡された場合
+      this.element = { type: elementOrType, data: data! };
+    }
   }
 
   clearElement(): void {
