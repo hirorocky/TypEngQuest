@@ -104,7 +104,7 @@ ${chalk.gray('World:')} ${world.getName()} (Level ${world.getLevel()})${descript
       return validationResult;
     }
 
-    const slot = validationResult.slot;
+    const slot = validationResult.slot!;
 
     try {
       const result = await this.saveManager.loadGame(slot);
@@ -122,15 +122,14 @@ ${chalk.gray('World:')} ${world.getName()} (Level ${world.getLevel()})${descript
    * @param args - コマンド引数
    * @returns 検証結果
    */
-  private validateLoadArgs(args: string[]): 
-    | { success: true; slot: number } 
-    | SaveCommandResult {
+  private validateLoadArgs(args: string[]): SaveCommandResult & { slot: number | undefined } {
     if (args.length === 0) {
       return {
         success: false,
         output: `${chalk.red('Usage:')} load <slot>
 ${chalk.gray('Example:')} load 1
 ${chalk.gray('Slots:')} 1-10 (10 is auto-save)`,
+        slot: undefined,
       };
     }
 
@@ -141,10 +140,11 @@ ${chalk.gray('Slots:')} 1-10 (10 is auto-save)`,
       return {
         success: false,
         output: `${chalk.red('Error:')} Invalid slot number "${slotArg}". Must be 1-10.`,
+        slot: undefined,
       };
     }
 
-    return { success: true, slot };
+    return { success: true, output: '', slot };
   }
 
   /**
