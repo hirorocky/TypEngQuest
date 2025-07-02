@@ -1,9 +1,9 @@
 {
-  "name": "typing-game",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "typengquest",
+  "version": "0.1.0",
+  "main": "dist/index.js",
   "bin": {
-    "codequest": "./dist/index.js"
+    "typengquest": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A typing-based CLI RPG game where players explore virtual file systems",
   "dependencies": {
     "@types/node": "^24.0.4",
     "blessed": "^0.1.81",

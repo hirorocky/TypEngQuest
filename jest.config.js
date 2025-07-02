@@ -2,6 +2,11 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
   transformIgnorePatterns: [
     'node_modules/(?!(chalk|ansi-styles|#ansi-styles|strip-ansi|ansi-regex|supports-color|has-flag)/)'
   ],
@@ -12,7 +17,7 @@ export default {
   ],
   coverageReporters: ['text', 'lcov', 'html'],
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.test.ts',
-    '<rootDir>/tests/**/*.test.ts'
+    '<rootDir>/src/**/*.test.ts',
+    '<rootDir>/src/tests/**/*.test.ts'
   ]
 };

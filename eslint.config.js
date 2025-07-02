@@ -27,18 +27,29 @@ export default [
       '@typescript-eslint': typescript
     },
     rules: {
+      // Disable base rule as it can report incorrect errors
+      'no-unused-vars': 'off',
+
       // TypeScript specific rules
-      '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          'argsIgnorePattern': '^_',
+          'varsIgnorePattern': '^_',
+          'caughtErrorsIgnorePattern': '^_',
+          'ignoreRestSiblings': false,
+          'args': 'all',
+          'vars': 'all',
+          'caughtErrors': 'all'
+        }
+      ],
+
       // General rules
       'no-console': 'off', // Allow console.log for CLI game
       'prefer-const': 'error',
       'no-var': 'error',
       'no-duplicate-imports': 'error',
-      
+
       // Code quality
       'complexity': ['error', 10],
       'max-depth': ['error', 4],
@@ -57,7 +68,9 @@ export default [
         afterEach: 'readonly',
         beforeAll: 'readonly',
         afterAll: 'readonly',
-        jest: 'readonly'
+        jest: 'readonly',
+        setTimeout: 'readonly',
+        require: 'readonly'
       }
     }
   },
