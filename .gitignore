@@ -3,3 +3,4 @@ coverage/*
 .claude/settings.local.json
 dist/*
 saves/*
+.env

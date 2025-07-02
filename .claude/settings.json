@@ -15,5 +15,29 @@
       "mcp__typescript__get_diagnostics"
     ],
     "deny": []
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/discord.sh 応答をくださいmm"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/discord.sh タスクが完了しました！"
+          }
+        ]
+      }
+    ]
   }
 }
