@@ -11,13 +11,18 @@
 - 開発コマンド(@docs/development-commands.md) - 開発・テスト・ゲーム実行コマンド一覧
 - 実装状況(@docs/implementation-status.md) - 完了済み機能と実装予定タスク
 - テストガイド(@docs/testing-guide.md) - テスト実行方法と品質保証
+- アジャイル開発計画(@docs/agile-development-plan.md) - 12のプロジェクトに分割した開発計画
 
 ## claudeへの指示
+### 開発アプローチ
+このプロジェクトは@docs/agile-development-plan.mdに基づいてアジャイル開発を行います。
+12の小さなプロジェクトに分割し、各プロジェクト完了時にステークホルダーのチェックを受けます。
+
 ### 作業ログ
-次にやるべきタスクは@docs/implementation-status.mdを参照して、私に指示を仰いでください。
+次にやるべきタスクは@docs/implementation-status.mdまたは@docs/agile-development-plan.mdを参照して、私に指示を仰いでください。
 タスクは@docs/development-guidelines.mdに従って、進めてください。
 タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdを更新してください。
-きりの良い単位で作業を完了したら、`git commit`してください。
+各プロジェクト完了時または、きりの良い単位で作業を完了したら、`git commit`してください。
 
 ### コミュニケーション
 コミュニケーションは日本語で行ってください。
