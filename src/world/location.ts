@@ -108,15 +108,15 @@ export class Location {
     return this.element;
   }
 
+  // eslint-disable-next-line no-unused-vars
   setElement(element: Element): void;
+  // eslint-disable-next-line no-unused-vars
   setElement(type: ElementType, data: Record<string, unknown>): void;
-  setElement(elementOrType: Element | ElementType, data?: Record<string, unknown>): void {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _element = elementOrType;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _type = elementOrType;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _data = data;
+  setElement(
+    elementOrType: Element | ElementType,
+
+    data?: Record<string, unknown>
+  ): void {
     if (typeof elementOrType === 'object') {
       // Element オブジェクトが渡された場合
       this.element = elementOrType;

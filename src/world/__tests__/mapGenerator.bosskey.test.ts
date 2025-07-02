@@ -1,7 +1,7 @@
 import { MapGenerator } from '../mapGenerator';
 import { Map } from '../map';
 import { ElementManager } from '../elements';
-import { ElementType, LocationType } from '../location';
+import { ElementType, LocationType, Location } from '../location';
 
 describe('MapGenerator - Boss and Key Placement', () => {
   let generator: MapGenerator;
@@ -181,23 +181,18 @@ describe('MapGenerator - Boss and Key Placement', () => {
 
       expect(() => {
         generator.placeBossAndKey(map, 1, elementManager);
-      }).toThrow('No file locations available for boss and key placement');
+      }).toThrow('Insufficient file locations for boss and key placement. Required: 2, Found: 0');
     });
 
     test('should handle single file case by placing boss and throwing error for key', () => {
       const map = new Map(undefined, 1, false); // autogenerate=false
-      // 1つのファイルのみ生成
-      generator.generateFileSystem(map, {
-        maxDepth: 1,
-        minDepth: 1,
-        maxFilesPerDirectory: 1,
-        maxDirectoriesPerLevel: 0,
-        fileTypes: ['.ts'],
-      });
+      // 1つのファイルのみ生成（手動で追加）
+      const fileLocation = new Location('test.ts', '/', LocationType.FILE);
+      map.addLocation(fileLocation);
 
       expect(() => {
         generator.placeBossAndKey(map, 1, elementManager);
-      }).toThrow('No suitable location found for key placement');
+      }).toThrow('Insufficient file locations for boss and key placement. Required: 2, Found: 1');
     });
 
     test('should place boss and key only in file locations, not directories', () => {

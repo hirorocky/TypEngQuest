@@ -176,12 +176,11 @@ export class RandomEventManager {
   };
 
   constructor(
-    private player: Player,
-    private world: World
+    // eslint-disable-next-line no-unused-vars
+    private _player: Player,
+    // eslint-disable-next-line no-unused-vars
+    private _world: World
   ) {
-    // プライベートプロパティは将来の機能拡張で使用予定
-    void this.player;
-    void this.world;
     this.typingChallenge = new TypingChallenge();
   }
 
@@ -191,7 +190,7 @@ export class RandomEventManager {
    * @returns 生成されたランダムイベント
    */
   generateRandomEvent(type: 'good' | 'bad'): RandomEvent {
-    const worldLevel = this.world.getLevel();
+    const worldLevel = this._world.getLevel();
     const eventId = this.generateEventId();
 
     if (type === 'good') {
@@ -255,23 +254,23 @@ export class RandomEventManager {
   }
 
   private processExperienceEffect(effect: EventEffect): string {
-    this.player.addExperience(effect.value);
+    this._player.addExperience(effect.value);
     return `experience: +${effect.value}\n`;
   }
 
   private processHealthEffect(effect: EventEffect): string {
-    this.player.heal(effect.value);
+    this._player.heal(effect.value);
     return `health: +${effect.value}\n`;
   }
 
   private processManaEffect(effect: EventEffect): string {
-    this.player.restoreMana(effect.value);
+    this._player.restoreMana(effect.value);
     return `mana: +${effect.value}\n`;
   }
 
   private processEquipmentEffect(effect: EventEffect): string {
     if (effect.equipmentName) {
-      this.player.addToInventory(effect.equipmentName);
+      this._player.addToInventory(effect.equipmentName);
       return `Equipment obtained: ${effect.equipmentName}\n`;
     }
     return '';
@@ -299,7 +298,7 @@ export class RandomEventManager {
    * @returns タイピング回避チャレンジ
    */
   generateAvoidanceChallenge(event: RandomEvent): TypingAvoidanceChallenge {
-    const worldLevel = this.world.getLevel();
+    const worldLevel = this._world.getLevel();
     const severity = event.severity || 1;
 
     // 難易度を決定（ワールドレベル + イベント深刻度）
@@ -399,7 +398,7 @@ export class RandomEventManager {
     switch (effect.type) {
       case 'damage':
         if (reducedValue > 0) {
-          this.player.takeDamage(reducedValue);
+          this._player.takeDamage(reducedValue);
           return `damage: -${reducedValue}\n`;
         }
         return '';
@@ -485,7 +484,7 @@ export class RandomEventManager {
    * @returns バフ・デバフ適用後のステータス
    */
   getModifiedPlayerStats(): ModifiedPlayerStats {
-    const totalStats = this.player.getTotalStats();
+    const totalStats = this._player.getTotalStats();
 
     const modifiers = {
       attack: 0,

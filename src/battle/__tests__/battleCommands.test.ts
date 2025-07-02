@@ -3,7 +3,36 @@ import { Player } from '../../core/player';
 import { Map } from '../../world/map';
 import { World } from '../../world/world';
 import { ElementManager } from '../../world/elements';
+import { Location, LocationType } from '../../world/location';
 import { TypingChallenge, ChallengeDifficulty } from '../typingChallenge';
+
+// TypingChallengeをモック化
+jest.mock('../typingChallenge', () => ({
+  TypingChallenge: jest.fn().mockImplementation(() => ({
+    generateChallenge: jest.fn().mockReturnValue({
+      word: 'test',
+      difficulty: 1,
+      timeLimit: 5000
+    }),
+    calculateAccuracy: jest.fn().mockReturnValue(100),
+    calculateWPM: jest.fn().mockReturnValue(60),
+    evaluateTyping: jest.fn().mockReturnValue({
+      accuracy: 100,
+      wpm: 60,
+      damage: 25,
+      isCorrect: true,
+      isPerfect: true
+    }),
+    calculateDamageMultiplier: jest.fn().mockReturnValue(1.5)
+  })),
+  ChallengeDifficulty: {
+    BASIC: 1,
+    INTERMEDIATE: 2,
+    ADVANCED: 3,
+    PROGRAMMING: 4,
+    EXPERT: 5
+  }
+}));
 
 describe('BattleCommandsクラス', () => {
   let battleCommands: BattleCommands;
@@ -14,7 +43,7 @@ describe('BattleCommandsクラス', () => {
 
   beforeEach(() => {
     player = new Player('Test Warrior');
-    map = new Map();
+    map = new Map(undefined, 1, false); // autogenerate=falseで自動生成を無効化
     world = new World('Test World', 1, map);
     elementManager = new ElementManager();
     battleCommands = new BattleCommands(player, map, world, elementManager);
@@ -22,6 +51,11 @@ describe('BattleCommandsクラス', () => {
     // プレイヤーに基本装備を設定
     player.equipWord(1, 'the');
     player.equipWord(2, 'quick');
+    
+    // テスト用の場所を手動で作成
+    map.addLocation(new Location('src', '/', LocationType.DIRECTORY));
+    map.addLocation(new Location('app.js', '/src', LocationType.FILE));
+    map.addLocation(new Location('README.md', '/', LocationType.FILE));
   });
 
   describe('戦闘開始', () => {
@@ -180,9 +214,14 @@ describe('BattleCommandsクラス', () => {
       const result = battleCommands.processEnemyTurn();
 
       expect(result.success).toBe(true);
-      expect(result.output).toContain('defeated');
-      expect(battleCommands.isInBattle()).toBe(false);
+      expect(result.output).toContain('attacks');
       expect(player.getStats().currentHealth).toBe(0);
+      
+      // checkBattleEnd で敗北判定
+      const battleEnd = battleCommands.checkBattleEnd();
+      expect(battleEnd.status).toBe('defeat');
+      expect(battleEnd.output).toContain('defeated');
+      expect(battleCommands.isInBattle()).toBe(false);
     });
   });
 
@@ -198,7 +237,7 @@ describe('BattleCommandsクラス', () => {
     test('敵撃破による勝利', () => {
       // 強力な攻撃でモンスターを倒す
       const challenge = battleCommands.getCurrentChallenge();
-      const attackResult = battleCommands.performTypingAttack(challenge!.word, 1.0);
+      battleCommands.performTypingAttack(challenge!.word, 1.0);
 
       // モンスターのHPが0以下になるまで攻撃を続ける（テスト用）
       let battleResult = battleCommands.checkBattleEnd();

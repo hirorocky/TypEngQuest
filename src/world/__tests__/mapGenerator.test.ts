@@ -83,6 +83,13 @@ describe('MapGenerator', () => {
     });
 
     test('指定されたファイルタイプのファイルのみ生成する', () => {
+      // ランダム関数を固定化してファイルタイプを確実に制御
+      let callCount = 0;
+      Math.random = jest.fn(() => {
+        const values = [0.3, 0.7, 0.1, 0.9, 0.5]; // 固定値パターン
+        return values[callCount++ % values.length];
+      });
+
       const config = {
         maxDepth: 1,
         minDepth: 1,

@@ -2,10 +2,15 @@
  * タイピングチャレンジの難易度レベル
  */
 export enum ChallengeDifficulty {
+  // eslint-disable-next-line no-unused-vars
   BASIC = 1,
+  // eslint-disable-next-line no-unused-vars
   INTERMEDIATE = 2,
+  // eslint-disable-next-line no-unused-vars
   ADVANCED = 3,
+  // eslint-disable-next-line no-unused-vars
   PROGRAMMING = 4,
+  // eslint-disable-next-line no-unused-vars
   EXPERT = 5,
 }
 

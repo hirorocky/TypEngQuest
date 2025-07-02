@@ -53,9 +53,13 @@ export class BattleCommands {
   private battleState: BattleState;
 
   constructor(
+    // eslint-disable-next-line no-unused-vars
     private _player: Player,
+    // eslint-disable-next-line no-unused-vars
     private _map: Map,
+    // eslint-disable-next-line no-unused-vars
     private _world: World,
+    // eslint-disable-next-line no-unused-vars
     private _elementManager: ElementManager
   ) {
     this.typingChallenge = new TypingChallenge();

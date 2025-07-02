@@ -36,7 +36,7 @@ describe('Map', () => {
       return value;
     });
 
-    map = new Map(mockRandom);
+    map = new Map(mockRandom, 1, false); // autogenerate=falseでボス・鍵生成を無効化
   });
 
   describe('Initialization', () => {

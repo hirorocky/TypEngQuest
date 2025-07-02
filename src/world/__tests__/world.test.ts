@@ -8,7 +8,7 @@ describe('Worldクラス', () => {
   let map: Map;
 
   beforeEach(() => {
-    map = new Map();
+    map = new Map(undefined, 1, false); // autogenerate=falseでボス・鍵自動生成を無効化
     world = new World('テストワールド', 1, map);
   });
 

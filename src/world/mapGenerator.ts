@@ -121,6 +121,42 @@ export class MapGenerator {
 
     // ルートディレクトリから再帰的に生成
     this.generateDirectoryContents(map, '/', 1, finalConfig);
+
+    // ボス・鍵配置のために最低2つのファイルが必要
+    this.ensureMinimumFiles(map, finalConfig);
+  }
+
+  /**
+   * 最低限必要なファイル数を保証する
+   * @param map - マップインスタンス
+   * @param config - 生成設定
+   */
+  private ensureMinimumFiles(map: Map, config: MapGeneratorConfig): void {
+    const allLocations = map.getAllLocations();
+    const fileLocations = allLocations.filter(loc => loc.getType() === LocationType.FILE);
+
+    const minimumFiles = 2; // ボスと鍵配置のために最低2つ必要
+
+    if (fileLocations.length < minimumFiles) {
+      const additionalFilesNeeded = minimumFiles - fileLocations.length;
+
+      // ルートディレクトリに追加のファイルを生成
+      const usedFileNames = new Set<string>();
+      fileLocations.forEach(loc => {
+        const fileName = loc.getName().split('.')[0]; // 拡張子を除く
+        usedFileNames.add(fileName);
+      });
+
+      for (let i = 0; i < additionalFilesNeeded; i++) {
+        const fileName = this.getUniqueFileName(usedFileNames, config);
+        const fileLocation = new Location(fileName, '/', LocationType.FILE);
+        map.addLocation(fileLocation);
+
+        // ファイル名を使用済みリストに追加
+        const baseFileName = fileName.split('.')[0];
+        usedFileNames.add(baseFileName);
+      }
+    }
   }
 
   /**
@@ -133,8 +169,10 @@ export class MapGenerator {
     const allLocations = map.getAllLocations();
     const fileLocations = allLocations.filter(loc => loc.getType() === LocationType.FILE);
 
-    if (fileLocations.length === 0) {
-      throw new Error('No file locations available for boss and key placement');
+    if (fileLocations.length < 2) {
+      throw new Error(
+        `Insufficient file locations for boss and key placement. Required: 2, Found: ${fileLocations.length}`
+      );
     }
 
     // ボス配置: 最深部にあるファイルに配置

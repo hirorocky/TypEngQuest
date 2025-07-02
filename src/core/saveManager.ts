@@ -190,6 +190,40 @@ export class SaveManager {
   }
 
   /**
+   * セーブファイルを処理してSaveFileInfoを返す
+   * @param fileName - ファイル名
+   * @returns セーブファイル情報またはnull
+   */
+  private processSaveFile(fileName: string): SaveFileInfo | null {
+    const match = fileName.match(/save-(\d+)\.json/);
+    if (!match) return null;
+
+    const slot = parseInt(match[1], 10);
+    if (slot < 1 || slot > this.maxSlots) return null;
+
+    try {
+      const filePath = path.join(this.savesDirectory, fileName);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const saveData: SaveData = JSON.parse(content);
+
+      return {
+        slot,
+        timestamp: saveData.timestamp,
+        playTime: saveData.playTime,
+        playerName: saveData.player.name,
+        playerLevel: saveData.player.stats.level,
+        worldName: saveData.world.name,
+        worldLevel: saveData.world.level,
+        description: saveData.metadata.saveDescription,
+        exists: true,
+      };
+    } catch (error) {
+      console.warn(`Failed to read save file ${fileName}: ${error}`);
+      return null;
+    }
+  }
+
+  /**
    * セーブファイル一覧を取得する
    * @returns セーブファイル情報の配列
    */
@@ -217,33 +251,9 @@ export class SaveManager {
       );
 
       for (const fileName of saveFileNames) {
-        const match = fileName.match(/save-(\d+)\.json/);
-        if (match) {
-          const slot = parseInt(match[1], 10);
-          if (slot >= 1 && slot <= this.maxSlots) {
-            try {
-              const filePath = path.join(this.savesDirectory, fileName);
-              // statsは将来のメタデータ取得で使用予定
-              // const stats = fs.statSync(filePath);
-              const content = fs.readFileSync(filePath, 'utf8');
-              const saveData: SaveData = JSON.parse(content);
-
-              saveFiles[slot - 1] = {
-                slot,
-                timestamp: saveData.timestamp,
-                playTime: saveData.playTime,
-                playerName: saveData.player.name,
-                playerLevel: saveData.player.stats.level,
-                worldName: saveData.world.name,
-                worldLevel: saveData.world.level,
-                description: saveData.metadata.saveDescription,
-                exists: true,
-              };
-            } catch (error) {
-              // 個別ファイルの読み込みエラーは無視してスキップ
-              console.warn(`Failed to read save file ${fileName}: ${error}`);
-            }
-          }
+        const saveFile = this.processSaveFile(fileName);
+        if (saveFile) {
+          saveFiles[saveFile.slot - 1] = saveFile;
         }
       }
     } catch (error) {
