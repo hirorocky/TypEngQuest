@@ -95,16 +95,22 @@ TypEngQuest/
 │   ├── commands/                   # コマンド実装
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
-│   │   ├── navigation/             # ナビゲーションコマンド
-│   │   │   ├── CdCommand.ts        # cdコマンド
-│   │   │   ├── CdCommand.test.ts   # CdCommandのテスト
-│   │   │   ├── LsCommand.ts        # lsコマンド
-│   │   │   ├── LsCommand.test.ts   # LsCommandのテスト
-│   │   │   ├── PwdCommand.ts       # pwdコマンド
-│   │   │   ├── PwdCommand.test.ts  # PwdCommandのテスト
-│   │   │   ├── TreeCommand.ts      # treeコマンド
-│   │   │   └── TreeCommand.test.ts # TreeCommandのテスト
-│   │   ├── file/                   # ファイル操作コマンド
+│   │   ├── CdCommand.ts            # cdコマンド（ナビゲーション）
+│   │   ├── CdCommand.test.ts       # CdCommandのテスト
+│   │   ├── LsCommand.ts            # lsコマンド（ナビゲーション）
+│   │   ├── LsCommand.test.ts       # LsCommandのテスト
+│   │   ├── PwdCommand.ts           # pwdコマンド（ナビゲーション）
+│   │   ├── PwdCommand.test.ts      # PwdCommandのテスト
+│   │   ├── TreeCommand.ts          # treeコマンド（ナビゲーション）
+│   │   ├── TreeCommand.test.ts     # TreeCommandのテスト
+│   │   ├── title/                  # タイトルフェーズ用コマンド
+│   │   │   ├── StartCommand.ts     # startコマンド
+│   │   │   ├── StartCommand.test.ts # StartCommandのテスト
+│   │   │   ├── LoadCommand.ts      # loadコマンド
+│   │   │   ├── LoadCommand.test.ts # LoadCommandのテスト
+│   │   │   ├── ExitCommand.ts      # exitコマンド
+│   │   │   └── ExitCommand.test.ts # ExitCommandのテスト
+│   │   ├── file/                   # ファイル操作コマンド（未実装）
 │   │   │   ├── CatCommand.ts       # catコマンド
 │   │   │   ├── CatCommand.test.ts  # CatCommandのテスト
 │   │   │   ├── HeadCommand.ts      # headコマンド
@@ -115,7 +121,7 @@ TypEngQuest/
 │   │   │   ├── VimCommand.test.ts  # VimCommandのテスト
 │   │   │   ├── ChmodCommand.ts     # chmodコマンド
 │   │   │   └── ChmodCommand.test.ts # ChmodCommandのテスト
-│   │   └── game/                   # ゲーム固有コマンド
+│   │   └── game/                   # ゲーム固有コマンド（未実装）
 │   │       ├── StatusCommand.ts    # statusコマンド
 │   │       ├── StatusCommand.test.ts # StatusCommandのテスト
 │   │       ├── InventoryCommand.ts # inventoryコマンド
@@ -269,14 +275,16 @@ TypEngQuest/
    - SaveManager → SaveData, SaveValidator, FileUtils
 
 5. **Command層** - Feature層以下に依存
-   - 各種Command → BaseCommand, World, Player, FileSystem
+   - 各種Command → BaseCommand, CommandContext
+   - ナビゲーションコマンド → BaseCommand, FileSystem (via CommandContext)
+   - TitlePhaseコマンド → BaseCommand, PhaseTypes
 
 6. **UI層** - Feature層以下に依存
    - Display, Prompt, ProgressBar → colors
 
 7. **Phase層** - すべての下位層に依存
-   - TitlePhase → SaveManager
-   - ExplorationPhase → World, Player, CommandParser, 各種Command
+   - TitlePhase → CommandParser, TitlePhaseコマンド
+   - ExplorationPhase → World, CommandParser, ナビゲーションコマンド, CommandContext
    - DialogPhase → Display
    - InventoryPhase → Player, Inventory
    - BattlePhase → Battle, Player, Enemy
@@ -369,7 +377,8 @@ TypingPhase
 
 #### types.ts
 - ゲーム全体で使用する共通型定義
-- フェーズタイプ、コマンドタイプの列挙型
+- PhaseType型とPhaseTypes定数（continue含む）
+- PhaseResult、CommandResult、CommandContext、GameStateインターフェース
 - エラー型の定義
 
 ### フェーズ実装 (src/phases/)
@@ -582,16 +591,22 @@ TypingPhase
 ### コマンド実装 (src/commands/)
 
 #### BaseCommand.ts
-- コマンドインターフェース定義
-- 共通バリデーション
-- エラーハンドリング
-- ヘルプテキスト管理
+- 全フェーズ対応の汎用コマンド基底クラス
+- CommandContextによる統一的な実行環境
+- フェーズ遷移をサポートするsuccessWithPhaseメソッド
+- オプション解析機能（parseOptions）
+- 共通バリデーション、エラーハンドリング、ヘルプテキスト管理
 
-#### navigation/ (ナビゲーションコマンド)
+#### ナビゲーションコマンド（実装済み）
 - **CdCommand.ts**: ディレクトリ移動、パス解決、移動可否判定
 - **LsCommand.ts**: ファイル一覧表示、オプション処理（-a, -l）
 - **PwdCommand.ts**: 現在位置表示、パスフォーマット
 - **TreeCommand.ts**: ツリー表示、深さ制限、ASCII art生成
+
+#### title/ (タイトルフェーズコマンド)
+- **StartCommand.ts**: 新規ゲーム開始、ExplorationPhaseへの遷移
+- **LoadCommand.ts**: セーブデータロード機能（現在は未実装表示）
+- **ExitCommand.ts**: ゲーム終了処理
 
 #### file/ (ファイル操作コマンド)
 - **CatCommand.ts**: ファイル内容表示、ファイル作用の実行
