@@ -64,3 +64,11 @@ export function cyan(text: string): string {
 export function magenta(text: string): string {
   return colorize(text, Colors.MAGENTA);
 }
+
+export function formatCommand(text: string): string {
+  return bold(cyan(text));
+}
+
+export function formatSuccess(text: string): string {
+  return green(`✅ ${text}`);
+}

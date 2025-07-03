@@ -4,6 +4,15 @@
 
 export type PhaseType = 'title' | 'exploration' | 'dialog' | 'inventory' | 'battle' | 'typing';
 
+export const PhaseType = {
+  TITLE: 'title' as const,
+  EXPLORATION: 'exploration' as const,
+  DIALOG: 'dialog' as const,
+  INVENTORY: 'inventory' as const,
+  BATTLE: 'battle' as const,
+  TYPING: 'typing' as const,
+};
+
 export interface GameState {
   currentPhase: PhaseType;
   isRunning: boolean;

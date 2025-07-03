@@ -2,7 +2,7 @@
  * 画面表示管理
  */
 
-import { bold, cyan, green, yellow, red } from './colors';
+import { bold, cyan, yellow, red, formatCommand, formatSuccess } from './colors';
 
 export class Display {
   static clear(): void {
@@ -10,7 +10,7 @@ export class Display {
   }
 
   static print(text: string): void {
-    console.log(text);
+    process.stdout.write(text);
   }
 
   static printLine(char: string = '-', length: number = 50): void {
@@ -31,8 +31,12 @@ export class Display {
     this.printLine('-', header.length);
   }
 
+  static newLine(): void {
+    console.log();
+  }
+
   static printSuccess(message: string): void {
-    console.log(green(`✅ ${message}`));
+    console.log(formatSuccess(message));
   }
 
   static printError(message: string): void {
@@ -49,6 +53,11 @@ export class Display {
 
   static printEmptyLine(): void {
     console.log();
+  }
+
+  static printCommand(command: string, description: string): void {
+    const formatted = `  ${formatCommand(command)} - ${description}`;
+    console.log(formatted);
   }
 
   static async waitForEnter(message: string = 'Press Enter to continue...'): Promise<void> {
