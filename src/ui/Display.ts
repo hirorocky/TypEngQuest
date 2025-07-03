@@ -54,9 +54,18 @@ export class Display {
   static async waitForEnter(message: string = 'Press Enter to continue...'): Promise<void> {
     return new Promise(resolve => {
       process.stdout.write(cyan(message));
-      process.stdin.once('data', () => {
-        resolve();
-      });
+
+      const onData = (data: Buffer) => {
+        const key = data.toString();
+        // Enterキー（\n または \r\n）の場合のみ処理
+        if (key === '\n' || key === '\r\n') {
+          process.stdin.removeListener('data', onData);
+          resolve();
+        }
+        // それ以外のキーは無視
+      };
+
+      process.stdin.on('data', onData);
     });
   }
 }
