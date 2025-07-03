@@ -18,8 +18,16 @@
 このプロジェクトは@docs/agile-development-plan.mdに基づいてアジャイル開発を行います。
 12の小さなプロジェクトに分割し、各プロジェクト完了時にステークホルダーのチェックを受けます。
 
-### 作業ログ
-次にやるべきタスクは@docs/implementation-status.mdまたは@docs/agile-development-plan.mdを参照して、私に指示を仰いでください。
+### 作業の進め方
+1. やるべきタスクをGithub上のIssueとして作成
+2. 私がIssueを確認、あなたは許可を仰いでください。
+3. Issueに基づいてmainブランチから新しいブランチを作成
+4. 新しいブランチで作業を開始
+5. 作業が完了したら、git pushしプルリクエストを作成
+6. プルリクエストを私にレビューしてもらう
+7. レビュー後、必要な修正を行い、再度プルリクエストを更新
+8. レビューが完了したら、私がプルリクエストをマージ、作業完了とする
+
 タスクは@docs/development-guidelines.mdに従って、進めてください。
 タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdを更新してください。
 各プロジェクト完了時または、きりの良い単位で作業を完了したら、`git commit`してください。
