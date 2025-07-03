@@ -266,8 +266,8 @@ export abstract class BaseCommand {
    * 引数が値らしいかどうかを判定する
    */
   private looksLikeValue(arg: string): boolean {
-    // 数字のみ、拡張子を含むファイル名、=を含む設定値、または特殊文字を含まない単語
-    return /^\d+$/.test(arg) || arg.includes('.') || arg.includes('=') || /^[a-zA-Z0-9_-]+$/.test(arg);
+    // 数字のみの場合のみ値として扱う（他は残り引数として扱う）
+    return /^\d+$/.test(arg);
   }
 
   /**
