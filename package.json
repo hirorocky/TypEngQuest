@@ -1,6 +1,7 @@
 {
   "name": "typengquest",
   "version": "0.1.0",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "typengquest": "./dist/index.js"
