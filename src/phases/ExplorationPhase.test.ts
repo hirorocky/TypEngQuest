@@ -3,7 +3,6 @@
  */
 
 import { ExplorationPhase } from './ExplorationPhase';
-import { CommandParser } from '../core/CommandParser';
 import { Display } from '../ui/Display';
 import { PhaseTypes } from '../core/types';
 
@@ -12,7 +11,6 @@ jest.mock('../ui/Display');
 
 describe('ExplorationPhase', () => {
   let phase: ExplorationPhase;
-  let commandParser: CommandParser;
   let mockPrint: jest.Mock;
   let mockPrintLine: jest.Mock;
   let mockClear: jest.Mock;
@@ -25,8 +23,7 @@ describe('ExplorationPhase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    commandParser = new CommandParser();
-    phase = new ExplorationPhase(commandParser);
+    phase = new ExplorationPhase();
 
     // Displayメソッドのモック設定
     mockPrint = Display.print as jest.Mock;

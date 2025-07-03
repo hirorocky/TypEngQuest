@@ -1,6 +1,5 @@
 import { Phase } from '../core/Phase';
-import { CommandParser } from '../core/CommandParser';
-import { PhaseResult, PhaseTypes } from '../core/types';
+import { PhaseResult, PhaseTypes, PhaseType } from '../core/types';
 import { Display } from '../ui/Display';
 import { FileSystem } from '../world/FileSystem';
 import { CdCommand } from '../commands/CdCommand';
@@ -16,8 +15,8 @@ export class ExplorationPhase extends Phase {
   private fileSystem: FileSystem;
   private navigationCommands: Map<string, BaseCommand>;
 
-  constructor(commandParser: CommandParser) {
-    super(commandParser);
+  constructor() {
+    super();
 
     // テスト用のファイルシステムを作成
     this.fileSystem = FileSystem.createTestStructure();
@@ -170,6 +169,27 @@ export class ExplorationPhase extends Phase {
     const currentPath = this.fileSystem.pwd();
     const promptPath = currentPath === '/projects' ? '~' : currentPath.replace('/projects', '~');
     Display.print(`[${promptPath}]$ `);
+  }
+
+  /**
+   * フェーズタイプを取得する
+   */
+  getType(): PhaseType {
+    return 'exploration';
+  }
+
+  /**
+   * フェーズの初期化処理
+   */
+  async initialize(): Promise<void> {
+    this.enter();
+  }
+
+  /**
+   * フェーズのクリーンアップ処理
+   */
+  async cleanup(): Promise<void> {
+    // 特に処理なし
   }
 
   public exit(): void {

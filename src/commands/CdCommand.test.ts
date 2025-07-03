@@ -42,7 +42,7 @@ describe('CdCommand', () => {
     test('~ でルートディレクトリに移動', () => {
       fileSystem.cd('game-studio');
 
-      const result = command.execute(['~'], fileSystem);
+      const result = command.execute(['~'], context);
 
       expect(result.success).toBe(true);
       expect(fileSystem.pwd()).toBe('/projects');
@@ -66,14 +66,14 @@ describe('CdCommand', () => {
     });
 
     test('絶対パスでの移動', () => {
-      const result = command.execute(['/projects/game-studio/src'], fileSystem);
+      const result = command.execute(['/projects/game-studio/src'], context);
 
       expect(result.success).toBe(true);
       expect(fileSystem.pwd()).toBe('/projects/game-studio/src');
     });
 
     test('ホームパスでの移動', () => {
-      const result = command.execute(['~/game-studio'], fileSystem);
+      const result = command.execute(['~/game-studio'], context);
 
       expect(result.success).toBe(true);
       expect(fileSystem.pwd()).toBe('/projects/game-studio');
@@ -87,7 +87,7 @@ describe('CdCommand', () => {
     });
 
     test('ファイルへの移動はエラー', () => {
-      const result = command.execute(['game-studio/README.md'], fileSystem);
+      const result = command.execute(['game-studio/README.md'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('ディレクトリではありません');

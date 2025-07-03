@@ -208,6 +208,7 @@ export abstract class BaseCommand {
     const optionPart = arg.substring(2);
     const equalIndex = optionPart.indexOf('=');
 
+    // --key=value 形式の場合
     if (equalIndex !== -1) {
       const key = optionPart.substring(0, equalIndex);
       const value = optionPart.substring(equalIndex + 1);
@@ -215,11 +216,17 @@ export abstract class BaseCommand {
       return index;
     }
 
-    if (index + 1 < args.length && !args[index + 1].startsWith('-')) {
+    // 次の引数が値らしく、オプションでない場合のみ値として扱う
+    if (
+      index + 1 < args.length &&
+      !args[index + 1].startsWith('-') &&
+      this.looksLikeValue(args[index + 1])
+    ) {
       values[optionPart] = args[index + 1];
       return index + 1;
     }
 
+    // それ以外はフラグとして処理
     flags.push(optionPart);
     return index;
   }
@@ -233,18 +240,25 @@ export abstract class BaseCommand {
     const arg = args[index];
     const optionChars = arg.substring(1);
 
-    // 単体のショートオプション（-a）で次が値の場合のみ値として扱う
-    if (optionChars.length === 1 && index + 1 < args.length && !args[index + 1].startsWith('-')) {
-      // 次の引数がファイル名らしきものかチェック
-      const nextArg = args[index + 1];
-      if (this.looksLikeValue(nextArg)) {
-        values[optionChars] = nextArg;
-        return index + 1;
-      }
+    // 複数文字のショートオプション（-la）の場合は全てフラグとして処理
+    if (optionChars.length > 1) {
+      flags.push(...optionChars.split(''));
+      return index;
     }
 
-    // 全てフラグとして処理
-    flags.push(...optionChars.split(''));
+    // 単体のショートオプション（-a）の場合
+    // 次の引数がオプションでなく、明確に値らしい場合のみ値として扱う
+    if (
+      index + 1 < args.length &&
+      !args[index + 1].startsWith('-') &&
+      this.looksLikeValue(args[index + 1])
+    ) {
+      values[optionChars] = args[index + 1];
+      return index + 1;
+    }
+
+    // それ以外はフラグとして処理
+    flags.push(optionChars);
     return index;
   }
 
@@ -252,8 +266,8 @@ export abstract class BaseCommand {
    * 引数が値らしいかどうかを判定する
    */
   private looksLikeValue(arg: string): boolean {
-    // 数字のみ、または明らかに値らしい文字列
-    return /^\d+$/.test(arg) || arg.includes('=') || arg.includes('.');
+    // 数字のみ、拡張子を含むファイル名、=を含む設定値、または特殊文字を含まない単語
+    return /^\d+$/.test(arg) || arg.includes('.') || arg.includes('=') || /^[a-zA-Z0-9_-]+$/.test(arg);
   }
 
   /**

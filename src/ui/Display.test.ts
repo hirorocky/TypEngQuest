@@ -38,7 +38,7 @@ describe('Display', () => {
       const testText = 'Hello, World!';
       Display.print(testText);
 
-      expect(consoleSpy).toHaveBeenCalledWith(testText);
+      expect(processStdoutSpy).toHaveBeenCalledWith(testText);
     });
   });
 
@@ -295,10 +295,10 @@ describe('Display', () => {
       Display.print('Line 2');
       Display.print('Line 3');
 
-      expect(consoleSpy).toHaveBeenCalledTimes(3);
-      expect(consoleSpy).toHaveBeenNthCalledWith(1, 'Line 1');
-      expect(consoleSpy).toHaveBeenNthCalledWith(2, 'Line 2');
-      expect(consoleSpy).toHaveBeenNthCalledWith(3, 'Line 3');
+      expect(processStdoutSpy).toHaveBeenCalledTimes(3);
+      expect(processStdoutSpy).toHaveBeenNthCalledWith(1, 'Line 1');
+      expect(processStdoutSpy).toHaveBeenNthCalledWith(2, 'Line 2');
+      expect(processStdoutSpy).toHaveBeenNthCalledWith(3, 'Line 3');
     });
   });
 });
