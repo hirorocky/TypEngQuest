@@ -5,7 +5,7 @@
 import { ExplorationPhase } from './ExplorationPhase';
 import { CommandParser } from '../core/CommandParser';
 import { Display } from '../ui/Display';
-import { PhaseType } from '../core/types';
+import { PhaseTypes } from '../core/types';
 
 // Displayモジュールをモック化
 jest.mock('../ui/Display');
@@ -90,35 +90,35 @@ describe('ExplorationPhase', () => {
       test('cdコマンドが動作する', () => {
         const result = (phase as any).processCommand('cd game-studio');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('移動しました'));
       });
 
       test('lsコマンドが動作する', () => {
         const result = (phase as any).processCommand('ls');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintLine).toHaveBeenCalled();
       });
 
       test('pwdコマンドが動作する', () => {
         const result = (phase as any).processCommand('pwd');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintSuccess).toHaveBeenCalledWith('/projects');
       });
 
       test('treeコマンドが動作する', () => {
         const result = (phase as any).processCommand('tree');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintLine).toHaveBeenCalled();
       });
 
       test('コマンドエラーが表示される', () => {
         const result = (phase as any).processCommand('cd nonexistent');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintError).toHaveBeenCalledWith(
           expect.stringContaining('ディレクトリが見つかりません')
         );
@@ -129,7 +129,7 @@ describe('ExplorationPhase', () => {
       test('helpコマンドが動作する', () => {
         const result = (phase as any).processCommand('help');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockPrintHeader).toHaveBeenCalledWith('利用可能なコマンド');
         expect(mockPrintCommand).toHaveBeenCalled();
       });
@@ -137,7 +137,7 @@ describe('ExplorationPhase', () => {
       test('clearコマンドが動作する', () => {
         const result = (phase as any).processCommand('clear');
 
-        expect(result.type).toBe(PhaseType.CONTINUE);
+        expect(result.type).toBe(PhaseTypes.CONTINUE);
         expect(mockClear).toHaveBeenCalled();
         expect(mockPrint).toHaveBeenCalledWith('[~]$ ');
       });
@@ -145,27 +145,27 @@ describe('ExplorationPhase', () => {
       test('exitコマンドでタイトルに戻る', () => {
         const result = (phase as any).processCommand('exit');
 
-        expect(result.type).toBe(PhaseType.TITLE);
+        expect(result.type).toBe(PhaseTypes.TITLE);
         expect(mockPrintInfo).toHaveBeenCalledWith('タイトル画面に戻ります...');
       });
 
       test('quitコマンドでタイトルに戻る', () => {
         const result = (phase as any).processCommand('quit');
 
-        expect(result.type).toBe(PhaseType.TITLE);
+        expect(result.type).toBe(PhaseTypes.TITLE);
       });
 
       test('qコマンドでタイトルに戻る', () => {
         const result = (phase as any).processCommand('q');
 
-        expect(result.type).toBe(PhaseType.TITLE);
+        expect(result.type).toBe(PhaseTypes.TITLE);
       });
     });
 
     test('不明なコマンドでエラーメッセージ', () => {
       const result = (phase as any).processCommand('unknown');
 
-      expect(result.type).toBe(PhaseType.CONTINUE);
+      expect(result.type).toBe(PhaseTypes.CONTINUE);
       expect(mockPrintError).toHaveBeenCalledWith('不明なコマンド: unknown');
       expect(mockPrintInfo).toHaveBeenCalledWith('helpで利用可能なコマンドを確認してください。');
     });
@@ -173,7 +173,7 @@ describe('ExplorationPhase', () => {
     test('空のコマンドで継続', () => {
       const result = (phase as any).processCommand('');
 
-      expect(result.type).toBe(PhaseType.CONTINUE);
+      expect(result.type).toBe(PhaseTypes.CONTINUE);
     });
   });
 

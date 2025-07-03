@@ -4,14 +4,20 @@
 
 import { LsCommand } from './LsCommand';
 import { FileSystem } from '../world/FileSystem';
+import { CommandContext } from './BaseCommand';
 
 describe('LsCommand', () => {
   let command: LsCommand;
   let fileSystem: FileSystem;
+  let context: CommandContext;
 
   beforeEach(() => {
     fileSystem = FileSystem.createTestStructure();
     command = new LsCommand();
+    context = {
+      currentPhase: 'exploration',
+      fileSystem,
+    };
   });
 
   describe('基本プロパティ', () => {
@@ -23,7 +29,7 @@ describe('LsCommand', () => {
 
   describe('executeInternal - コマンド実行', () => {
     test('基本的なファイル一覧表示', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('ファイル一覧:');
@@ -33,14 +39,14 @@ describe('LsCommand', () => {
 
     test('隠しファイルも含む一覧表示 (-a)', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute(['-a'], fileSystem);
+      const result = command.execute(['-a'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('.hidden.py');
     });
 
     test('詳細表示 (-l)', () => {
-      const result = command.execute(['-l'], fileSystem);
+      const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.length).toBeGreaterThan(0);
@@ -52,7 +58,7 @@ describe('LsCommand', () => {
 
     test('複合オプション (-la)', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute(['-la'], fileSystem);
+      const result = command.execute(['-la'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('.hidden.py');
@@ -63,7 +69,7 @@ describe('LsCommand', () => {
 
     test('ロングオプション (--all --long)', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute(['--all', '--long'], fileSystem);
+      const result = command.execute(['--all', '--long'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('.hidden.py');
@@ -73,7 +79,7 @@ describe('LsCommand', () => {
     });
 
     test('指定パスの一覧表示', () => {
-      const result = command.execute(['game-studio'], fileSystem);
+      const result = command.execute(['game-studio'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('src/');
@@ -81,28 +87,28 @@ describe('LsCommand', () => {
     });
 
     test('絶対パスの一覧表示', () => {
-      const result = command.execute(['/projects/game-studio'], fileSystem);
+      const result = command.execute(['/projects/game-studio'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('src/');
     });
 
     test('ホームパスの一覧表示', () => {
-      const result = command.execute(['~/tech-startup'], fileSystem);
+      const result = command.execute(['~/tech-startup'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('api/');
     });
 
     test('存在しないパスはエラー', () => {
-      const result = command.execute(['nonexistent'], fileSystem);
+      const result = command.execute(['nonexistent'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('パスが見つかりません');
     });
 
     test('ファイルを指定した場合はエラー', () => {
-      const result = command.execute(['game-studio/README.md'], fileSystem);
+      const result = command.execute(['game-studio/README.md'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('ディレクトリではありません');
@@ -111,7 +117,7 @@ describe('LsCommand', () => {
 
   describe('表示フォーマット', () => {
     test('通常表示でディレクトリに/が付く', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('game-studio/');
@@ -119,7 +125,7 @@ describe('LsCommand', () => {
     });
 
     test('詳細表示でディレクトリの権限が正しい', () => {
-      const result = command.execute(['-l'], fileSystem);
+      const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
       const hasDirectoryPermission = result.output!.some(line => line.startsWith('drwxr-xr-x'));
@@ -128,7 +134,7 @@ describe('LsCommand', () => {
 
     test('詳細表示でファイルの権限が正しい', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute(['-l'], fileSystem);
+      const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
       const hasFilePermission = result.output!.some(line => line.startsWith('-rw-r--r--'));
@@ -137,7 +143,7 @@ describe('LsCommand', () => {
 
     test('詳細表示でファイルサイズが表示される', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute(['-l'], fileSystem);
+      const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
       result.output!.forEach(line => {

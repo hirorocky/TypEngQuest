@@ -1,5 +1,4 @@
-import { BaseCommand, CommandResult } from './BaseCommand';
-import { FileSystem } from '../world/FileSystem';
+import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
 
 /**
  * cdコマンド - ディレクトリの移動を行う
@@ -8,7 +7,8 @@ export class CdCommand extends BaseCommand {
   public name = 'cd';
   public description = 'ディレクトリを移動します';
 
-  protected executeInternal(args: string[], fileSystem: FileSystem): CommandResult {
+  protected executeInternal(args: string[], context: CommandContext): CommandResult {
+    const fileSystem = this.getFileSystem(context) as any;
     const targetPath = args[0];
 
     // ディレクトリ移動を実行

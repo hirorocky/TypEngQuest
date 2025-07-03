@@ -1,4 +1,4 @@
-import { FileSystem } from '../world/FileSystem';
+import { PhaseType } from '../core/types';
 
 /**
  * コマンド実行結果
@@ -7,6 +7,20 @@ export interface CommandResult {
   success: boolean;
   message: string;
   output?: string[];
+  nextPhase?: PhaseType;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * コマンド実行コンテキスト
+ */
+export interface CommandContext {
+  currentPhase: PhaseType;
+  gameState?: Record<string, unknown>;
+  fileSystem?: unknown;
+  player?: unknown;
+  battle?: unknown;
+  [key: string]: unknown;
 }
 
 /**
@@ -44,10 +58,10 @@ export abstract class BaseCommand {
   /**
    * コマンドを実行する
    * @param args コマンド引数
-   * @param fileSystem ファイルシステム
+   * @param context 実行コンテキスト
    * @returns 実行結果
    */
-  public execute(args: string[], fileSystem: FileSystem): CommandResult {
+  public execute(args: string[], context: CommandContext): CommandResult {
     try {
       // 引数の検証
       const validation = this.validateArgs(args);
@@ -56,7 +70,7 @@ export abstract class BaseCommand {
       }
 
       // 実際のコマンド処理を実行
-      return this.executeInternal(args, fileSystem);
+      return this.executeInternal(args, context);
     } catch (error) {
       return this.error(
         `コマンド実行中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`
@@ -67,10 +81,10 @@ export abstract class BaseCommand {
   /**
    * 内部的なコマンド実行処理（各コマンドで実装）
    * @param args コマンド引数
-   * @param fileSystem ファイルシステム
+   * @param context 実行コンテキスト
    * @returns 実行結果
    */
-  protected abstract executeInternal(args: string[], fileSystem?: FileSystem): CommandResult;
+  protected abstract executeInternal(args: string[], context: CommandContext): CommandResult;
 
   /**
    * 引数の検証を行う
@@ -114,6 +128,26 @@ export abstract class BaseCommand {
     return {
       success: false,
       message,
+    };
+  }
+
+  /**
+   * フェーズ遷移を伴う成功結果を作成する
+   * @param message 成功メッセージ
+   * @param nextPhase 次のフェーズ
+   * @param data 追加データ
+   * @returns 成功結果
+   */
+  protected successWithPhase(
+    message: string,
+    nextPhase: PhaseType,
+    data?: Record<string, unknown>
+  ): CommandResult {
+    return {
+      success: true,
+      message,
+      nextPhase,
+      data,
     };
   }
 
@@ -282,5 +316,32 @@ export abstract class BaseCommand {
     }
 
     return fullPath;
+  }
+
+  /**
+   * コンテキストからファイルシステムを取得する
+   * @param context 実行コンテキスト
+   * @returns ファイルシステム
+   */
+  protected getFileSystem(context: CommandContext): unknown {
+    return context.fileSystem;
+  }
+
+  /**
+   * コンテキストからプレイヤーを取得する
+   * @param context 実行コンテキスト
+   * @returns プレイヤー
+   */
+  protected getPlayer(context: CommandContext): unknown {
+    return context.player;
+  }
+
+  /**
+   * コンテキストからバトルを取得する
+   * @param context 実行コンテキスト
+   * @returns バトル
+   */
+  protected getBattle(context: CommandContext): unknown {
+    return context.battle;
   }
 }

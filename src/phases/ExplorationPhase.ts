@@ -1,6 +1,6 @@
 import { Phase } from '../core/Phase';
 import { CommandParser } from '../core/CommandParser';
-import { PhaseResult, PhaseType } from '../core/types';
+import { PhaseResult, PhaseTypes } from '../core/types';
 import { Display } from '../ui/Display';
 import { FileSystem } from '../world/FileSystem';
 import { CdCommand } from '../commands/CdCommand';
@@ -80,7 +80,11 @@ export class ExplorationPhase extends Phase {
    */
   private handleNavigationCommand(command: string, args: string[]): PhaseResult {
     const navCommand = this.navigationCommands.get(command)!;
-    const result = navCommand.execute(args, this.fileSystem);
+    const context = {
+      currentPhase: 'exploration' as const,
+      fileSystem: this.fileSystem,
+    };
+    const result = navCommand.execute(args, context);
 
     if (result.success) {
       if (result.output && result.output.length > 0) {
@@ -96,7 +100,7 @@ export class ExplorationPhase extends Phase {
 
     Display.newLine();
     this.showPrompt();
-    return { type: PhaseType.CONTINUE };
+    return { type: PhaseTypes.CONTINUE };
   }
 
   /**
@@ -108,26 +112,26 @@ export class ExplorationPhase extends Phase {
       case 'h':
       case '?':
         this.showHelp();
-        return { type: PhaseType.CONTINUE };
+        return { type: PhaseTypes.CONTINUE };
 
       case 'exit':
       case 'quit':
       case 'q':
         Display.printInfo('タイトル画面に戻ります...');
-        return { type: PhaseType.TITLE };
+        return { type: PhaseTypes.TITLE };
 
       case 'clear':
       case 'cls':
         Display.clear();
         this.showPrompt();
-        return { type: PhaseType.CONTINUE };
+        return { type: PhaseTypes.CONTINUE };
 
       default:
         Display.printError(`不明なコマンド: ${command}`);
         Display.printInfo('helpで利用可能なコマンドを確認してください。');
         Display.newLine();
         this.showPrompt();
-        return { type: PhaseType.CONTINUE };
+        return { type: PhaseTypes.CONTINUE };
     }
   }
 

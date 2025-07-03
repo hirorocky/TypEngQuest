@@ -4,14 +4,20 @@
 
 import { TreeCommand } from './TreeCommand';
 import { FileSystem } from '../world/FileSystem';
+import { CommandContext } from './BaseCommand';
 
 describe('TreeCommand', () => {
   let command: TreeCommand;
   let fileSystem: FileSystem;
+  let context: CommandContext;
 
   beforeEach(() => {
     fileSystem = FileSystem.createTestStructure();
     command = new TreeCommand();
+    context = {
+      currentPhase: 'exploration',
+      fileSystem,
+    };
   });
 
   describe('基本プロパティ', () => {
@@ -23,7 +29,7 @@ describe('TreeCommand', () => {
 
   describe('executeInternal - コマンド実行', () => {
     test('基本的なツリー表示', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('ディレクトリツリー:');
@@ -38,7 +44,7 @@ describe('TreeCommand', () => {
 
     test('隠しファイルも含むツリー表示 (-a)', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute(['-a'], fileSystem);
+      const result = command.execute(['-a'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
@@ -46,7 +52,7 @@ describe('TreeCommand', () => {
     });
 
     test('深度制限付きツリー表示 (-d)', () => {
-      const result = command.execute(['-d', '1'], fileSystem);
+      const result = command.execute(['-d', '1'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
@@ -61,7 +67,7 @@ describe('TreeCommand', () => {
     });
 
     test('深度制限付きツリー表示 (--depth)', () => {
-      const result = command.execute(['--depth', '2'], fileSystem);
+      const result = command.execute(['--depth', '2'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
@@ -74,7 +80,7 @@ describe('TreeCommand', () => {
 
     test('複合オプション (-a -d)', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute(['-a', '-d', '2'], fileSystem);
+      const result = command.execute(['-a', '-d', '2'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
@@ -82,7 +88,7 @@ describe('TreeCommand', () => {
     });
 
     test('無効な深度値は無視される', () => {
-      const result = command.execute(['-d', 'invalid'], fileSystem);
+      const result = command.execute(['-d', 'invalid'], context);
 
       expect(result.success).toBe(true);
       // 無効な深度値の場合は制限なしで表示
@@ -91,7 +97,7 @@ describe('TreeCommand', () => {
     });
 
     test('負の深度値は無視される', () => {
-      const result = command.execute(['-d', '-1'], fileSystem);
+      const result = command.execute(['-d', '-1'], context);
 
       expect(result.success).toBe(true);
       // 負の深度値の場合は制限なしで表示
@@ -102,7 +108,7 @@ describe('TreeCommand', () => {
 
   describe('ツリー表示フォーマット', () => {
     test('ツリー構造文字が正しく使用される', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
       const treeOutput = result.output!.join('\n');
 
       // ツリー構造を表す文字が含まれる
@@ -112,7 +118,7 @@ describe('TreeCommand', () => {
     });
 
     test('ディレクトリに/が付く', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
       const treeOutput = result.output!.join('\n');
 
       expect(treeOutput).toContain('game-studio/');
@@ -121,7 +127,7 @@ describe('TreeCommand', () => {
 
     test('ファイルタイプアイコンが表示される', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
       const treeOutput = result.output!.join('\n');
 
       // モンスターファイルのアイコン（.js, .ts等）
@@ -135,7 +141,7 @@ describe('TreeCommand', () => {
     });
 
     test('深度制限でツリー構造が正しく表示される', () => {
-      const result = command.execute(['-d', '2'], fileSystem);
+      const result = command.execute(['-d', '2'], context);
       // 階層構造が正しく表示されることを確認
       const lines = result.output!;
       expect(lines[0]).toContain('projects/');
@@ -146,7 +152,7 @@ describe('TreeCommand', () => {
   describe('サブディレクトリでのツリー表示', () => {
     test('サブディレクトリに移動後のツリー表示', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
@@ -159,7 +165,7 @@ describe('TreeCommand', () => {
 
     test('深いディレクトリでのツリー表示', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');

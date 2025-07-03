@@ -4,14 +4,20 @@
 
 import { PwdCommand } from './PwdCommand';
 import { FileSystem } from '../world/FileSystem';
+import { CommandContext } from './BaseCommand';
 
 describe('PwdCommand', () => {
   let command: PwdCommand;
   let fileSystem: FileSystem;
+  let context: CommandContext;
 
   beforeEach(() => {
     fileSystem = FileSystem.createTestStructure();
     command = new PwdCommand();
+    context = {
+      currentPhase: 'exploration',
+      fileSystem,
+    };
   });
 
   describe('基本プロパティ', () => {
@@ -23,7 +29,7 @@ describe('PwdCommand', () => {
 
   describe('executeInternal - コマンド実行', () => {
     test('ルートディレクトリでのpwd', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects');
@@ -31,7 +37,7 @@ describe('PwdCommand', () => {
 
     test('サブディレクトリでのpwd', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects/game-studio');
@@ -39,7 +45,7 @@ describe('PwdCommand', () => {
 
     test('深いディレクトリでのpwd', () => {
       fileSystem.cd('game-studio/src');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects/game-studio/src');
@@ -47,7 +53,7 @@ describe('PwdCommand', () => {
 
     test('絶対パスで移動後のpwd', () => {
       fileSystem.cd('/projects/tech-startup/api');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects/tech-startup/api');
@@ -56,7 +62,7 @@ describe('PwdCommand', () => {
     test('親ディレクトリに戻った後のpwd', () => {
       fileSystem.cd('game-studio/src');
       fileSystem.cd('..');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects/game-studio');
@@ -65,7 +71,7 @@ describe('PwdCommand', () => {
     test('ホームディレクトリに戻った後のpwd', () => {
       fileSystem.cd('game-studio/src');
       fileSystem.cd('~');
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects');
@@ -73,7 +79,7 @@ describe('PwdCommand', () => {
 
     test('引数を渡してもpwdは正常動作', () => {
       fileSystem.cd('game-studio');
-      const result = command.execute(['ignored', 'arguments'], fileSystem);
+      const result = command.execute(['ignored', 'arguments'], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('/projects/game-studio');
@@ -121,44 +127,44 @@ describe('PwdCommand', () => {
   describe('ディレクトリ移動との連携テスト', () => {
     test('複数回の移動でpwdが正しく動作', () => {
       // 初期位置
-      let result = command.execute([], fileSystem);
+      let result = command.execute([], context);
       expect(result.message).toBe('/projects');
 
       // game-studioに移動
       fileSystem.cd('game-studio');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects/game-studio');
 
       // srcに移動
       fileSystem.cd('src');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects/game-studio/src');
 
       // 親ディレクトリに戻る
       fileSystem.cd('..');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects/game-studio');
 
       // ルートに戻る
       fileSystem.cd('~');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects');
     });
 
     test('異なるプロジェクトディレクトリでのpwd', () => {
       // tech-startupに移動
       fileSystem.cd('tech-startup');
-      let result = command.execute([], fileSystem);
+      let result = command.execute([], context);
       expect(result.message).toBe('/projects/tech-startup');
 
       // apiに移動
       fileSystem.cd('api');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects/tech-startup/api');
 
       // 絶対パスでgame-studioに移動
       fileSystem.cd('/projects/game-studio');
-      result = command.execute([], fileSystem);
+      result = command.execute([], context);
       expect(result.message).toBe('/projects/game-studio');
     });
   });

@@ -4,14 +4,20 @@
 
 import { CdCommand } from './CdCommand';
 import { FileSystem } from '../world/FileSystem';
+import { CommandContext } from './BaseCommand';
 
 describe('CdCommand', () => {
   let command: CdCommand;
   let fileSystem: FileSystem;
+  let context: CommandContext;
 
   beforeEach(() => {
     fileSystem = FileSystem.createTestStructure();
     command = new CdCommand();
+    context = {
+      currentPhase: 'exploration',
+      fileSystem,
+    };
   });
 
   describe('基本プロパティ', () => {
@@ -26,7 +32,7 @@ describe('CdCommand', () => {
       // サブディレクトリに移動してから
       fileSystem.cd('game-studio');
 
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('移動しました');
@@ -46,14 +52,14 @@ describe('CdCommand', () => {
       fileSystem.cd('game-studio');
       fileSystem.cd('src');
 
-      const result = command.execute(['..'], fileSystem);
+      const result = command.execute(['..'], context);
 
       expect(result.success).toBe(true);
       expect(fileSystem.pwd()).toBe('/projects/game-studio');
     });
 
     test('相対パスでの移動', () => {
-      const result = command.execute(['game-studio'], fileSystem);
+      const result = command.execute(['game-studio'], context);
 
       expect(result.success).toBe(true);
       expect(fileSystem.pwd()).toBe('/projects/game-studio');
@@ -74,7 +80,7 @@ describe('CdCommand', () => {
     });
 
     test('存在しないディレクトリへの移動はエラー', () => {
-      const result = command.execute(['nonexistent'], fileSystem);
+      const result = command.execute(['nonexistent'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('ディレクトリが見つかりません');
@@ -88,7 +94,7 @@ describe('CdCommand', () => {
     });
 
     test('ルートより上への移動はエラー', () => {
-      const result = command.execute(['..'], fileSystem);
+      const result = command.execute(['..'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('ルートディレクトリより上には移動できません');

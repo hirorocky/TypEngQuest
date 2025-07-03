@@ -1,5 +1,4 @@
-import { BaseCommand, CommandResult } from './BaseCommand';
-import { FileSystem } from '../world/FileSystem';
+import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
 
 /**
  * pwdコマンド - 現在の作業ディレクトリを表示する
@@ -8,7 +7,8 @@ export class PwdCommand extends BaseCommand {
   public name = 'pwd';
   public description = '現在の作業ディレクトリのパスを表示します';
 
-  protected executeInternal(_args: string[], fileSystem: FileSystem): CommandResult {
+  protected executeInternal(_args: string[], context: CommandContext): CommandResult {
+    const fileSystem = this.getFileSystem(context) as any;
     const currentPath = fileSystem.pwd();
     return this.success(currentPath);
   }

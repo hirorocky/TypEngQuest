@@ -1,5 +1,4 @@
-import { BaseCommand, CommandResult } from './BaseCommand';
-import { FileSystem } from '../world/FileSystem';
+import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
 import { FileNode } from '../world/FileNode';
 
 /**
@@ -9,7 +8,8 @@ export class LsCommand extends BaseCommand {
   public name = 'ls';
   public description = 'ファイル・ディレクトリ一覧を表示します';
 
-  protected executeInternal(args: string[], fileSystem: FileSystem): CommandResult {
+  protected executeInternal(args: string[], context: CommandContext): CommandResult {
+    const fileSystem = this.getFileSystem(context) as any;
     const options = this.parseOptions(args);
     const targetPath = options.remaining[0];
 

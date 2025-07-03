@@ -2,7 +2,7 @@
  * BaseCommandクラスのテスト
  */
 
-import { BaseCommand, CommandResult } from './BaseCommand';
+import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
 import { FileSystem } from '../world/FileSystem';
 
 // テスト用の具象コマンドクラス
@@ -10,7 +10,7 @@ class TestCommand extends BaseCommand {
   public name = 'test';
   public description = 'テスト用コマンド';
 
-  protected executeInternal(args: string[]): CommandResult {
+  protected executeInternal(args: string[], _context: CommandContext): CommandResult {
     if (args[0] === 'error') {
       return this.error('テストエラー');
     }
@@ -32,15 +32,20 @@ class TestCommand extends BaseCommand {
 describe('BaseCommand', () => {
   let command: TestCommand;
   let fileSystem: FileSystem;
+  let context: CommandContext;
 
   beforeEach(() => {
     fileSystem = FileSystem.createTestStructure();
     command = new TestCommand();
+    context = {
+      currentPhase: 'exploration',
+      fileSystem,
+    };
   });
 
   describe('execute - コマンド実行', () => {
     test('正常なコマンド実行', () => {
-      const result = command.execute(['success'], fileSystem);
+      const result = command.execute(['success'], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('テスト成功');
@@ -48,7 +53,7 @@ describe('BaseCommand', () => {
     });
 
     test('エラーケースの処理', () => {
-      const result = command.execute(['error'], fileSystem);
+      const result = command.execute(['error'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toBe('テストエラー');
@@ -56,7 +61,7 @@ describe('BaseCommand', () => {
     });
 
     test('引数なしでの実行', () => {
-      const result = command.execute([], fileSystem);
+      const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('デフォルト成功');

@@ -1,5 +1,5 @@
-import { BaseCommand, CommandResult } from './BaseCommand';
-import { FileSystem, TreeNode } from '../world/FileSystem';
+import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
+import { TreeNode } from '../world/FileSystem';
 
 /**
  * treeコマンド - ディレクトリ構造をツリー形式で表示する
@@ -8,7 +8,8 @@ export class TreeCommand extends BaseCommand {
   public name = 'tree';
   public description = 'ディレクトリ構造をツリー形式で表示します';
 
-  protected executeInternal(args: string[], fileSystem: FileSystem): CommandResult {
+  protected executeInternal(args: string[], context: CommandContext): CommandResult {
+    const fileSystem = this.getFileSystem(context) as any;
     const options = this.parseOptions(args);
 
     // treeオプションを設定
