@@ -1,10 +1,16 @@
 ---
 allowed-tools: Bash(git:*)
-description: "GithubのIssueについたコメントをみて、必要な修正を行うコマンドです。"
+description: "GithubのIssueを作成するコマンドです。"
 ---
 
 # 指示の概要
-Issue番号#`$ARGUMENTS`を参照し、そこについたコメントをもとにIssueを修正してください。
+```
+$ARGUMENTS
+```
+
+# 詳細
+上の指示に従って、GithubのIssueを作成してください。
+テンプレートとして@.github/ISSUE_TEMPLATE/development-plan.mdを使用してください。
 
 # 参照
 @docs/game-systems.md - ゲームシステムの詳細
