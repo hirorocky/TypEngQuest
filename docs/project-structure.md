@@ -95,14 +95,6 @@ TypEngQuest/
 │   ├── commands/                   # コマンド実装
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
-│   │   ├── CdCommand.ts            # cdコマンド（ナビゲーション）
-│   │   ├── CdCommand.test.ts       # CdCommandのテスト
-│   │   ├── LsCommand.ts            # lsコマンド（ナビゲーション）
-│   │   ├── LsCommand.test.ts       # LsCommandのテスト
-│   │   ├── PwdCommand.ts           # pwdコマンド（ナビゲーション）
-│   │   ├── PwdCommand.test.ts      # PwdCommandのテスト
-│   │   ├── TreeCommand.ts          # treeコマンド（ナビゲーション）
-│   │   ├── TreeCommand.test.ts     # TreeCommandのテスト
 │   │   ├── title/                  # タイトルフェーズ用コマンド
 │   │   │   ├── StartCommand.ts     # startコマンド
 │   │   │   ├── StartCommand.test.ts # StartCommandのテスト
@@ -110,6 +102,15 @@ TypEngQuest/
 │   │   │   ├── LoadCommand.test.ts # LoadCommandのテスト
 │   │   │   ├── ExitCommand.ts      # exitコマンド
 │   │   │   └── ExitCommand.test.ts # ExitCommandのテスト
+│   │   ├── exploration/            # 探索フェーズ用コマンド
+│   │   │   ├── CdCommand.ts        # cdコマンド（ナビゲーション）
+│   │   │   ├── CdCommand.test.ts   # CdCommandのテスト
+│   │   │   ├── LsCommand.ts        # lsコマンド（ナビゲーション）
+│   │   │   ├── LsCommand.test.ts   # LsCommandのテスト
+│   │   │   ├── PwdCommand.ts       # pwdコマンド（ナビゲーション）
+│   │   │   ├── PwdCommand.test.ts  # PwdCommandのテスト
+│   │   │   ├── TreeCommand.ts      # treeコマンド（ナビゲーション）
+│   │   │   └── TreeCommand.test.ts # TreeCommandのテスト
 │   │   ├── file/                   # ファイル操作コマンド（未実装）
 │   │   │   ├── CatCommand.ts       # catコマンド
 │   │   │   ├── CatCommand.test.ts  # CatCommandのテスト
@@ -597,16 +598,16 @@ TypingPhase
 - オプション解析機能（parseOptions）
 - 共通バリデーション、エラーハンドリング、ヘルプテキスト管理
 
-#### ナビゲーションコマンド（実装済み）
-- **CdCommand.ts**: ディレクトリ移動、パス解決、移動可否判定
-- **LsCommand.ts**: ファイル一覧表示、オプション処理（-a, -l）
-- **PwdCommand.ts**: 現在位置表示、パスフォーマット
-- **TreeCommand.ts**: ツリー表示、深さ制限、ASCII art生成
-
 #### title/ (タイトルフェーズコマンド)
 - **StartCommand.ts**: 新規ゲーム開始、ExplorationPhaseへの遷移
 - **LoadCommand.ts**: セーブデータロード機能（現在は未実装表示）
 - **ExitCommand.ts**: ゲーム終了処理
+
+#### exploration/ (探索フェーズコマンド）
+- **CdCommand.ts**: ディレクトリ移動、パス解決、移動可否判定
+- **LsCommand.ts**: ファイル一覧表示、オプション処理（-a, -l）
+- **PwdCommand.ts**: 現在位置表示、パスフォーマット
+- **TreeCommand.ts**: ツリー表示、深さ制限、ASCII art生成
 
 #### file/ (ファイル操作コマンド)
 - **CatCommand.ts**: ファイル内容表示、ファイル作用の実行

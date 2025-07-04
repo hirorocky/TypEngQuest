@@ -1,5 +1,5 @@
-import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
-import { TreeNode } from '../world/FileSystem';
+import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
+import { TreeNode } from '../../world/FileSystem';
 
 /**
  * treeコマンド - ディレクトリ構造をツリー形式で表示する

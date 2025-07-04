@@ -3,8 +3,8 @@
  */
 
 import { TreeCommand } from './TreeCommand';
-import { FileSystem } from '../world/FileSystem';
-import { CommandContext } from './BaseCommand';
+import { FileSystem } from '../../world/FileSystem';
+import { CommandContext } from '../BaseCommand';
 
 describe('TreeCommand', () => {
   let command: TreeCommand;

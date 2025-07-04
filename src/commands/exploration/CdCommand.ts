@@ -1,4 +1,4 @@
-import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
+import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
  * cdコマンド - ディレクトリの移動を行う

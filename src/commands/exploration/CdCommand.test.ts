@@ -3,8 +3,8 @@
  */
 
 import { CdCommand } from './CdCommand';
-import { FileSystem } from '../world/FileSystem';
-import { CommandContext } from './BaseCommand';
+import { FileSystem } from '../../world/FileSystem';
+import { CommandContext } from '../BaseCommand';
 
 describe('CdCommand', () => {
   let command: CdCommand;

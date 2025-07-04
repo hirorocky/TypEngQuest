@@ -3,8 +3,8 @@
  */
 
 import { LsCommand } from './LsCommand';
-import { FileSystem } from '../world/FileSystem';
-import { CommandContext } from './BaseCommand';
+import { FileSystem } from '../../world/FileSystem';
+import { CommandContext } from '../BaseCommand';
 
 describe('LsCommand', () => {
   let command: LsCommand;

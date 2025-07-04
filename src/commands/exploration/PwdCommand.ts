@@ -1,4 +1,4 @@
-import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
+import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
  * pwdコマンド - 現在の作業ディレクトリを表示する

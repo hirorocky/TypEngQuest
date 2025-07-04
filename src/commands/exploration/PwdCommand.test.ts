@@ -3,8 +3,8 @@
  */
 
 import { PwdCommand } from './PwdCommand';
-import { FileSystem } from '../world/FileSystem';
-import { CommandContext } from './BaseCommand';
+import { FileSystem } from '../../world/FileSystem';
+import { CommandContext } from '../BaseCommand';
 
 describe('PwdCommand', () => {
   let command: PwdCommand;

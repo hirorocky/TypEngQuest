@@ -1,5 +1,5 @@
-import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
-import { FileNode } from '../world/FileNode';
+import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
+import { FileNode } from '../../world/FileNode';
 
 /**
  * lsコマンド - ファイル・ディレクトリの一覧を表示する

@@ -1,4 +1,14 @@
-import { PhaseType } from '../core/types';
+import { PhaseType, GameState } from '../core/types';
+import { FileSystem } from '../world/FileSystem';
+
+// プレイヤーとバトルの仮インターフェース（後で実装予定）
+export interface Player {
+  // TODO: プレイヤー実装時に詳細を定義
+}
+
+export interface Battle {
+  // TODO: バトル実装時に詳細を定義
+}
 
 /**
  * コマンド実行結果
@@ -16,11 +26,10 @@ export interface CommandResult {
  */
 export interface CommandContext {
   currentPhase: PhaseType;
-  gameState?: Record<string, unknown>;
-  fileSystem?: unknown;
-  player?: unknown;
-  battle?: unknown;
-  [key: string]: unknown;
+  gameState?: GameState;
+  fileSystem?: FileSystem;
+  player?: Player;
+  battle?: Battle;
 }
 
 /**
@@ -337,7 +346,7 @@ export abstract class BaseCommand {
    * @param context 実行コンテキスト
    * @returns ファイルシステム
    */
-  protected getFileSystem(context: CommandContext): unknown {
+  protected getFileSystem(context: CommandContext): FileSystem | undefined {
     return context.fileSystem;
   }
 
@@ -346,7 +355,7 @@ export abstract class BaseCommand {
    * @param context 実行コンテキスト
    * @returns プレイヤー
    */
-  protected getPlayer(context: CommandContext): unknown {
+  protected getPlayer(context: CommandContext): Player | undefined {
     return context.player;
   }
 
@@ -355,7 +364,7 @@ export abstract class BaseCommand {
    * @param context 実行コンテキスト
    * @returns バトル
    */
-  protected getBattle(context: CommandContext): unknown {
+  protected getBattle(context: CommandContext): Battle | undefined {
     return context.battle;
   }
 }

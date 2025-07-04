@@ -2,10 +2,10 @@ import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType } from '../core/types';
 import { Display } from '../ui/Display';
 import { FileSystem } from '../world/FileSystem';
-import { CdCommand } from '../commands/CdCommand';
-import { LsCommand } from '../commands/LsCommand';
-import { PwdCommand } from '../commands/PwdCommand';
-import { TreeCommand } from '../commands/TreeCommand';
+import { CdCommand } from '../commands/exploration/CdCommand';
+import { LsCommand } from '../commands/exploration/LsCommand';
+import { PwdCommand } from '../commands/exploration/PwdCommand';
+import { TreeCommand } from '../commands/exploration/TreeCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
