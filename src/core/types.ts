@@ -2,7 +2,32 @@
  * 共通型定義
  */
 
-export type PhaseType = 'title' | 'exploration' | 'dialog' | 'inventory' | 'battle' | 'typing';
+export type PhaseType =
+  | 'title'
+  | 'exploration'
+  | 'dialog'
+  | 'inventory'
+  | 'battle'
+  | 'typing'
+  | 'continue';
+
+export const PhaseTypes = {
+  TITLE: 'title' as const,
+  EXPLORATION: 'exploration' as const,
+  DIALOG: 'dialog' as const,
+  INVENTORY: 'inventory' as const,
+  BATTLE: 'battle' as const,
+  TYPING: 'typing' as const,
+  CONTINUE: 'continue' as const,
+} as const satisfies Record<string, PhaseType>;
+
+/**
+ * フェーズ実行結果
+ */
+export interface PhaseResult {
+  type: PhaseType;
+  data?: Record<string, unknown>;
+}
 
 export interface GameState {
   currentPhase: PhaseType;
