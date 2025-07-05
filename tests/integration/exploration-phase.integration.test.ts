@@ -236,6 +236,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 現在位置確認
       const pwdResult1 = await explorationPhase.processInput('pwd');
       expect(pwdResult1.success).toBe(true);
+      expect(pwdResult1.output).toContain('/projects');
       
       // カレントディレクトリに移動（何も起こらないはず）
       const cdResult1 = await explorationPhase.processInput('cd .');
@@ -259,6 +260,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 初期位置確認
       const initialPwd = await explorationPhase.processInput('pwd');
       expect(initialPwd.success).toBe(true);
+      expect(initialPwd.output).toContain('/projects');
       
       // ディレクトリ一覧確認
       const lsResult = await explorationPhase.processInput('ls');
