@@ -1,11 +1,11 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * pwdコマンド - 現在の作業ディレクトリを表示する
+ * pwd コマンド - ワーキングディレクトリを表示
  */
 export class PwdCommand extends BaseCommand {
   public name = 'pwd';
-  public description = '現在の作業ディレクトリのパスを表示します';
+  public description = 'print working directory';
 
   protected executeInternal(_args: string[], context: CommandContext): CommandResult {
     const fileSystem = this.getFileSystem(context) as any;
@@ -15,15 +15,15 @@ export class PwdCommand extends BaseCommand {
 
   public getHelp(): string[] {
     return [
-      'pwd - 現在の作業ディレクトリのパスを表示します',
+      'pwd - print working directory',
       '',
-      'このコマンドは引数を取りません。',
-      '現在いるディレクトリの絶対パスを表示します。',
+      'this command takes no arguments.',
+      'displays the absolute path of the current directory.',
       '',
-      '例:',
-      '  pwd              # 現在のディレクトリパスを表示',
+      'examples:',
+      '  pwd              # display current directory path',
       '',
-      '出力例:',
+      'output example:',
       '  /projects/game-studio/src',
     ];
   }

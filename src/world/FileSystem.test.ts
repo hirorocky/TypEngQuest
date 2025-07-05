@@ -91,7 +91,7 @@ describe('FileSystem', () => {
     test('存在しないディレクトリへの移動はエラー', () => {
       const result = fileSystem.cd('nonexistent');
       expect(result.success).toBe(false);
-      expect(result.error).toContain('ディレクトリが見つかりません');
+      expect(result.error).toContain('no such directory');
       expect(fileSystem.pwd()).toBe('/projects'); // 移動していない
     });
 
@@ -99,13 +99,13 @@ describe('FileSystem', () => {
       fileSystem.cd('game-studio/src');
       const result = fileSystem.cd('main.js');
       expect(result.success).toBe(false);
-      expect(result.error).toContain('ディレクトリではありません');
+      expect(result.error).toContain('not a directory');
     });
 
     test('ルートより上への移動はエラー', () => {
       const result = fileSystem.cd('..');
       expect(result.success).toBe(false);
-      expect(result.error).toContain('ルートディレクトリより上には移動できません');
+      expect(result.error).toContain('cannot change directory above root');
     });
 
     test('ホームディレクトリ（~）への移動', () => {
@@ -204,7 +204,7 @@ describe('FileSystem', () => {
     test('存在しないパスの一覧取得はエラー', () => {
       const result = fileSystem.ls({ path: 'nonexistent' });
       expect(result.success).toBe(false);
-      expect(result.error).toContain('パスが見つかりません');
+      expect(result.error).toContain('no such path');
     });
   });
 

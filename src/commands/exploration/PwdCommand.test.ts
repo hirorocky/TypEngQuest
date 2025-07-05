@@ -23,7 +23,7 @@ describe('PwdCommand', () => {
   describe('基本プロパティ', () => {
     test('コマンド名とディスクリプション', () => {
       expect(command.name).toBe('pwd');
-      expect(command.description).toBe('現在の作業ディレクトリのパスを表示します');
+      expect(command.description).toBe('print working directory');
     });
   });
 
@@ -93,14 +93,14 @@ describe('PwdCommand', () => {
       expect(help).toBeInstanceOf(Array);
       expect(help.length).toBeGreaterThan(0);
       expect(help[0]).toContain('pwd');
-      expect(help.join('\n')).toContain('現在の作業ディレクトリのパスを表示します');
+      expect(help.join('\n')).toContain('print working directory');
     });
 
     test('引数不要の説明が含まれる', () => {
       const help = command.getHelp();
       const helpText = help.join('\n');
 
-      expect(helpText).toContain('引数を取りません');
+      expect(helpText).toContain('takes no arguments');
     });
 
     test('使用例が含まれる', () => {

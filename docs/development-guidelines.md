@@ -30,6 +30,7 @@
 - **テストは日本語記述**: describe・testメソッドの説明文は日本語
 - **クラス名・変数名**: 英語（実装寄りの名前はそのまま）
 - **JSDocコメント**: 全てのクラスとメソッドにJSDoc形式のコメントを付与
+- **ユーザー向けメッセージ**: Unix風英語で記述（詳細は後述）
 
 ### 重要な指示
 package.jsonの`type`フィールドを変更してはならない
@@ -56,6 +57,33 @@ export class Player {
     // 実装
   }
 }
+```
+
+### Unix風メッセージガイドライン
+ユーザー向けのメッセージは以下の規約に従って記述します：
+
+**基本方針**
+- 小文字で始める（固有名詞除く）
+- 簡潔で技術的な表現を使用
+- 句読点は最小限に抑える
+- Unixコマンドスタイルの慣例に従う
+
+**メッセージ種別**
+- **成功メッセージ**: 動作完了を示す（例：`game started`, `directory changed`）
+- **エラーメッセージ**: 問題を簡潔に伝える（例：`no such file`, `permission denied`）
+- **情報メッセージ**: 状態や結果を示す（例：`current directory: /home`, `3 files found`）
+- **ヘルプメッセージ**: コマンドの使用方法（例：`usage: ls [options] [path]`）
+
+**具体例**
+```typescript
+// 良い例
+return this.success('new game started');
+return this.error('no such directory');
+return this.info('current path: /projects');
+
+// 避けるべき例
+return this.success('New game has been started successfully!');
+return this.error('The directory you specified does not exist.');
 ```
 
 ## 品質保証

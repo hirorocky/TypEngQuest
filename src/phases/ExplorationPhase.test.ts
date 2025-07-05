@@ -45,7 +45,9 @@ describe('ExplorationPhase', () => {
     test('ファイルシステムが初期化される', () => {
       // enter()を呼んで現在地が表示されることを確認
       phase.enter();
-      expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('現在地: /projects'));
+      expect(mockPrintSuccess).toHaveBeenCalledWith(
+        expect.stringContaining('current location: /projects')
+      );
     });
   });
 
@@ -57,18 +59,18 @@ describe('ExplorationPhase', () => {
 
     test('ヘッダーが表示される', () => {
       phase.enter();
-      expect(mockPrintHeader).toHaveBeenCalledWith('マップ探索モード');
+      expect(mockPrintHeader).toHaveBeenCalledWith('exploration mode');
     });
 
     test('説明文が表示される', () => {
       phase.enter();
-      expect(mockPrintInfo).toHaveBeenCalledWith('仮想ファイルシステムを探索できます。');
-      expect(mockPrintInfo).toHaveBeenCalledWith('helpコマンドで利用可能なコマンドを表示します。');
+      expect(mockPrintInfo).toHaveBeenCalledWith('explore the virtual filesystem.');
+      expect(mockPrintInfo).toHaveBeenCalledWith('type "help" to see available commands.');
     });
 
     test('現在地が表示される', () => {
       phase.enter();
-      expect(mockPrintSuccess).toHaveBeenCalledWith('現在地: /projects');
+      expect(mockPrintSuccess).toHaveBeenCalledWith('current location: /projects');
     });
 
     test('プロンプトが表示される', () => {
@@ -88,7 +90,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('cd game-studio');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
-        expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('移動しました'));
+        expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('changed to'));
       });
 
       test('lsコマンドが動作する', () => {
@@ -116,9 +118,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('cd nonexistent');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
-        expect(mockPrintError).toHaveBeenCalledWith(
-          expect.stringContaining('ディレクトリが見つかりません')
-        );
+        expect(mockPrintError).toHaveBeenCalledWith(expect.stringContaining('no such directory'));
       });
     });
 
@@ -127,7 +127,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('help');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
-        expect(mockPrintHeader).toHaveBeenCalledWith('利用可能なコマンド');
+        expect(mockPrintHeader).toHaveBeenCalledWith('available commands');
         expect(mockPrintCommand).toHaveBeenCalled();
       });
 
@@ -143,7 +143,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('exit');
 
         expect(result.type).toBe(PhaseTypes.TITLE);
-        expect(mockPrintInfo).toHaveBeenCalledWith('タイトル画面に戻ります...');
+        expect(mockPrintInfo).toHaveBeenCalledWith('returning to title...');
       });
 
       test('quitコマンドでタイトルに戻る', () => {
@@ -163,8 +163,8 @@ describe('ExplorationPhase', () => {
       const result = (phase as any).processCommand('unknown');
 
       expect(result.type).toBe(PhaseTypes.CONTINUE);
-      expect(mockPrintError).toHaveBeenCalledWith('不明なコマンド: unknown');
-      expect(mockPrintInfo).toHaveBeenCalledWith('helpで利用可能なコマンドを確認してください。');
+      expect(mockPrintError).toHaveBeenCalledWith('command not found: unknown');
+      expect(mockPrintInfo).toHaveBeenCalledWith('type "help" to see available commands.');
     });
 
     test('空のコマンドで継続', () => {
@@ -215,7 +215,7 @@ describe('ExplorationPhase', () => {
 
       (phase as any).processCommand('help');
 
-      expect(mockPrintInfo).toHaveBeenCalledWith('ナビゲーション:');
+      expect(mockPrintInfo).toHaveBeenCalledWith('navigation:');
       expect(mockPrintCommand).toHaveBeenCalledWith('cd', expect.any(String));
       expect(mockPrintCommand).toHaveBeenCalledWith('ls', expect.any(String));
       expect(mockPrintCommand).toHaveBeenCalledWith('pwd', expect.any(String));
@@ -228,10 +228,10 @@ describe('ExplorationPhase', () => {
 
       (phase as any).processCommand('help');
 
-      expect(mockPrintInfo).toHaveBeenCalledWith('システム:');
-      expect(mockPrintCommand).toHaveBeenCalledWith('help', 'このヘルプを表示');
-      expect(mockPrintCommand).toHaveBeenCalledWith('clear', '画面をクリア');
-      expect(mockPrintCommand).toHaveBeenCalledWith('exit', 'タイトル画面に戻る');
+      expect(mockPrintInfo).toHaveBeenCalledWith('system:');
+      expect(mockPrintCommand).toHaveBeenCalledWith('help', 'show this help');
+      expect(mockPrintCommand).toHaveBeenCalledWith('clear', 'clear screen');
+      expect(mockPrintCommand).toHaveBeenCalledWith('exit', 'return to title');
     });
 
     test('詳細ヘルプの案内が表示される', () => {
@@ -240,9 +240,7 @@ describe('ExplorationPhase', () => {
 
       (phase as any).processCommand('help');
 
-      expect(mockPrintInfo).toHaveBeenCalledWith(
-        '各コマンドの詳細は「コマンド名 --help」で確認できます。'
-      );
+      expect(mockPrintInfo).toHaveBeenCalledWith('use "command --help" for detailed information.');
     });
   });
 

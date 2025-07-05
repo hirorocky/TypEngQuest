@@ -1,40 +1,40 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * cdコマンド - ディレクトリの移動を行う
+ * cd コマンド - ワーキングディレクトリを変更
  */
 export class CdCommand extends BaseCommand {
   public name = 'cd';
-  public description = 'ディレクトリを移動します';
+  public description = 'change working directory';
 
   protected executeInternal(args: string[], context: CommandContext): CommandResult {
     const fileSystem = this.getFileSystem(context) as any;
     const targetPath = args[0];
 
-    // ディレクトリ移動を実行
+    // ディレクトリの変更を実行
     const result = fileSystem.cd(targetPath);
 
     if (result.success) {
-      return this.success(`移動しました: ${fileSystem.pwd()}`);
+      return this.success(`changed to: ${fileSystem.pwd()}`);
     } else {
-      return this.error(result.error || 'ディレクトリの移動に失敗しました');
+      return this.error(result.error || 'change directory failed');
     }
   }
 
   public getHelp(): string[] {
     return [
-      'cd [path] - ディレクトリを移動します',
+      'cd [path] - change working directory',
       '',
-      '引数:',
-      '  path    移動先のパス（省略時はルートディレクトリ）',
+      'arguments:',
+      '  path    destination path (default: root directory)',
       '',
-      '例:',
-      '  cd              # ルートディレクトリに移動',
-      '  cd ~            # ルートディレクトリに移動',
-      '  cd ..           # 親ディレクトリに移動',
-      '  cd src          # srcディレクトリに移動',
-      '  cd /projects    # 絶対パスで移動',
-      '  cd ~/game       # ホームパスで移動',
+      'examples:',
+      '  cd              # change to root directory',
+      '  cd ~            # change to root directory',
+      '  cd ..           # change to parent directory',
+      '  cd src          # change to src directory',
+      '  cd /projects    # change using absolute path',
+      '  cd ~/game       # change using home path',
     ];
   }
 }

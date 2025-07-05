@@ -2,17 +2,17 @@ import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 import { TreeNode } from '../../world/FileSystem';
 
 /**
- * treeコマンド - ディレクトリ構造をツリー形式で表示する
+ * tree コマンド - ディレクトリツリー構造を表示
  */
 export class TreeCommand extends BaseCommand {
   public name = 'tree';
-  public description = 'ディレクトリ構造をツリー形式で表示します';
+  public description = 'display directory tree structure';
 
   protected executeInternal(args: string[], context: CommandContext): CommandResult {
     const fileSystem = this.getFileSystem(context) as any;
     const options = this.parseOptions(args);
 
-    // treeオプションを設定
+    // ツリーオプションを設定
     const treeOptions = {
       showHidden: options.flags.includes('a') || options.flags.includes('all'),
       maxDepth: this.getDepthOption(options),
@@ -21,14 +21,14 @@ export class TreeCommand extends BaseCommand {
     // ツリーデータを取得
     const treeData = fileSystem.tree(treeOptions);
 
-    // ツリー表示用の出力を生成
+    // ツリー出力を生成
     const output = this.formatTreeOutput(treeData, treeOptions.showHidden);
 
-    return this.success('ディレクトリツリー:', output);
+    return this.success('directory tree:', output);
   }
 
   /**
-   * 深度オプションを取得する
+   * 深度オプションを取得
    */
   private getDepthOption(options: {
     flags: string[];
@@ -47,7 +47,7 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * ツリー形式の出力をフォーマットする
+   * ツリー出力をフォーマット
    */
   private formatTreeOutput(treeNode: TreeNode, showHidden: boolean): string[] {
     const output: string[] = [];
@@ -56,7 +56,7 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * 単一のツリーノードをフォーマットする
+   * 単一のツリーノードをフォーマット
    */
   private formatTreeNode(
     node: TreeNode,
@@ -64,16 +64,16 @@ export class TreeCommand extends BaseCommand {
     isLast: boolean,
     context: { output: string[]; showHidden: boolean }
   ): void {
-    // ノード名の表示
+    // ノード名を表示
     const connector = isLast ? '└── ' : '├── ';
     const displayName = this.getNodeDisplayName(node);
     context.output.push(prefix + connector + displayName);
 
-    // 子ノードの処理
+    // 子ノードを処理
     if (node.children && node.children.length > 0) {
       let visibleChildren = node.children;
 
-      // 隠しファイルのフィルタリング
+      // 隠しファイルをフィルタ
       if (!context.showHidden) {
         visibleChildren = node.children.filter(child => !child.name.startsWith('.'));
       }
@@ -88,17 +88,17 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * ノードの表示名を取得する
+   * ノード表示名を取得
    */
   private getNodeDisplayName(node: TreeNode): string {
     let displayName = node.name;
 
-    // ディレクトリには/を付加
+    // ディレクトリに / を追加
     if (node.nodeType === 'directory') {
       displayName += '/';
     }
 
-    // ファイルタイプに応じてアイコンを追加
+    // ファイルタイプに基づいてアイコンを追加
     const icon = this.getFileTypeIcon(node.fileType);
     if (icon) {
       displayName += ` ${icon}`;
@@ -108,46 +108,46 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * ファイルタイプに応じたアイコンを取得する
+   * ファイルタイプに基づいてアイコンを取得
    */
   private getFileTypeIcon(fileType?: string): string {
     switch (fileType) {
       case 'monster':
         return '⚔️'; // モンスターファイル
       case 'treasure':
-        return '💰'; // 宝箱ファイル
+        return '💰'; // 宝物ファイル
       case 'save_point':
         return '💾'; // セーブポイント
       case 'event':
         return '🎭'; // イベントファイル
       case 'empty':
-        return '📄'; // 空ファイル
+        return '📄'; // 空のファイル
       default:
-        return ''; // ディレクトリや不明なタイプ
+        return ''; // ディレクトリまたは不明なタイプ
     }
   }
 
   public getHelp(): string[] {
     return [
-      'tree [options] - ディレクトリ構造をツリー形式で表示します',
+      'tree [options] - display directory tree structure',
       '',
-      'オプション:',
-      '  -a, --all         隠しファイルも表示します',
-      '  -d, --depth N     表示する最大深度を指定します',
+      'options:',
+      '  -a, --all         show hidden files',
+      '  -d, --depth N     specify maximum depth to display',
       '',
-      '例:',
-      '  tree              # 現在のディレクトリのツリー表示',
-      '  tree -a           # 隠しファイルも含めてツリー表示',
-      '  tree -d 2         # 深度2までのツリー表示',
-      '  tree --depth 3    # 深度3までのツリー表示',
-      '  tree -a -d 2      # 隠しファイルも含めて深度2まで表示',
+      'examples:',
+      '  tree              # display tree of current directory',
+      '  tree -a           # display tree including hidden files',
+      '  tree -d 2         # display tree up to depth 2',
+      '  tree --depth 3    # display tree up to depth 3',
+      '  tree -a -d 2      # show hidden files up to depth 2',
       '',
-      'ファイルタイプアイコン:',
-      '  ⚔️  モンスターファイル (.js, .ts, .py等)',
-      '  💰 宝箱ファイル (.json, .yaml等)',
-      '  💾 セーブポイント (.md)',
-      '  🎭 イベントファイル (.exe, .bin等)',
-      '  📄 空ファイル (その他)',
+      'file type icons:',
+      '  ⚔️  monster files (.js, .ts, .py etc)',
+      '  💰 treasure files (.json, .yaml etc)',
+      '  💾 save points (.md)',
+      '  🎭 event files (.exe, .bin etc)',
+      '  📄 empty files (others)',
     ];
   }
 }

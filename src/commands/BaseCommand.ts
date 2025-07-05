@@ -66,14 +66,14 @@ export abstract class BaseCommand {
       // 引数の検証
       const validation = this.validateArgs(args);
       if (!validation.valid) {
-        return this.error(validation.error || '引数が無効です');
+        return this.error(validation.error || 'invalid arguments');
       }
 
       // 実際のコマンド処理を実行
       return this.executeInternal(args, context);
     } catch (error) {
       return this.error(
-        `コマンド実行中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`
+        `command execution failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }

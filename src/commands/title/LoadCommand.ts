@@ -1,33 +1,33 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * loadコマンド - セーブデータをロードする
+ * load コマンド - セーブされたゲームを読み込み
  */
 export class LoadCommand extends BaseCommand {
   public name = 'load';
-  public description = 'セーブデータをロードする';
+  public description = 'load saved game';
 
   protected executeInternal(args: string[], _context: CommandContext): CommandResult {
-    // セーブファイルの確認（現在は未実装のため固定メッセージ）
+    // セーブファイルをチェック（未実装、固定メッセージ）
     if (args.length > 0) {
       const saveSlot = args[0];
-      return this.error(`セーブスロット${saveSlot}が見つかりません。`);
+      return this.error(`save slot ${saveSlot} not found`);
     }
 
-    return this.error('セーブファイルが見つかりません。startコマンドで新しいゲームを始めてください。');
+    return this.error('no save file found. use start command to begin new game');
   }
 
   public getHelp(): string[] {
     return [
-      'load [スロット番号] - セーブデータをロードします',
+      'load [slot] - load saved game',
       '',
-      '使用法:',
+      'usage:',
       '  load',
       '  load 1',
       '',
-      '説明:',
-      '  指定したスロットのセーブデータをロードします。',
-      '  スロット番号を省略した場合、利用可能なセーブファイル一覧を表示します。',
+      'description:',
+      '  load game data from specified slot.',
+      '  if no slot specified, show available save files.',
     ];
   }
 }

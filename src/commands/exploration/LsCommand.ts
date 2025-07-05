@@ -2,18 +2,18 @@ import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 import { FileNode } from '../../world/FileNode';
 
 /**
- * lsコマンド - ファイル・ディレクトリの一覧を表示する
+ * ls コマンド - ディレクトリの内容を一覧表示
  */
 export class LsCommand extends BaseCommand {
   public name = 'ls';
-  public description = 'ファイル・ディレクトリ一覧を表示します';
+  public description = 'list directory contents';
 
   protected executeInternal(args: string[], context: CommandContext): CommandResult {
     const fileSystem = this.getFileSystem(context) as any;
     const options = this.parseOptions(args);
     const targetPath = options.remaining[0];
 
-    // lsオプションを設定
+    // ls オプションを設定
     const listOptions = {
       showHidden: options.flags.includes('a') || options.flags.includes('all'),
       detailed: options.flags.includes('l') || options.flags.includes('long'),
@@ -24,14 +24,14 @@ export class LsCommand extends BaseCommand {
     const result = fileSystem.ls(listOptions);
 
     if (!result.success) {
-      return this.error(result.error || 'ファイル一覧の取得に失敗しました');
+      return this.error(result.error || 'failed to list directory');
     }
 
     if (!result.files || result.files.length === 0) {
-      return this.success('ディレクトリは空です', []);
+      return this.success('directory is empty', []);
     }
 
-    // 表示用の出力を生成
+    // 出力を生成
     const output: string[] = [];
 
     if (listOptions.detailed) {
@@ -42,11 +42,11 @@ export class LsCommand extends BaseCommand {
       output.push(...this.formatSimpleOutput(result.files));
     }
 
-    return this.success('ファイル一覧:', output);
+    return this.success('directory listing:', output);
   }
 
   /**
-   * 通常表示用のフォーマット
+   * 通常表示のフォーマット
    */
   private formatSimpleOutput(files: FileNode[]): string[] {
     const output: string[] = [];
@@ -75,7 +75,7 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * 詳細表示用のフォーマット
+   * 詳細表示のフォーマット
    */
   private formatDetailedOutput(files: FileNode[]): string[] {
     const output: string[] = [];
@@ -94,7 +94,7 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * ファイルの表示名を取得（ディレクトリには/を付加）
+   * ファイル表示名を取得（ディレクトリに / を追加）
    */
   private getDisplayName(file: FileNode): string {
     let displayName = file.name;
@@ -110,7 +110,7 @@ export class LsCommand extends BaseCommand {
    * ファイルサイズを取得（簡単な実装）
    */
   private getFileSize(file: FileNode): string {
-    // ファイルタイプによって適当なサイズを返す
+    // ファイルタイプに基づいて適切なサイズを返す
     switch (file.fileType) {
       case 'monster':
         return '1024';
@@ -127,22 +127,22 @@ export class LsCommand extends BaseCommand {
 
   public getHelp(): string[] {
     return [
-      'ls [options] [path] - ファイル・ディレクトリ一覧を表示します',
+      'ls [options] [path] - list directory contents',
       '',
-      'オプション:',
-      '  -a, --all      隠しファイルも表示します',
-      '  -l, --long     詳細情報を表示します',
+      'options:',
+      '  -a, --all      show hidden files',
+      '  -l, --long     show detailed information',
       '',
-      '引数:',
-      '  path          表示するディレクトリのパス（省略時は現在のディレクトリ）',
+      'arguments:',
+      '  path          directory path to list (default: current directory)',
       '',
-      '例:',
-      '  ls            # 現在のディレクトリの一覧表示',
-      '  ls -a         # 隠しファイルも含めて表示',
-      '  ls -l         # 詳細情報付きで表示',
-      '  ls -la        # 隠しファイルも含めて詳細表示',
-      '  ls src        # srcディレクトリの一覧表示',
-      '  ls -l ~/game  # ホームパスの詳細表示',
+      'examples:',
+      '  ls            # list current directory',
+      '  ls -a         # list including hidden files',
+      '  ls -l         # list with detailed information',
+      '  ls -la        # list all files with details',
+      '  ls src        # list src directory',
+      '  ls -l ~/game  # list home path with details',
     ];
   }
 }

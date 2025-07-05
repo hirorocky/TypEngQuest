@@ -58,7 +58,7 @@ export class FileSystem {
    */
   constructor(root: FileNode) {
     if (!root.isDirectory()) {
-      throw new Error('ルートノードはディレクトリである必要があります');
+      throw new Error('root node must be a directory');
     }
 
     this.root = root;
@@ -90,7 +90,7 @@ export class FileSystem {
       if (this.currentNode === this.root) {
         return {
           success: false,
-          error: 'ルートディレクトリより上には移動できません',
+          error: 'cannot change directory above root',
         };
       }
       this.currentNode = this.currentNode.parent!;
@@ -102,14 +102,14 @@ export class FileSystem {
     if (!targetNode) {
       return {
         success: false,
-        error: `ディレクトリが見つかりません: ${path}`,
+        error: `no such directory: ${path}`,
       };
     }
 
     if (!targetNode.isDirectory()) {
       return {
         success: false,
-        error: `${path} はディレクトリではありません`,
+        error: `${path}: not a directory`,
       };
     }
 
@@ -131,14 +131,14 @@ export class FileSystem {
       if (!node) {
         return {
           success: false,
-          error: `パスが見つかりません: ${options.path}`,
+          error: `no such path: ${options.path}`,
         };
       }
 
       if (!node.isDirectory()) {
         return {
           success: false,
-          error: `${options.path} はディレクトリではありません`,
+          error: `${options.path}: not a directory`,
         };
       }
 
