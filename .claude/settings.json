@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/discord.sh 応答をくださいmm"
+            "command": "bash scripts/notification-discord.sh 応答をくださいmm"
           }
         ]
       }
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/discord.sh タスクが完了しました！"
+            "command": "bash scripts/stop-discord.sh タスクが完了しました！"
           }
         ]
       }
