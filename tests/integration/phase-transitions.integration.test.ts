@@ -8,6 +8,7 @@
  * - 移行時のエラーハンドリング
  */
 
+import { jest } from '@jest/globals';
 import { Game } from '../../src/core/Game';
 import { TestGameHelper } from './helpers/TestGameHelper';
 import { MockHelper } from './helpers/MockHelper';
@@ -44,7 +45,12 @@ describe('フェーズ移行の統合テスト', () => {
       
       // ブラックボックス的にstartコマンドを実行
       const titlePhase = (game as any).currentPhase;
-      const result = await titlePhase.processInput('start');
+      const resultPromise = titlePhase.processInput('start');
+      
+      // タイマーを進めてsetTimeoutを処理
+      jest.runAllTimers();
+      
+      const result = await resultPromise;
       
       // フェーズ遷移が指定されていることを確認
       expect(result.success).toBe(true);
