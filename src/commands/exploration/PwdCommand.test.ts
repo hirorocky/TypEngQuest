@@ -32,7 +32,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects');
+      expect(result.output).toEqual(['/projects']);
     });
 
     test('サブディレクトリでのpwd', () => {
@@ -40,7 +40,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
     });
 
     test('深いディレクトリでのpwd', () => {
@@ -48,7 +48,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects/game-studio/src');
+      expect(result.output).toEqual(['/projects/game-studio/src']);
     });
 
     test('絶対パスで移動後のpwd', () => {
@@ -56,7 +56,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects/tech-startup/api');
+      expect(result.output).toEqual(['/projects/tech-startup/api']);
     });
 
     test('親ディレクトリに戻った後のpwd', () => {
@@ -65,7 +65,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
     });
 
     test('ホームディレクトリに戻った後のpwd', () => {
@@ -74,7 +74,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects');
+      expect(result.output).toEqual(['/projects']);
     });
 
     test('引数を渡してもpwdは正常動作', () => {
@@ -82,7 +82,7 @@ describe('PwdCommand', () => {
       const result = command.execute(['ignored', 'arguments'], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
     });
   });
 
@@ -128,44 +128,44 @@ describe('PwdCommand', () => {
     test('複数回の移動でpwdが正しく動作', () => {
       // 初期位置
       let result = command.execute([], context);
-      expect(result.message).toBe('/projects');
+      expect(result.output).toEqual(['/projects']);
 
       // game-studioに移動
       fileSystem.cd('game-studio');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
 
       // srcに移動
       fileSystem.cd('src');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects/game-studio/src');
+      expect(result.output).toEqual(['/projects/game-studio/src']);
 
       // 親ディレクトリに戻る
       fileSystem.cd('..');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
 
       // ルートに戻る
       fileSystem.cd('~');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects');
+      expect(result.output).toEqual(['/projects']);
     });
 
     test('異なるプロジェクトディレクトリでのpwd', () => {
       // tech-startupに移動
       fileSystem.cd('tech-startup');
       let result = command.execute([], context);
-      expect(result.message).toBe('/projects/tech-startup');
+      expect(result.output).toEqual(['/projects/tech-startup']);
 
       // apiに移動
       fileSystem.cd('api');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects/tech-startup/api');
+      expect(result.output).toEqual(['/projects/tech-startup/api']);
 
       // 絶対パスでgame-studioに移動
       fileSystem.cd('/projects/game-studio');
       result = command.execute([], context);
-      expect(result.message).toBe('/projects/game-studio');
+      expect(result.output).toEqual(['/projects/game-studio']);
     });
   });
 });

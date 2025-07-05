@@ -1,6 +1,4 @@
 import { Game } from '../../../src/core/Game';
-import { Display } from '../../../src/ui/Display';
-import { PhaseTypes } from '../../../src/core/types';
 
 /**
  * 統合テスト用のゲームヘルパークラス
@@ -90,25 +88,6 @@ export class TestGameHelper {
     return this.game.isRunning();
   }
 
-  /**
-   * コマンドを実行する（非同期）
-   * 直接ゲームの入力処理を通してコマンドを実行する
-   * @param command 実行するコマンド
-   * @returns 実行完了のPromise
-   */
-  public async executeCommand(command: string): Promise<void> {
-    if (!this.game) {
-      throw new Error('Game is not initialized');
-    }
-    
-    // ゲームが非同期入力を処理するので、少し待機
-    return new Promise((resolve) => {
-      // readlineインターフェースにコマンドを送信するシミュレーション
-      setTimeout(() => {
-        resolve();
-      }, 50);
-    });
-  }
 
   /**
    * ゲームを開始する
@@ -142,44 +121,4 @@ export class TestGameHelper {
     this.consoleOutput = [];
   }
 
-  /**
-   * タイトル画面が表示されているかチェックする
-   * @returns タイトル画面が表示されているかどうか
-   */
-  public isTitleScreenDisplayed(): boolean {
-    const output = this.getCapturedOutput().join('\n');
-    return output.includes('TypEngQuest') || output.includes('Welcome');
-  }
-
-  /**
-   * ヘルプテキストが表示されているかチェックする
-   * @returns ヘルプテキストが表示されているかどうか
-   */
-  public isHelpDisplayed(): boolean {
-    const output = this.getCapturedOutput().join('\n');
-    return output.includes('Available commands:') || output.includes('help');
-  }
-
-  /**
-   * エラーメッセージが表示されているかチェックする
-   * @param errorText 検索するエラーテキスト（オプション）
-   * @returns エラーメッセージが表示されているかどうか
-   */
-  public isErrorDisplayed(errorText?: string): boolean {
-    const output = this.getCapturedOutput().join('\n');
-    if (errorText) {
-      return output.includes(errorText);
-    }
-    return output.includes('Error') || output.includes('error') || output.includes('Invalid');
-  }
-
-  /**
-   * 現在のディレクトリパスが期待する値かチェックする
-   * @param expectedPath 期待するパス
-   * @returns パスが一致するかどうか
-   */
-  public isCurrentPathEqual(expectedPath: string): boolean {
-    const output = this.getCapturedOutput().join('\n');
-    return output.includes(expectedPath);
-  }
 }

@@ -107,6 +107,41 @@ describe('FileSystem', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('ルートディレクトリより上には移動できません');
     });
+
+    test('ホームディレクトリ（~）への移動', () => {
+      // まず子ディレクトリに移動
+      fileSystem.cd('game-studio');
+      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+
+      // ホームディレクトリに戻る
+      const result = fileSystem.cd('~');
+      expect(result.success).toBe(true);
+      expect(fileSystem.pwd()).toBe('/projects');
+    });
+
+    test('ホームディレクトリから相対パス（~/）での移動', () => {
+      const result = fileSystem.cd('~/game-studio');
+      expect(result.success).toBe(true);
+      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+    });
+
+    test('カレントディレクトリ（.）への移動', () => {
+      const initialPath = fileSystem.pwd();
+      const result = fileSystem.cd('.');
+      expect(result.success).toBe(true);
+      expect(fileSystem.pwd()).toBe(initialPath);
+    });
+
+    test('親ディレクトリ（..）への移動（子ディレクトリから）', () => {
+      // まず子ディレクトリに移動
+      fileSystem.cd('game-studio');
+      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+
+      // 親ディレクトリに戻る
+      const result = fileSystem.cd('..');
+      expect(result.success).toBe(true);
+      expect(fileSystem.pwd()).toBe('/projects');
+    });
   });
 
   describe('ls - ファイル一覧表示', () => {

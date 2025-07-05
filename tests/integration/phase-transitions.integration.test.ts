@@ -36,14 +36,19 @@ describe('フェーズ移行の統合テスト', () => {
     test('startコマンドでExplorationフェーズに移行できること', async () => {
       const game = gameHelper.initializeGame();
       
+      // Titleフェーズに移行してから
+      await game['transitionToPhase']('title');
+      
       // 初期状態確認
       expect(game.getCurrentPhase()).toBe('title');
       
-      // フェーズ移行をテスト
-      await game['transitionToPhase']('exploration');
+      // ブラックボックス的にstartコマンドを実行
+      const titlePhase = (game as any).currentPhase;
+      const result = await titlePhase.processInput('start');
       
-      // 移行後の状態確認
-      expect(game.getCurrentPhase()).toBe('exploration');
+      // フェーズ遷移が指定されていることを確認
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('exploration');
     });
 
     test('移行時に適切な画面表示がされること', async () => {
@@ -75,9 +80,52 @@ describe('フェーズ移行の統合テスト', () => {
       await game['transitionToPhase']('exploration');
       expect(game.getCurrentPhase()).toBe('exploration');
       
-      // Titleフェーズに戻る
-      await game['transitionToPhase']('title');
-      expect(game.getCurrentPhase()).toBe('title');
+      // ブラックボックス的にexitコマンドを実行
+      const explorationPhase = (game as any).currentPhase;
+      const result = await explorationPhase.processInput('exit');
+      
+      // Titleフェーズへの遷移が指定されていることを確認
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('title');
+    });
+
+    test('quitコマンドでもTitleフェーズに戻ること', async () => {
+      const game = gameHelper.initializeGame();
+      
+      await game['transitionToPhase']('exploration');
+      expect(game.getCurrentPhase()).toBe('exploration');
+      
+      const explorationPhase = (game as any).currentPhase;
+      const result = await explorationPhase.processInput('quit');
+      
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('title');
+    });
+
+    test('qコマンドでもTitleフェーズに戻ること', async () => {
+      const game = gameHelper.initializeGame();
+      
+      await game['transitionToPhase']('exploration');
+      expect(game.getCurrentPhase()).toBe('exploration');
+      
+      const explorationPhase = (game as any).currentPhase;
+      const result = await explorationPhase.processInput('q');
+      
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('title');
+    });
+
+    test('無効なコマンドではフェーズ遷移が発生しないこと', async () => {
+      const game = gameHelper.initializeGame();
+      
+      await game['transitionToPhase']('exploration');
+      expect(game.getCurrentPhase()).toBe('exploration');
+      
+      const explorationPhase = (game as any).currentPhase;
+      const result = await explorationPhase.processInput('invalidcommand');
+      
+      expect(result.success).toBe(false);
+      expect(result.nextPhase).toBeUndefined();
     });
   });
 

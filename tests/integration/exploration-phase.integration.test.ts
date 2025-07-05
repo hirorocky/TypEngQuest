@@ -17,6 +17,7 @@ describe('Explorationフェーズの統合テスト', () => {
   let gameHelper: TestGameHelper;
   let mockHelper: MockHelper;
   let explorationPhase: ExplorationPhase;
+  let fileSystem: FileSystem;
 
   beforeEach(async () => {
     gameHelper = new TestGameHelper();
@@ -25,7 +26,12 @@ describe('Explorationフェーズの統合テスト', () => {
     // process.exitをモックして、テスト中にプロセスが終了しないようにする
     mockHelper.mockProcessExit();
     
+    // 統合テスト用の固定ファイル構造を作成
+    fileSystem = FileSystem.createIntegrationTestStructure();
+    
     explorationPhase = new ExplorationPhase();
+    // 固定ファイルシステムを設定
+    (explorationPhase as any).fileSystem = fileSystem;
     await explorationPhase.initialize();
   });
 
@@ -57,28 +63,79 @@ describe('Explorationフェーズの統合テスト', () => {
       const result = await explorationPhase.processInput('ls');
       
       expect(result.success).toBe(true);
+      expect(result.output).toBeDefined();
+      expect(result.output?.some(line => line.includes('web-app'))).toBe(true);
+      expect(result.output?.some(line => line.includes('game-engine'))).toBe(true);
+      expect(result.output?.some(line => line.includes('mobile-app'))).toBe(true);
     });
 
     test('pwdコマンドで現在位置が表示されること', async () => {
       const result = await explorationPhase.processInput('pwd');
       
       expect(result.success).toBe(true);
+      expect(result.output).toBeDefined();
+      expect(result.output?.some(line => line.includes('/projects'))).toBe(true);
     });
 
     test('treeコマンドでディレクトリ構造が表示されること', async () => {
       const result = await explorationPhase.processInput('tree');
       
       expect(result.success).toBe(true);
+      expect(result.output).toBeDefined();
+      expect(result.output?.some(line => line.includes('web-app'))).toBe(true);
+      expect(result.output?.some(line => line.includes('game-engine'))).toBe(true);
+      expect(result.output?.some(line => line.includes('mobile-app'))).toBe(true);
     });
 
     test('cdコマンドでディレクトリ移動ができること', async () => {
-      // まずlsで利用可能なディレクトリを確認
-      const lsResult = await explorationPhase.processInput('ls');
-      expect(lsResult.success).toBe(true);
+      // 初期位置を確認
+      const initialPwd = await explorationPhase.processInput('pwd');
+      expect(initialPwd.success).toBe(true);
+      expect(initialPwd.output).toContain('/projects');
       
-      // 子ディレクトリがある場合はcdをテスト
-      const cdResult = await explorationPhase.processInput('cd .');
+      // web-appディレクトリに移動
+      const cdResult = await explorationPhase.processInput('cd web-app');
       expect(cdResult.success).toBe(true);
+      
+      // 移動後の位置を確認
+      const newPwd = await explorationPhase.processInput('pwd');
+      expect(newPwd.success).toBe(true);
+      expect(newPwd.output).toContain('/projects/web-app');
+    });
+
+    test('深いディレクトリ構造での移動テスト', async () => {
+      // web-app/src/componentsまで移動
+      const cd1 = await explorationPhase.processInput('cd web-app');
+      expect(cd1.success).toBe(true);
+      
+      const cd2 = await explorationPhase.processInput('cd src');
+      expect(cd2.success).toBe(true);
+      
+      const cd3 = await explorationPhase.processInput('cd components');
+      expect(cd3.success).toBe(true);
+      
+      // 最終位置確認
+      const pwd = await explorationPhase.processInput('pwd');
+      expect(pwd.success).toBe(true);
+      expect(pwd.output).toContain('/projects/web-app/src/components');
+      
+      // 親ディレクトリに戻る
+      const cdBack = await explorationPhase.processInput('cd ..');
+      expect(cdBack.success).toBe(true);
+      
+      const pwdBack = await explorationPhase.processInput('pwd');
+      expect(pwdBack.success).toBe(true);
+      expect(pwdBack.output).toContain('/projects/web-app/src');
+    });
+
+    test('絶対パスでの移動テスト', async () => {
+      // 絶対パスでgame-engine/assetsに移動
+      const cdAbs = await explorationPhase.processInput('cd /projects/game-engine/assets');
+      expect(cdAbs.success).toBe(true);
+      
+      const pwd = await explorationPhase.processInput('pwd');
+      expect(pwd.success).toBe(true);
+      expect(pwd.output).toContain('/projects/game-engine/assets');
     });
 
     test('cd ..で親ディレクトリに移動できること', async () => {

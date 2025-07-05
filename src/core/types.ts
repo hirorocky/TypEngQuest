@@ -37,6 +37,7 @@ export interface GameState {
 export interface CommandResult {
   success: boolean;
   message?: string;
+  output?: string[];
   nextPhase?: PhaseType;
   data?: Record<string, unknown>;
 }

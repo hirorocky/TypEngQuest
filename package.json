@@ -5,7 +5,6 @@
   "bin": {
     "typengquest": "./dist/index.js"
   },
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

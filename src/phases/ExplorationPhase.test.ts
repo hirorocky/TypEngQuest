@@ -102,7 +102,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('pwd');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
-        expect(mockPrintSuccess).toHaveBeenCalledWith('/projects');
+        expect(mockPrintLine).toHaveBeenCalledWith('/projects');
       });
 
       test('treeコマンドが動作する', () => {
@@ -243,6 +243,37 @@ describe('ExplorationPhase', () => {
       expect(mockPrintInfo).toHaveBeenCalledWith(
         '各コマンドの詳細は「コマンド名 --help」で確認できます。'
       );
+    });
+  });
+
+  describe('未カバー機能のテスト', () => {
+    test('isValidCommandメソッドのテスト', () => {
+      const validCommand = (phase as any).isValidCommand('cd');
+      const invalidCommand = (phase as any).isValidCommand('invalidcommand');
+
+      expect(validCommand).toBe(true);
+      expect(invalidCommand).toBe(false);
+    });
+
+    test('getAvailableCommandsメソッドのテスト', () => {
+      const commands = phase.getAvailableCommands();
+
+      expect(commands).toContain('cd');
+      expect(commands).toContain('ls');
+      expect(commands).toContain('pwd');
+      expect(commands).toContain('tree');
+      expect(commands).toContain('help');
+      expect(commands).toContain('clear');
+      expect(commands).toContain('exit');
+    });
+
+    test('フェーズタイプの取得', () => {
+      expect(phase.getType()).toBe('exploration');
+    });
+
+    test('初期化と終了処理', async () => {
+      await expect(phase.initialize()).resolves.not.toThrow();
+      await expect(phase.cleanup()).resolves.not.toThrow();
     });
   });
 });

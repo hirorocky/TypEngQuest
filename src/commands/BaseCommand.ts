@@ -1,4 +1,6 @@
-import { PhaseType, GameState } from '../core/types';
+import { PhaseType, GameState, CommandResult } from '../core/types';
+
+export { CommandResult };
 import { FileSystem } from '../world/FileSystem';
 
 // プレイヤーとバトルの仮インターフェース（後で実装予定）
@@ -8,17 +10,6 @@ export interface Player {
 
 export interface Battle {
   // TODO: バトル実装時に詳細を定義
-}
-
-/**
- * コマンド実行結果
- */
-export interface CommandResult {
-  success: boolean;
-  message: string;
-  output?: string[];
-  nextPhase?: PhaseType;
-  data?: Record<string, unknown>;
 }
 
 /**
@@ -120,7 +111,7 @@ export abstract class BaseCommand {
    * @param output 出力行（オプション）
    * @returns 成功結果
    */
-  protected success(message: string, output?: string[]): CommandResult {
+  protected success(message?: string, output?: string[]): CommandResult {
     return {
       success: true,
       message,
@@ -133,7 +124,7 @@ export abstract class BaseCommand {
    * @param message エラーメッセージ
    * @returns エラー結果
    */
-  protected error(message: string): CommandResult {
+  protected error(message?: string): CommandResult {
     return {
       success: false,
       message,

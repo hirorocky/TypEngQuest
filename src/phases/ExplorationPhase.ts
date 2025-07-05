@@ -148,10 +148,10 @@ export class ExplorationPhase extends Phase {
         result.output.forEach(line => Display.printLine(line));
       } else if (result.message) {
         // メッセージのみの場合
-        Display.printSuccess(result.message);
+        Display.printSuccess(result.message || '操作が完了しました');
       }
     } else {
-      Display.printError(result.message);
+      Display.printError(result.message || 'エラーが発生しました');
     }
 
     Display.newLine();
