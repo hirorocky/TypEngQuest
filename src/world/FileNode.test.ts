@@ -200,4 +200,38 @@ describe('FileNode', () => {
       );
     });
   });
+
+  describe('追加テスト（カバレッジ向上）', () => {
+    test('拡張子なしファイル', () => {
+      const noExtFile = new FileNode('README', NodeType.FILE);
+      expect(noExtFile.fileType).toBe(FileType.EMPTY);
+    });
+
+    test('ドットで終わるファイル名', () => {
+      const dotEndFile = new FileNode('file.', NodeType.FILE);
+      expect(dotEndFile.fileType).toBe(FileType.EMPTY);
+    });
+
+    test('大文字拡張子も正しく判定される', () => {
+      const upperExtFile = new FileNode('script.JS', NodeType.FILE);
+      expect(upperExtFile.fileType).toBe(FileType.MONSTER);
+    });
+
+    test('既に親を持つ子ノードの再配置', () => {
+      const parent1 = new FileNode('dir1', NodeType.DIRECTORY);
+      const parent2 = new FileNode('dir2', NodeType.DIRECTORY);
+      const child = new FileNode('file.js', NodeType.FILE);
+
+      // 最初の親に追加
+      parent1.addChild(child);
+      expect(child.parent).toBe(parent1);
+      expect(parent1.children).toContain(child);
+
+      // 別の親に移動
+      parent2.addChild(child);
+      expect(child.parent).toBe(parent2);
+      expect(parent2.children).toContain(child);
+      expect(parent1.children).not.toContain(child);
+    });
+  });
 });

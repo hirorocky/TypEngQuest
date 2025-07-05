@@ -10,7 +10,7 @@ export class PwdCommand extends BaseCommand {
   protected executeInternal(_args: string[], context: CommandContext): CommandResult {
     const fileSystem = this.getFileSystem(context) as any;
     const currentPath = fileSystem.pwd();
-    return this.success(currentPath);
+    return this.success(undefined, [currentPath]);
   }
 
   public getHelp(): string[] {

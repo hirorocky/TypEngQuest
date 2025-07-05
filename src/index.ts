@@ -4,7 +4,7 @@ import { Game } from './core/Game';
 
 async function main() {
   console.log('🎮 TypEngQuest - Starting game...');
-  
+
   try {
     const game = new Game();
     await game.start();
@@ -15,8 +15,6 @@ async function main() {
 }
 
 // Only run if this file is executed directly
-if (require.main === module) {
-  main().catch(console.error);
-}
+main();
 
 export { main };

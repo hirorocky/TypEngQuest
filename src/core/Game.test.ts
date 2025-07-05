@@ -4,6 +4,7 @@
 
 import { Game } from './Game';
 import { TitlePhase } from '../phases/TitlePhase';
+import { withMocks } from '../tests/integration/helpers/SimplifiedMockHelper';
 
 // モック設定
 jest.mock('../phases/TitlePhase');
@@ -31,6 +32,9 @@ describe('Game', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // シグナルハンドラーをクリア
+    process.removeAllListeners('SIGINT');
+    process.removeAllListeners('SIGTERM');
     game = new Game();
 
     // TitlePhase モックの設定
@@ -46,7 +50,11 @@ describe('Game', () => {
     );
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Gameのcleanupを呼び出してリスナーを削除
+    if (game) {
+      await (game as any).cleanup();
+    }
     jest.clearAllMocks();
   });
 
@@ -71,13 +79,15 @@ describe('Game', () => {
       });
     });
 
-    it('シグナルハンドラを設定する', () => {
+    it('シグナルハンドラを設定する', async () => {
       const processSpy = jest.spyOn(process, 'on');
-      new Game();
+      const testGame = new Game();
 
       expect(processSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
       expect(processSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
 
+      // テスト後にクリーンアップ
+      await (testGame as any).cleanup();
       processSpy.mockRestore();
     });
   });
@@ -92,9 +102,10 @@ describe('Game', () => {
       expect(TitlePhase).toHaveBeenCalled();
     });
 
-    it('探索フェーズを処理する（未実装）', () => {
-      game['createPhase']('exploration');
-      expect(TitlePhase).toHaveBeenCalled(); // Returns title phase as fallback
+    it('探索フェーズを正しく作成する', () => {
+      const result = game['createPhase']('exploration');
+      expect(result).toBeDefined();
+      expect(result.getType()).toBe('exploration');
     });
 
     it('未知のフェーズタイプでエラーを投げる', () => {
@@ -207,37 +218,53 @@ describe('Game', () => {
   });
 
   describe('signal handlers', () => {
-    it('SIGINTを適切に処理する', async () => {
-      const mockHandler = jest.fn();
-      process.on = jest.fn().mockImplementation((signal, handler) => {
-        if (signal === 'SIGINT') {
-          mockHandler.mockImplementation(handler);
-        }
-      });
+    it(
+      'SIGINTを適切に処理する',
+      withMocks(async (mocks: any) => {
+        const mockProcessExit = mocks.mockProcessExit();
 
-      new Game();
+        const mockHandler = jest.fn();
+        process.on = jest.fn().mockImplementation((signal, handler) => {
+          if (signal === 'SIGINT') {
+            mockHandler.mockImplementation(handler);
+          }
+        });
 
-      // Simulate SIGINT
-      await mockHandler();
+        const testGame = new Game();
 
-      expect(processExitSpy).toHaveBeenCalledWith(0);
-    });
+        // Simulate SIGINT
+        await mockHandler();
 
-    it('SIGTERMを適切に処理する', async () => {
-      const mockHandler = jest.fn();
-      process.on = jest.fn().mockImplementation((signal, handler) => {
-        if (signal === 'SIGTERM') {
-          mockHandler.mockImplementation(handler);
-        }
-      });
+        // テスト後にクリーンアップ
+        await (testGame as any).cleanup();
 
-      new Game();
+        expect(mockProcessExit).toHaveBeenCalledWith(0);
+      })
+    );
 
-      // Simulate SIGTERM
-      await mockHandler();
+    it(
+      'SIGTERMを適切に処理する',
+      withMocks(async (mocks: any) => {
+        const mockProcessExit = mocks.mockProcessExit();
 
-      expect(processExitSpy).toHaveBeenCalledWith(0);
-    });
+        const mockHandler = jest.fn();
+        process.on = jest.fn().mockImplementation((signal, handler) => {
+          if (signal === 'SIGTERM') {
+            mockHandler.mockImplementation(handler);
+          }
+        });
+
+        const testGame = new Game();
+
+        // Simulate SIGTERM
+        await mockHandler();
+
+        // テスト後にクリーンアップ
+        await (testGame as any).cleanup();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(0);
+      })
+    );
   });
 
   describe('error handling', () => {

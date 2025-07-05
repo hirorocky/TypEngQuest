@@ -339,6 +339,62 @@ export class FileSystem {
   }
 
   /**
+   * サンプル用の固定ファイル構造を作成する
+   * 統合テストやデモンストレーション時の動作確認に使用する
+   * @returns サンプル用FileSystemインスタンス
+   */
+  public static createSampleStructure(): FileSystem {
+    const root = new FileNode('projects', NodeType.DIRECTORY);
+
+    // レベル1: プロジェクトディレクトリ
+    const webApp = new FileNode('web-app', NodeType.DIRECTORY);
+    const gameEngine = new FileNode('game-engine', NodeType.DIRECTORY);
+    const mobileApp = new FileNode('mobile-app', NodeType.DIRECTORY);
+
+    root.addChild(webApp);
+    root.addChild(gameEngine);
+    root.addChild(mobileApp);
+
+    // web-appの構造
+    const webSrc = new FileNode('src', NodeType.DIRECTORY);
+    const webPublic = new FileNode('public', NodeType.DIRECTORY);
+    const webTests = new FileNode('tests', NodeType.DIRECTORY);
+
+    webApp.addChild(webSrc);
+    webApp.addChild(webPublic);
+    webApp.addChild(webTests);
+    webApp.addChild(new FileNode('package.json', NodeType.FILE));
+    webApp.addChild(new FileNode('README.md', NodeType.FILE));
+
+    // web-app/srcの構造
+    const webComponents = new FileNode('components', NodeType.DIRECTORY);
+    const webUtils = new FileNode('utils', NodeType.DIRECTORY);
+
+    webSrc.addChild(webComponents);
+    webSrc.addChild(webUtils);
+    webSrc.addChild(new FileNode('index.js', NodeType.FILE));
+    webSrc.addChild(new FileNode('app.ts', NodeType.FILE));
+
+    // game-engineの構造
+    const engineSrc = new FileNode('src', NodeType.DIRECTORY);
+    const engineAssets = new FileNode('assets', NodeType.DIRECTORY);
+
+    gameEngine.addChild(engineSrc);
+    gameEngine.addChild(engineAssets);
+    gameEngine.addChild(new FileNode('engine.exe', NodeType.FILE));
+    gameEngine.addChild(new FileNode('config.yaml', NodeType.FILE));
+
+    // mobile-appの構造（比較的シンプル）
+    const mobileSrc = new FileNode('src', NodeType.DIRECTORY);
+
+    mobileApp.addChild(mobileSrc);
+    mobileApp.addChild(new FileNode('app.py', NodeType.FILE));
+    mobileApp.addChild(new FileNode('.hidden.json', NodeType.FILE));
+
+    return new FileSystem(root);
+  }
+
+  /**
    * テスト用のファイルシステム構造を作成する
    * @returns テスト用FileSystemインスタンス
    */

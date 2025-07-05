@@ -12,9 +12,53 @@
       "mcp__typescript__get_symbols_in_scope",
       "mcp__typescript__find_references",
       "mcp__typescript__get_definitions",
-      "mcp__typescript__get_diagnostics"
+      "mcp__typescript__get_diagnostics",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm test)",
+      "Bash(rm:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(node:*)",
+      "Bash(tree:*)",
+      "Bash(chmod:*)",
+      "Bash(sed:*)",
+      "Bash(gh api:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git commit:*)",
+      "Bash(bash:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(./scripts/pr-review-comments.sh:*)"
     ],
-    "deny": []
+    "deny": [
+      "Bash(./node_modules/.bin/jest:*)",
+      "Bash(npx jest:*)"
+    ]
   },
   "hooks": {
     "Notification": [
@@ -23,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/discord.sh 応答をくださいmm"
+            "command": "bash scripts/notification-discord.sh 応答をくださいmm"
           }
         ]
       }
@@ -34,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/discord.sh タスクが完了しました！"
+            "command": "bash scripts/stop-discord.sh タスクが完了しました！"
           }
         ]
       }

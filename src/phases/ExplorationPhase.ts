@@ -1,5 +1,5 @@
 import { Phase } from '../core/Phase';
-import { PhaseResult, PhaseTypes, PhaseType } from '../core/types';
+import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { FileSystem } from '../world/FileSystem';
 import { CdCommand } from '../commands/exploration/CdCommand';
@@ -62,6 +62,63 @@ export class ExplorationPhase extends Phase {
     this.showPrompt();
   }
 
+  /**
+   * 入力を処理してCommandResultを返す
+   */
+  async processInput(input: string): Promise<CommandResult> {
+    const [command, ...args] = input.trim().split(/\s+/);
+
+    // ナビゲーションコマンドの処理
+    if (this.navigationCommands.has(command)) {
+      const navCommand = this.navigationCommands.get(command)!;
+      const context = {
+        currentPhase: 'exploration' as const,
+        fileSystem: this.fileSystem,
+      };
+      const result = navCommand.execute(args, context);
+
+      // ナビゲーションコマンドの結果をそのまま返す
+      return result;
+    }
+
+    // システムコマンドの処理
+    if (this.isSystemCommand(command)) {
+      const result = this.processCommand(input);
+
+      if (result.type === PhaseTypes.CONTINUE) {
+        return { success: true };
+      } else {
+        return {
+          success: true,
+          nextPhase: result.type,
+          data: result.data,
+        };
+      }
+    }
+
+    // 無効なコマンドの場合は失敗を返す
+    return {
+      success: false,
+      message: `不明なコマンド: ${command}`,
+    };
+  }
+
+  /**
+   * 有効なコマンドかチェックする
+   */
+  private isValidCommand(command: string): boolean {
+    const availableCommands = this.getAvailableCommands();
+    return availableCommands.includes(command);
+  }
+
+  /**
+   * システムコマンドかチェックする
+   */
+  private isSystemCommand(command: string): boolean {
+    const systemCommands = ['help', 'h', '?', 'exit', 'quit', 'q', 'clear', 'cls'];
+    return systemCommands.includes(command);
+  }
+
   protected processCommand(input: string): PhaseResult {
     const [command, ...args] = input.trim().split(/\s+/);
 
@@ -91,10 +148,10 @@ export class ExplorationPhase extends Phase {
         result.output.forEach(line => Display.printLine(line));
       } else if (result.message) {
         // メッセージのみの場合
-        Display.printSuccess(result.message);
+        Display.printSuccess(result.message || '操作が完了しました');
       }
     } else {
-      Display.printError(result.message);
+      Display.printError(result.message || 'エラーが発生しました');
     }
 
     Display.newLine();
@@ -194,5 +251,14 @@ export class ExplorationPhase extends Phase {
 
   public exit(): void {
     // 特に処理なし
+  }
+
+  /**
+   * 利用可能なコマンド一覧を取得する
+   */
+  public getAvailableCommands(): string[] {
+    const navigationCommands = Array.from(this.navigationCommands.keys());
+    const systemCommands = ['help', 'clear', 'exit'];
+    return [...navigationCommands, ...systemCommands];
   }
 }

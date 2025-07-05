@@ -6,6 +6,7 @@ import * as readline from 'readline';
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
+import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
@@ -13,6 +14,7 @@ export class Game {
   private state: GameState;
   private currentPhase: Phase | null = null;
   private rl: readline.Interface;
+  private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
 
   constructor() {
     this.state = {
@@ -121,9 +123,7 @@ export class Game {
         return new TitlePhase();
 
       case 'exploration':
-        // For now, return to title since exploration is not implemented yet
-        Display.printInfo('Exploration phase not implemented yet. Returning to title.');
-        return new TitlePhase();
+        return new ExplorationPhase();
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);
@@ -131,20 +131,29 @@ export class Game {
   }
 
   private setupSignalHandlers(): void {
-    process.on('SIGINT', async () => {
+    const sigintHandler = async () => {
       console.log();
       Display.printInfo('Received interrupt signal. Shutting down gracefully...');
       this.state.isRunning = false;
       await this.cleanup();
       process.exit(0);
-    });
+    };
 
-    process.on('SIGTERM', async () => {
+    const sigtermHandler = async () => {
       Display.printInfo('Received termination signal. Shutting down gracefully...');
       this.state.isRunning = false;
       await this.cleanup();
       process.exit(0);
-    });
+    };
+
+    process.on('SIGINT', sigintHandler);
+    process.on('SIGTERM', sigtermHandler);
+
+    // ハンドラーを保存して、後で削除できるようにする
+    this.signalHandlers.push(
+      { signal: 'SIGINT', handler: sigintHandler },
+      { signal: 'SIGTERM', handler: sigtermHandler }
+    );
   }
 
   private async cleanup(): Promise<void> {
@@ -153,6 +162,12 @@ export class Game {
     }
 
     this.rl.close();
+
+    // シグナルハンドラーを削除
+    this.signalHandlers.forEach(({ signal, handler }) => {
+      process.removeListener(signal, handler);
+    });
+    this.signalHandlers = [];
   }
 
   // Getters for testing
