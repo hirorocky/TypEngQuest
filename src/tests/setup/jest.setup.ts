@@ -9,6 +9,21 @@ export {};
 // グローバルなテストタイムアウトを設定
 jest.setTimeout(10000);
 
+// blessed ライブラリの出力を抑制
+const originalWrite = process.stdout.write;
+process.stdout.write = function(chunk: any, ...args: any[]) {
+  // ANSI制御文字や blessed の出力をフィルタ
+  if (typeof chunk === 'string' && (
+    chunk.includes('[2J') ||  // 画面クリア
+    chunk.includes('[0f') ||  // カーソル位置
+    chunk.includes('[~]$') || // プロンプト文字
+    chunk.match(/^\[.*\].*\$/) // その他のプロンプト系
+  )) {
+    return true;
+  }
+  return originalWrite.call(this, chunk, ...args);
+};
+
 // カスタムマッチャーの追加
 expect.extend({
   /**

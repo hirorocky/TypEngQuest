@@ -2,10 +2,11 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
+  silent: true,
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
       useESM: true
-    }
+    }]
   },
   transformIgnorePatterns: [
     'node_modules/(?!(chalk|ansi-styles|#ansi-styles|strip-ansi|ansi-regex|supports-color|has-flag)/)'
@@ -20,5 +21,6 @@ export default {
     '<rootDir>/src/**/*.test.ts',
     '<rootDir>/src/tests/**/*.test.ts',
     '<rootDir>/tests/**/*.test.ts'
-  ]
+  ],
+  setupFilesAfterEnv: ['<rootDir>/src/tests/setup/jest.setup.ts']
 };
