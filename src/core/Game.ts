@@ -6,6 +6,7 @@ import * as readline from 'readline';
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
+import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
@@ -121,9 +122,7 @@ export class Game {
         return new TitlePhase();
 
       case 'exploration':
-        // For now, return to title since exploration is not implemented yet
-        Display.printInfo('Exploration phase not implemented yet. Returning to title.');
-        return new TitlePhase();
+        return new ExplorationPhase();
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);

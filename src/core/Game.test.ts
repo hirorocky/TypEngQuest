@@ -92,9 +92,10 @@ describe('Game', () => {
       expect(TitlePhase).toHaveBeenCalled();
     });
 
-    it('探索フェーズを処理する（未実装）', () => {
-      game['createPhase']('exploration');
-      expect(TitlePhase).toHaveBeenCalled(); // Returns title phase as fallback
+    it('探索フェーズを正しく作成する', () => {
+      const result = game['createPhase']('exploration');
+      expect(result).toBeDefined();
+      expect(result.getType()).toBe('exploration');
     });
 
     it('未知のフェーズタイプでエラーを投げる', () => {
