@@ -339,11 +339,11 @@ export class FileSystem {
   }
 
   /**
-   * 統合テスト用の固定ファイル構造を作成する
-   * ディレクトリ移動のテストに使用する
-   * @returns 統合テスト用FileSystemインスタンス
+   * サンプル用の固定ファイル構造を作成する
+   * 統合テストやデモンストレーション時の動作確認に使用する
+   * @returns サンプル用FileSystemインスタンス
    */
-  public static createIntegrationTestStructure(): FileSystem {
+  public static createSampleStructure(): FileSystem {
     const root = new FileNode('projects', NodeType.DIRECTORY);
 
     // レベル1: プロジェクトディレクトリ

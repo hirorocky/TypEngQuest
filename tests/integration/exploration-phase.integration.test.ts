@@ -27,7 +27,7 @@ describe('Explorationフェーズの統合テスト', () => {
     mockHelper.mockProcessExit();
     
     // 統合テスト用の固定ファイル構造を作成
-    fileSystem = FileSystem.createIntegrationTestStructure();
+    fileSystem = FileSystem.createSampleStructure();
     
     explorationPhase = new ExplorationPhase();
     // 固定ファイルシステムを設定

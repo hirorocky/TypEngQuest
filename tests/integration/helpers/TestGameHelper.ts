@@ -68,25 +68,6 @@ export class TestGameHelper {
     return this.game.getCurrentPhase();
   }
 
-  /**
-   * 指定されたフェーズにいるかチェックする
-   * @param expectedPhase 期待するフェーズ
-   * @returns フェーズが一致するかどうか
-   */
-  public isInPhase(expectedPhase: string): boolean {
-    return this.getCurrentPhase() === expectedPhase;
-  }
-
-  /**
-   * ゲームが実行中かチェックする
-   * @returns ゲームが実行中かどうか
-   */
-  public isGameRunning(): boolean {
-    if (!this.game) {
-      return false;
-    }
-    return this.game.isRunning();
-  }
 
 
   /**
