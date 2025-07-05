@@ -8,6 +8,7 @@ export class MockHelper {
   private originalProcessExit: typeof process.exit;
   private originalProcessStdin: typeof process.stdin;
   private processExitMock: jest.MockedFunction<typeof process.exit>;
+  private activeTimers?: NodeJS.Timeout[];
   private stdinMocks: {
     on: jest.MockedFunction<any>;
     setRawMode: jest.MockedFunction<any>;
@@ -110,12 +111,34 @@ export class MockHelper {
    * @param delay 遅延時間（ミリ秒）
    */
   public async simulateDelayedInput(input: string, delay: number = 100): Promise<void> {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        this.simulateInput(input + '\n');
-        resolve();
-      }, delay);
-    });
+    // Jestのフェイクタイマーを使用している場合は、タイマーを進める
+    if (jest.isMockFunction(setTimeout)) {
+      const promise = new Promise<void>(resolve => {
+        setTimeout(() => {
+          this.simulateInput(input + '\n');
+          resolve();
+        }, delay);
+      });
+      
+      // タイマーを進める
+      jest.advanceTimersByTime(delay);
+      
+      return promise;
+    } else {
+      // リアルタイマーの場合
+      return new Promise(resolve => {
+        const timerId = setTimeout(() => {
+          this.simulateInput(input + '\n');
+          resolve();
+        }, delay);
+        
+        // タイマーIDを保存して、必要に応じてクリアできるようにする
+        if (!this.activeTimers) {
+          this.activeTimers = [];
+        }
+        this.activeTimers.push(timerId);
+      });
+    }
   }
 
   /**
@@ -154,6 +177,12 @@ export class MockHelper {
    * 全てのモックを復元する
    */
   public restoreAllMocks(): void {
+    // アクティブなタイマーをクリア
+    if (this.activeTimers) {
+      this.activeTimers.forEach(timerId => clearTimeout(timerId));
+      this.activeTimers = [];
+    }
+    
     // 元のprocess.exitを復元
     (process as any).exit = this.originalProcessExit;
     
@@ -161,6 +190,7 @@ export class MockHelper {
     Object.assign(process.stdin, this.originalProcessStdin);
     
     // タイマーを復元
+    jest.clearAllTimers();
     jest.useRealTimers();
     
     // 全てのモックをリセット

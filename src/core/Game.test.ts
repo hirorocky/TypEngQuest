@@ -31,6 +31,9 @@ describe('Game', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // シグナルハンドラーをクリア
+    process.removeAllListeners('SIGINT');
+    process.removeAllListeners('SIGTERM');
     game = new Game();
 
     // TitlePhase モックの設定
@@ -46,7 +49,11 @@ describe('Game', () => {
     );
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Gameのcleanupを呼び出してリスナーを削除
+    if (game) {
+      await (game as any).cleanup();
+    }
     jest.clearAllMocks();
   });
 
@@ -71,13 +78,15 @@ describe('Game', () => {
       });
     });
 
-    it('シグナルハンドラを設定する', () => {
+    it('シグナルハンドラを設定する', async () => {
       const processSpy = jest.spyOn(process, 'on');
-      new Game();
+      const testGame = new Game();
 
       expect(processSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
       expect(processSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
 
+      // テスト後にクリーンアップ
+      await (testGame as any).cleanup();
       processSpy.mockRestore();
     });
   });
@@ -216,10 +225,13 @@ describe('Game', () => {
         }
       });
 
-      new Game();
+      const testGame = new Game();
 
       // Simulate SIGINT
       await mockHandler();
+
+      // テスト後にクリーンアップ
+      await (testGame as any).cleanup();
 
       expect(processExitSpy).toHaveBeenCalledWith(0);
     });
@@ -232,10 +244,13 @@ describe('Game', () => {
         }
       });
 
-      new Game();
+      const testGame = new Game();
 
       // Simulate SIGTERM
       await mockHandler();
+
+      // テスト後にクリーンアップ
+      await (testGame as any).cleanup();
 
       expect(processExitSpy).toHaveBeenCalledWith(0);
     });

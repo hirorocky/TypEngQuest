@@ -37,7 +37,7 @@ describe('Explorationフェーズの統合テスト', () => {
 
   afterEach(async () => {
     await explorationPhase.cleanup();
-    gameHelper.cleanup();
+    await gameHelper.cleanup();
     mockHelper.restoreAllMocks();
   });
 

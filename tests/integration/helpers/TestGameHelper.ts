@@ -95,9 +95,15 @@ export class TestGameHelper {
   /**
    * テスト終了時のクリーンアップ
    */
-  public cleanup(): void {
+  public async cleanup(): Promise<void> {
     this.stopCapturingConsole();
-    this.stopGame();
+    
+    if (this.game) {
+      // Gameのcleanupメソッドを呼び出してリソースを解放
+      await (this.game as any).cleanup();
+      this.stopGame();
+    }
+    
     this.game = null;
     this.consoleOutput = [];
   }

@@ -28,8 +28,8 @@ describe('フェーズ移行の統合テスト', () => {
     mockHelper.mockTimers();
   });
 
-  afterEach(() => {
-    gameHelper.cleanup();
+  afterEach(async () => {
+    await gameHelper.cleanup();
     mockHelper.restoreAllMocks();
   });
 
@@ -48,7 +48,11 @@ describe('フェーズ移行の統合テスト', () => {
       const resultPromise = titlePhase.processInput('start');
       
       // タイマーを進めてsetTimeoutを処理
-      jest.runAllTimers();
+      // runOnlyPendingTimersを使用して、現在のタイマーのみを実行
+      jest.runOnlyPendingTimers();
+      
+      // マイクロタスクが完了するのを待つ
+      await Promise.resolve();
       
       const result = await resultPromise;
       

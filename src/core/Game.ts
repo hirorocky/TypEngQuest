@@ -14,6 +14,7 @@ export class Game {
   private state: GameState;
   private currentPhase: Phase | null = null;
   private rl: readline.Interface;
+  private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
 
   constructor() {
     this.state = {
@@ -130,20 +131,29 @@ export class Game {
   }
 
   private setupSignalHandlers(): void {
-    process.on('SIGINT', async () => {
+    const sigintHandler = async () => {
       console.log();
       Display.printInfo('Received interrupt signal. Shutting down gracefully...');
       this.state.isRunning = false;
       await this.cleanup();
       process.exit(0);
-    });
+    };
 
-    process.on('SIGTERM', async () => {
+    const sigtermHandler = async () => {
       Display.printInfo('Received termination signal. Shutting down gracefully...');
       this.state.isRunning = false;
       await this.cleanup();
       process.exit(0);
-    });
+    };
+
+    process.on('SIGINT', sigintHandler);
+    process.on('SIGTERM', sigtermHandler);
+
+    // ハンドラーを保存して、後で削除できるようにする
+    this.signalHandlers.push(
+      { signal: 'SIGINT', handler: sigintHandler },
+      { signal: 'SIGTERM', handler: sigtermHandler }
+    );
   }
 
   private async cleanup(): Promise<void> {
@@ -152,6 +162,12 @@ export class Game {
     }
 
     this.rl.close();
+
+    // シグナルハンドラーを削除
+    this.signalHandlers.forEach(({ signal, handler }) => {
+      process.removeListener(signal, handler);
+    });
+    this.signalHandlers = [];
   }
 
   // Getters for testing
