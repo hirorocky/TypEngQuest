@@ -164,6 +164,15 @@ TypEngQuest/
 │
 ├── tests/                          # 統合テスト・E2Eテスト
 │   ├── integration/                # 統合テスト
+│   │   ├── helpers/                # 統合テスト用ヘルパー
+│   │   │   ├── TestGameHelper.ts   # ゲーム初期化・実行・状態検証
+│   │   │   ├── SimplifiedMockHelper.ts # 簡潔なモック管理（自動クリーンアップ）
+│   │   │   └── SimplifiedMockHelper.test.ts # SimplifiedMockHelperのテスト
+│   │   ├── phase-transitions.integration.test.ts # フェーズ遷移の統合テスト
+│   │   ├── exploration-phase.integration.test.ts # 探索フェーズの統合テスト
+│   │   └── title-phase.integration.test.ts # タイトルフェーズの統合テスト
+│   ├── setup/                      # テストセットアップ
+│   │   └── jest.setup.ts           # Jest設定・カスタムマッチャー
 │   └── e2e/                        # E2Eテスト
 │
 ├── docs/                           # ドキュメント
@@ -231,7 +240,22 @@ TypEngQuest/
 - **統合テスト**: `tests/integration/` に配置（複数モジュール間の連携テスト）
 - **E2Eテスト**: `tests/e2e/` に配置（ゲーム全体のシナリオテスト）
 - **テストファイル命名規則**: `[ファイル名].test.ts`
-- **テストカバレッジ目標**: 80%以上
+- **テストカバレッジ目標**: 95%以上（現在95%以上を達成）
+
+### テストヘルパー・ユーティリティ
+- **TestGameHelper**: ゲーム初期化、コンソール出力キャプチャ、状態検証
+- **SimplifiedMockHelper**: 自動クリーンアップ機能付きモック管理
+  - タイマーモック（useFakeTimers、advanceTimersByTimeAsync）
+  - プロセス終了モック（mockProcessExit）
+  - シグナルハンドラー無効化（disableSignalHandlers）
+  - ReadLineインターフェースモック（createReadlineMock）
+  - withMocksヘルパー関数による自動クリーンアップ
+- **jest.setup.ts**: カスタムマッチャー（toBeInPhase、toBeSuccessfulCommand）
+
+### テストパターン
+- **ユニットテスト**: 個別クラス・関数の単体テスト
+- **統合テスト**: フェーズ単位での機能テスト（ブラックボックステスト）
+- **withMocksパターン**: 簡潔で保守しやすい非同期処理テスト
 
 ## データフロー
 1. ユーザー入力 → CommandParser → 各Phase

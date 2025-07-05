@@ -6,7 +6,7 @@ import prettier from 'eslint-config-prettier';
 export default [
   js.configs.recommended,
   {
-    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    files: ['src/**/*.ts'],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
@@ -57,8 +57,14 @@ export default [
     }
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
+    files: ['**/*.test.ts', '**/*.spec.ts', 'src/tests/**/*.ts'],
     languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        project: './tsconfig.json'
+      },
       globals: {
         describe: 'readonly',
         it: 'readonly',
@@ -70,8 +76,34 @@ export default [
         afterAll: 'readonly',
         jest: 'readonly',
         setTimeout: 'readonly',
-        require: 'readonly'
+        require: 'readonly',
+        NodeJS: 'readonly'
       }
+    },
+    plugins: {
+      '@typescript-eslint': typescript
+    },
+    rules: {
+      // Disable base rule as it can report incorrect errors
+      'no-unused-vars': 'off',
+
+      // Inherit all rules from the base configuration
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          'argsIgnorePattern': '^_',
+          'varsIgnorePattern': '^_',
+          'caughtErrorsIgnorePattern': '^_',
+          'ignoreRestSiblings': false,
+          'args': 'all',
+          'vars': 'all',
+          'caughtErrors': 'all'
+        }
+      ],
+
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'no-duplicate-imports': 'error',
     }
   },
   {

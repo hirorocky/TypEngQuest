@@ -1,4 +1,4 @@
-import { Game } from '../../../src/core/Game';
+import { Game } from '../../../core/Game';
 
 /**
  * 統合テスト用のゲームヘルパークラス

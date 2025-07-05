@@ -7,7 +7,7 @@ export class StartCommand extends BaseCommand {
   public name = 'start';
   public description = '新しいゲームを開始する';
 
-  protected executeInternal(_args: string[], context: CommandContext): CommandResult {
+  protected executeInternal(_args: string[], _context: CommandContext): CommandResult {
     // 新しいゲーム開始処理
     return this.successWithPhase(
       '新しいゲームを開始しました！',

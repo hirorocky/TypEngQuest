@@ -8,23 +8,18 @@
  * - システムコマンド（help, clear, exit）
  */
 
-import { ExplorationPhase } from '../../src/phases/ExplorationPhase';
-import { FileSystem } from '../../src/world/FileSystem';
+import { ExplorationPhase } from '../../phases/ExplorationPhase';
+import { FileSystem } from '../../world/FileSystem';
 import { TestGameHelper } from './helpers/TestGameHelper';
-import { MockHelper } from './helpers/MockHelper';
+import { withMocks } from './helpers/SimplifiedMockHelper';
 
 describe('Explorationフェーズの統合テスト', () => {
   let gameHelper: TestGameHelper;
-  let mockHelper: MockHelper;
   let explorationPhase: ExplorationPhase;
   let fileSystem: FileSystem;
 
   beforeEach(async () => {
     gameHelper = new TestGameHelper();
-    mockHelper = new MockHelper();
-
-    // process.exitをモックして、テスト中にプロセスが終了しないようにする
-    mockHelper.mockProcessExit();
 
     // 統合テスト用の固定ファイル構造を作成
     fileSystem = FileSystem.createSampleStructure();
@@ -38,7 +33,6 @@ describe('Explorationフェーズの統合テスト', () => {
   afterEach(async () => {
     await explorationPhase.cleanup();
     await gameHelper.cleanup();
-    mockHelper.restoreAllMocks();
   });
 
   describe('基本機能テスト', () => {
@@ -64,9 +58,9 @@ describe('Explorationフェーズの統合テスト', () => {
 
       expect(result.success).toBe(true);
       expect(result.output).toBeDefined();
-      expect(result.output?.some(line => line.includes('web-app'))).toBe(true);
-      expect(result.output?.some(line => line.includes('game-engine'))).toBe(true);
-      expect(result.output?.some(line => line.includes('mobile-app'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('web-app'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('game-engine'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('mobile-app'))).toBe(true);
     });
 
     test('pwdコマンドで現在位置が表示されること', async () => {
@@ -74,7 +68,7 @@ describe('Explorationフェーズの統合テスト', () => {
 
       expect(result.success).toBe(true);
       expect(result.output).toBeDefined();
-      expect(result.output?.some(line => line.includes('/projects'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('/projects'))).toBe(true);
     });
 
     test('treeコマンドでディレクトリ構造が表示されること', async () => {
@@ -82,9 +76,9 @@ describe('Explorationフェーズの統合テスト', () => {
 
       expect(result.success).toBe(true);
       expect(result.output).toBeDefined();
-      expect(result.output?.some(line => line.includes('web-app'))).toBe(true);
-      expect(result.output?.some(line => line.includes('game-engine'))).toBe(true);
-      expect(result.output?.some(line => line.includes('mobile-app'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('web-app'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('game-engine'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('mobile-app'))).toBe(true);
     });
 
     test('cdコマンドでディレクトリ移動ができること', async () => {
@@ -172,12 +166,14 @@ describe('Explorationフェーズの統合テスト', () => {
       expect(result.success).toBe(true);
     });
 
-    test('exitコマンドでTitleフェーズに戻ること', async () => {
+    test('exitコマンドでTitleフェーズに戻ること', withMocks(async (mocks) => {
+      mocks.mockProcessExit();
+      
       const result = await explorationPhase.processInput('exit');
 
       expect(result.success).toBe(true);
       expect(result.nextPhase).toBe('title');
-    });
+    }));
   });
 
   describe('エラーハンドリングテスト', () => {
@@ -294,7 +290,9 @@ describe('Explorationフェーズの統合テスト', () => {
       expect(clsResult.success).toBe(true);
     });
 
-    test('exitコマンドのエイリアス（quit, q）が動作すること', async () => {
+    test('exitコマンドのエイリアス（quit, q）が動作すること', withMocks(async (mocks) => {
+      mocks.mockProcessExit();
+      
       const exitResult = await explorationPhase.processInput('exit');
       const quitResult = await explorationPhase.processInput('quit');
       const qResult = await explorationPhase.processInput('q');
@@ -307,6 +305,6 @@ describe('Explorationフェーズの統合テスト', () => {
       expect(exitResult.nextPhase).toBe('title');
       expect(quitResult.nextPhase).toBe('title');
       expect(qResult.nextPhase).toBe('title');
-    });
+    }));
   });
 });

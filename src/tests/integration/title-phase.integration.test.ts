@@ -8,21 +8,16 @@
  * - エラーハンドリング
  */
 
-import { TitlePhase } from '../../src/phases/TitlePhase';
+import { TitlePhase } from '../../phases/TitlePhase';
 import { TestGameHelper } from './helpers/TestGameHelper';
-import { MockHelper } from './helpers/MockHelper';
+import { withMocks } from './helpers/SimplifiedMockHelper';
 
 describe('Titleフェーズの統合テスト', () => {
   let gameHelper: TestGameHelper;
-  let mockHelper: MockHelper;
   let titlePhase: TitlePhase;
 
   beforeEach(async () => {
     gameHelper = new TestGameHelper();
-    mockHelper = new MockHelper();
-    
-    // process.exitをモックして、テスト中にプロセスが終了しないようにする
-    mockHelper.mockProcessExit();
     
     titlePhase = new TitlePhase();
     await titlePhase.initialize();
@@ -30,8 +25,7 @@ describe('Titleフェーズの統合テスト', () => {
 
   afterEach(async () => {
     await titlePhase.cleanup();
-    gameHelper.cleanup();
-    mockHelper.restoreAllMocks();
+    await gameHelper.cleanup();
   });
 
   describe('基本機能テスト', () => {
@@ -52,21 +46,37 @@ describe('Titleフェーズの統合テスト', () => {
   });
 
   describe('コマンド処理テスト', () => {
-    test('startコマンドでExplorationフェーズに遷移すること', async () => {
-      const result = await titlePhase.processInput('start');
+    test('startコマンドでExplorationフェーズに遷移すること', withMocks(async (mocks) => {
+      mocks.useFakeTimers();
+      
+      const resultPromise = titlePhase.processInput('start');
+      
+      // TitlePhaseのsimulateLoadingの500msのsetTimeoutを進める
+      jest.advanceTimersByTime(500);
+      await Promise.resolve();
+      
+      const result = await resultPromise;
       
       expect(result.success).toBe(true);
       expect(result.nextPhase).toBe('exploration');
       expect(result.message).toContain('New game started');
-    });
+    }));
 
-    test('loadコマンドが適切に処理されること', async () => {
-      const result = await titlePhase.processInput('load');
+    test('loadコマンドが適切に処理されること', withMocks(async (mocks) => {
+      mocks.useFakeTimers();
+      
+      const resultPromise = titlePhase.processInput('load');
+      
+      // TitlePhaseのsimulateLoadingの500msのsetTimeoutを進める
+      jest.advanceTimersByTime(500);
+      await Promise.resolve();
+      
+      const result = await resultPromise;
       
       expect(result.success).toBe(false);
       // ロード機能は現在未実装のため、エラーメッセージが返されることを確認
       expect(result.message).toContain('No save files found');
-    });
+    }));
 
     test('exitコマンドでゲーム終了フラグが設定されること', async () => {
       const result = await titlePhase.processInput('exit');

@@ -86,6 +86,37 @@
 **チェック済み**: 統合テストが動作し、品質保証基盤が確立されること ✅
 **最終確認**: 2025-07-05 - 統合テスト基盤完了・レビュー対応完了
 
+### ✅ テストインフラ改善（SimplifiedMockHelper）
+**目標**: テストコードの複雑さを軽減し、より簡潔で保守しやすいテストパターンを確立する
+
+**完了タスク**:
+- [x] SimplifiedMockHelperクラスの作成
+  - [x] 自動クリーンアップ機能付きモック管理
+  - [x] タイマーモック（useFakeTimers、advanceTimersByTimeAsync）
+  - [x] プロセス終了モック（mockProcessExit）
+  - [x] シグナルハンドラー無効化（disableSignalHandlers）
+  - [x] ReadLineインターフェースモック（createReadlineMock）
+  - [x] 非同期処理待機ヘルパー（waitFor、waitForEvent）
+- [x] withMocksヘルパー関数の実装（自動クリーンアップ）
+- [x] SimplifiedMockHelperのユニットテスト作成
+- [x] 既存テストファイルの SimplifiedMockHelper パターンへの移行
+  - [x] phase-transitions.integration.test.ts
+  - [x] exploration-phase.integration.test.ts
+  - [x] title-phase.integration.test.ts
+  - [x] Game.test.ts（部分的移行）
+- [x] 旧MockHelperファイルの削除
+- [x] npm run checkの品質チェック通過確認
+
+**成果物**: 
+- 簡潔で保守しやすいテストパターンの確立
+- Jest worker process警告の解消
+- 非同期処理テストの複雑さ軽減
+- 自動クリーンアップによるテスト安定性向上
+- 95%以上のテストカバレッジ維持
+
+**チェック済み**: SimplifiedMockHelperパターンが動作し、テストが安定することを確認 ✅
+**最終確認**: 2025-07-05 - テストインフラ改善完了
+
 ## 次のプロジェクト
 
 ### 📁 プロジェクト3: ファイル相互作用システム

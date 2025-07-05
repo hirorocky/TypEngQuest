@@ -4,6 +4,7 @@
 
 import { Game } from './Game';
 import { TitlePhase } from '../phases/TitlePhase';
+import { withMocks } from '../tests/integration/helpers/SimplifiedMockHelper';
 
 // モック設定
 jest.mock('../phases/TitlePhase');
@@ -217,43 +218,53 @@ describe('Game', () => {
   });
 
   describe('signal handlers', () => {
-    it('SIGINTを適切に処理する', async () => {
-      const mockHandler = jest.fn();
-      process.on = jest.fn().mockImplementation((signal, handler) => {
-        if (signal === 'SIGINT') {
-          mockHandler.mockImplementation(handler);
-        }
-      });
+    it(
+      'SIGINTを適切に処理する',
+      withMocks(async (mocks: any) => {
+        const mockProcessExit = mocks.mockProcessExit();
 
-      const testGame = new Game();
+        const mockHandler = jest.fn();
+        process.on = jest.fn().mockImplementation((signal, handler) => {
+          if (signal === 'SIGINT') {
+            mockHandler.mockImplementation(handler);
+          }
+        });
 
-      // Simulate SIGINT
-      await mockHandler();
+        const testGame = new Game();
 
-      // テスト後にクリーンアップ
-      await (testGame as any).cleanup();
+        // Simulate SIGINT
+        await mockHandler();
 
-      expect(processExitSpy).toHaveBeenCalledWith(0);
-    });
+        // テスト後にクリーンアップ
+        await (testGame as any).cleanup();
 
-    it('SIGTERMを適切に処理する', async () => {
-      const mockHandler = jest.fn();
-      process.on = jest.fn().mockImplementation((signal, handler) => {
-        if (signal === 'SIGTERM') {
-          mockHandler.mockImplementation(handler);
-        }
-      });
+        expect(mockProcessExit).toHaveBeenCalledWith(0);
+      })
+    );
 
-      const testGame = new Game();
+    it(
+      'SIGTERMを適切に処理する',
+      withMocks(async (mocks: any) => {
+        const mockProcessExit = mocks.mockProcessExit();
 
-      // Simulate SIGTERM
-      await mockHandler();
+        const mockHandler = jest.fn();
+        process.on = jest.fn().mockImplementation((signal, handler) => {
+          if (signal === 'SIGTERM') {
+            mockHandler.mockImplementation(handler);
+          }
+        });
 
-      // テスト後にクリーンアップ
-      await (testGame as any).cleanup();
+        const testGame = new Game();
 
-      expect(processExitSpy).toHaveBeenCalledWith(0);
-    });
+        // Simulate SIGTERM
+        await mockHandler();
+
+        // テスト後にクリーンアップ
+        await (testGame as any).cleanup();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(0);
+      })
+    );
   });
 
   describe('error handling', () => {
