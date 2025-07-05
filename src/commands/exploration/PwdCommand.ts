@@ -1,7 +1,7 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * pwd command - print working directory
+ * pwd コマンド - ワーキングディレクトリを表示
  */
 export class PwdCommand extends BaseCommand {
   public name = 'pwd';

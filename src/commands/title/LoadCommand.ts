@@ -1,14 +1,14 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * load command - load saved game
+ * load コマンド - セーブされたゲームを読み込み
  */
 export class LoadCommand extends BaseCommand {
   public name = 'load';
   public description = 'load saved game';
 
   protected executeInternal(args: string[], _context: CommandContext): CommandResult {
-    // check save file (not implemented yet, fixed message)
+    // セーブファイルをチェック（未実装、固定メッセージ）
     if (args.length > 0) {
       const saveSlot = args[0];
       return this.error(`save slot ${saveSlot} not found`);

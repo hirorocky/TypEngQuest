@@ -1,7 +1,7 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * cd command - change working directory
+ * cd コマンド - ワーキングディレクトリを変更
  */
 export class CdCommand extends BaseCommand {
   public name = 'cd';
@@ -11,7 +11,7 @@ export class CdCommand extends BaseCommand {
     const fileSystem = this.getFileSystem(context) as any;
     const targetPath = args[0];
 
-    // execute directory change
+    // ディレクトリの変更を実行
     const result = fileSystem.cd(targetPath);
 
     if (result.success) {

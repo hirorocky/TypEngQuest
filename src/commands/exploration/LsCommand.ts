@@ -2,7 +2,7 @@ import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 import { FileNode } from '../../world/FileNode';
 
 /**
- * ls command - list directory contents
+ * ls コマンド - ディレクトリの内容を一覧表示
  */
 export class LsCommand extends BaseCommand {
   public name = 'ls';
@@ -13,14 +13,14 @@ export class LsCommand extends BaseCommand {
     const options = this.parseOptions(args);
     const targetPath = options.remaining[0];
 
-    // set ls options
+    // ls オプションを設定
     const listOptions = {
       showHidden: options.flags.includes('a') || options.flags.includes('all'),
       detailed: options.flags.includes('l') || options.flags.includes('long'),
       path: targetPath,
     };
 
-    // get file list
+    // ファイル一覧を取得
     const result = fileSystem.ls(listOptions);
 
     if (!result.success) {
@@ -31,14 +31,14 @@ export class LsCommand extends BaseCommand {
       return this.success('directory is empty', []);
     }
 
-    // generate output
+    // 出力を生成
     const output: string[] = [];
 
     if (listOptions.detailed) {
-      // detailed display
+      // 詳細表示
       output.push(...this.formatDetailedOutput(result.files));
     } else {
-      // normal display
+      // 通常表示
       output.push(...this.formatSimpleOutput(result.files));
     }
 
@@ -46,7 +46,7 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * format for normal display
+   * 通常表示のフォーマット
    */
   private formatSimpleOutput(files: FileNode[]): string[] {
     const output: string[] = [];
@@ -56,7 +56,7 @@ export class LsCommand extends BaseCommand {
     for (const file of files) {
       const displayName = this.getDisplayName(file);
 
-      // check line length
+      // 行の長さをチェック
       if (currentLine.length + displayName.length + 2 > maxLineLength) {
         if (currentLine.length > 0) {
           output.push(currentLine.trim());
@@ -75,7 +75,7 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * format for detailed display
+   * 詳細表示のフォーマット
    */
   private formatDetailedOutput(files: FileNode[]): string[] {
     const output: string[] = [];
@@ -94,7 +94,7 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * get file display name (add / to directories)
+   * ファイル表示名を取得（ディレクトリに / を追加）
    */
   private getDisplayName(file: FileNode): string {
     let displayName = file.name;
@@ -107,10 +107,10 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * get file size (simple implementation)
+   * ファイルサイズを取得（簡単な実装）
    */
   private getFileSize(file: FileNode): string {
-    // return appropriate size based on file type
+    // ファイルタイプに基づいて適切なサイズを返す
     switch (file.fileType) {
       case 'monster':
         return '1024';

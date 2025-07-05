@@ -1,7 +1,7 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * exit command - exit game
+ * exit コマンド - ゲームを終了
  */
 export class ExitCommand extends BaseCommand {
   public name = 'exit';

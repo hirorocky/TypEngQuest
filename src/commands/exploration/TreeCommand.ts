@@ -2,7 +2,7 @@ import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 import { TreeNode } from '../../world/FileSystem';
 
 /**
- * tree command - display directory tree structure
+ * tree コマンド - ディレクトリツリー構造を表示
  */
 export class TreeCommand extends BaseCommand {
   public name = 'tree';
@@ -12,30 +12,30 @@ export class TreeCommand extends BaseCommand {
     const fileSystem = this.getFileSystem(context) as any;
     const options = this.parseOptions(args);
 
-    // set tree options
+    // ツリーオプションを設定
     const treeOptions = {
       showHidden: options.flags.includes('a') || options.flags.includes('all'),
       maxDepth: this.getDepthOption(options),
     };
 
-    // get tree data
+    // ツリーデータを取得
     const treeData = fileSystem.tree(treeOptions);
 
-    // generate tree output
+    // ツリー出力を生成
     const output = this.formatTreeOutput(treeData, treeOptions.showHidden);
 
     return this.success('directory tree:', output);
   }
 
   /**
-   * get depth option
+   * 深度オプションを取得
    */
   private getDepthOption(options: {
     flags: string[];
     values: Record<string, string>;
     remaining: string[];
   }): number | undefined {
-    // get depth from --depth or -d option
+    // --depth または -d オプションから深度を取得
     const depthValue = options.values['depth'] || options.values['d'];
     if (depthValue) {
       const depth = parseInt(depthValue, 10);
@@ -43,11 +43,11 @@ export class TreeCommand extends BaseCommand {
         return depth;
       }
     }
-    return undefined; // no limit
+    return undefined; // 制限なし
   }
 
   /**
-   * format tree output
+   * ツリー出力をフォーマット
    */
   private formatTreeOutput(treeNode: TreeNode, showHidden: boolean): string[] {
     const output: string[] = [];
@@ -56,7 +56,7 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * format single tree node
+   * 単一のツリーノードをフォーマット
    */
   private formatTreeNode(
     node: TreeNode,
@@ -64,16 +64,16 @@ export class TreeCommand extends BaseCommand {
     isLast: boolean,
     context: { output: string[]; showHidden: boolean }
   ): void {
-    // display node name
+    // ノード名を表示
     const connector = isLast ? '└── ' : '├── ';
     const displayName = this.getNodeDisplayName(node);
     context.output.push(prefix + connector + displayName);
 
-    // process child nodes
+    // 子ノードを処理
     if (node.children && node.children.length > 0) {
       let visibleChildren = node.children;
 
-      // filter hidden files
+      // 隠しファイルをフィルタ
       if (!context.showHidden) {
         visibleChildren = node.children.filter(child => !child.name.startsWith('.'));
       }
@@ -88,17 +88,17 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * get node display name
+   * ノード表示名を取得
    */
   private getNodeDisplayName(node: TreeNode): string {
     let displayName = node.name;
 
-    // add / to directories
+    // ディレクトリに / を追加
     if (node.nodeType === 'directory') {
       displayName += '/';
     }
 
-    // add icon based on file type
+    // ファイルタイプに基づいてアイコンを追加
     const icon = this.getFileTypeIcon(node.fileType);
     if (icon) {
       displayName += ` ${icon}`;
@@ -108,22 +108,22 @@ export class TreeCommand extends BaseCommand {
   }
 
   /**
-   * get icon based on file type
+   * ファイルタイプに基づいてアイコンを取得
    */
   private getFileTypeIcon(fileType?: string): string {
     switch (fileType) {
       case 'monster':
-        return '⚔️'; // monster file
+        return '⚔️'; // モンスターファイル
       case 'treasure':
-        return '💰'; // treasure file
+        return '💰'; // 宝物ファイル
       case 'save_point':
-        return '💾'; // save point
+        return '💾'; // セーブポイント
       case 'event':
-        return '🎭'; // event file
+        return '🎭'; // イベントファイル
       case 'empty':
-        return '📄'; // empty file
+        return '📄'; // 空のファイル
       default:
-        return ''; // directory or unknown type
+        return ''; // ディレクトリまたは不明なタイプ
     }
   }
 
