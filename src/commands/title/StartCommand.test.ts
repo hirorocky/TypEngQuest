@@ -22,7 +22,7 @@ describe('StartCommand', () => {
     });
 
     test('説明文が設定されている', () => {
-      expect(command.description).toBe('新しいゲームを開始する');
+      expect(command.description).toBe('start new game');
     });
   });
 
@@ -31,7 +31,7 @@ describe('StartCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('新しいゲームを開始しました！');
+      expect(result.message).toBe('new game started!');
       expect(result.nextPhase).toBe('exploration');
       expect(result.data).toEqual({ newGame: true });
     });

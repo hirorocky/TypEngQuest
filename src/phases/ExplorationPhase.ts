@@ -48,14 +48,14 @@ export class ExplorationPhase extends Phase {
 
   public enter(): void {
     Display.clear();
-    Display.printHeader('マップ探索モード');
+    Display.printHeader('exploration mode');
     Display.newLine();
-    Display.printInfo('仮想ファイルシステムを探索できます。');
-    Display.printInfo('helpコマンドで利用可能なコマンドを表示します。');
+    Display.printInfo('explore the virtual filesystem.');
+    Display.printInfo('type "help" to see available commands.');
     Display.newLine();
 
     // 現在地を表示
-    Display.printSuccess(`現在地: ${this.fileSystem.pwd()}`);
+    Display.printSuccess(`current location: ${this.fileSystem.pwd()}`);
     Display.newLine();
 
     // プロンプトを表示
@@ -99,7 +99,7 @@ export class ExplorationPhase extends Phase {
     // 無効なコマンドの場合は失敗を返す
     return {
       success: false,
-      message: `不明なコマンド: ${command}`,
+      message: `command not found: ${command}`,
     };
   }
 
@@ -148,10 +148,10 @@ export class ExplorationPhase extends Phase {
         result.output.forEach(line => Display.printLine(line));
       } else if (result.message) {
         // メッセージのみの場合
-        Display.printSuccess(result.message || '操作が完了しました');
+        Display.printSuccess(result.message || 'operation completed');
       }
     } else {
-      Display.printError(result.message || 'エラーが発生しました');
+      Display.printError(result.message || 'operation failed');
     }
 
     Display.newLine();
@@ -173,7 +173,7 @@ export class ExplorationPhase extends Phase {
       case 'exit':
       case 'quit':
       case 'q':
-        Display.printInfo('タイトル画面に戻ります...');
+        Display.printInfo('returning to title...');
         return { type: PhaseTypes.TITLE };
 
       case 'clear':
@@ -183,8 +183,8 @@ export class ExplorationPhase extends Phase {
         return { type: PhaseTypes.CONTINUE };
 
       default:
-        Display.printError(`不明なコマンド: ${command}`);
-        Display.printInfo('helpで利用可能なコマンドを確認してください。');
+        Display.printError(`command not found: ${command}`);
+        Display.printInfo('type "help" to see available commands.');
         Display.newLine();
         this.showPrompt();
         return { type: PhaseTypes.CONTINUE };
@@ -196,11 +196,11 @@ export class ExplorationPhase extends Phase {
    */
   private showHelp(): void {
     Display.newLine();
-    Display.printHeader('利用可能なコマンド');
+    Display.printHeader('available commands');
     Display.printLine('------------------');
 
     // ナビゲーションコマンド
-    Display.printInfo('ナビゲーション:');
+    Display.printInfo('navigation:');
     this.navigationCommands.forEach(command => {
       Display.printCommand(command.name, command.description);
     });
@@ -208,13 +208,13 @@ export class ExplorationPhase extends Phase {
     Display.newLine();
 
     // システムコマンド
-    Display.printInfo('システム:');
-    Display.printCommand('help', 'このヘルプを表示');
-    Display.printCommand('clear', '画面をクリア');
-    Display.printCommand('exit', 'タイトル画面に戻る');
+    Display.printInfo('system:');
+    Display.printCommand('help', 'show this help');
+    Display.printCommand('clear', 'clear screen');
+    Display.printCommand('exit', 'return to title');
 
     Display.newLine();
-    Display.printInfo('各コマンドの詳細は「コマンド名 --help」で確認できます。');
+    Display.printInfo('use "command --help" for detailed information.');
     Display.newLine();
     this.showPrompt();
   }

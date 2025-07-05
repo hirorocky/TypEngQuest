@@ -1,16 +1,16 @@
 import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
 
 /**
- * startコマンド - 新しいゲームを開始する
+ * start command - start new game
  */
 export class StartCommand extends BaseCommand {
   public name = 'start';
-  public description = '新しいゲームを開始する';
+  public description = 'start new game';
 
   protected executeInternal(_args: string[], _context: CommandContext): CommandResult {
-    // 新しいゲーム開始処理
+    // start new game
     return this.successWithPhase(
-      '新しいゲームを開始しました！',
+      'new game started!',
       'exploration',
       { newGame: true }
     );
@@ -18,14 +18,14 @@ export class StartCommand extends BaseCommand {
 
   public getHelp(): string[] {
     return [
-      'start - 新しいゲームを開始します',
+      'start - start new game',
       '',
-      '使用法:',
+      'usage:',
       '  start',
       '',
-      '説明:',
-      '  新しい冒険を始めます。',
-      '  現在の進行状況は失われます。',
+      'description:',
+      '  begin a new adventure.',
+      '  current progress will be lost.',
     ];
   }
 }

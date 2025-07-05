@@ -181,7 +181,7 @@ describe('Explorationフェーズの統合テスト', () => {
       const result = await explorationPhase.processInput('invalid_navigation_command');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('不明なコマンド');
+      expect(result.message).toContain('command not found');
     });
 
     test('存在しないディレクトリへのcd操作でエラーが適切に処理されること', async () => {

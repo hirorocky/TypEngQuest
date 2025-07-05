@@ -23,7 +23,7 @@ describe('TreeCommand', () => {
   describe('基本プロパティ', () => {
     test('コマンド名とディスクリプション', () => {
       expect(command.name).toBe('tree');
-      expect(command.description).toBe('ディレクトリ構造をツリー形式で表示します');
+      expect(command.description).toBe('display directory tree structure');
     });
   });
 
@@ -32,7 +32,7 @@ describe('TreeCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('ディレクトリツリー:');
+      expect(result.message).toBe('directory tree:');
       expect(result.output).toBeDefined();
       expect(result.output!.length).toBeGreaterThan(0);
 
@@ -182,7 +182,7 @@ describe('TreeCommand', () => {
       expect(help).toBeInstanceOf(Array);
       expect(help.length).toBeGreaterThan(0);
       expect(help[0]).toContain('tree');
-      expect(help.join('\n')).toContain('ディレクトリ構造をツリー形式で表示します');
+      expect(help.join('\n')).toContain('display directory tree structure');
     });
 
     test('オプションの説明が含まれる', () => {

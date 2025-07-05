@@ -23,7 +23,7 @@ describe('CdCommand', () => {
   describe('基本プロパティ', () => {
     test('コマンド名とディスクリプション', () => {
       expect(command.name).toBe('cd');
-      expect(command.description).toBe('ディレクトリを移動します');
+      expect(command.description).toBe('change working directory');
     });
   });
 
@@ -35,7 +35,7 @@ describe('CdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('移動しました');
+      expect(result.message).toContain('changed to');
       expect(fileSystem.pwd()).toBe('/projects');
     });
 
@@ -83,21 +83,21 @@ describe('CdCommand', () => {
       const result = command.execute(['nonexistent'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('ディレクトリが見つかりません');
+      expect(result.message).toContain('no such directory');
     });
 
     test('ファイルへの移動はエラー', () => {
       const result = command.execute(['game-studio/README.md'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('ディレクトリではありません');
+      expect(result.message).toContain('not a directory');
     });
 
     test('ルートより上への移動はエラー', () => {
       const result = command.execute(['..'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('ルートディレクトリより上には移動できません');
+      expect(result.message).toContain('cannot change directory above root');
     });
   });
 
@@ -108,7 +108,7 @@ describe('CdCommand', () => {
       expect(help).toBeInstanceOf(Array);
       expect(help.length).toBeGreaterThan(0);
       expect(help[0]).toContain('cd');
-      expect(help.join('\n')).toContain('ディレクトリを移動します');
+      expect(help.join('\n')).toContain('change working directory');
     });
 
     test('使用例が含まれる', () => {

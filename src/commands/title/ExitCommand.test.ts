@@ -22,7 +22,7 @@ describe('ExitCommand', () => {
     });
 
     test('説明文が設定されている', () => {
-      expect(command.description).toBe('ゲームを終了する');
+      expect(command.description).toBe('exit game');
     });
   });
 
@@ -31,15 +31,15 @@ describe('ExitCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('ゲームを終了します');
-      expect(result.message).toContain('ありがとうございました');
+      expect(result.message).toContain('exiting game');
+      expect(result.message).toContain('thanks for playing');
     });
 
     test('引数があっても正常に動作する', () => {
       const result = command.execute(['extra', 'args'], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('ゲームを終了します');
+      expect(result.message).toContain('exiting game');
     });
   });
 

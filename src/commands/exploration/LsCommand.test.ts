@@ -23,7 +23,7 @@ describe('LsCommand', () => {
   describe('基本プロパティ', () => {
     test('コマンド名とディスクリプション', () => {
       expect(command.name).toBe('ls');
-      expect(command.description).toBe('ファイル・ディレクトリ一覧を表示します');
+      expect(command.description).toBe('list directory contents');
     });
   });
 
@@ -32,7 +32,7 @@ describe('LsCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('ファイル一覧:');
+      expect(result.message).toBe('directory listing:');
       expect(result.output).toBeDefined();
       expect(result.output!.length).toBeGreaterThan(0);
     });
@@ -104,14 +104,14 @@ describe('LsCommand', () => {
       const result = command.execute(['nonexistent'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('パスが見つかりません');
+      expect(result.message).toContain('no such path');
     });
 
     test('ファイルを指定した場合はエラー', () => {
       const result = command.execute(['game-studio/README.md'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('ディレクトリではありません');
+      expect(result.message).toContain('not a directory');
     });
   });
 
@@ -159,7 +159,7 @@ describe('LsCommand', () => {
       expect(help).toBeInstanceOf(Array);
       expect(help.length).toBeGreaterThan(0);
       expect(help[0]).toContain('ls');
-      expect(help.join('\n')).toContain('ファイル・ディレクトリ一覧を表示します');
+      expect(help.join('\n')).toContain('list directory contents');
     });
 
     test('オプションの説明が含まれる', () => {
