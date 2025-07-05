@@ -3,8 +3,8 @@
 ```
 TypEngQuest/
 ├── src/
-│   ├── index.ts                    # エントリーポイント
-│   ├── core/                       # コアシステム
+│   ├── index.ts                    # エントリーポイント [未実装]
+│   ├── core/                       # コアシステム [完全実装]
 │   │   ├── Game.ts                 # ゲームメインクラス
 │   │   ├── Game.test.ts            # Gameクラスのテスト
 │   │   ├── Phase.ts                # フェーズ管理システム
@@ -13,190 +13,162 @@ TypEngQuest/
 │   │   ├── CommandParser.test.ts   # CommandParserのテスト
 │   │   └── types.ts                # 共通型定義
 │   │
-│   ├── phases/                     # 各フェーズの実装
+│   ├── phases/                     # 各フェーズの実装 [部分実装 2/6]
 │   │   ├── TitlePhase.ts           # タイトルフェーズ
 │   │   ├── TitlePhase.test.ts      # TitlePhaseのテスト
 │   │   ├── ExplorationPhase.ts     # マップ探索フェーズ
-│   │   ├── ExplorationPhase.test.ts # ExplorationPhaseのテスト
-│   │   ├── DialogPhase.ts          # ダイアログフェーズ
-│   │   ├── DialogPhase.test.ts     # DialogPhaseのテスト
-│   │   ├── InventoryPhase.ts       # インベントリフェーズ
-│   │   ├── InventoryPhase.test.ts  # InventoryPhaseのテスト
-│   │   ├── BattlePhase.ts          # バトルフェーズ
-│   │   ├── BattlePhase.test.ts     # BattlePhaseのテスト
-│   │   ├── TypingPhase.ts          # タイピングチャレンジフェーズ
-│   │   └── TypingPhase.test.ts     # TypingPhaseのテスト
+│   │   └── ExplorationPhase.test.ts # ExplorationPhaseのテスト
+│   │   # 以下未実装:
+│   │   # ├── DialogPhase.ts          # ダイアログフェーズ
+│   │   # ├── DialogPhase.test.ts     # DialogPhaseのテスト
+│   │   # ├── InventoryPhase.ts       # インベントリフェーズ
+│   │   # ├── InventoryPhase.test.ts  # InventoryPhaseのテスト
+│   │   # ├── BattlePhase.ts          # バトルフェーズ
+│   │   # ├── BattlePhase.test.ts     # BattlePhaseのテスト
+│   │   # ├── TypingPhase.ts          # タイピングチャレンジフェーズ
+│   │   # └── TypingPhase.test.ts     # TypingPhaseのテスト
 │   │
-│   ├── world/                      # ワールド関連
-│   │   ├── World.ts                # ワールドクラス
-│   │   ├── World.test.ts           # Worldのテスト
-│   │   ├── WorldGenerator.ts       # ワールド生成器
-│   │   ├── WorldGenerator.test.ts  # WorldGeneratorのテスト
+│   ├── world/                      # ワールド関連 [部分実装 2/5]
 │   │   ├── FileSystem.ts           # ファイルシステム実装
 │   │   ├── FileSystem.test.ts      # FileSystemのテスト
 │   │   ├── FileNode.ts             # ファイル・ディレクトリノード
-│   │   ├── FileNode.test.ts        # FileNodeのテスト
-│   │   └── domains.ts              # ドメイン定義
+│   │   └── FileNode.test.ts        # FileNodeのテスト
+│   │   # 以下未実装:
+│   │   # ├── World.ts                # ワールドクラス
+│   │   # ├── World.test.ts           # Worldのテスト
+│   │   # ├── WorldGenerator.ts       # ワールド生成器
+│   │   # ├── WorldGenerator.test.ts  # WorldGeneratorのテスト
+│   │   # └── domains.ts              # ドメイン定義
 │   │
-│   ├── player/                     # プレイヤー関連
-│   │   ├── Player.ts               # プレイヤークラス
-│   │   ├── Player.test.ts          # Playerのテスト
-│   │   ├── Stats.ts                # ステータス管理
-│   │   ├── Stats.test.ts           # Statsのテスト
-│   │   ├── Equipment.ts            # 装備管理
-│   │   ├── Equipment.test.ts       # Equipmentのテスト
-│   │   ├── Inventory.ts            # インベントリ管理
-│   │   └── Inventory.test.ts       # Inventoryのテスト
-│   │
-│   ├── battle/                     # 戦闘システム
-│   │   ├── Battle.ts               # 戦闘管理クラス
-│   │   ├── Battle.test.ts          # Battleのテスト
-│   │   ├── Enemy.ts                # 敵クラス
-│   │   ├── Enemy.test.ts           # Enemyのテスト
-│   │   ├── Skill.ts                # 技システム
-│   │   ├── Skill.test.ts           # Skillのテスト
-│   │   ├── BattleCalculator.ts     # ダメージ計算
-│   │   └── BattleCalculator.test.ts # BattleCalculatorのテスト
-│   │
-│   ├── typing/                     # タイピングシステム
-│   │   ├── TypingChallenge.ts     # タイピングチャレンジ実装
-│   │   ├── TypingChallenge.test.ts # TypingChallengeのテスト
-│   │   ├── TypingEvaluator.ts     # タイピング評価器
-│   │   ├── TypingEvaluator.test.ts # TypingEvaluatorのテスト
-│   │   ├── WordDatabase.ts         # 単語・文章データベース
-│   │   └── WordDatabase.test.ts    # WordDatabaseのテスト
-│   │
-│   ├── items/                      # アイテムシステム
-│   │   ├── Item.ts                 # アイテム基底クラス
-│   │   ├── Item.test.ts            # Itemのテスト
-│   │   ├── ConsumableItem.ts       # 消費アイテム
-│   │   ├── ConsumableItem.test.ts  # ConsumableItemのテスト
-│   │   ├── EquipmentItem.ts        # 装備アイテム
-│   │   ├── EquipmentItem.test.ts   # EquipmentItemのテスト
-│   │   ├── KeyItem.ts              # だいじなもの
-│   │   └── KeyItem.test.ts         # KeyItemのテスト
-│   │
-│   ├── events/                     # イベントシステム
-│   │   ├── RandomEvent.ts          # ランダムイベント
-│   │   ├── RandomEvent.test.ts     # RandomEventのテスト
-│   │   ├── GoodEvents.ts           # 良いイベント定義
-│   │   ├── GoodEvents.test.ts      # GoodEventsのテスト
-│   │   ├── BadEvents.ts            # 悪いイベント定義
-│   │   └── BadEvents.test.ts       # BadEventsのテスト
-│   │
-│   ├── save/                       # セーブシステム
-│   │   ├── SaveManager.ts          # セーブ管理
-│   │   ├── SaveManager.test.ts     # SaveManagerのテスト
-│   │   ├── SaveData.ts             # セーブデータ構造
-│   │   ├── SaveData.test.ts        # SaveDataのテスト
-│   │   ├── SaveValidator.ts        # セーブデータ検証
-│   │   └── SaveValidator.test.ts   # SaveValidatorのテスト
-│   │
-│   ├── commands/                   # コマンド実装
+│   ├── commands/                   # コマンド実装 [部分実装 9/18]
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
-│   │   ├── title/                  # タイトルフェーズ用コマンド
+│   │   ├── title/                  # タイトルフェーズ用コマンド [完全実装]
 │   │   │   ├── StartCommand.ts     # startコマンド
 │   │   │   ├── StartCommand.test.ts # StartCommandのテスト
 │   │   │   ├── LoadCommand.ts      # loadコマンド
 │   │   │   ├── LoadCommand.test.ts # LoadCommandのテスト
 │   │   │   ├── ExitCommand.ts      # exitコマンド
 │   │   │   └── ExitCommand.test.ts # ExitCommandのテスト
-│   │   ├── exploration/            # 探索フェーズ用コマンド
-│   │   │   ├── CdCommand.ts        # cdコマンド（ナビゲーション）
-│   │   │   ├── CdCommand.test.ts   # CdCommandのテスト
-│   │   │   ├── LsCommand.ts        # lsコマンド（ナビゲーション）
-│   │   │   ├── LsCommand.test.ts   # LsCommandのテスト
-│   │   │   ├── PwdCommand.ts       # pwdコマンド（ナビゲーション）
-│   │   │   ├── PwdCommand.test.ts  # PwdCommandのテスト
-│   │   │   ├── TreeCommand.ts      # treeコマンド（ナビゲーション）
-│   │   │   └── TreeCommand.test.ts # TreeCommandのテスト
-│   │   ├── file/                   # ファイル操作コマンド（未実装）
-│   │   │   ├── CatCommand.ts       # catコマンド
-│   │   │   ├── CatCommand.test.ts  # CatCommandのテスト
-│   │   │   ├── HeadCommand.ts      # headコマンド
-│   │   │   ├── HeadCommand.test.ts # HeadCommandのテスト
-│   │   │   ├── FileCommand.ts      # fileコマンド
-│   │   │   ├── FileCommand.test.ts # FileCommandのテスト
-│   │   │   ├── VimCommand.ts       # vimコマンド
-│   │   │   ├── VimCommand.test.ts  # VimCommandのテスト
-│   │   │   ├── ChmodCommand.ts     # chmodコマンド
-│   │   │   └── ChmodCommand.test.ts # ChmodCommandのテスト
-│   │   └── game/                   # ゲーム固有コマンド（未実装）
-│   │       ├── StatusCommand.ts    # statusコマンド
-│   │       ├── StatusCommand.test.ts # StatusCommandのテスト
-│   │       ├── InventoryCommand.ts # inventoryコマンド
-│   │       ├── InventoryCommand.test.ts # InventoryCommandのテスト
-│   │       ├── RetireCommand.ts    # retireコマンド
-│   │       └── RetireCommand.test.ts # RetireCommandのテスト
+│   │   └── exploration/            # 探索フェーズ用コマンド [完全実装]
+│   │       ├── CdCommand.ts        # cdコマンド（ナビゲーション）
+│   │       ├── CdCommand.test.ts   # CdCommandのテスト
+│   │       ├── LsCommand.ts        # lsコマンド（ナビゲーション）
+│   │       ├── LsCommand.test.ts   # LsCommandのテスト
+│   │       ├── PwdCommand.ts       # pwdコマンド（ナビゲーション）
+│   │       ├── PwdCommand.test.ts  # PwdCommandのテスト
+│   │       ├── TreeCommand.ts      # treeコマンド（ナビゲーション）
+│   │       └── TreeCommand.test.ts # TreeCommandのテスト
+│   │   # 以下未実装:
+│   │   # ├── file/                   # ファイル操作コマンド
+│   │   # │   ├── CatCommand.ts       # catコマンド
+│   │   # │   ├── CatCommand.test.ts  # CatCommandのテスト
+│   │   # │   ├── HeadCommand.ts      # headコマンド
+│   │   # │   ├── HeadCommand.test.ts # HeadCommandのテスト
+│   │   # │   ├── FileCommand.ts      # fileコマンド
+│   │   # │   ├── FileCommand.test.ts # FileCommandのテスト
+│   │   # │   ├── VimCommand.ts       # vimコマンド
+│   │   # │   ├── VimCommand.test.ts  # VimCommandのテスト
+│   │   # │   ├── ChmodCommand.ts     # chmodコマンド
+│   │   # │   └── ChmodCommand.test.ts # ChmodCommandのテスト
+│   │   # └── game/                   # ゲーム固有コマンド
+│   │   #     ├── StatusCommand.ts    # statusコマンド
+│   │   #     ├── StatusCommand.test.ts # StatusCommandのテスト
+│   │   #     ├── InventoryCommand.ts # inventoryコマンド
+│   │   #     ├── InventoryCommand.test.ts # InventoryCommandのテスト
+│   │   #     ├── RetireCommand.ts    # retireコマンド
+│   │   #     └── RetireCommand.test.ts # RetireCommandのテスト
 │   │
-│   ├── ui/                         # UIコンポーネント
+│   ├── ui/                         # UIコンポーネント [部分実装 2/4]
 │   │   ├── Display.ts              # 画面表示管理
 │   │   ├── Display.test.ts         # Displayのテスト
-│   │   ├── Prompt.ts               # プロンプト表示
-│   │   ├── Prompt.test.ts          # Promptのテスト
-│   │   ├── ProgressBar.ts          # プログレスバー
-│   │   ├── ProgressBar.test.ts     # ProgressBarのテスト
 │   │   └── colors.ts               # 色定義
+│   │   # 以下未実装:
+│   │   # ├── Prompt.ts               # プロンプト表示
+│   │   # ├── Prompt.test.ts          # Promptのテスト
+│   │   # ├── ProgressBar.ts          # プログレスバー
+│   │   # ├── ProgressBar.test.ts     # ProgressBarのテスト
+│   │   # └── colors.test.ts          # colorsのテスト
 │   │
-│   └── utils/                      # ユーティリティ
-│       ├── Random.ts               # 乱数生成器
-│       ├── Random.test.ts          # Randomのテスト
-│       ├── FileUtils.ts            # ファイル操作ユーティリティ
-│       ├── FileUtils.test.ts       # FileUtilsのテスト
-│       ├── StringUtils.ts          # 文字列操作ユーティリティ
-│       ├── StringUtils.test.ts     # StringUtilsのテスト
-│       ├── Logger.ts               # ログ出力
-│       └── Logger.test.ts          # Loggerのテスト
+│   └── tests/                      # 統合テスト・テストセットアップ [完全実装]
+│       ├── integration/            # 統合テスト
+│       │   ├── helpers/            # 統合テスト用ヘルパー
+│       │   │   ├── TestGameHelper.ts # ゲーム初期化・実行・状態検証
+│       │   │   ├── SimplifiedMockHelper.ts # 簡潔なモック管理（自動クリーンアップ）
+│       │   │   └── SimplifiedMockHelper.test.ts # SimplifiedMockHelperのテスト
+│       │   ├── phase-transitions.integration.test.ts # フェーズ遷移の統合テスト
+│       │   ├── exploration-phase.integration.test.ts # 探索フェーズの統合テスト
+│       │   └── title-phase.integration.test.ts # タイトルフェーズの統合テスト
+│       └── setup/                  # テストセットアップ
+│           └── jest.setup.ts       # Jest設定・カスタムマッチャー・ANSI制御文字抑制
 │
-├── data/                           # ゲームデータ
-│   ├── items/                      # アイテムデータ
-│   │   ├── consumables.json        # 消費アイテム定義
-│   │   └── equipment.json          # 装備アイテム定義
-│   ├── enemies/                    # 敵データ
-│   │   └── enemies.json            # 敵定義
-│   ├── skills/                     # 技データ
-│   │   └── skills.json             # 技定義
-│   └── words/                      # タイピング用単語
-│       ├── easy.json               # 簡単な単語
-│       ├── medium.json             # 中程度の単語
-│       └── hard.json               # 難しい単語
 │
-├── tests/                          # 統合テスト・E2Eテスト
-│   ├── integration/                # 統合テスト
-│   │   ├── helpers/                # 統合テスト用ヘルパー
-│   │   │   ├── TestGameHelper.ts   # ゲーム初期化・実行・状態検証
-│   │   │   ├── SimplifiedMockHelper.ts # 簡潔なモック管理（自動クリーンアップ）
-│   │   │   └── SimplifiedMockHelper.test.ts # SimplifiedMockHelperのテスト
-│   │   ├── phase-transitions.integration.test.ts # フェーズ遷移の統合テスト
-│   │   ├── exploration-phase.integration.test.ts # 探索フェーズの統合テスト
-│   │   └── title-phase.integration.test.ts # タイトルフェーズの統合テスト
-│   ├── setup/                      # テストセットアップ
-│   │   └── jest.setup.ts           # Jest設定・カスタムマッチャー
-│   └── e2e/                        # E2Eテスト
-│
+├── .claude/                        # Claude Code設定
+├── .env                            # 環境変数
+├── .github/                        # GitHub Actions・Issue template
+├── .mcp.json                       # MCP設定
+├── coverage/                       # テストカバレッジレポート
 ├── docs/                           # ドキュメント
-│   ├── game-systems.md             # ゲームシステム仕様
+│   ├── agile-development-plan.md   # アジャイル開発計画
+│   ├── development-commands.md     # 開発コマンド
 │   ├── development-guidelines.md   # 開発ガイドライン
+│   ├── game-systems.md             # ゲームシステム仕様
+│   ├── implementation-status.md    # 実装状況
 │   ├── project-overview.md         # プロジェクト概要
 │   ├── project-structure.md        # プロジェクト構造（本ファイル）
-│   ├── development-commands.md     # 開発コマンド
-│   ├── implementation-status.md    # 実装状況
 │   └── testing-guide.md            # テストガイド
 │
-├── scripts/                        # ビルド・開発スクリプト
-│   ├── build.js                    # ビルドスクリプト
-│   └── dev.js                      # 開発サーバー
+├── mise.toml                       # Mise設定
+├── scripts/                        # 開発・通知スクリプト
+│   ├── notificaiton-discord.sh     # Discord通知
+│   ├── pr-review-comments.sh       # PRレビューコメント
+│   └── stop-discord.sh             # Discord通知停止
 │
 ├── package.json                    # npm設定
 ├── tsconfig.json                   # TypeScript設定
 ├── jest.config.js                  # Jest設定
-├── .eslintrc.js                    # ESLint設定
+├── eslint.config.js                # ESLint設定
 ├── .prettierrc                     # Prettier設定
 ├── .gitignore                      # Git除外設定
 ├── README.md                       # プロジェクトREADME
 └── CLAUDE.md                       # Claude用指示ファイル
+
+# 未実装のデータファイル（設計のみ）:
+# data/                           # ゲームデータ
+# ├── items/                      # アイテムデータ
+# │   ├── consumables.json        # 消費アイテム定義
+# │   └── equipment.json          # 装備アイテム定義
+# ├── enemies/                    # 敵データ
+# │   └── enemies.json            # 敵定義
+# ├── skills/                     # 技データ
+# │   └── skills.json             # 技定義
+# └── words/                      # タイピング用単語
+#     ├── easy.json               # 簡単な単語
+#     ├── medium.json             # 中程度の単語
+#     └── hard.json               # 難しい単語
 ```
+
+## 実装状況サマリー
+
+### ✅ 実装済み (19%)
+- **Core**: Game、Phase、CommandParser、types（完全実装）
+- **UI**: Display、colors（部分実装）
+- **World**: FileNode、FileSystem（部分実装）
+- **Phases**: TitlePhase、ExplorationPhase（完全実装）
+- **Commands**: BaseCommand、title/（3つ）、exploration/（4つ）（部分実装）
+- **Tests**: 統合テスト、テストヘルパー（完全実装）
+
+### ❌ 未実装 (81%)
+- **Player系**: Player、Stats、Equipment、Inventory（0%）
+- **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
+- **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
+- **Items系**: Item、ConsumableItem、EquipmentItem、KeyItem（0%）
+- **Events系**: RandomEvent、GoodEvents、BadEvents（0%）
+- **Save系**: SaveManager、SaveData、SaveValidator（0%）
+- **Commands**: file/（5つ）、game/（3つ）（0%）
+- **Utils**: Random、FileUtils、StringUtils、Logger（0%）
+- **Phases**: DialogPhase、InventoryPhase、BattlePhase、TypingPhase（0%）
+- **Data**: すべてのJSONファイル（0%）
 
 ## 主要クラス・モジュールの責務
 
@@ -230,14 +202,15 @@ TypEngQuest/
 ## 技術スタック
 - **言語**: TypeScript
 - **実行環境**: Node.js
-- **テストフレームワーク**: Jest
-- **リンター**: ESLint
+- **テストフレームワーク**: Jest（ts-jestでTypeScript対応、カスタムマッチャー、console出力抑制）
+- **リンター**: ESLint（Flat Config形式、TypeScript対応）
 - **フォーマッター**: Prettier
 - **パッケージマネージャー**: npm
 
 ## テスト構成
 - **ユニットテスト**: 各ソースファイルと同じディレクトリに `.test.ts` ファイルを配置
-- **統合テスト**: `tests/integration/` に配置（複数モジュール間の連携テスト）
+- **統合テスト**: `src/tests/integration/` に配置（複数モジュール間の連携テスト）
+- **テストセットアップ**: `src/tests/setup/` に配置（Jest設定、ヘルパー）
 - **E2Eテスト**: `tests/e2e/` に配置（ゲーム全体のシナリオテスト）
 - **テストファイル命名規則**: `[ファイル名].test.ts`
 - **テストカバレッジ目標**: 95%以上（現在95%以上を達成）
@@ -250,7 +223,7 @@ TypEngQuest/
   - シグナルハンドラー無効化（disableSignalHandlers）
   - ReadLineインターフェースモック（createReadlineMock）
   - withMocksヘルパー関数による自動クリーンアップ
-- **jest.setup.ts**: カスタムマッチャー（toBeInPhase、toBeSuccessfulCommand）
+- **jest.setup.ts**: カスタムマッチャー（toBeInPhase、toBeSuccessfulCommand）、ANSI制御文字出力抑制
 
 ### テストパターン
 - **ユニットテスト**: 個別クラス・関数の単体テスト
