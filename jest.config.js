@@ -18,6 +18,7 @@ export default {
   coverageReporters: ['text', 'lcov', 'html'],
   testMatch: [
     '<rootDir>/src/**/*.test.ts',
-    '<rootDir>/src/tests/**/*.test.ts'
+    '<rootDir>/src/tests/**/*.test.ts',
+    '<rootDir>/tests/**/*.test.ts'
   ]
 };
