@@ -23,6 +23,10 @@ describe('WorldGenerator', () => {
     });
 
     test('指定されたドメインとレベルでワールドを生成できる', () => {
+      // Math.randomをモックして決定的な生成を行う
+      const mockRandom = jest.spyOn(Math, 'random');
+      mockRandom.mockReturnValue(0.5);
+
       const world = generator.generateWorld('tech-startup', 1);
 
       expect(world).toBeInstanceOf(World);
@@ -30,9 +34,15 @@ describe('WorldGenerator', () => {
       expect(world.level).toBe(1);
       expect(world.currentPath).toBe('/');
       expect(world.getMaxDepth()).toBe(4); // 3 + 1
+
+      mockRandom.mockRestore();
     });
 
     test('異なるドメインタイプでワールドを生成できる', () => {
+      // Math.randomをモックして決定的な生成を行う
+      const mockRandom = jest.spyOn(Math, 'random');
+      mockRandom.mockReturnValue(0.5);
+
       const world1 = generator.generateWorld('game-studio', 2);
       const world2 = generator.generateWorld('web-agency', 3);
 
@@ -40,9 +50,15 @@ describe('WorldGenerator', () => {
       expect(world1.level).toBe(2);
       expect(world2.getDomainType()).toBe('web-agency');
       expect(world2.level).toBe(3);
+
+      mockRandom.mockRestore();
     });
 
     test('生成されたワールドにファイルシステムが含まれる', () => {
+      // Math.randomをモックして決定的な生成を行う
+      const mockRandom = jest.spyOn(Math, 'random');
+      mockRandom.mockReturnValue(0.5);
+
       const world = generator.generateWorld('tech-startup', 1);
 
       expect(world.fileSystem).toBeDefined();
@@ -52,9 +68,15 @@ describe('WorldGenerator', () => {
       const rootNode = world.fileSystem.getNodeByPath('/');
       expect(rootNode).toBeDefined();
       expect(rootNode?.name).toBe('projects');
+
+      mockRandom.mockRestore();
     });
 
     test('生成されたファイルシステムに適切な構造が含まれる', () => {
+      // Math.randomをモックして決定的な生成を行う
+      const mockRandom = jest.spyOn(Math, 'random');
+      mockRandom.mockReturnValue(0.5);
+
       const world = generator.generateWorld('game-studio', 3);
       const fileSystem = world.fileSystem;
 
@@ -65,9 +87,15 @@ describe('WorldGenerator', () => {
 
       // 最低でも1つのディレクトリが存在する
       expect(projectNode?.children.length).toBeGreaterThan(0);
+
+      mockRandom.mockRestore();
     });
 
     test('異なるレベルで異なる深度のワールドが生成される', () => {
+      // Math.randomをモックして決定的な生成を行う
+      const mockRandom = jest.spyOn(Math, 'random');
+      mockRandom.mockReturnValue(0.5);
+
       const world1 = generator.generateWorld('tech-startup', 1);
       const world5 = generator.generateWorld('tech-startup', 5);
       const world10 = generator.generateWorld('tech-startup', 10);
@@ -75,6 +103,8 @@ describe('WorldGenerator', () => {
       expect(world1.getMaxDepth()).toBe(4);
       expect(world5.getMaxDepth()).toBe(8);
       expect(world10.getMaxDepth()).toBe(10); // 最大10
+
+      mockRandom.mockRestore();
     });
 
     test('無効なドメインタイプでエラーが発生する', () => {
