@@ -1,4 +1,5 @@
-import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
+import { BaseCommand, CommandContext } from '../BaseCommand';
+import { CommandResult } from '../../core/types';
 
 /**
  * pwd コマンド - ワーキングディレクトリを表示

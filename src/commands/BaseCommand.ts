@@ -1,6 +1,4 @@
 import { PhaseType, GameState, CommandResult } from '../core/types';
-
-export { CommandResult };
 import { FileSystem } from '../world/FileSystem';
 
 // プレイヤーとバトルの仮インターフェース（後で実装予定）

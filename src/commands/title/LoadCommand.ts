@@ -1,4 +1,5 @@
-import { BaseCommand, CommandResult, CommandContext } from '../BaseCommand';
+import { BaseCommand, CommandContext } from '../BaseCommand';
+import { CommandResult } from '../../core/types';
 
 /**
  * load コマンド - セーブされたゲームを読み込み

@@ -2,7 +2,8 @@
  * BaseCommandクラスのテスト
  */
 
-import { BaseCommand, CommandResult, CommandContext } from './BaseCommand';
+import { BaseCommand, CommandContext } from './BaseCommand';
+import { CommandResult } from '../core/types';
 import { FileSystem } from '../world/FileSystem';
 
 // テスト用の具象コマンドクラス
