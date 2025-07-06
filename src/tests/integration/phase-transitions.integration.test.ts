@@ -62,9 +62,9 @@ describe('フェーズ移行の統合テスト', () => {
       // フェーズ遷移に関連する出力があることを確認
       const output = gameHelper.getCapturedOutput();
       const hasTransitionOutput = output.some(line =>
-        line.includes('マップ探索') ||
-        line.includes('仮想ファイルシステム') ||
-        line.includes('現在地')
+        line.includes('exploration mode') ||
+        line.includes('virtual filesystem') ||
+        line.includes('current location')
       );
 
       expect(hasTransitionOutput).toBe(true);

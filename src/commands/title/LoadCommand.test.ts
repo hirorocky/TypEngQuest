@@ -22,7 +22,7 @@ describe('LoadCommand', () => {
     });
 
     test('説明文が設定されている', () => {
-      expect(command.description).toBe('セーブデータをロードする');
+      expect(command.description).toBe('load saved game');
     });
   });
 
@@ -31,21 +31,21 @@ describe('LoadCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('セーブファイルが見つかりません');
+      expect(result.message).toContain('no save file found');
     });
 
     test('スロット番号指定時にエラーメッセージを返す', () => {
       const result = command.execute(['1'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('セーブスロット1が見つかりません');
+      expect(result.message).toContain('save slot 1 not found');
     });
 
     test('複数の引数でも最初の引数をスロット番号として使用', () => {
       const result = command.execute(['2', 'extra'], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('セーブスロット2が見つかりません');
+      expect(result.message).toContain('save slot 2 not found');
     });
   });
 
