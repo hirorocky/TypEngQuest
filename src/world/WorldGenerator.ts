@@ -136,7 +136,7 @@ export class WorldGenerator {
     ];
 
     fileTypes.forEach(fileType => {
-      const fileCount = Math.ceil(Math.random() * 3);
+      const fileCount = Math.max(1, Math.ceil(Math.random() * 3));
 
       for (let i = 0; i < fileCount; i++) {
         const fileName = getRandomFileName(domain, fileType, depth);
@@ -153,42 +153,39 @@ export class WorldGenerator {
   private placeSpecialItems(world: World): void {
     const fileSystem = world.fileSystem;
 
-    // 全ノードを再帰的に収集
-    const allNodes = this.collectAllNodes(fileSystem.root);
-
-    // 宝箱ファイル（鍵配置用）を取得
-    const treasureFiles = allNodes.filter(node => node.isFile() && node.fileType === 'treasure');
+    // 全ノードを取得
+    const allNodes = fileSystem.find('');
 
     // ディレクトリ（ボス配置用）を取得（ルートは除く）
     const directories = allNodes.filter(
       node => node.isDirectory() && node.getPath() !== '/' && node.getPath() !== '/projects'
     );
 
-    // 鍵を配置
-    if (treasureFiles.length > 0) {
-      const keyFile = treasureFiles[Math.floor(Math.random() * treasureFiles.length)];
-      world.setKeyLocation(keyFile.getPath());
-    }
-
     // ボスを配置
-    if (directories.length > 0) {
-      const bossDir = directories[Math.floor(Math.random() * directories.length)];
-      world.setBossLocation(bossDir.getPath());
+    if (directories.length === 0) {
+      throw new Error('no directories available for boss placement');
     }
-  }
+    const bossDir = directories[Math.floor(Math.random() * directories.length)];
+    world.setBossLocation(bossDir.getPath());
 
-  /**
-   * ノードツリーから全ノードを再帰的に収集する
-   * @param node 開始ノード
-   * @returns 全ノードの配列
-   */
-  private collectAllNodes(node: FileNode): FileNode[] {
-    const nodes: FileNode[] = [node];
+    // 宝箱ファイル（鍵配置用）を取得（ボスディレクトリ内は除外）
+    let treasureFiles = allNodes.filter(
+      node =>
+        node.isFile() &&
+        node.fileType === 'treasure' &&
+        !node.getPath().startsWith(bossDir.getPath())
+    );
 
-    for (const child of node.children) {
-      nodes.push(...this.collectAllNodes(child));
+    // ボスディレクトリ外に宝箱がない場合は、全宝箱ファイルを対象にする
+    if (treasureFiles.length === 0) {
+      treasureFiles = allNodes.filter(node => node.isFile() && node.fileType === 'treasure');
     }
 
-    return nodes;
+    // 鍵を配置
+    if (treasureFiles.length === 0) {
+      throw new Error('no treasure files available for key placement');
+    }
+    const keyFile = treasureFiles[Math.floor(Math.random() * treasureFiles.length)];
+    world.setKeyLocation(keyFile.getPath());
   }
 }

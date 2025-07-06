@@ -19,6 +19,11 @@ export enum FileType {
 }
 
 /**
+ * イベントファイル拡張子定数
+ */
+const EVENT_EXTENSIONS = ['.exe', '.bin', '.app', '.dmg', '.deb', '.rpm', '.msi', '.sh', '.ps1'];
+
+/**
  * ファイル・ディレクトリノードを表現するクラス
  * ゲーム内のファイルシステムの基本要素
  */
@@ -106,8 +111,7 @@ export class FileNode {
     }
 
     // イベントファイル（実行ファイル）
-    const eventExtensions = ['.exe', '.bin', '.app', '.dmg', '.deb', '.rpm', '.msi', '.sh'];
-    if (eventExtensions.includes(extension)) {
+    if (EVENT_EXTENSIONS.includes(extension)) {
       return FileType.EVENT;
     }
 
