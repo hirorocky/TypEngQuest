@@ -8,6 +8,8 @@ import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
+import { WorldGenerator } from '../world/WorldGenerator';
+import { World } from '../world/World';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -15,6 +17,8 @@ export class Game {
   private currentPhase: Phase | null = null;
   private rl: readline.Interface;
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
+  private worldGenerator: WorldGenerator;
+  private currentWorld: World | null = null;
 
   constructor() {
     this.state = {
@@ -28,6 +32,7 @@ export class Game {
       prompt: '> ',
     });
 
+    this.worldGenerator = new WorldGenerator();
     this.setupSignalHandlers();
   }
 
@@ -123,11 +128,25 @@ export class Game {
         return new TitlePhase();
 
       case 'exploration':
-        return new ExplorationPhase();
+        // explorationフェーズではワールドが必要
+        if (!this.currentWorld) {
+          // デフォルトワールドを生成
+          this.currentWorld = this.generateDefaultWorld();
+        }
+        return new ExplorationPhase(this.currentWorld);
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);
     }
+  }
+
+  /**
+   * デフォルトワールドを生成する
+   * 設定に基づいて後でカスタマイズ可能
+   */
+  private generateDefaultWorld(): World {
+    // デフォルトはランダムドメインのレベル1
+    return this.worldGenerator.generateRandomWorld(1);
   }
 
   private setupSignalHandlers(): void {

@@ -5,6 +5,9 @@
 import { Game } from './Game';
 import { TitlePhase } from '../phases/TitlePhase';
 import { withMocks } from '../tests/integration/helpers/SimplifiedMockHelper';
+import { World } from '../world/World';
+import { FileSystem } from '../world/FileSystem';
+import { getDomainData } from '../world/domains';
 
 // モック設定
 jest.mock('../phases/TitlePhase');
@@ -103,6 +106,13 @@ describe('Game', () => {
     });
 
     it('探索フェーズを正しく作成する', () => {
+      // generateDefaultWorldメソッドをモックして固定のワールドを返す
+      const testFileSystem = FileSystem.createTestStructure();
+      const testDomain = getDomainData('tech-startup')!;
+      const testWorld = new World(testDomain, 1, testFileSystem);
+
+      jest.spyOn(game as any, 'generateDefaultWorld').mockReturnValue(testWorld);
+
       const result = game['createPhase']('exploration');
       expect(result).toBeDefined();
       expect(result.getType()).toBe('exploration');

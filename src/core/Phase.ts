@@ -4,12 +4,15 @@
 
 import { PhaseType, CommandResult, Command } from './types';
 import { CommandParser } from './CommandParser';
+import { World } from '../world/World';
 
 export abstract class Phase {
   protected parser: CommandParser;
+  protected world?: World;
 
-  constructor() {
+  constructor(world?: World) {
     this.parser = new CommandParser();
+    this.world = world;
   }
 
   abstract getType(): PhaseType;

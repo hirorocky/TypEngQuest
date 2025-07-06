@@ -2,6 +2,7 @@ import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { FileSystem } from '../world/FileSystem';
+import { World } from '../world/World';
 import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
@@ -15,11 +16,12 @@ export class ExplorationPhase extends Phase {
   private fileSystem: FileSystem;
   private navigationCommands: Map<string, BaseCommand>;
 
-  constructor() {
-    super();
+  constructor(world?: World) {
+    super(world);
 
-    // テスト用のファイルシステムを作成
-    this.fileSystem = FileSystem.createTestStructure();
+    // ワールドが提供されている場合はそのファイルシステムを使用、
+    // そうでなければテスト用のファイルシステムを作成（後方互換性）
+    this.fileSystem = world?.fileSystem || FileSystem.createTestStructure();
 
     // ナビゲーションコマンドを初期化
     this.navigationCommands = new Map();
@@ -50,7 +52,14 @@ export class ExplorationPhase extends Phase {
     Display.clear();
     Display.printHeader('exploration mode');
     Display.newLine();
-    Display.printInfo('explore the virtual filesystem.');
+
+    // ワールド情報を表示
+    if (this.world) {
+      Display.printInfo(`exploring: ${this.world.getDomainName()} (level ${this.world.level})`);
+      Display.printInfo('explore the generated filesystem and find treasures!');
+    } else {
+      Display.printInfo('explore the virtual filesystem.');
+    }
     Display.printInfo('type "help" to see available commands.');
     Display.newLine();
 
