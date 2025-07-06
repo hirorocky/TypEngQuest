@@ -106,7 +106,7 @@ export class FileNode {
     }
 
     // イベントファイル（実行ファイル）
-    const eventExtensions = ['.exe', '.bin', '.app', '.dmg', '.deb', '.rpm', '.msi'];
+    const eventExtensions = ['.exe', '.bin', '.app', '.dmg', '.deb', '.rpm', '.msi', '.sh'];
     if (eventExtensions.includes(extension)) {
       return FileType.EVENT;
     }

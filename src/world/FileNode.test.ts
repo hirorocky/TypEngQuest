@@ -67,9 +67,11 @@ describe('FileNode', () => {
     test('イベントファイルが正しく判定される', () => {
       const exeFile = new FileNode('game.exe', NodeType.FILE);
       const binFile = new FileNode('data.bin', NodeType.FILE);
+      const shFile = new FileNode('script.sh', NodeType.FILE);
 
       expect(exeFile.fileType).toBe(FileType.EVENT);
       expect(binFile.fileType).toBe(FileType.EVENT);
+      expect(shFile.fileType).toBe(FileType.EVENT);
     });
 
     test('その他のファイルは空ファイルになる', () => {
