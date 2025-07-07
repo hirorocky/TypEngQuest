@@ -5,6 +5,8 @@
 import { ExplorationPhase } from './ExplorationPhase';
 import { Display } from '../ui/Display';
 import { PhaseTypes } from '../core/types';
+import { World } from '../world/World';
+import { getDomainData } from '../world/domains';
 
 // Displayモジュールをモック化
 jest.mock('../ui/Display');
@@ -23,7 +25,9 @@ describe('ExplorationPhase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    phase = new ExplorationPhase();
+    const domain = getDomainData('tech-startup')!;
+    const world = new World(domain, 1);
+    phase = new ExplorationPhase(world);
 
     // Displayメソッドのモック設定
     mockPrint = Display.print as jest.Mock;

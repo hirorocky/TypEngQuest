@@ -1,7 +1,14 @@
+import { FILE_EXTENSIONS } from './FileNode';
+
 /**
  * ドメインタイプ
  */
-export type DomainType = 'tech-startup' | 'game-studio' | 'web-agency';
+export type DomainType =
+  | 'tech-startup'
+  | 'game-studio'
+  | 'web-agency'
+  | 'data-science'
+  | 'mobile-dev';
 
 /**
  * ドメインデータインターフェース
@@ -160,6 +167,124 @@ export const DOMAINS: DomainData[] = [
       ],
     },
   },
+  {
+    type: 'data-science',
+    name: 'Data Science Lab',
+    description: 'A data science research environment',
+    directoryNames: [
+      'data',
+      'notebooks',
+      'models',
+      'scripts',
+      'analysis',
+      'visualizations',
+      'pipelines',
+      'experiments',
+      'results',
+      'reports',
+    ],
+    fileNames: {
+      monster: [
+        'preprocess',
+        'train',
+        'evaluate',
+        'predict',
+        'feature_engineering',
+        'model_selection',
+        'hyperparameter_tuning',
+        'cross_validation',
+        'data_loader',
+        'visualize',
+      ],
+      treasure: [
+        'config',
+        'parameters',
+        'dataset_info',
+        'model_weights',
+        'metrics',
+        'experiment_log',
+        'pipeline_config',
+        'requirements',
+      ],
+      event: [
+        'train_model',
+        'run_experiment',
+        'generate_report',
+        'export_results',
+        'clean_data',
+        'deploy_model',
+        'benchmark',
+      ],
+      savepoint: [
+        'METHODOLOGY',
+        'FINDINGS',
+        'ABSTRACT',
+        'CONCLUSION',
+        'REFERENCES',
+        'EXPERIMENTS',
+        'TODO',
+      ],
+    },
+  },
+  {
+    type: 'mobile-dev',
+    name: 'Mobile Dev Studio',
+    description: 'A mobile application development studio',
+    directoryNames: [
+      'ios',
+      'android',
+      'shared',
+      'assets',
+      'components',
+      'screens',
+      'services',
+      'utils',
+      'localization',
+      'tests',
+    ],
+    fileNames: {
+      monster: [
+        'MainActivity',
+        'AppDelegate',
+        'LoginScreen',
+        'HomeScreen',
+        'ProfileScreen',
+        'SettingsScreen',
+        'NetworkManager',
+        'DataManager',
+        'AuthService',
+        'PushNotification',
+      ],
+      treasure: [
+        'Info.plist',
+        'AndroidManifest',
+        'GoogleService-Info',
+        'app-config',
+        'environment',
+        'api-keys',
+        'certificates',
+        'provisioning',
+      ],
+      event: [
+        'build-ios',
+        'build-android',
+        'run-simulator',
+        'run-device',
+        'archive',
+        'upload-store',
+        'test-flight',
+      ],
+      savepoint: [
+        'CHANGELOG',
+        'RELEASE_NOTES',
+        'APP_STORE_DESC',
+        'PRIVACY_POLICY',
+        'TERMS',
+        'FAQ',
+        'ROADMAP',
+      ],
+    },
+  },
 ];
 
 /**
@@ -200,23 +325,62 @@ export function getRandomDirectoryName(domain: DomainData, depth: number = 0): s
 }
 
 /**
- * ファイルタイプに応じた拡張子を取得する
+ * ドメイン毎の拡張子マッピング
+ */
+const DOMAIN_EXTENSIONS: Record<
+  DomainType,
+  Record<'monster' | 'treasure' | 'event' | 'savepoint', string[]>
+> = {
+  'tech-startup': {
+    monster: ['.rb', '.js', '.ts', '.vue', '.jsx'],
+    treasure: ['.json', '.yaml', '.yml', '.env'],
+    event: ['.sh', '.exe'],
+    savepoint: ['.md'],
+  },
+  'game-studio': {
+    monster: ['.cs', '.cpp', '.h', '.js', '.lua'],
+    treasure: ['.json', '.xml', '.ini', '.cfg'],
+    event: ['.exe', '.app', '.sh'],
+    savepoint: ['.md'],
+  },
+  'web-agency': {
+    monster: ['.js', '.ts', '.jsx', '.tsx', '.vue', '.php'],
+    treasure: ['.json', '.yaml', '.env', '.cfg'],
+    event: ['.sh', '.exe', '.cmd'],
+    savepoint: ['.md', '.mdx'],
+  },
+  'data-science': {
+    monster: ['.py', '.r', '.scala', '.go'],
+    treasure: ['.json', '.yaml', '.toml', '.ini'],
+    event: ['.sh', '.bin'],
+    savepoint: ['.md'],
+  },
+  'mobile-dev': {
+    monster: ['.swift', '.kt', '.java', '.tsx'],
+    treasure: ['.json', '.xml', '.properties', '.yml'],
+    event: ['.sh', '.app', '.exe'],
+    savepoint: ['.md'],
+  },
+};
+
+/**
+ * ドメインとファイルタイプに応じた拡張子を取得する
+ * @param domain ドメインデータ
  * @param fileType ファイルタイプ
  * @returns 拡張子の配列
  */
-function getExtensionsForType(fileType: 'monster' | 'treasure' | 'event' | 'savepoint'): string[] {
-  switch (fileType) {
-    case 'monster':
-      return ['.js', '.ts', '.py'];
-    case 'treasure':
-      return ['.json', '.yaml', '.yml'];
-    case 'event':
-      return ['.exe', '.bin', '.sh'];
-    case 'savepoint':
-      return ['.md'];
-    default:
-      return [];
+function getExtensionsForType(
+  domain: DomainData,
+  fileType: 'monster' | 'treasure' | 'event' | 'savepoint'
+): string[] {
+  const domainExtensions = DOMAIN_EXTENSIONS[domain.type];
+  if (domainExtensions && domainExtensions[fileType]) {
+    return domainExtensions[fileType];
   }
+
+  // デフォルトは一般的な拡張子を返す
+  const allExtensions = FILE_EXTENSIONS[fileType];
+  return allExtensions.slice(0, 3);
 }
 
 /**
@@ -233,7 +397,7 @@ export function getRandomFileName(
 ): string {
   const baseNames = domain.fileNames[fileType];
   const baseName = baseNames[Math.floor(Math.random() * baseNames.length)];
-  const extensions = getExtensionsForType(fileType);
+  const extensions = getExtensionsForType(domain, fileType);
   const extension = extensions[Math.floor(Math.random() * extensions.length)];
 
   // 深い階層では番号を付けることがある

@@ -81,19 +81,18 @@ describe('World', () => {
 
     test('初期状態ではルートのみ探索済み', () => {
       expect(world.isExplored('/')).toBe(true);
-      expect(world.isExplored('/projects')).toBe(true);
-      expect(world.isExplored('/projects/game-studio')).toBe(false);
+      expect(world.isExplored('/game-studio')).toBe(false);
+      expect(world.isExplored('/game-studio/assets')).toBe(false);
     });
 
     test('getExploredPathsで探索済みパス一覧を取得できる', () => {
-      world.markAsExplored('/projects/game-studio');
-      world.markAsExplored('/projects/game-studio/assets');
+      world.markAsExplored('/game-studio');
+      world.markAsExplored('/game-studio/assets');
 
       const exploredPaths = world.getExploredPaths();
       expect(exploredPaths).toContain('/');
-      expect(exploredPaths).toContain('/projects');
-      expect(exploredPaths).toContain('/projects/game-studio');
-      expect(exploredPaths).toContain('/projects/game-studio/assets');
+      expect(exploredPaths).toContain('/game-studio');
+      expect(exploredPaths).toContain('/game-studio/assets');
     });
   });
 
@@ -107,13 +106,13 @@ describe('World', () => {
     });
 
     test('setKeyLocationで鍵の場所を設定できる', () => {
-      world.setKeyLocation('/projects/game-studio/config/config.json');
-      expect(world.keyLocation).toBe('/projects/game-studio/config/config.json');
+      world.setKeyLocation('/game-studio/config/config.json');
+      expect(world.keyLocation).toBe('/game-studio/config/config.json');
     });
 
     test('setBossLocationでボスの場所を設定できる', () => {
-      world.setBossLocation('/projects/game-studio');
-      expect(world.bossLocation).toBe('/projects/game-studio');
+      world.setBossLocation('/game-studio');
+      expect(world.bossLocation).toBe('/game-studio');
     });
 
     test('hasKeyで鍵の所持状態を管理できる', () => {
@@ -169,26 +168,25 @@ describe('World', () => {
       const fileSystem = FileSystem.createTestStructure();
       const world = new World(domain, 2, fileSystem);
 
-      world.setCurrentPath('/projects/game-studio');
-      world.markAsExplored('/projects/game-studio');
-      world.setKeyLocation('/projects/game-studio/config/config.json');
-      world.setBossLocation('/projects/game-studio');
+      world.setCurrentPath('/game-studio');
+      world.markAsExplored('/game-studio');
+      world.setKeyLocation('/game-studio/config/config.json');
+      world.setBossLocation('/game-studio');
       world.obtainKey();
 
       const json = world.toJSON();
 
       expect(json.domainType).toBe('tech-startup');
       expect(json.level).toBe(2);
-      expect(json.currentPath).toBe('/projects/game-studio');
-      expect(json.exploredPaths).toContain('/projects/game-studio');
-      expect(json.keyLocation).toBe('/projects/game-studio/config/config.json');
-      expect(json.bossLocation).toBe('/projects/game-studio');
+      expect(json.currentPath).toBe('/game-studio');
+      expect(json.exploredPaths).toContain('/game-studio');
+      expect(json.keyLocation).toBe('/game-studio/config/config.json');
+      expect(json.bossLocation).toBe('/game-studio');
       expect(json.hasKey).toBe(true);
     });
 
     test('fromJSONでワールド状態を復元できる', () => {
       const domain = getDomainData('game-studio')!;
-      const fileSystem = FileSystem.createTestStructure();
 
       const worldData = {
         domainType: 'game-studio' as DomainType,
@@ -200,7 +198,7 @@ describe('World', () => {
         hasKey: false,
       };
 
-      const world = World.fromJSON(worldData, fileSystem);
+      const world = World.fromJSON(worldData);
 
       expect(world.domain).toBe(domain);
       expect(world.level).toBe(3);
@@ -212,8 +210,6 @@ describe('World', () => {
     });
 
     test('無効なドメインタイプでfromJSONするとエラー', () => {
-      const fileSystem = FileSystem.createTestStructure();
-
       const invalidData = {
         domainType: 'invalid-domain' as DomainType,
         level: 1,
@@ -224,9 +220,7 @@ describe('World', () => {
         hasKey: false,
       };
 
-      expect(() => World.fromJSON(invalidData, fileSystem)).toThrow(
-        '無効なドメインタイプです: invalid-domain'
-      );
+      expect(() => World.fromJSON(invalidData)).toThrow('無効なドメインタイプです: invalid-domain');
     });
   });
 

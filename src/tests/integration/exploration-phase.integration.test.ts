@@ -10,6 +10,7 @@
 
 import { ExplorationPhase } from '../../phases/ExplorationPhase';
 import { FileSystem } from '../../world/FileSystem';
+import { World } from '../../world/World';
 import { TestGameHelper } from './helpers/TestGameHelper';
 import { withMocks } from './helpers/SimplifiedMockHelper';
 
@@ -24,9 +25,13 @@ describe('Explorationフェーズの統合テスト', () => {
     // 統合テスト用の固定ファイル構造を作成
     fileSystem = FileSystem.createSampleStructure();
 
-    explorationPhase = new ExplorationPhase();
-    // 固定ファイルシステムを設定
-    (explorationPhase as any).fileSystem = fileSystem;
+    const domain = { type: 'tech-startup' as any, name: 'tech-startup', description: 'Test domain', directoryNames: [], fileNames: { monster: [], treasure: [], event: [], savepoint: [] } };
+    const world = new (class extends World {
+      constructor() {
+        super(domain, 1, fileSystem);
+      }
+    })();
+    explorationPhase = new ExplorationPhase(world);
     await explorationPhase.initialize();
   });
 

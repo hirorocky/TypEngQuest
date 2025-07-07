@@ -76,10 +76,9 @@ export class WorldGenerator {
     }
 
     const maxDepth = Math.min(3 + level, 10);
-    const root = new FileNode('projects', NodeType.DIRECTORY);
+    const root = new FileNode(domain.name, NodeType.DIRECTORY);
 
-    // ルートの下にプロジェクトディレクトリを生成
-    // ルート('/projects')は深度1としてカウントするため、実際の生成は深度1から開始
+    // ルートの下にディレクトリ構造を生成
     this.generateDirectoryStructure(root, domain, 1, maxDepth);
 
     return new FileSystem(root);

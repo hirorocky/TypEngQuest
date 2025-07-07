@@ -80,13 +80,13 @@ describe('WorldGenerator', () => {
       const world = generator.generateWorld('game-studio', 3);
       const fileSystem = world.fileSystem;
 
-      // ルートの下にプロジェクトディレクトリが存在する
-      const projectNode = fileSystem.getNodeByPath('/projects');
-      expect(projectNode).toBeDefined();
-      expect(projectNode?.isDirectory()).toBe(true);
+      // ルートディレクトリが存在する
+      const rootNode = fileSystem.getNodeByPath('/');
+      expect(rootNode).toBeDefined();
+      expect(rootNode?.isDirectory()).toBe(true);
 
       // 最低でも1つのディレクトリが存在する
-      expect(projectNode?.children.length).toBeGreaterThan(0);
+      expect(rootNode?.children.length).toBeGreaterThan(0);
 
       mockRandom.mockRestore();
     });
