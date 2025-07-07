@@ -142,7 +142,7 @@ describe('FileNode', () => {
     test('ルートノードのパスが正しく取得される', () => {
       const root = new FileNode('projects', NodeType.DIRECTORY);
 
-      expect(root.getPath()).toBe('/projects');
+      expect(root.getPath()).toBe('/');
     });
 
     test('階層構造のパスが正しく取得される', () => {
@@ -155,7 +155,7 @@ describe('FileNode', () => {
       gameDir.addChild(srcDir);
       srcDir.addChild(mainFile);
 
-      expect(mainFile.getPath()).toBe('/projects/game-studio/src/main.js');
+      expect(mainFile.getPath()).toBe('/game-studio/src/main.js');
     });
   });
 

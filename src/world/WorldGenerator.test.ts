@@ -67,7 +67,7 @@ describe('WorldGenerator', () => {
       // ルートディレクトリが存在する
       const rootNode = world.fileSystem.getNodeByPath('/');
       expect(rootNode).toBeDefined();
-      expect(rootNode?.name).toBe('projects');
+      expect(rootNode?.name).toBe('Tech Startup');
 
       mockRandom.mockRestore();
     });
@@ -168,7 +168,7 @@ describe('WorldGenerator', () => {
       // ルートノードが存在する
       const rootNode = fileSystem.getNodeByPath('/');
       expect(rootNode).toBeDefined();
-      expect(rootNode?.name).toBe('projects');
+      expect(rootNode?.name).toBe('Tech Startup');
     });
 
     test('生成されたファイルシステムに適切なファイルタイプが含まれる', () => {

@@ -122,8 +122,8 @@ describe('domains', () => {
       const fileName = getRandomFileName(domain, 'monster');
 
       expect(fileName).toBeDefined();
-      expect(fileName).toMatch(/\.(js|ts|py)$/);
-      const baseFileName = fileName.replace(/\.(js|ts|py)$/, '').replace(/^\./, '');
+      expect(fileName).toMatch(/\.(rb|js|ts|vue|jsx)$/);
+      const baseFileName = fileName.replace(/\.(rb|js|ts|vue|jsx)$/, '').replace(/^\./, '');
       expect(
         domain.fileNames.monster.some(
           name => baseFileName.includes(name) || name.includes(baseFileName)
@@ -181,7 +181,7 @@ describe('domains', () => {
 
       expect(fileName).toBeDefined();
       // 深い階層では番号付きの名前になることがある
-      expect(fileName).toMatch(/\.(js|ts|py)$/);
+      expect(fileName).toMatch(/\.(rb|js|ts|vue|jsx)$/);
 
       mockRandom.mockRestore();
     });

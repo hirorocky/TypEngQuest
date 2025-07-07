@@ -45,8 +45,8 @@ describe('World', () => {
     });
 
     test('setCurrentPathで現在位置を変更できる', () => {
-      world.setCurrentPath('/projects/game-studio');
-      expect(world.currentPath).toBe('/projects/game-studio');
+      world.setCurrentPath('/game-studio');
+      expect(world.currentPath).toBe('/game-studio');
     });
 
     test('存在しないパスは設定できない', () => {

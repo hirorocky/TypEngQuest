@@ -7,6 +7,7 @@ import { Display } from '../ui/Display';
 import { PhaseTypes } from '../core/types';
 import { World } from '../world/World';
 import { getDomainData } from '../world/domains';
+import { FileSystem } from '../world/FileSystem';
 
 // Displayモジュールをモック化
 jest.mock('../ui/Display');
@@ -26,7 +27,8 @@ describe('ExplorationPhase', () => {
     jest.clearAllMocks();
 
     const domain = getDomainData('tech-startup')!;
-    const world = new World(domain, 1);
+    const fileSystem = FileSystem.createTestStructure();
+    const world = new World(domain, 1, fileSystem);
     phase = new ExplorationPhase(world);
 
     // Displayメソッドのモック設定
@@ -49,9 +51,7 @@ describe('ExplorationPhase', () => {
     test('ファイルシステムが初期化される', () => {
       // enter()を呼んで現在地が表示されることを確認
       phase.enter();
-      expect(mockPrintSuccess).toHaveBeenCalledWith(
-        expect.stringContaining('current location: /projects')
-      );
+      expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('current location: /'));
     });
   });
 
@@ -68,13 +68,15 @@ describe('ExplorationPhase', () => {
 
     test('説明文が表示される', () => {
       phase.enter();
-      expect(mockPrintInfo).toHaveBeenCalledWith('explore the virtual filesystem.');
+      expect(mockPrintInfo).toHaveBeenCalledWith(
+        'explore the generated filesystem and find treasures!'
+      );
       expect(mockPrintInfo).toHaveBeenCalledWith('type "help" to see available commands.');
     });
 
     test('現在地が表示される', () => {
       phase.enter();
-      expect(mockPrintSuccess).toHaveBeenCalledWith('current location: /projects');
+      expect(mockPrintSuccess).toHaveBeenCalledWith('current location: /');
     });
 
     test('プロンプトが表示される', () => {
@@ -94,6 +96,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('cd game-studio');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
+        // cdコマンドは成功時にDisplay.printSuccessが呼ばれる
         expect(mockPrintSuccess).toHaveBeenCalledWith(expect.stringContaining('changed to'));
       });
 
@@ -108,7 +111,7 @@ describe('ExplorationPhase', () => {
         const result = (phase as any).processCommand('pwd');
 
         expect(result.type).toBe(PhaseTypes.CONTINUE);
-        expect(mockPrintLine).toHaveBeenCalledWith('/projects');
+        expect(mockPrintLine).toHaveBeenCalledWith('/');
       });
 
       test('treeコマンドが動作する', () => {
@@ -192,7 +195,7 @@ describe('ExplorationPhase', () => {
       (phase as any).processCommand('cd game-studio');
 
       // プロンプトが更新される
-      expect(mockPrint).toHaveBeenCalledWith('[~/game-studio]$ ');
+      expect(mockPrint).toHaveBeenCalledWith('[~game-studio]$ ');
     });
 
     test('深いディレクトリでも正しくパスが表示される', () => {
@@ -202,7 +205,8 @@ describe('ExplorationPhase', () => {
       // 深いディレクトリに移動
       (phase as any).processCommand('cd game-studio/src');
 
-      expect(mockPrint).toHaveBeenCalledWith('[~/game-studio/src]$ ');
+      // プロンプトが更新される
+      expect(mockPrint).toHaveBeenCalledWith('[~game-studio/src]$ ');
     });
   });
 

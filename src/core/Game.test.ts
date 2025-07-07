@@ -38,7 +38,7 @@ describe('Game', () => {
     // シグナルハンドラーをクリア
     process.removeAllListeners('SIGINT');
     process.removeAllListeners('SIGTERM');
-    game = new Game();
+    game = new Game(true); // テストモードを有効化
 
     // TitlePhase モックの設定
     const mockTitlePhase = {

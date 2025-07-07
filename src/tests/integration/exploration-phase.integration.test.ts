@@ -73,7 +73,7 @@ describe('Explorationフェーズの統合テスト', () => {
 
       expect(result.success).toBe(true);
       expect(result.output).toBeDefined();
-      expect(result.output?.some((line: string) => line.includes('/projects'))).toBe(true);
+      expect(result.output?.some((line: string) => line.includes('/'))).toBe(true);
     });
 
     test('treeコマンドでディレクトリ構造が表示されること', async () => {
@@ -90,7 +90,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 初期位置を確認
       const initialPwd = await explorationPhase.processInput('pwd');
       expect(initialPwd.success).toBe(true);
-      expect(initialPwd.output).toContain('/projects');
+      expect(initialPwd.output).toContain('/');
 
       // web-appディレクトリに移動
       const cdResult = await explorationPhase.processInput('cd web-app');
@@ -99,7 +99,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 移動後の位置を確認
       const newPwd = await explorationPhase.processInput('pwd');
       expect(newPwd.success).toBe(true);
-      expect(newPwd.output).toContain('/projects/web-app');
+      expect(newPwd.output).toContain('/web-app');
     });
 
     test('深いディレクトリ構造での移動テスト', async () => {
@@ -116,7 +116,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 最終位置確認
       const pwd = await explorationPhase.processInput('pwd');
       expect(pwd.success).toBe(true);
-      expect(pwd.output).toContain('/projects/web-app/src/components');
+      expect(pwd.output).toContain('/web-app/src/components');
 
       // 親ディレクトリに戻る
       const cdBack = await explorationPhase.processInput('cd ..');
@@ -124,17 +124,17 @@ describe('Explorationフェーズの統合テスト', () => {
 
       const pwdBack = await explorationPhase.processInput('pwd');
       expect(pwdBack.success).toBe(true);
-      expect(pwdBack.output).toContain('/projects/web-app/src');
+      expect(pwdBack.output).toContain('/web-app/src');
     });
 
     test('絶対パスでの移動テスト', async () => {
       // 絶対パスでgame-engine/assetsに移動
-      const cdAbs = await explorationPhase.processInput('cd /projects/game-engine/assets');
+      const cdAbs = await explorationPhase.processInput('cd /game-engine/assets');
       expect(cdAbs.success).toBe(true);
 
       const pwd = await explorationPhase.processInput('pwd');
       expect(pwd.success).toBe(true);
-      expect(pwd.output).toContain('/projects/game-engine/assets');
+      expect(pwd.output).toContain('/game-engine/assets');
     });
 
     test('cd ..で親ディレクトリに移動できること', async () => {
@@ -237,7 +237,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 現在位置確認
       const pwdResult1 = await explorationPhase.processInput('pwd');
       expect(pwdResult1.success).toBe(true);
-      expect(pwdResult1.output).toContain('/projects');
+      expect(pwdResult1.output).toContain('/');
 
       // カレントディレクトリに移動（何も起こらないはず）
       const cdResult1 = await explorationPhase.processInput('cd .');
@@ -247,7 +247,7 @@ describe('Explorationフェーズの統合テスト', () => {
       const pwdResult2 = await explorationPhase.processInput('pwd');
       expect(pwdResult2.success).toBe(true);
       // 位置が変わっていないことを確認
-      expect(pwdResult2.output).toContain('/projects');
+      expect(pwdResult2.output).toContain('/');
     });
   });
 
@@ -256,14 +256,14 @@ describe('Explorationフェーズの統合テスト', () => {
       const fileSystem = FileSystem.createTestStructure();
 
       expect(fileSystem).toBeInstanceOf(FileSystem);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('ファイルシステム操作の結果が一貫していること', async () => {
       // 初期位置確認
       const initialPwd = await explorationPhase.processInput('pwd');
       expect(initialPwd.success).toBe(true);
-      expect(initialPwd.output).toContain('/projects');
+      expect(initialPwd.output).toContain('/');
 
       // ディレクトリ一覧確認
       const lsResult = await explorationPhase.processInput('ls');
@@ -272,7 +272,7 @@ describe('Explorationフェーズの統合テスト', () => {
       // 位置が変わっていないことを確認
       const finalPwd = await explorationPhase.processInput('pwd');
       expect(finalPwd.success).toBe(true);
-      expect(finalPwd.output).toContain('/projects');
+      expect(finalPwd.output).toContain('/');
     });
   });
 

@@ -74,7 +74,7 @@ export class WorldGenerator {
 
     // 固定の配置でボスと鍵を設定
     world.setBossLocation('/game-studio');
-    world.setKeyLocation('/tech-startup/api/package.json');
+    world.setKeyLocation('/tech-startup/package.json');
 
     return world;
   }
@@ -160,6 +160,7 @@ export class WorldGenerator {
       for (let i = 0; i < fileCount; i++) {
         const fileName = getRandomFileName(domain, fileType, depth);
         const fileNode = new FileNode(fileName, NodeType.FILE);
+        fileNode.fileType = fileType as any;
         parentNode.addChild(fileNode);
       }
     });
@@ -185,7 +186,16 @@ export class WorldGenerator {
       throw new Error('no directories available for boss placement');
     }
     const bossDir = directories[Math.floor(Math.random() * directories.length)];
-    world.setBossLocation(bossDir.getPath());
+
+    // ボス配置先のディレクトリが実際に存在することを確認
+    const bossPath = bossDir.getPath();
+    if (fileSystem.getNodeByPath(bossPath)) {
+      world.setBossLocation(bossPath);
+    } else {
+      // 第一候補のディレクトリを使用
+      const fallbackDir = directories[0];
+      world.setBossLocation(fallbackDir.getPath());
+    }
 
     // 宝箱ファイル（鍵配置用）を取得（ボスディレクトリ内は除外）
     let treasureFiles = allNodes.filter(
@@ -205,6 +215,15 @@ export class WorldGenerator {
       throw new Error('no treasure files available for key placement');
     }
     const keyFile = treasureFiles[Math.floor(Math.random() * treasureFiles.length)];
-    world.setKeyLocation(keyFile.getPath());
+
+    // 鍵配置先のファイルが実際に存在することを確認
+    const keyPath = keyFile.getPath();
+    if (fileSystem.getNodeByPath(keyPath)) {
+      world.setKeyLocation(keyPath);
+    } else {
+      // 第一候補のファイルを使用
+      const fallbackFile = treasureFiles[0];
+      world.setKeyLocation(fallbackFile.getPath());
+    }
   }
 }
