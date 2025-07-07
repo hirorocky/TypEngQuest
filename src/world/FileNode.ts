@@ -12,7 +12,7 @@ export enum NodeType {
 export enum FileType {
   MONSTER = 'monster', // モンスターファイル (.js, .ts, .py等)
   TREASURE = 'treasure', // 宝箱ファイル (.json, .yaml等)
-  SAVE_POINT = 'save_point', // セーブポイント (.md)
+  SAVE_POINT = 'savepoint', // セーブポイント (.md)
   EVENT = 'event', // イベントファイル (.exe, .bin等)
   EMPTY = 'empty', // 空ファイル
   NONE = 'none', // ディレクトリ用

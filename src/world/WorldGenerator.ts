@@ -60,6 +60,26 @@ export class WorldGenerator {
   }
 
   /**
+   * テスト用の固定ファイル構造でワールドを生成する
+   * @returns 生成されたワールド
+   */
+  public generateTestWorld(): World {
+    const domain = getDomainData('tech-startup');
+    if (!domain) {
+      throw new Error('tech-startup domain not found');
+    }
+
+    const fileSystem = FileSystem.createTestStructure();
+    const world = new World(domain, 1, fileSystem);
+
+    // 固定の配置でボスと鍵を設定
+    world.setBossLocation('/game-studio');
+    world.setKeyLocation('/tech-startup/api/package.json');
+
+    return world;
+  }
+
+  /**
    * 指定されたドメインとレベルでファイルシステムを生成する
    * @param domain ドメインデータ
    * @param level ワールドレベル

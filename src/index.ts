@@ -5,8 +5,15 @@ import { Game } from './core/Game';
 async function main() {
   console.log('🎮 TypEngQuest - Starting game...');
 
+  // コマンドライン引数からテストモードを判定
+  const isTestMode = process.argv.includes('--test-mode');
+  
+  if (isTestMode) {
+    console.log('🧪 Running in test mode with fixed directory structure...');
+  }
+
   try {
-    const game = new Game();
+    const game = new Game(isTestMode);
     await game.start();
   } catch (error) {
     console.error('❌ Fatal error:', error);

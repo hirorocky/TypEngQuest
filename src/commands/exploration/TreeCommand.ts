@@ -117,7 +117,7 @@ export class TreeCommand extends BaseCommand {
         return '⚔️'; // モンスターファイル
       case 'treasure':
         return '💰'; // 宝物ファイル
-      case 'save_point':
+      case 'savepoint':
         return '💾'; // セーブポイント
       case 'event':
         return '🎭'; // イベントファイル

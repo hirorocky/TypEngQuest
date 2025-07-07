@@ -9,7 +9,10 @@ export class PwdCommand extends BaseCommand {
   public description = 'print working directory';
 
   protected executeInternal(_args: string[], context: CommandContext): CommandResult {
-    const fileSystem = this.getFileSystem(context) as any;
+    const fileSystem = this.getFileSystem(context);
+    if (!fileSystem) {
+      return this.error('file system not found');
+    }
     const currentPath = fileSystem.pwd();
     return this.success(undefined, [currentPath]);
   }

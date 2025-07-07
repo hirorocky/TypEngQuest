@@ -182,7 +182,7 @@ describe('WorldGenerator', () => {
       const monsterFiles = files.filter(file => file.fileType === 'monster');
       const treasureFiles = files.filter(file => file.fileType === 'treasure');
       const eventFiles = files.filter(file => file.fileType === 'event');
-      const savePointFiles = files.filter(file => file.fileType === 'save_point');
+      const savePointFiles = files.filter(file => file.fileType === 'savepoint');
 
       expect(monsterFiles.length).toBeGreaterThan(0);
       expect(treasureFiles.length).toBeGreaterThan(0);

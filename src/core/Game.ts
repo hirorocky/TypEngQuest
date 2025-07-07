@@ -19,8 +19,9 @@ export class Game {
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private worldGenerator: WorldGenerator;
   private currentWorld: World | null = null;
+  private isTestMode: boolean;
 
-  constructor() {
+  constructor(isTestMode: boolean = false) {
     this.state = {
       currentPhase: 'title',
       isRunning: false,
@@ -32,6 +33,7 @@ export class Game {
       prompt: '> ',
     });
 
+    this.isTestMode = isTestMode;
     this.worldGenerator = new WorldGenerator();
     this.setupSignalHandlers();
   }
@@ -98,6 +100,13 @@ export class Game {
       }
     }
 
+    // Handle output array
+    if (result.output && result.output.length > 0) {
+      for (const line of result.output) {
+        Display.print(line + '\n');
+      }
+    }
+
     // Handle phase transitions
     if (result.nextPhase) {
       await this.transitionToPhase(result.nextPhase);
@@ -145,8 +154,13 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultWorld(): World {
-    // デフォルトはランダムドメインのレベル1
-    return this.worldGenerator.generateRandomWorld(1);
+    if (this.isTestMode) {
+      // テストモードでは固定のファイル構造を使用
+      return this.worldGenerator.generateTestWorld();
+    } else {
+      // デフォルトはランダムドメインのレベル1
+      return this.worldGenerator.generateRandomWorld(1);
+    }
   }
 
   private setupSignalHandlers(): void {

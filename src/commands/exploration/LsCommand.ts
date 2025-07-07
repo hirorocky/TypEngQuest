@@ -117,7 +117,7 @@ export class LsCommand extends BaseCommand {
         return '1024';
       case 'treasure':
         return '512';
-      case 'save_point':
+      case 'savepoint':
         return '256';
       case 'event':
         return '2048';
@@ -125,6 +125,7 @@ export class LsCommand extends BaseCommand {
         return '0';
     }
   }
+
 
   public getHelp(): string[] {
     return [

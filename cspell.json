@@ -1,0 +1,6 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": ["savepoint"],
+  "ignorePaths": ["node_modules/**", "dist/**", "coverage/**"]
+}
