@@ -269,20 +269,20 @@ describe('ExplorationPhase', () => {
 
       const world = (phase as any).world;
       const allNodes = world.fileSystem.find('');
-      const deepDirs = allNodes.filter(
+      const dirs = allNodes.filter(
         (node: FileNode) =>
-          node.isDirectory() &&
-          node.getPath().split('/').length > 2 && // 深いディレクトリ
-          !node.getPath().includes('boss')
+          node.isDirectory() && node.getPath() !== '/' && !node.getPath().includes('boss')
       );
 
-      if (deepDirs.length > 0) {
-        const targetPath = deepDirs[0].getPath();
+      // ディレクトリが存在する場合のテスト
+      if (dirs.length > 0) {
+        const targetPath = dirs[0].getPath();
         const relativePath = targetPath.substring(1); // '/' を除去
         (phase as any).processCommand(`cd ${relativePath}`);
         expect(mockPrint).toHaveBeenCalledWith(`[~${relativePath}]$ `);
       } else {
-        // 深いディレクトリがない場合はスキップまたはシンプルテスト
+        // ディレクトリが存在しない場合は、helpコマンドでプロンプト表示をテスト
+        (phase as any).processCommand('help');
         expect(mockPrint).toHaveBeenCalledWith('[~]$ ');
       }
     });

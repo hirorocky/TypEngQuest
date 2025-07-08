@@ -4,7 +4,7 @@
 
 import { FileSystem } from './FileSystem';
 import { FileNode, NodeType, FileType } from './FileNode';
-import { DomainData, DomainType, getDomainData } from './domains';
+import { DomainData, DomainType, getDomainData, getRandomDomain } from './domains';
 
 /**
  * ワールドのシリアライズ用データインターフェース
@@ -45,20 +45,41 @@ export class World {
 
   /**
    * Worldインスタンスを作成する
-   * @param domain ドメインデータ
+   * @param domainOrDomainType ドメインデータまたはドメインタイプ
    * @param level ワールドレベル
-   * @throws {Error} レベルが1未満の場合
+   * @param isTest テスト用かどうか（固定構造を使用）
+   * @throws {Error} レベルが1未満または無効なドメインタイプの場合
    */
-  constructor(domain: DomainData, level: number) {
+  constructor(
+    domainOrDomainType: DomainData | DomainType | 'random',
+    level: number,
+    isTest: boolean = false
+  ) {
     if (level < 1) {
       throw new Error('ワールドレベルは1以上である必要があります');
+    }
+
+    // ドメインの解決
+    let domain: DomainData;
+    if (typeof domainOrDomainType === 'string') {
+      if (domainOrDomainType === 'random') {
+        domain = getRandomDomain();
+      } else {
+        const resolvedDomain = getDomainData(domainOrDomainType);
+        if (!resolvedDomain) {
+          throw new Error(`無効なドメインタイプです: ${domainOrDomainType}`);
+        }
+        domain = resolvedDomain;
+      }
+    } else {
+      domain = domainOrDomainType;
     }
 
     this.domain = domain;
     this.level = level;
 
     // ファイルシステムを生成
-    this.fileSystem = this.generateFileSystem();
+    this.fileSystem = this.generateFileSystem(isTest);
 
     this.currentPath = '/';
     this.exploredPaths = new Set(['/']);
@@ -167,12 +188,27 @@ export class World {
 
   /**
    * ファイルシステムを生成する
+   * @param isTest テスト用かどうか
    * @returns 生成されたファイルシステム
    */
-  protected generateFileSystem(): FileSystem {
-    const fileSystem = FileSystem.generateFileSystem(this.domain, this.level);
-    this.fileSystem = fileSystem;
-    this.placeSpecialItems();
+  protected generateFileSystem(isTest: boolean = false): FileSystem {
+    let fileSystem: FileSystem;
+
+    if (isTest) {
+      // テスト用の固定ファイルシステム
+      fileSystem = FileSystem.createTestStructure();
+      this.fileSystem = fileSystem;
+
+      // 固定の配置でボスと鍵を設定
+      this.setBossLocation('/game-studio');
+      this.setKeyLocation('/tech-startup/package.json');
+    } else {
+      // 通常のランダム生成
+      fileSystem = FileSystem.generateFileSystem(this.domain, this.level);
+      this.fileSystem = fileSystem;
+      this.placeSpecialItems();
+    }
+
     return fileSystem;
   }
 
@@ -218,10 +254,9 @@ export class World {
     // ボスディレクトリを新規作成
     const bossDir = new FileNode('boss', NodeType.DIRECTORY);
     selectedDir.addChild(bossDir);
-    // パスを手動で構築
-    const bossPath =
-      selectedDir.getPath() + (selectedDir.getPath().endsWith('/') ? '' : '/') + 'boss';
-    this.setBossLocation(bossPath);
+    // パスを直接設定（FileSystemでのノード検索をスキップ）
+    const bossPath = bossDir.getPath();
+    this.bossLocation = bossPath;
 
     // ボスディレクトリ内にボスファイルを作成
     const bossFile = new FileNode('final_boss.py', NodeType.FILE);
@@ -246,10 +281,9 @@ export class World {
     const keyFile = new FileNode('golden_key.yaml', NodeType.FILE);
     keyFile.fileType = FileType.TREASURE;
     keyDir.addChild(keyFile);
-    // パスを手動で構築
-    const keyPath =
-      keyDir.getPath() + (keyDir.getPath().endsWith('/') ? '' : '/') + 'golden_key.yaml';
-    this.setKeyLocation(keyPath);
+    // パスを直接設定（FileSystemでのノード検索をスキップ）
+    const keyPath = keyFile.getPath();
+    this.keyLocation = keyPath;
   }
 
   /**
@@ -330,6 +364,41 @@ export class World {
     world.hasKey = data.hasKey;
 
     return world;
+  }
+
+  /**
+   * 指定されたドメインとレベルでワールドを生成する
+   * @param domainType ドメインタイプ
+   * @param level ワールドレベル
+   * @param isTest テスト用かどうか
+   * @returns 生成されたワールド
+   * @throws {Error} 無効なドメインタイプまたはレベルの場合
+   */
+  public static generateWorld(
+    domainType: DomainType,
+    level: number,
+    isTest: boolean = false
+  ): World {
+    return new World(domainType, level, isTest);
+  }
+
+  /**
+   * ランダムなドメインでワールドを生成する
+   * @param level ワールドレベル
+   * @param isTest テスト用かどうか
+   * @returns 生成されたワールド
+   * @throws {Error} 無効なレベルの場合
+   */
+  public static generateRandomWorld(level: number, isTest: boolean = false): World {
+    return new World('random', level, isTest);
+  }
+
+  /**
+   * テスト用の固定ファイル構造でワールドを生成する
+   * @returns 生成されたワールド
+   */
+  public static generateTestWorld(): World {
+    return new World('tech-startup', 1, true);
   }
 
   /**

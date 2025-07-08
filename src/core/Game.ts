@@ -8,7 +8,6 @@ import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
-import { WorldGenerator } from '../world/WorldGenerator';
 import { World } from '../world/World';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
@@ -17,7 +16,6 @@ export class Game {
   private currentPhase: Phase | null = null;
   private rl: readline.Interface;
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
-  private worldGenerator: WorldGenerator;
   private currentWorld: World | null = null;
   private isTestMode: boolean;
 
@@ -34,7 +32,6 @@ export class Game {
     });
 
     this.isTestMode = isTestMode;
-    this.worldGenerator = new WorldGenerator();
     this.setupSignalHandlers();
   }
 
@@ -156,10 +153,10 @@ export class Game {
   private generateDefaultWorld(): World {
     if (this.isTestMode) {
       // テストモードでは固定のファイル構造を使用
-      return this.worldGenerator.generateTestWorld();
+      return World.generateTestWorld();
     } else {
       // デフォルトはランダムドメインのレベル1
-      return this.worldGenerator.generateRandomWorld(1);
+      return World.generateRandomWorld(1);
     }
   }
 

@@ -312,6 +312,11 @@ export function getRandomDomain(): DomainData {
  * @returns ディレクトリ名
  */
 export function getRandomDirectoryName(domain: DomainData, depth: number = 0): string {
+  // 空の配列の場合のフォールバック
+  if (!domain.directoryNames || domain.directoryNames.length === 0) {
+    return 'default-dir';
+  }
+
   const baseName = domain.directoryNames[Math.floor(Math.random() * domain.directoryNames.length)];
 
   // 深い階層では時々サフィックスを付ける
@@ -396,6 +401,11 @@ export function getRandomFileName(
   depth: number = 0
 ): string {
   const baseNames = domain.fileNames[fileType];
+  // 空の配列の場合のフォールバック
+  if (!baseNames || baseNames.length === 0) {
+    return `default-${fileType}`;
+  }
+
   const baseName = baseNames[Math.floor(Math.random() * baseNames.length)];
   const extensions = getExtensionsForType(domain, fileType);
   const extension = extensions[Math.floor(Math.random() * extensions.length)];

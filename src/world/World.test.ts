@@ -17,8 +17,8 @@ describe('World', () => {
 
       for (const domainType of domains) {
         try {
-          usedDomain = getDomainData(domainType)!;
-          world = new World(usedDomain, 1);
+          world = new World(domainType, 1);
+          usedDomain = world.domain; // 解決されたドメインを取得
           break; // 成功したらループを抜ける
         } catch (_error) {
           continue; // 失敗したら次のドメインを試す
