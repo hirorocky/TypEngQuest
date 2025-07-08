@@ -6,8 +6,12 @@ import { Phase } from '../core/Phase';
 import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { bold, cyan, green, red } from '../ui/colors';
+import { World } from '../world/World';
 
 export class TitlePhase extends Phase {
+  constructor(world?: World) {
+    super(world);
+  }
   getType(): PhaseType {
     return 'title';
   }

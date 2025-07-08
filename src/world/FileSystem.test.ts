@@ -24,7 +24,7 @@ describe('FileSystem', () => {
 
   describe('pwd - 現在位置取得', () => {
     test('ルートディレクトリのパスが返される', () => {
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('サブディレクトリに移動後のパスが返される', () => {
@@ -32,7 +32,7 @@ describe('FileSystem', () => {
       root.addChild(gameDir);
 
       fileSystem.cd('game-studio');
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
   });
 
@@ -53,7 +53,7 @@ describe('FileSystem', () => {
     test('相対パスでのディレクトリ移動', () => {
       const result = fileSystem.cd('game-studio');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('親ディレクトリへの移動 (..)', () => {
@@ -62,7 +62,7 @@ describe('FileSystem', () => {
 
       const result = fileSystem.cd('..');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('ルートディレクトリへの移動 (~)', () => {
@@ -71,7 +71,7 @@ describe('FileSystem', () => {
 
       const result = fileSystem.cd('~');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('引数なしでのルートディレクトリへの移動', () => {
@@ -79,20 +79,20 @@ describe('FileSystem', () => {
 
       const result = fileSystem.cd();
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('絶対パスでの移動', () => {
-      const result = fileSystem.cd('/projects/game-studio/src');
+      const result = fileSystem.cd('/game-studio/src');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio/src');
+      expect(fileSystem.pwd()).toBe('/game-studio/src');
     });
 
     test('存在しないディレクトリへの移動はエラー', () => {
       const result = fileSystem.cd('nonexistent');
       expect(result.success).toBe(false);
       expect(result.error).toContain('no such directory');
-      expect(fileSystem.pwd()).toBe('/projects'); // 移動していない
+      expect(fileSystem.pwd()).toBe('/'); // 移動していない
     });
 
     test('ファイルへの移動はエラー', () => {
@@ -111,18 +111,18 @@ describe('FileSystem', () => {
     test('ホームディレクトリ（~）への移動', () => {
       // まず子ディレクトリに移動
       fileSystem.cd('game-studio');
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
 
       // ホームディレクトリに戻る
       const result = fileSystem.cd('~');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('ホームディレクトリから相対パス（~/）での移動', () => {
       const result = fileSystem.cd('~/game-studio');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('カレントディレクトリ（.）への移動', () => {
@@ -135,12 +135,12 @@ describe('FileSystem', () => {
     test('親ディレクトリ（..）への移動（子ディレクトリから）', () => {
       // まず子ディレクトリに移動
       fileSystem.cd('game-studio');
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
 
       // 親ディレクトリに戻る
       const result = fileSystem.cd('..');
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
   });
 
@@ -232,7 +232,7 @@ describe('FileSystem', () => {
     test('名前完全一致での検索', () => {
       const results = fileSystem.find('main.js');
       expect(results).toHaveLength(1);
-      expect(results[0].getPath()).toBe('/projects/game-studio/src/main.js');
+      expect(results[0].getPath()).toBe('/game-studio/src/main.js');
     });
 
     test('部分一致での検索', () => {
@@ -265,7 +265,7 @@ describe('FileSystem', () => {
     });
 
     test('絶対パスでのノード取得', () => {
-      const node = fileSystem.getNodeByPath('/projects/game-studio/src/main.js');
+      const node = fileSystem.getNodeByPath('/game-studio/src/main.js');
       expect(node).toBeDefined();
       expect(node?.name).toBe('main.js');
     });

@@ -87,7 +87,7 @@ describe('LsCommand', () => {
     });
 
     test('絶対パスの一覧表示', () => {
-      const result = command.execute(['/projects/game-studio'], context);
+      const result = command.execute(['/game-studio'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('src/');

@@ -32,7 +32,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects']);
+      expect(result.output).toEqual(['/']);
     });
 
     test('サブディレクトリでのpwd', () => {
@@ -40,7 +40,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
     });
 
     test('深いディレクトリでのpwd', () => {
@@ -48,15 +48,15 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects/game-studio/src']);
+      expect(result.output).toEqual(['/game-studio/src']);
     });
 
     test('絶対パスで移動後のpwd', () => {
-      fileSystem.cd('/projects/tech-startup/api');
+      fileSystem.cd('/tech-startup/api');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects/tech-startup/api']);
+      expect(result.output).toEqual(['/tech-startup/api']);
     });
 
     test('親ディレクトリに戻った後のpwd', () => {
@@ -65,7 +65,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
     });
 
     test('ホームディレクトリに戻った後のpwd', () => {
@@ -74,7 +74,7 @@ describe('PwdCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects']);
+      expect(result.output).toEqual(['/']);
     });
 
     test('引数を渡してもpwdは正常動作', () => {
@@ -82,7 +82,7 @@ describe('PwdCommand', () => {
       const result = command.execute(['ignored', 'arguments'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
     });
   });
 
@@ -108,7 +108,7 @@ describe('PwdCommand', () => {
       const helpText = help.join('\n');
 
       expect(helpText).toContain('pwd');
-      expect(helpText).toContain('/projects/game-studio/src');
+      expect(helpText).toContain('/game-studio/src');
     });
   });
 
@@ -128,44 +128,44 @@ describe('PwdCommand', () => {
     test('複数回の移動でpwdが正しく動作', () => {
       // 初期位置
       let result = command.execute([], context);
-      expect(result.output).toEqual(['/projects']);
+      expect(result.output).toEqual(['/']);
 
       // game-studioに移動
       fileSystem.cd('game-studio');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
 
       // srcに移動
       fileSystem.cd('src');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/game-studio/src']);
+      expect(result.output).toEqual(['/game-studio/src']);
 
       // 親ディレクトリに戻る
       fileSystem.cd('..');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
 
       // ルートに戻る
       fileSystem.cd('~');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects']);
+      expect(result.output).toEqual(['/']);
     });
 
     test('異なるプロジェクトディレクトリでのpwd', () => {
       // tech-startupに移動
       fileSystem.cd('tech-startup');
       let result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/tech-startup']);
+      expect(result.output).toEqual(['/tech-startup']);
 
       // apiに移動
       fileSystem.cd('api');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/tech-startup/api']);
+      expect(result.output).toEqual(['/tech-startup/api']);
 
       // 絶対パスでgame-studioに移動
-      fileSystem.cd('/projects/game-studio');
+      fileSystem.cd('/game-studio');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/projects/game-studio']);
+      expect(result.output).toEqual(['/game-studio']);
     });
   });
 });

@@ -38,4 +38,4 @@ query FetchReviewComments($owner: String!, $repo: String!, $pr: Int!) {
       }  
     }
   }
-}'
+}' | jq '.data.repository.pullRequest.reviewThreads.edges[] | select(.node.isResolved == false)'

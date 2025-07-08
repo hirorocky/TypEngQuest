@@ -67,9 +67,13 @@ describe('FileNode', () => {
     test('イベントファイルが正しく判定される', () => {
       const exeFile = new FileNode('game.exe', NodeType.FILE);
       const binFile = new FileNode('data.bin', NodeType.FILE);
+      const shFile = new FileNode('script.sh', NodeType.FILE);
+      const ps1File = new FileNode('setup.ps1', NodeType.FILE);
 
       expect(exeFile.fileType).toBe(FileType.EVENT);
       expect(binFile.fileType).toBe(FileType.EVENT);
+      expect(shFile.fileType).toBe(FileType.EVENT);
+      expect(ps1File.fileType).toBe(FileType.EVENT);
     });
 
     test('その他のファイルは空ファイルになる', () => {
@@ -138,7 +142,7 @@ describe('FileNode', () => {
     test('ルートノードのパスが正しく取得される', () => {
       const root = new FileNode('projects', NodeType.DIRECTORY);
 
-      expect(root.getPath()).toBe('/projects');
+      expect(root.getPath()).toBe('/');
     });
 
     test('階層構造のパスが正しく取得される', () => {
@@ -151,7 +155,7 @@ describe('FileNode', () => {
       gameDir.addChild(srcDir);
       srcDir.addChild(mainFile);
 
-      expect(mainFile.getPath()).toBe('/projects/game-studio/src/main.js');
+      expect(mainFile.getPath()).toBe('/game-studio/src/main.js');
     });
   });
 

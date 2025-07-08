@@ -8,6 +8,7 @@ import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
+import { World } from '../world/World';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -15,8 +16,10 @@ export class Game {
   private currentPhase: Phase | null = null;
   private rl: readline.Interface;
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
+  private currentWorld: World | null = null;
+  private isTestMode: boolean;
 
-  constructor() {
+  constructor(isTestMode: boolean = false) {
     this.state = {
       currentPhase: 'title',
       isRunning: false,
@@ -28,6 +31,7 @@ export class Game {
       prompt: '> ',
     });
 
+    this.isTestMode = isTestMode;
     this.setupSignalHandlers();
   }
 
@@ -93,6 +97,13 @@ export class Game {
       }
     }
 
+    // Handle output array
+    if (result.output && result.output.length > 0) {
+      for (const line of result.output) {
+        Display.print(line + '\n');
+      }
+    }
+
     // Handle phase transitions
     if (result.nextPhase) {
       await this.transitionToPhase(result.nextPhase);
@@ -123,10 +134,29 @@ export class Game {
         return new TitlePhase();
 
       case 'exploration':
-        return new ExplorationPhase();
+        // explorationフェーズではワールドが必要
+        if (!this.currentWorld) {
+          // デフォルトワールドを生成
+          this.currentWorld = this.generateDefaultWorld();
+        }
+        return new ExplorationPhase(this.currentWorld);
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);
+    }
+  }
+
+  /**
+   * デフォルトワールドを生成する
+   * 設定に基づいて後でカスタマイズ可能
+   */
+  private generateDefaultWorld(): World {
+    if (this.isTestMode) {
+      // テストモードでは固定のファイル構造を使用
+      return World.generateTestWorld();
+    } else {
+      // デフォルトはランダムドメインのレベル1
+      return World.generateRandomWorld(1);
     }
   }
 

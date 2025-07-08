@@ -36,7 +36,7 @@ describe('CdCommand', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('changed to');
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('~ でルートディレクトリに移動', () => {
@@ -45,7 +45,7 @@ describe('CdCommand', () => {
       const result = command.execute(['~'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects');
+      expect(fileSystem.pwd()).toBe('/');
     });
 
     test('.. で親ディレクトリに移動', () => {
@@ -55,28 +55,28 @@ describe('CdCommand', () => {
       const result = command.execute(['..'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('相対パスでの移動', () => {
       const result = command.execute(['game-studio'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('絶対パスでの移動', () => {
-      const result = command.execute(['/projects/game-studio/src'], context);
+      const result = command.execute(['/game-studio/src'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio/src');
+      expect(fileSystem.pwd()).toBe('/game-studio/src');
     });
 
     test('ホームパスでの移動', () => {
       const result = command.execute(['~/game-studio'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/projects/game-studio');
+      expect(fileSystem.pwd()).toBe('/game-studio');
     });
 
     test('存在しないディレクトリへの移動はエラー', () => {

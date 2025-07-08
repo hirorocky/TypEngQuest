@@ -14,9 +14,16 @@ import { withMocks } from './helpers/SimplifiedMockHelper';
 
 describe('フェーズ移行の統合テスト', () => {
   let gameHelper: TestGameHelper;
+  let mockRandom: any;
 
   beforeEach(() => {
     gameHelper = new TestGameHelper();
+    // Math.randomをモックして決定的な動作にする
+    mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+  });
+
+  afterEach(() => {
+    mockRandom.mockRestore();
   });
 
   afterEach(async () => {

@@ -12,11 +12,68 @@ export enum NodeType {
 export enum FileType {
   MONSTER = 'monster', // モンスターファイル (.js, .ts, .py等)
   TREASURE = 'treasure', // 宝箱ファイル (.json, .yaml等)
-  SAVE_POINT = 'save_point', // セーブポイント (.md)
+  SAVE_POINT = 'savepoint', // セーブポイント (.md)
   EVENT = 'event', // イベントファイル (.exe, .bin等)
   EMPTY = 'empty', // 空ファイル
   NONE = 'none', // ディレクトリ用
 }
+
+/**
+ * ファイルタイプ別の拡張子定義
+ */
+export const FILE_EXTENSIONS = {
+  monster: [
+    '.js',
+    '.ts',
+    '.py',
+    '.java',
+    '.cpp',
+    '.c',
+    '.h',
+    '.cs',
+    '.php',
+    '.rb',
+    '.go',
+    '.rs',
+    '.swift',
+    '.kt',
+    '.scala',
+    '.lua',
+    '.pl',
+    '.r',
+    '.m',
+    '.vue',
+    '.jsx',
+    '.tsx',
+  ] as readonly string[],
+  treasure: [
+    '.json',
+    '.yaml',
+    '.yml',
+    '.toml',
+    '.ini',
+    '.conf',
+    '.cfg',
+    '.xml',
+    '.properties',
+    '.env',
+  ] as readonly string[],
+  event: [
+    '.exe',
+    '.bin',
+    '.app',
+    '.dmg',
+    '.deb',
+    '.rpm',
+    '.msi',
+    '.sh',
+    '.ps1',
+    '.bat',
+    '.cmd',
+    '.com',
+  ] as readonly string[],
+  savepoint: ['.md', '.markdown', '.mkd', '.mdx'] as readonly string[],
+} as const;
 
 /**
  * ファイル・ディレクトリノードを表現するクラス
@@ -76,38 +133,22 @@ export class FileNode {
     const extension = this.getExtension(name);
 
     // モンスターファイル（プログラムファイル）
-    const monsterExtensions = [
-      '.js',
-      '.ts',
-      '.py',
-      '.java',
-      '.cpp',
-      '.c',
-      '.h',
-      '.cs',
-      '.php',
-      '.rb',
-      '.go',
-      '.rs',
-    ];
-    if (monsterExtensions.includes(extension)) {
+    if (FILE_EXTENSIONS.monster.includes(extension)) {
       return FileType.MONSTER;
     }
 
     // 宝箱ファイル（設定ファイル）
-    const treasureExtensions = ['.json', '.yaml', '.yml', '.toml', '.ini', '.conf', '.cfg'];
-    if (treasureExtensions.includes(extension)) {
+    if (FILE_EXTENSIONS.treasure.includes(extension)) {
       return FileType.TREASURE;
     }
 
     // セーブポイント（マークダウンファイル）
-    if (extension === '.md') {
+    if (FILE_EXTENSIONS.savepoint.includes(extension)) {
       return FileType.SAVE_POINT;
     }
 
     // イベントファイル（実行ファイル）
-    const eventExtensions = ['.exe', '.bin', '.app', '.dmg', '.deb', '.rpm', '.msi'];
-    if (eventExtensions.includes(extension)) {
+    if (FILE_EXTENSIONS.event.includes(extension)) {
       return FileType.EVENT;
     }
 
@@ -189,10 +230,15 @@ export class FileNode {
    * @returns 絶対パス文字列
    */
   public getPath(): string {
+    // ルートノードの場合
+    if (!this.parent) {
+      return '/';
+    }
+
     const pathParts: string[] = [];
     let current: FileNode | null = this;
 
-    while (current) {
+    while (current && current.parent) {
       pathParts.unshift(current.name);
       current = current.parent;
     }

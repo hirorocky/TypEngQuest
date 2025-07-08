@@ -5,6 +5,9 @@
 import { Game } from './Game';
 import { TitlePhase } from '../phases/TitlePhase';
 import { withMocks } from '../tests/integration/helpers/SimplifiedMockHelper';
+import { World } from '../world/World';
+import { FileSystem } from '../world/FileSystem';
+import { getDomainData } from '../world/domains';
 
 // モック設定
 jest.mock('../phases/TitlePhase');
@@ -35,7 +38,7 @@ describe('Game', () => {
     // シグナルハンドラーをクリア
     process.removeAllListeners('SIGINT');
     process.removeAllListeners('SIGTERM');
-    game = new Game();
+    game = new Game(true); // テストモードを有効化
 
     // TitlePhase モックの設定
     const mockTitlePhase = {
@@ -103,6 +106,21 @@ describe('Game', () => {
     });
 
     it('探索フェーズを正しく作成する', () => {
+      // generateDefaultWorldメソッドをモックして固定のワールドを返す
+      const testDomain = getDomainData('tech-startup')!;
+      let testWorld;
+      try {
+        testWorld = new World(testDomain, 1);
+      } catch (_error) {
+        // フォールバック
+        testWorld = new World(testDomain, 1);
+        testWorld.fileSystem = FileSystem.createTestStructure();
+        testWorld.keyLocation = null;
+        testWorld.bossLocation = null;
+      }
+
+      jest.spyOn(game as any, 'generateDefaultWorld').mockReturnValue(testWorld);
+
       const result = game['createPhase']('exploration');
       expect(result).toBeDefined();
       expect(result.getType()).toBe('exploration');

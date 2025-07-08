@@ -237,4 +237,5 @@ describe('TreeCommand', () => {
       expect(result.valid).toBe(true);
     });
   });
+
 });

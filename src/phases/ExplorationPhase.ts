@@ -1,7 +1,7 @@
 import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
-import { FileSystem } from '../world/FileSystem';
+import { World } from '../world/World';
 import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
@@ -12,14 +12,16 @@ import { BaseCommand } from '../commands/BaseCommand';
  * 探索フェーズ - ゲーム内でファイルシステムを探索する
  */
 export class ExplorationPhase extends Phase {
-  private fileSystem: FileSystem;
   private navigationCommands: Map<string, BaseCommand>;
+  protected world: World; // worldを必須に
 
-  constructor() {
-    super();
+  constructor(world: World) {
+    super(world);
 
-    // テスト用のファイルシステムを作成
-    this.fileSystem = FileSystem.createTestStructure();
+    if (!world) {
+      throw new Error('World is required for ExplorationPhase');
+    }
+    this.world = world;
 
     // ナビゲーションコマンドを初期化
     this.navigationCommands = new Map();
@@ -50,12 +52,15 @@ export class ExplorationPhase extends Phase {
     Display.clear();
     Display.printHeader('exploration mode');
     Display.newLine();
-    Display.printInfo('explore the virtual filesystem.');
+
+    // ワールド情報を表示
+    Display.printInfo(`exploring: ${this.world.getDomainName()} (level ${this.world.level})`);
+    Display.printInfo('explore the generated filesystem and find treasures!');
     Display.printInfo('type "help" to see available commands.');
     Display.newLine();
 
     // 現在地を表示
-    Display.printSuccess(`current location: ${this.fileSystem.pwd()}`);
+    Display.printSuccess(`current location: ${this.world.fileSystem.pwd()}`);
     Display.newLine();
 
     // プロンプトを表示
@@ -73,7 +78,7 @@ export class ExplorationPhase extends Phase {
       const navCommand = this.navigationCommands.get(command)!;
       const context = {
         currentPhase: 'exploration' as const,
-        fileSystem: this.fileSystem,
+        fileSystem: this.world.fileSystem,
       };
       const result = navCommand.execute(args, context);
 
@@ -138,7 +143,7 @@ export class ExplorationPhase extends Phase {
     const navCommand = this.navigationCommands.get(command)!;
     const context = {
       currentPhase: 'exploration' as const,
-      fileSystem: this.fileSystem,
+      fileSystem: this.world.fileSystem,
     };
     const result = navCommand.execute(args, context);
 
@@ -223,8 +228,8 @@ export class ExplorationPhase extends Phase {
    * プロンプトを表示する
    */
   private showPrompt(): void {
-    const currentPath = this.fileSystem.pwd();
-    const promptPath = currentPath === '/projects' ? '~' : currentPath.replace('/projects', '~');
+    const currentPath = this.world.fileSystem.pwd();
+    const promptPath = currentPath === '/' ? '~' : currentPath.replace('/', '~');
     Display.print(`[${promptPath}]$ `);
   }
 
