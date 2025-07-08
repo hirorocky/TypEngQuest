@@ -72,3 +72,12 @@ export function formatCommand(text: string): string {
 export function formatSuccess(text: string): string {
   return green(`✅ ${text}`);
 }
+
+/**
+ * 青色太字のテキストを生成する
+ * @param text 装飾するテキスト
+ * @returns 青色太字のテキスト
+ */
+export function blueBold(text: string): string {
+  return `${Colors.BRIGHT}${Colors.BLUE}${text}${Colors.RESET}`;
+}

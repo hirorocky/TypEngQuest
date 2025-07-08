@@ -9,6 +9,7 @@ import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
+import { CommandParser } from './CommandParser';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -18,6 +19,7 @@ export class Game {
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
   private isTestMode: boolean;
+  private commandParser: CommandParser;
 
   constructor(isTestMode: boolean = false) {
     this.state = {
@@ -25,10 +27,13 @@ export class Game {
       isRunning: false,
     };
 
+    this.commandParser = new CommandParser();
+
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
       prompt: '> ',
+      completer: this.completer.bind(this),
     });
 
     this.isTestMode = isTestMode;
@@ -184,6 +189,49 @@ export class Game {
       { signal: 'SIGINT', handler: sigintHandler },
       { signal: 'SIGTERM', handler: sigtermHandler }
     );
+  }
+
+  /**
+   * Tab補完機能
+   * @param line 現在の入力行
+   * @returns 補完候補の配列
+   */
+  private completer(line: string): [string[], string] {
+    const input = line.trim();
+    const completions = this.commandParser.getCompletions(input);
+
+    // 完全一致する補完候補が1つの場合は、それを返す
+    if (completions.length === 1) {
+      return [completions, input];
+    }
+
+    // 複数の補完候補がある場合は、共通部分を見つける
+    if (completions.length > 1) {
+      const commonPrefix = this.findCommonPrefix(completions);
+      if (commonPrefix.length > input.length) {
+        return [[commonPrefix], input];
+      }
+    }
+
+    return [completions, input];
+  }
+
+  /**
+   * 文字列配列の共通プレフィックスを見つける
+   * @param strings 文字列配列
+   * @returns 共通プレフィックス
+   */
+  private findCommonPrefix(strings: string[]): string {
+    if (strings.length === 0) return '';
+    if (strings.length === 1) return strings[0];
+
+    let prefix = strings[0];
+    for (let i = 1; i < strings.length; i++) {
+      while (prefix.length > 0 && !strings[i].startsWith(prefix)) {
+        prefix = prefix.slice(0, -1);
+      }
+    }
+    return prefix;
   }
 
   private async cleanup(): Promise<void> {

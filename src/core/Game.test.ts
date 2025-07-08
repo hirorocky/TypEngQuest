@@ -79,6 +79,7 @@ describe('Game', () => {
         input: process.stdin,
         output: process.stdout,
         prompt: '> ',
+        completer: expect.any(Function),
       });
     });
 
