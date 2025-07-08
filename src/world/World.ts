@@ -3,14 +3,8 @@
  */
 
 import { FileSystem } from './FileSystem';
-import { FileNode, NodeType } from './FileNode';
-import {
-  DomainData,
-  DomainType,
-  getDomainData,
-  getRandomDirectoryName,
-  getRandomFileName,
-} from './domains';
+import { FileNode, NodeType, FileType } from './FileNode';
+import { DomainData, DomainType, getDomainData } from './domains';
 
 /**
  * ワールドのシリアライズ用データインターフェース
@@ -53,10 +47,9 @@ export class World {
    * Worldインスタンスを作成する
    * @param domain ドメインデータ
    * @param level ワールドレベル
-   * @param fileSystem ファイルシステム（オプション：指定されない場合は生成）
    * @throws {Error} レベルが1未満の場合
    */
-  constructor(domain: DomainData, level: number, fileSystem?: FileSystem) {
+  constructor(domain: DomainData, level: number) {
     if (level < 1) {
       throw new Error('ワールドレベルは1以上である必要があります');
     }
@@ -64,12 +57,8 @@ export class World {
     this.domain = domain;
     this.level = level;
 
-    // ファイルシステムが提供されていない場合は生成
-    if (fileSystem) {
-      this.fileSystem = fileSystem;
-    } else {
-      this.fileSystem = this.generateFileSystem();
-    }
+    // ファイルシステムを生成
+    this.fileSystem = this.generateFileSystem();
 
     this.currentPath = '/';
     this.exploredPaths = new Set(['/']);
@@ -180,112 +169,87 @@ export class World {
    * ファイルシステムを生成する
    * @returns 生成されたファイルシステム
    */
-  private generateFileSystem(): FileSystem {
-    const maxDepth = this.getMaxDepth();
-    const root = new FileNode(this.domain.name, NodeType.DIRECTORY);
-
-    // ルートの下にディレクトリ構造を生成
-    this.fileSystem = new FileSystem(root);
-    this.generateDirectoryStructure(root, 1, maxDepth);
+  protected generateFileSystem(): FileSystem {
+    const fileSystem = FileSystem.generateFileSystem(this.domain, this.level);
+    this.fileSystem = fileSystem;
     this.placeSpecialItems();
-
-    return this.fileSystem;
-  }
-
-  /**
-   * ディレクトリ構造を再帰的に生成する
-   * @param parentNode 親ディレクトリノード
-   * @param currentDepth 現在の深度
-   * @param maxDepth 最大深度
-   */
-  private generateDirectoryStructure(
-    parentNode: FileNode,
-    currentDepth: number,
-    maxDepth: number
-  ): void {
-    if (currentDepth >= maxDepth) {
-      return;
-    }
-
-    // 各深度でのディレクトリ数を決定（深くなるほど少なく）
-    const dirCount = Math.max(1, Math.ceil(Math.random() * (4 - currentDepth)));
-
-    for (let i = 0; i < dirCount; i++) {
-      const dirName = getRandomDirectoryName(this.domain, currentDepth);
-      const dirNode = new FileNode(dirName, NodeType.DIRECTORY);
-      parentNode.addChild(dirNode);
-
-      // 各ディレクトリにファイルを追加
-      this.generateFiles(dirNode, currentDepth);
-
-      // 再帰的に子ディレクトリを生成
-      if (currentDepth + 1 < maxDepth && Math.random() < 0.7) {
-        this.generateDirectoryStructure(dirNode, currentDepth + 1, maxDepth);
-      }
-    }
-  }
-
-  /**
-   * 指定されたディレクトリにファイルを生成する
-   * @param parentNode 親ディレクトリノード
-   * @param depth 現在の深度
-   */
-  private generateFiles(parentNode: FileNode, depth: number): void {
-    // 各ファイルタイプを最低1つずつ、最大3つまで生成
-    const fileTypes: ('monster' | 'treasure' | 'event' | 'savepoint')[] = [
-      'monster',
-      'treasure',
-      'event',
-      'savepoint',
-    ];
-
-    fileTypes.forEach(fileType => {
-      const fileCount = Math.max(1, Math.ceil(Math.random() * 3));
-
-      for (let i = 0; i < fileCount; i++) {
-        const fileName = getRandomFileName(this.domain, fileType, depth);
-        const fileNode = new FileNode(fileName, NodeType.FILE);
-        parentNode.addChild(fileNode);
-      }
-    });
+    return fileSystem;
   }
 
   /**
    * ワールドに鍵とボスを配置する
    */
-  private placeSpecialItems(): void {
+  protected placeSpecialItems(): void {
     // 全ノードを取得
     const allNodes = this.fileSystem.find('');
 
-    // ディレクトリ（ボス配置用）を取得（ルートは除く）
-    const directories = allNodes.filter(node => node.isDirectory() && node.getPath() !== '/');
+    // 最深層のディレクトリを取得
+    const maxDepth = this.getMaxDepth() - 1;
+    const deepestDirs = allNodes.filter(node => {
+      if (!node.isDirectory() || node.getPath() === '/') return false;
+      const depth = node.getPath().split('/').length - 2; // ルートからの深さ
+      return depth === maxDepth;
+    });
 
-    // ボスを配置
-    if (directories.length === 0) {
+    // 最深層ディレクトリがなければ、最も深いディレクトリを探す
+    let targetDirs = deepestDirs;
+    if (targetDirs.length === 0) {
+      const depths = allNodes
+        .filter(node => node.isDirectory() && node.getPath() !== '/')
+        .map(node => ({
+          node,
+          depth: node.getPath().split('/').length - 2,
+        }))
+        .sort((a, b) => b.depth - a.depth);
+
+      if (depths.length > 0) {
+        const maxFoundDepth = depths[0].depth;
+        targetDirs = depths.filter(d => d.depth === maxFoundDepth).map(d => d.node);
+      }
+    }
+
+    if (targetDirs.length === 0) {
       throw new Error('no directories available for boss placement');
     }
-    const bossDir = directories[Math.floor(Math.random() * directories.length)];
-    this.setBossLocation(bossDir.getPath());
 
-    // 宝箱ファイル（鍵配置用）を取得（ボスディレクトリ内は除外）
-    let treasureFiles = allNodes.filter(
+    // ランダムな最深層ディレクトリを選択
+    const selectedDir = targetDirs[Math.floor(Math.random() * targetDirs.length)];
+
+    // ボスディレクトリを新規作成
+    const bossDir = new FileNode('boss', NodeType.DIRECTORY);
+    selectedDir.addChild(bossDir);
+    // パスを手動で構築
+    const bossPath =
+      selectedDir.getPath() + (selectedDir.getPath().endsWith('/') ? '' : '/') + 'boss';
+    this.setBossLocation(bossPath);
+
+    // ボスディレクトリ内にボスファイルを作成
+    const bossFile = new FileNode('final_boss.py', NodeType.FILE);
+    bossFile.fileType = FileType.MONSTER;
+    bossDir.addChild(bossFile);
+
+    // 鍵を含む宝箱ファイルを新規作成
+    // ボスディレクトリ以外のランダムなディレクトリに配置
+    const keyDirs = allNodes.filter(
       node =>
-        node.isFile() &&
-        node.fileType === 'treasure' &&
+        node.isDirectory() &&
+        node.getPath() !== '/' &&
+        node.getPath() !== bossDir.getPath() &&
         !node.getPath().startsWith(bossDir.getPath())
     );
 
-    // ボスディレクトリ外に宝箱がない場合は、全宝箱ファイルを対象にする
-    if (treasureFiles.length === 0) {
-      treasureFiles = allNodes.filter(node => node.isFile() && node.fileType === 'treasure');
+    if (keyDirs.length === 0) {
+      throw new Error('no directories available for key placement');
     }
 
-    // 鍵を配置
-    if (treasureFiles.length === 0) {
-      throw new Error('no treasure files available for key placement');
-    }
-    const keyFile = treasureFiles[Math.floor(Math.random() * treasureFiles.length)];
-    this.setKeyLocation(keyFile.getPath());
+    const keyDir = keyDirs[Math.floor(Math.random() * keyDirs.length)];
+    const keyFile = new FileNode('golden_key.yaml', NodeType.FILE);
+    keyFile.fileType = FileType.TREASURE;
+    keyDir.addChild(keyFile);
+    // パスを手動で構築
+    const keyPath =
+      keyDir.getPath() + (keyDir.getPath().endsWith('/') ? '' : '/') + 'golden_key.yaml';
+    this.setKeyLocation(keyPath);
   }
 
   /**
@@ -351,14 +315,14 @@ export class World {
       throw new Error(`無効なドメインタイプです: ${data.domainType}`);
     }
 
-    // ファイルシステムを復元
-    let fileSystem: FileSystem | undefined;
+    const world = new World(domain, data.level);
+
+    // ファイルシステムを復元して上書き
     if (data.fileSystemRoot) {
       const rootNode = World.deserializeFileNode(data.fileSystemRoot);
-      fileSystem = new FileSystem(rootNode);
+      world.fileSystem = new FileSystem(rootNode);
     }
 
-    const world = new World(domain, data.level, fileSystem);
     world.currentPath = data.currentPath;
     world.exploredPaths = new Set(data.exploredPaths);
     world.keyLocation = data.keyLocation;

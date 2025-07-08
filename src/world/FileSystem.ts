@@ -42,7 +42,8 @@ export interface TreeNode {
   children?: TreeNode[];
 }
 
-import { FileNode, NodeType } from './FileNode';
+import { FileNode, NodeType, FileType } from './FileNode';
+import { DomainData, getRandomDirectoryName, getRandomFileName } from './domains';
 
 /**
  * ゲーム内ファイルシステムの管理クラス
@@ -392,6 +393,110 @@ export class FileSystem {
     mobileApp.addChild(new FileNode('.hidden.json', NodeType.FILE));
 
     return new FileSystem(root);
+  }
+
+  /**
+   * 指定されたドメインとレベルでファイルシステムを生成する
+   * @param domain ドメインデータ
+   * @param level ワールドレベル
+   * @returns 生成されたファイルシステム
+   * @throws {Error} 無効なドメインまたはレベルの場合
+   */
+  public static generateFileSystem(domain: DomainData, level: number): FileSystem {
+    if (!domain) {
+      throw new Error('ドメインデータが必要です');
+    }
+
+    if (level < 1) {
+      throw new Error('ワールドレベルは1以上である必要があります');
+    }
+
+    const maxDepth = Math.min(3 + level, 10);
+    const root = new FileNode(domain.name, NodeType.DIRECTORY);
+    const fileSystem = new FileSystem(root);
+
+    // ルートの下にディレクトリ構造を生成
+    FileSystem.generateDirectoryStructure(root, domain, 1, maxDepth);
+
+    return fileSystem;
+  }
+
+  /**
+   * ディレクトリ構造を再帰的に生成する
+   * @param parentNode 親ディレクトリノード
+   * @param domain ドメインデータ
+   * @param currentDepth 現在の深度
+   * @param maxDepth 最大深度
+   */
+  private static generateDirectoryStructure(
+    parentNode: FileNode,
+    domain: DomainData,
+    currentDepth: number,
+    maxDepth: number
+  ): void {
+    if (currentDepth >= maxDepth) {
+      return;
+    }
+
+    // 各深度でのディレクトリ数を決定（深くなるほど少なく）
+    const dirCount = Math.max(1, Math.ceil(Math.random() * (4 - currentDepth)));
+
+    for (let i = 0; i < dirCount; i++) {
+      const dirName = getRandomDirectoryName(domain, currentDepth);
+      const dirNode = new FileNode(dirName, NodeType.DIRECTORY);
+      parentNode.addChild(dirNode);
+
+      // 各ディレクトリにファイルを追加
+      FileSystem.generateFiles(dirNode, domain, currentDepth);
+
+      // 再帰的に子ディレクトリを生成
+      if (currentDepth + 1 < maxDepth && Math.random() < 0.7) {
+        FileSystem.generateDirectoryStructure(dirNode, domain, currentDepth + 1, maxDepth);
+      }
+    }
+  }
+
+  /**
+   * 指定されたディレクトリにファイルを生成する
+   * @param parentNode 親ディレクトリノード
+   * @param domain ドメインデータ
+   * @param depth 現在の深度
+   */
+  private static generateFiles(parentNode: FileNode, domain: DomainData, depth: number): void {
+    // 各ファイルタイプを最低1つずつ、最大3つまで生成
+    const fileTypes: ('monster' | 'treasure' | 'event' | 'savepoint')[] = [
+      'monster',
+      'treasure',
+      'event',
+      'savepoint',
+    ];
+
+    fileTypes.forEach(fileType => {
+      const fileCount = Math.max(1, Math.ceil(Math.random() * 3));
+
+      for (let i = 0; i < fileCount; i++) {
+        const fileName = getRandomFileName(domain, fileType, depth);
+        const fileNode = new FileNode(fileName, NodeType.FILE);
+        // FileTypeのenumの値で設定
+        switch (fileType) {
+          case 'monster':
+            fileNode.fileType = FileType.MONSTER;
+            break;
+          case 'treasure':
+            fileNode.fileType = FileType.TREASURE;
+            break;
+          case 'event':
+            fileNode.fileType = FileType.EVENT;
+            break;
+          case 'savepoint':
+            fileNode.fileType = FileType.SAVE_POINT;
+            break;
+          default:
+            fileNode.fileType = FileType.EMPTY;
+        }
+        parentNode.addChild(fileNode);
+      }
+    });
   }
 
   /**

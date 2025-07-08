@@ -28,7 +28,8 @@ describe('Explorationフェーズの統合テスト', () => {
     const domain = { type: 'tech-startup' as any, name: 'tech-startup', description: 'Test domain', directoryNames: [], fileNames: { monster: [], treasure: [], event: [], savepoint: [] } };
     const world = new (class extends World {
       constructor() {
-        super(domain, 1, fileSystem);
+        super(domain, 1);
+        this.fileSystem = fileSystem;
       }
     })();
     explorationPhase = new ExplorationPhase(world);

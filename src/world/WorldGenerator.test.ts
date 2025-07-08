@@ -152,16 +152,10 @@ describe('WorldGenerator', () => {
     });
   });
 
-  describe('generateFileSystem', () => {
-    let generator: WorldGenerator;
-
-    beforeEach(() => {
-      generator = new WorldGenerator();
-    });
-
+  describe('FileSystem.generateFileSystem', () => {
     test('指定されたドメインとレベルでファイルシステムを生成できる', () => {
       const domain = getDomainData('tech-startup')!;
-      const fileSystem = generator.generateFileSystem(domain, 2);
+      const fileSystem = FileSystem.generateFileSystem(domain, 2);
 
       expect(fileSystem).toBeInstanceOf(FileSystem);
 
@@ -173,16 +167,16 @@ describe('WorldGenerator', () => {
 
     test('生成されたファイルシステムに適切なファイルタイプが含まれる', () => {
       const domain = getDomainData('game-studio')!;
-      const fileSystem = generator.generateFileSystem(domain, 3);
+      const fileSystem = FileSystem.generateFileSystem(domain, 3);
 
       // ファイルシステム内にモンスター、宝箱、イベント、セーブポイントファイルが存在するかチェック
       const allNodes = fileSystem.find('');
-      const files = allNodes.filter(node => node.isFile());
+      const files = allNodes.filter((node: any) => node.isFile());
 
-      const monsterFiles = files.filter(file => file.fileType === 'monster');
-      const treasureFiles = files.filter(file => file.fileType === 'treasure');
-      const eventFiles = files.filter(file => file.fileType === 'event');
-      const savePointFiles = files.filter(file => file.fileType === 'savepoint');
+      const monsterFiles = files.filter((file: any) => file.fileType === 'monster');
+      const treasureFiles = files.filter((file: any) => file.fileType === 'treasure');
+      const eventFiles = files.filter((file: any) => file.fileType === 'event');
+      const savePointFiles = files.filter((file: any) => file.fileType === 'savepoint');
 
       expect(monsterFiles.length).toBeGreaterThan(0);
       expect(treasureFiles.length).toBeGreaterThan(0);
@@ -192,7 +186,7 @@ describe('WorldGenerator', () => {
 
     test('深度制限が正しく適用される', () => {
       const domain = getDomainData('tech-startup')!;
-      const fileSystem = generator.generateFileSystem(domain, 1);
+      const fileSystem = FileSystem.generateFileSystem(domain, 1);
 
       // 最大深度4（レベル1 = 3+1）のチェック
       const checkDepth = (node: any, currentDepth: number): number => {
@@ -286,14 +280,12 @@ describe('WorldGenerator', () => {
 
   describe('エラーケース', () => {
     test('null/undefinedドメインでgenerateFileSystemを呼ぶとエラー', () => {
-      const generator = new WorldGenerator();
-
       expect(() => {
-        generator.generateFileSystem(null as any, 1);
+        FileSystem.generateFileSystem(null as any, 1);
       }).toThrow();
 
       expect(() => {
-        generator.generateFileSystem(undefined as any, 1);
+        FileSystem.generateFileSystem(undefined as any, 1);
       }).toThrow();
     });
   });

@@ -107,9 +107,17 @@ describe('Game', () => {
 
     it('探索フェーズを正しく作成する', () => {
       // generateDefaultWorldメソッドをモックして固定のワールドを返す
-      const testFileSystem = FileSystem.createTestStructure();
       const testDomain = getDomainData('tech-startup')!;
-      const testWorld = new World(testDomain, 1, testFileSystem);
+      let testWorld;
+      try {
+        testWorld = new World(testDomain, 1);
+      } catch (_error) {
+        // フォールバック
+        testWorld = new World(testDomain, 1);
+        testWorld.fileSystem = FileSystem.createTestStructure();
+        testWorld.keyLocation = null;
+        testWorld.bossLocation = null;
+      }
 
       jest.spyOn(game as any, 'generateDefaultWorld').mockReturnValue(testWorld);
 
