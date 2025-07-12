@@ -340,8 +340,9 @@ export class FileSystem {
   }
 
   /**
-   * サンプル用の固定ファイル構造を作成する
-   * 統合テストやデモンストレーション時の動作確認に使用する
+   * 包括的なサンプル用の固定ファイル構造を作成する
+   * dev:testモードやデモンストレーション時の動作確認に使用する
+   * mobile-appディレクトリを含む包括的な構造を提供する
    * @returns サンプル用FileSystemインスタンス
    */
   public static createSampleStructure(): FileSystem {
@@ -590,64 +591,11 @@ export class FileSystem {
   }
 
   /**
-   * テスト用のファイルシステム構造を作成する
+   * テスト用の固定ファイル構造を作成する（createSampleStructureのエイリアス）
+   * 既存のユニットテストとの互換性のために保持
    * @returns テスト用FileSystemインスタンス
    */
   public static createTestStructure(): FileSystem {
-    const root = new FileNode('projects', NodeType.DIRECTORY);
-
-    // game-studio ディレクトリ
-    const gameStudio = new FileNode('game-studio', NodeType.DIRECTORY);
-    const src = new FileNode('src', NodeType.DIRECTORY);
-    const config = new FileNode('config', NodeType.DIRECTORY);
-    const docs = new FileNode('docs', NodeType.DIRECTORY);
-
-    // ファイル
-    const mainJs = new FileNode('main.js', NodeType.FILE);
-    const utilsTs = new FileNode('utils.ts', NodeType.FILE);
-    const hiddenPy = new FileNode('.hidden.py', NodeType.FILE);
-    const configJson = new FileNode('config.json', NodeType.FILE);
-    const settingsYaml = new FileNode('settings.yaml', NodeType.FILE);
-    const readmeMd = new FileNode('README.md', NodeType.FILE);
-    const buildExe = new FileNode('build.exe', NodeType.FILE);
-
-    // 階層構造を作成
-    root.addChild(gameStudio);
-
-    gameStudio.addChild(src);
-    gameStudio.addChild(config);
-    gameStudio.addChild(docs);
-    gameStudio.addChild(readmeMd);
-    gameStudio.addChild(buildExe);
-
-    src.addChild(mainJs);
-    src.addChild(utilsTs);
-    src.addChild(hiddenPy);
-
-    config.addChild(configJson);
-    config.addChild(settingsYaml);
-
-    // tech-startup ディレクトリ
-    const techStartup = new FileNode('tech-startup', NodeType.DIRECTORY);
-    const api = new FileNode('api', NodeType.DIRECTORY);
-    const tests = new FileNode('tests', NodeType.DIRECTORY);
-
-    const serverJs = new FileNode('server.js', NodeType.FILE);
-    const routesTs = new FileNode('routes.ts', NodeType.FILE);
-    const packageJson = new FileNode('package.json', NodeType.FILE);
-    const testJs = new FileNode('test.js', NodeType.FILE);
-
-    root.addChild(techStartup);
-
-    techStartup.addChild(api);
-    techStartup.addChild(tests);
-    techStartup.addChild(packageJson);
-
-    api.addChild(serverJs);
-    api.addChild(routesTs);
-
-    tests.addChild(testJs);
-
-    return new FileSystem(root);
+    return FileSystem.createSampleStructure();
   }
 }

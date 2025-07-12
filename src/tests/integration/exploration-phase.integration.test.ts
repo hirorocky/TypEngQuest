@@ -23,7 +23,7 @@ describe('Explorationフェーズの統合テスト', () => {
     gameHelper = new TestGameHelper();
 
     // 統合テスト用の固定ファイル構造を作成
-    fileSystem = FileSystem.createSampleStructure();
+    fileSystem = FileSystem.createTestStructure();
 
     const domain = { type: 'tech-startup' as any, name: 'tech-startup', description: 'Test domain', directoryNames: ['src', 'lib', 'config'], fileNames: { monster: ['monster.py'], treasure: ['treasure.json'], event: ['event.js'], savepoint: ['save.md'] } };
     const world = new (class extends World {

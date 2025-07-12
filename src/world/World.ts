@@ -212,12 +212,12 @@ export class World {
 
     if (isTest) {
       // テスト用の固定ファイルシステム
-      fileSystem = FileSystem.createTestStructure();
+      fileSystem = FileSystem.createSampleStructure();
       this.fileSystem = fileSystem;
 
       // 固定の配置でボスと鍵を設定
-      this.setBossLocation('/game-studio');
-      this.setKeyLocation('/tech-startup/package.json');
+      this.setBossLocation('/web-app');
+      this.setKeyLocation('/mobile-app/app.py');
     } else {
       // 通常のランダム生成
       fileSystem = FileSystem.generateFileSystem(this.domain, this.level);
