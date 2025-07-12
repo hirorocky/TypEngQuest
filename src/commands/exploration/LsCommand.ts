@@ -1,6 +1,7 @@
 import { BaseCommand, CommandContext } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
 import { FileNode } from '../../world/FileNode';
+import { blueBold } from '../../ui/colors';
 
 /**
  * ls コマンド - ディレクトリの内容を一覧表示
@@ -95,13 +96,14 @@ export class LsCommand extends BaseCommand {
   }
 
   /**
-   * ファイル表示名を取得（ディレクトリに / を追加）
+   * ファイル表示名を取得（ディレクトリに / を追加し、青色太字で表示）
    */
   private getDisplayName(file: FileNode): string {
     let displayName = file.name;
 
     if (file.isDirectory()) {
       displayName += '/';
+      return blueBold(displayName);
     }
 
     return displayName;

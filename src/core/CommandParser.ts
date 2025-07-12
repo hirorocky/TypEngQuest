@@ -195,4 +195,34 @@ export class CommandParser {
   getHistory(): string[] {
     return [...this.history];
   }
+
+  /**
+   * コマンド補完候補を取得する
+   * @param input 入力文字列
+   * @returns マッチするコマンド名とエイリアスの配列
+   */
+  getCompletions(input: string): string[] {
+    if (!input) {
+      // 空の場合は全コマンドを返す
+      return this.getAvailableCommands();
+    }
+
+    const matches = new Set<string>();
+    const lowerInput = input.toLowerCase();
+
+    this.commands.forEach((command, name) => {
+      if (name.toLowerCase().startsWith(lowerInput)) {
+        matches.add(name);
+      }
+      if (command.aliases) {
+        command.aliases.forEach(alias => {
+          if (alias.toLowerCase().startsWith(lowerInput)) {
+            matches.add(alias);
+          }
+        });
+      }
+    });
+
+    return Array.from(matches).sort();
+  }
 }

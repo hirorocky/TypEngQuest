@@ -9,6 +9,8 @@ import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
+import { CommandParser } from './CommandParser';
+import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } from './completion';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -18,6 +20,8 @@ export class Game {
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
   private isTestMode: boolean;
+  private commandParser: CommandParser;
+  private tabCompleter: TabCompleter;
 
   constructor(isTestMode: boolean = false) {
     this.state = {
@@ -25,10 +29,20 @@ export class Game {
       isRunning: false,
     };
 
+    this.commandParser = new CommandParser();
+
+    // Tab補完システムを初期化
+    this.tabCompleter = new TabCompleter(this.commandParser);
+
+    // 補完プロバイダーを追加
+    this.tabCompleter.addProvider(new CommandCompletionProvider());
+    this.tabCompleter.addProvider(new DirectoryCompletionProvider());
+
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
       prompt: '> ',
+      completer: this.completer.bind(this),
     });
 
     this.isTestMode = isTestMode;
@@ -184,6 +198,15 @@ export class Game {
       { signal: 'SIGINT', handler: sigintHandler },
       { signal: 'SIGTERM', handler: sigtermHandler }
     );
+  }
+
+  /**
+   * Tab補完機能
+   * @param line 現在の入力行
+   * @returns 補完候補の配列
+   */
+  private completer(line: string): [string[], string] {
+    return this.tabCompleter.complete(line, this.currentPhase, this.currentWorld);
   }
 
   private async cleanup(): Promise<void> {

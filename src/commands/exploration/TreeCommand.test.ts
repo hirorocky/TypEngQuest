@@ -43,12 +43,12 @@ describe('TreeCommand', () => {
     });
 
     test('隠しファイルも含むツリー表示 (-a)', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('mobile-app');
       const result = command.execute(['-a'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
-      expect(treeOutput).toContain('.hidden.py');
+      expect(treeOutput).toContain('.hidden.json');
     });
 
     test('深度制限付きツリー表示 (-d)', () => {
@@ -58,12 +58,12 @@ describe('TreeCommand', () => {
       const treeOutput = result.output!.join('\n');
 
       // 深度1なので、ルートの直下のディレクトリまでは表示される
-      expect(treeOutput).toContain('game-studio/');
-      expect(treeOutput).toContain('tech-startup/');
+      expect(treeOutput).toContain('web-app/');
+      expect(treeOutput).toContain('mobile-app/');
 
-      // 深度1なので、src/やconfig/は表示されないはず
+      // 深度1なので、src/やtests/は表示されないはず
       expect(treeOutput).not.toContain('src/');
-      expect(treeOutput).not.toContain('config/');
+      expect(treeOutput).not.toContain('tests/');
     });
 
     test('深度制限付きツリー表示 (--depth)', () => {
@@ -73,18 +73,18 @@ describe('TreeCommand', () => {
       const treeOutput = result.output!.join('\n');
 
       // 深度2なので、2層目まで表示される
-      expect(treeOutput).toContain('game-studio/');
+      expect(treeOutput).toContain('web-app/');
       expect(treeOutput).toContain('src/');
-      expect(treeOutput).toContain('config/');
+      expect(treeOutput).toContain('tests/');
     });
 
     test('複合オプション (-a -d)', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('mobile-app');
       const result = command.execute(['-a', '-d', '2'], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
-      expect(treeOutput).toContain('.hidden.py');
+      expect(treeOutput).toContain('.hidden.json');
     });
 
     test('無効な深度値は無視される', () => {
@@ -93,7 +93,7 @@ describe('TreeCommand', () => {
       expect(result.success).toBe(true);
       // 無効な深度値の場合は制限なしで表示
       const treeOutput = result.output!.join('\n');
-      expect(treeOutput).toContain('game-studio/');
+      expect(treeOutput).toContain('web-app/');
     });
 
     test('負の深度値は無視される', () => {
@@ -102,7 +102,7 @@ describe('TreeCommand', () => {
       expect(result.success).toBe(true);
       // 負の深度値の場合は制限なしで表示
       const treeOutput = result.output!.join('\n');
-      expect(treeOutput).toContain('game-studio/');
+      expect(treeOutput).toContain('web-app/');
     });
   });
 
@@ -121,12 +121,12 @@ describe('TreeCommand', () => {
       const result = command.execute([], context);
       const treeOutput = result.output!.join('\n');
 
-      expect(treeOutput).toContain('game-studio/');
-      expect(treeOutput).toContain('tech-startup/');
+      expect(treeOutput).toContain('web-app/');
+      expect(treeOutput).toContain('mobile-app/');
     });
 
     test('ファイルタイプアイコンが表示される', () => {
-      fileSystem.cd('game-studio');
+      // ルートディレクトリからtreeを実行してすべてのファイルタイプを確認
       const result = command.execute([], context);
       const treeOutput = result.output!.join('\n');
 
@@ -151,20 +151,20 @@ describe('TreeCommand', () => {
 
   describe('サブディレクトリでのツリー表示', () => {
     test('サブディレクトリに移動後のツリー表示', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
       const treeOutput = result.output!.join('\n');
 
-      // game-studioディレクトリの内容が表示される
-      expect(treeOutput).toContain('game-studio/');
+      // web-appディレクトリの内容が表示される
+      expect(treeOutput).toContain('web-app/');
       expect(treeOutput).toContain('src/');
-      expect(treeOutput).toContain('config/');
+      expect(treeOutput).toContain('tests/');
     });
 
     test('深いディレクトリでのツリー表示', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('web-app/src');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);

@@ -340,8 +340,9 @@ export class FileSystem {
   }
 
   /**
-   * サンプル用の固定ファイル構造を作成する
-   * 統合テストやデモンストレーション時の動作確認に使用する
+   * 包括的なサンプル用の固定ファイル構造を作成する
+   * dev:testモードやデモンストレーション時の動作確認に使用する
+   * mobile-appディレクトリを含む包括的な構造を提供する
    * @returns サンプル用FileSystemインスタンス
    */
   public static createSampleStructure(): FileSystem {
@@ -500,64 +501,101 @@ export class FileSystem {
   }
 
   /**
-   * テスト用のファイルシステム構造を作成する
+   * 指定されたパスのディレクトリ一覧を取得する（補完機能用）
+   * @param partialPath 部分的なパス
+   * @returns マッチするディレクトリ名の配列
+   */
+  public getDirectoryCompletions(partialPath: string): string[] {
+    if (!partialPath) {
+      // 空の場合は現在ディレクトリの全ディレクトリを返す
+      const result = this.ls();
+      if (result.success && result.files) {
+        return result.files
+          .filter(file => file.isDirectory())
+          .map(file => file.name)
+          .concat(['..', '.'])
+          .sort();
+      }
+      return ['..', '.'];
+    }
+
+    // 絶対パスの場合
+    if (partialPath.startsWith('/')) {
+      return this.getAbsolutePathCompletions(partialPath);
+    }
+
+    // 相対パスの場合
+    return this.getRelativePathCompletions(partialPath);
+  }
+
+  /**
+   * 絶対パスの補完候補を取得する
+   * @param absolutePath 絶対パス
+   * @returns マッチするディレクトリ名の配列
+   */
+  private getAbsolutePathCompletions(absolutePath: string): string[] {
+    // 最後のスラッシュより前の部分をディレクトリパスとして解釈
+    const lastSlashIndex = absolutePath.lastIndexOf('/');
+    const dirPath = absolutePath.substring(0, lastSlashIndex);
+    const partial = absolutePath.substring(lastSlashIndex + 1);
+
+    const targetNode = this.getNodeByPath(dirPath || '/');
+    if (!targetNode || !targetNode.isDirectory()) {
+      return [];
+    }
+
+    return targetNode.children
+      .filter(child => child.isDirectory())
+      .map(child => child.name)
+      .filter(name => name.toLowerCase().startsWith(partial.toLowerCase()))
+      .map(name => `${dirPath}/${name}`)
+      .sort();
+  }
+
+  /**
+   * 相対パスの補完候補を取得する
+   * @param relativePath 相対パス
+   * @returns マッチするディレクトリ名の配列
+   */
+  private getRelativePathCompletions(relativePath: string): string[] {
+    // パスに / が含まれる場合（サブディレクトリ内の補完）
+    if (relativePath.includes('/')) {
+      const lastSlashIndex = relativePath.lastIndexOf('/');
+      const dirPath = relativePath.substring(0, lastSlashIndex);
+      const partial = relativePath.substring(lastSlashIndex + 1);
+
+      const targetNode = this.getNodeByPath(dirPath);
+      if (!targetNode || !targetNode.isDirectory()) {
+        return [];
+      }
+
+      return targetNode.children
+        .filter(child => child.isDirectory())
+        .map(child => child.name)
+        .filter(name => name.toLowerCase().startsWith(partial.toLowerCase()))
+        .map(name => `${dirPath}/${name}`)
+        .sort();
+    }
+
+    // 単純な名前の補完
+    const specialDirs = ['..', '.'].filter(dir =>
+      dir.toLowerCase().startsWith(relativePath.toLowerCase())
+    );
+
+    const directories = this.currentNode.children
+      .filter(child => child.isDirectory())
+      .map(child => child.name)
+      .filter(name => name.toLowerCase().startsWith(relativePath.toLowerCase()));
+
+    return [...specialDirs, ...directories].sort();
+  }
+
+  /**
+   * テスト用の固定ファイル構造を作成する（createSampleStructureのエイリアス）
+   * 既存のユニットテストとの互換性のために保持
    * @returns テスト用FileSystemインスタンス
    */
   public static createTestStructure(): FileSystem {
-    const root = new FileNode('projects', NodeType.DIRECTORY);
-
-    // game-studio ディレクトリ
-    const gameStudio = new FileNode('game-studio', NodeType.DIRECTORY);
-    const src = new FileNode('src', NodeType.DIRECTORY);
-    const config = new FileNode('config', NodeType.DIRECTORY);
-    const docs = new FileNode('docs', NodeType.DIRECTORY);
-
-    // ファイル
-    const mainJs = new FileNode('main.js', NodeType.FILE);
-    const utilsTs = new FileNode('utils.ts', NodeType.FILE);
-    const hiddenPy = new FileNode('.hidden.py', NodeType.FILE);
-    const configJson = new FileNode('config.json', NodeType.FILE);
-    const settingsYaml = new FileNode('settings.yaml', NodeType.FILE);
-    const readmeMd = new FileNode('README.md', NodeType.FILE);
-    const buildExe = new FileNode('build.exe', NodeType.FILE);
-
-    // 階層構造を作成
-    root.addChild(gameStudio);
-
-    gameStudio.addChild(src);
-    gameStudio.addChild(config);
-    gameStudio.addChild(docs);
-    gameStudio.addChild(readmeMd);
-    gameStudio.addChild(buildExe);
-
-    src.addChild(mainJs);
-    src.addChild(utilsTs);
-    src.addChild(hiddenPy);
-
-    config.addChild(configJson);
-    config.addChild(settingsYaml);
-
-    // tech-startup ディレクトリ
-    const techStartup = new FileNode('tech-startup', NodeType.DIRECTORY);
-    const api = new FileNode('api', NodeType.DIRECTORY);
-    const tests = new FileNode('tests', NodeType.DIRECTORY);
-
-    const serverJs = new FileNode('server.js', NodeType.FILE);
-    const routesTs = new FileNode('routes.ts', NodeType.FILE);
-    const packageJson = new FileNode('package.json', NodeType.FILE);
-    const testJs = new FileNode('test.js', NodeType.FILE);
-
-    root.addChild(techStartup);
-
-    techStartup.addChild(api);
-    techStartup.addChild(tests);
-    techStartup.addChild(packageJson);
-
-    api.addChild(serverJs);
-    api.addChild(routesTs);
-
-    tests.addChild(testJs);
-
-    return new FileSystem(root);
+    return FileSystem.createSampleStructure();
   }
 }

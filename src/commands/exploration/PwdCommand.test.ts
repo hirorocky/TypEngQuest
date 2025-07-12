@@ -36,40 +36,40 @@ describe('PwdCommand', () => {
     });
 
     test('サブディレクトリでのpwd', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
     });
 
     test('深いディレクトリでのpwd', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('web-app/src');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/game-studio/src']);
+      expect(result.output).toEqual(['/web-app/src']);
     });
 
     test('絶対パスで移動後のpwd', () => {
-      fileSystem.cd('/tech-startup/api');
+      fileSystem.cd('/mobile-app/src');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/tech-startup/api']);
+      expect(result.output).toEqual(['/mobile-app/src']);
     });
 
     test('親ディレクトリに戻った後のpwd', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('web-app/src');
       fileSystem.cd('..');
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
     });
 
     test('ホームディレクトリに戻った後のpwd', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('web-app/src');
       fileSystem.cd('~');
       const result = command.execute([], context);
 
@@ -78,11 +78,11 @@ describe('PwdCommand', () => {
     });
 
     test('引数を渡してもpwdは正常動作', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       const result = command.execute(['ignored', 'arguments'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
     });
   });
 
@@ -108,7 +108,7 @@ describe('PwdCommand', () => {
       const helpText = help.join('\n');
 
       expect(helpText).toContain('pwd');
-      expect(helpText).toContain('/game-studio/src');
+      expect(helpText).toContain('/web-app/src');
     });
   });
 
@@ -130,20 +130,20 @@ describe('PwdCommand', () => {
       let result = command.execute([], context);
       expect(result.output).toEqual(['/']);
 
-      // game-studioに移動
-      fileSystem.cd('game-studio');
+      // web-appに移動
+      fileSystem.cd('web-app');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
 
       // srcに移動
       fileSystem.cd('src');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/game-studio/src']);
+      expect(result.output).toEqual(['/web-app/src']);
 
       // 親ディレクトリに戻る
       fileSystem.cd('..');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
 
       // ルートに戻る
       fileSystem.cd('~');
@@ -152,20 +152,20 @@ describe('PwdCommand', () => {
     });
 
     test('異なるプロジェクトディレクトリでのpwd', () => {
-      // tech-startupに移動
-      fileSystem.cd('tech-startup');
+      // mobile-appに移動
+      fileSystem.cd('mobile-app');
       let result = command.execute([], context);
-      expect(result.output).toEqual(['/tech-startup']);
+      expect(result.output).toEqual(['/mobile-app']);
 
-      // apiに移動
-      fileSystem.cd('api');
+      // srcに移動
+      fileSystem.cd('src');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/tech-startup/api']);
+      expect(result.output).toEqual(['/mobile-app/src']);
 
-      // 絶対パスでgame-studioに移動
-      fileSystem.cd('/game-studio');
+      // 絶対パスでweb-appに移動
+      fileSystem.cd('/web-app');
       result = command.execute([], context);
-      expect(result.output).toEqual(['/game-studio']);
+      expect(result.output).toEqual(['/web-app']);
     });
   });
 });

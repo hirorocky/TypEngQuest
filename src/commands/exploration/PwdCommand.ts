@@ -28,7 +28,7 @@ export class PwdCommand extends BaseCommand {
       '  pwd              # display current directory path',
       '',
       'output example:',
-      '  /projects/game-studio/src',
+      '  /web-app/src',
     ];
   }
 }

@@ -266,4 +266,64 @@ describe('CommandParser', () => {
       expect(history).toEqual([]);
     });
   });
+
+  describe('Tab補完機能', () => {
+    it('コマンド名の補完候補を返す', () => {
+      const testCommand: Command = {
+        name: 'start',
+        description: 'Start command',
+        execute: async () => ({ success: true }),
+      };
+
+      parser.register(testCommand);
+      const completions = parser.getCompletions('st');
+      expect(completions).toContain('start');
+    });
+
+    it('複数のコマンド補完候補を返す', () => {
+      const testCommand1: Command = {
+        name: 'start',
+        description: 'Start command',
+        execute: async () => ({ success: true }),
+      };
+
+      const testCommand2: Command = {
+        name: 'status',
+        description: 'Status command',
+        execute: async () => ({ success: true }),
+      };
+
+      parser.register(testCommand1);
+      parser.register(testCommand2);
+      const completions = parser.getCompletions('st');
+      expect(completions).toContain('start');
+      expect(completions).toContain('status');
+    });
+
+    it('エイリアスも補完候補に含める', () => {
+      const testCommand: Command = {
+        name: 'help',
+        aliases: ['h'],
+        description: 'Help command',
+        execute: async () => ({ success: true }),
+      };
+
+      parser.register(testCommand);
+      const completions = parser.getCompletions('h');
+      expect(completions).toContain('help');
+      expect(completions).toContain('h');
+    });
+
+    it('マッチしない場合は空の配列を返す', () => {
+      const completions = parser.getCompletions('xyz');
+      expect(completions).toEqual([]);
+    });
+
+    it('空の文字列の場合は全コマンドを返す', () => {
+      const completions = parser.getCompletions('');
+      expect(completions).toContain('help');
+      expect(completions).toContain('history');
+      expect(completions).toContain('clear');
+    });
+  });
 });

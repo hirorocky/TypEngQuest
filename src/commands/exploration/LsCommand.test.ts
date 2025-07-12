@@ -38,11 +38,11 @@ describe('LsCommand', () => {
     });
 
     test('隠しファイルも含む一覧表示 (-a)', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('mobile-app');
       const result = command.execute(['-a'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output!.join(' ')).toContain('.hidden.py');
+      expect(result.output!.join(' ')).toContain('.hidden.json');
     });
 
     test('詳細表示 (-l)', () => {
@@ -57,47 +57,47 @@ describe('LsCommand', () => {
     });
 
     test('複合オプション (-la)', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('mobile-app');
       const result = command.execute(['-la'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output!.join(' ')).toContain('.hidden.py');
+      expect(result.output!.join(' ')).toContain('.hidden.json');
       expect(
         result.output!.some(line => line.includes('drwxr-xr-x') || line.includes('-rw-r--r--'))
       ).toBe(true);
     });
 
     test('ロングオプション (--all --long)', () => {
-      fileSystem.cd('game-studio/src');
+      fileSystem.cd('mobile-app');
       const result = command.execute(['--all', '--long'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output!.join(' ')).toContain('.hidden.py');
+      expect(result.output!.join(' ')).toContain('.hidden.json');
       expect(
         result.output!.some(line => line.includes('drwxr-xr-x') || line.includes('-rw-r--r--'))
       ).toBe(true);
     });
 
     test('指定パスの一覧表示', () => {
-      const result = command.execute(['game-studio'], context);
+      const result = command.execute(['web-app'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('src/');
-      expect(result.output!.join(' ')).toContain('config/');
+      expect(result.output!.join(' ')).toContain('tests/');
     });
 
     test('絶対パスの一覧表示', () => {
-      const result = command.execute(['/game-studio'], context);
+      const result = command.execute(['/web-app'], context);
 
       expect(result.success).toBe(true);
       expect(result.output!.join(' ')).toContain('src/');
     });
 
     test('ホームパスの一覧表示', () => {
-      const result = command.execute(['~/tech-startup'], context);
+      const result = command.execute(['~/mobile-app'], context);
 
       expect(result.success).toBe(true);
-      expect(result.output!.join(' ')).toContain('api/');
+      expect(result.output!.join(' ')).toContain('src/');
     });
 
     test('存在しないパスはエラー', () => {
@@ -108,7 +108,7 @@ describe('LsCommand', () => {
     });
 
     test('ファイルを指定した場合はエラー', () => {
-      const result = command.execute(['game-studio/README.md'], context);
+      const result = command.execute(['web-app/README.md'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('not a directory');
@@ -120,8 +120,8 @@ describe('LsCommand', () => {
       const result = command.execute([], context);
 
       expect(result.success).toBe(true);
-      expect(result.output!.join(' ')).toContain('game-studio/');
-      expect(result.output!.join(' ')).toContain('tech-startup/');
+      expect(result.output!.join(' ')).toContain('web-app/');
+      expect(result.output!.join(' ')).toContain('mobile-app/');
     });
 
     test('詳細表示でディレクトリの権限が正しい', () => {
@@ -133,7 +133,7 @@ describe('LsCommand', () => {
     });
 
     test('詳細表示でファイルの権限が正しい', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
@@ -142,7 +142,7 @@ describe('LsCommand', () => {
     });
 
     test('詳細表示でファイルサイズが表示される', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       const result = command.execute(['-l'], context);
 
       expect(result.success).toBe(true);
@@ -201,6 +201,40 @@ describe('LsCommand', () => {
     test('複合引数は有効', () => {
       const result = command.validateArgs(['-l', 'src']);
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('ディレクトリ色表示', () => {
+    test('通常表示でディレクトリが青色太字で表示される', () => {
+      const result = command.execute([], context);
+
+      expect(result.success).toBe(true);
+      expect(result.output!.join(' ')).toContain('\u001b[1m\u001b[34mweb-app/\u001b[0m');
+      expect(result.output!.join(' ')).toContain('\u001b[1m\u001b[34mmobile-app/\u001b[0m');
+    });
+
+    test('詳細表示でディレクトリが青色太字で表示される', () => {
+      const result = command.execute(['-l'], context);
+
+      expect(result.success).toBe(true);
+      const hasBlueDirectory = result.output!.some(
+        line =>
+          line.includes('\u001b[1m\u001b[34mweb-app/\u001b[0m') ||
+          line.includes('\u001b[1m\u001b[34mmobile-app/\u001b[0m')
+      );
+      expect(hasBlueDirectory).toBe(true);
+    });
+
+    test('ファイルは通常色で表示される', () => {
+      fileSystem.cd('web-app');
+      const result = command.execute([], context);
+
+      expect(result.success).toBe(true);
+      // ファイルは色付きではない（青色太字のエスケープシーケンスを含まない）
+      const hasColoredFile = result.output!.some(
+        line => line.includes('README.md') && line.includes('\u001b[1m\u001b[34m')
+      );
+      expect(hasColoredFile).toBe(false);
     });
   });
 });

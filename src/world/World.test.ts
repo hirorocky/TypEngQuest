@@ -74,7 +74,7 @@ describe('World', () => {
         world.fileSystem = FileSystem.createTestStructure();
         world.keyLocation = null;
         world.bossLocation = null;
-        validPath = '/game-studio';
+        validPath = '/web-app';
       }
     });
 
@@ -128,7 +128,7 @@ describe('World', () => {
         world.fileSystem = FileSystem.createTestStructure();
         world.keyLocation = null;
         world.bossLocation = null;
-        testPath = '/game-studio';
+        testPath = '/web-app';
       }
     });
 
@@ -179,8 +179,8 @@ describe('World', () => {
         world.fileSystem = FileSystem.createTestStructure();
         world.keyLocation = null;
         world.bossLocation = null;
-        validFilePath = '/game-studio/config/config.json';
-        validDirPath = '/game-studio';
+        validFilePath = '/web-app/config/config.json';
+        validDirPath = '/web-app';
       }
     });
 
@@ -290,17 +290,17 @@ describe('World', () => {
         world.keyLocation = null;
         world.bossLocation = null;
 
-        world.setCurrentPath('/game-studio');
-        world.markAsExplored('/game-studio');
-        world.setKeyLocation('/game-studio/config/config.json');
-        world.setBossLocation('/game-studio');
+        world.setCurrentPath('/web-app');
+        world.markAsExplored('/web-app');
+        world.setKeyLocation('/web-app/config/config.json');
+        world.setBossLocation('/web-app');
         world.obtainKey();
 
         const json = world.toJSON();
         expect(json.domainType).toBe('tech-startup');
         expect(json.level).toBe(2);
-        expect(json.keyLocation).toBe('/game-studio/config/config.json');
-        expect(json.bossLocation).toBe('/game-studio');
+        expect(json.keyLocation).toBe('/web-app/config/config.json');
+        expect(json.bossLocation).toBe('/web-app');
       }
     });
 

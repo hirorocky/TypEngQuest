@@ -30,7 +30,7 @@ describe('CdCommand', () => {
   describe('executeInternal - コマンド実行', () => {
     test('引数なしでルートディレクトリに移動', () => {
       // サブディレクトリに移動してから
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
 
       const result = command.execute([], context);
 
@@ -40,7 +40,7 @@ describe('CdCommand', () => {
     });
 
     test('~ でルートディレクトリに移動', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
 
       const result = command.execute(['~'], context);
 
@@ -49,34 +49,34 @@ describe('CdCommand', () => {
     });
 
     test('.. で親ディレクトリに移動', () => {
-      fileSystem.cd('game-studio');
+      fileSystem.cd('web-app');
       fileSystem.cd('src');
 
       const result = command.execute(['..'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/game-studio');
+      expect(fileSystem.pwd()).toBe('/web-app');
     });
 
     test('相対パスでの移動', () => {
-      const result = command.execute(['game-studio'], context);
+      const result = command.execute(['web-app'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/game-studio');
+      expect(fileSystem.pwd()).toBe('/web-app');
     });
 
     test('絶対パスでの移動', () => {
-      const result = command.execute(['/game-studio/src'], context);
+      const result = command.execute(['/web-app/src'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/game-studio/src');
+      expect(fileSystem.pwd()).toBe('/web-app/src');
     });
 
     test('ホームパスでの移動', () => {
-      const result = command.execute(['~/game-studio'], context);
+      const result = command.execute(['~/web-app'], context);
 
       expect(result.success).toBe(true);
-      expect(fileSystem.pwd()).toBe('/game-studio');
+      expect(fileSystem.pwd()).toBe('/web-app');
     });
 
     test('存在しないディレクトリへの移動はエラー', () => {
@@ -87,7 +87,7 @@ describe('CdCommand', () => {
     });
 
     test('ファイルへの移動はエラー', () => {
-      const result = command.execute(['game-studio/README.md'], context);
+      const result = command.execute(['web-app/README.md'], context);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('not a directory');

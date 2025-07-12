@@ -298,13 +298,18 @@ describe('FileSystem', () => {
       expect(testFileSystem.root.name).toBe('projects');
       expect(testFileSystem.root.children.length).toBeGreaterThan(0);
 
-      // ゲームスタジオディレクトリが存在することを確認
-      const gameStudio = testFileSystem.root.findChild('game-studio');
-      expect(gameStudio).toBeDefined();
-      expect(gameStudio?.isDirectory()).toBe(true);
+      // Web-appディレクトリが存在することを確認
+      const webApp = testFileSystem.root.findChild('web-app');
+      expect(webApp).toBeDefined();
+      expect(webApp?.isDirectory()).toBe(true);
+
+      // mobile-appディレクトリが存在することを確認
+      const mobileApp = testFileSystem.root.findChild('mobile-app');
+      expect(mobileApp).toBeDefined();
+      expect(mobileApp?.isDirectory()).toBe(true);
 
       // 各ディレクトリにファイルが含まれることを確認
-      const srcDir = gameStudio?.findChild('src');
+      const srcDir = webApp?.findChild('src');
       expect(srcDir).toBeDefined();
       expect(srcDir?.children.length).toBeGreaterThan(0);
     });
