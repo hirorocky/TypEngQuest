@@ -210,9 +210,16 @@ export class CommandParser {
     const matches = new Set<string>();
     const lowerInput = input.toLowerCase();
 
-    this.commands.forEach((_command, name) => {
+    this.commands.forEach((command, name) => {
       if (name.toLowerCase().startsWith(lowerInput)) {
         matches.add(name);
+      }
+      if (command.aliases) {
+        command.aliases.forEach(alias => {
+          if (alias.toLowerCase().startsWith(lowerInput)) {
+            matches.add(alias);
+          }
+        });
       }
     });
 

@@ -113,6 +113,22 @@ export class World {
   }
 
   /**
+   * 現在位置のパスを取得する
+   * @returns 現在位置のパス
+   */
+  public getCurrentPath(): string {
+    return this.currentPath;
+  }
+
+  /**
+   * ファイルシステムを取得する
+   * @returns ファイルシステム
+   */
+  public getFileSystem(): FileSystem {
+    return this.fileSystem;
+  }
+
+  /**
    * パスを探索済みとしてマークする
    * @param path 探索済みにするパス
    */

@@ -198,22 +198,84 @@ export class Game {
    */
   private completer(line: string): [string[], string] {
     const input = line.trim();
-    const completions = this.commandParser.getCompletions(input);
+    const parts = input.split(' ');
 
-    // 完全一致する補完候補が1つの場合は、それを返す
-    if (completions.length === 1) {
-      return [completions, input];
+    // コマンドの補完（最初の単語または引数がない場合）
+    if (parts.length <= 1) {
+      return this.completeCommand(input);
     }
 
-    // 複数の補完候補がある場合は、共通部分を見つける
-    if (completions.length > 1) {
-      const commonPrefix = this.findCommonPrefix(completions);
-      if (commonPrefix.length > input.length) {
-        return [[commonPrefix], input];
-      }
+    // 引数の補完（cdコマンドなど）
+    const command = parts[0];
+    const currentArg = parts[parts.length - 1]; // 現在補完対象の引数
+
+    if (command === 'cd' && this.currentWorld) {
+      return this.completeDirectoryArgument(currentArg);
     }
 
-    return [completions, input];
+    return [[], currentArg];
+  }
+
+  /**
+   * コマンド名の補完処理
+   * @param input 入力されたコマンド名
+   * @returns 補完候補の配列
+   */
+  private completeCommand(input: string): [string[], string] {
+    // グローバルコマンドとフェーズ固有のコマンドを両方取得
+    const globalCompletions = this.commandParser.getCompletions(input);
+    const phaseCompletions = this.currentPhase
+      ? this.currentPhase
+          .getAvailableCommands()
+          .filter(cmd => cmd.toLowerCase().startsWith(input.toLowerCase()))
+      : [];
+
+    // 重複を除去してマージ
+    const allCompletions = [...new Set([...globalCompletions, ...phaseCompletions])].sort();
+
+    // マッチするものがない場合は全コマンドを表示
+    const hits = allCompletions.length > 0 ? allCompletions : this.getAllAvailableCommands();
+
+    return [hits, input];
+  }
+
+  /**
+   * 利用可能な全コマンドを取得する
+   * @returns 全コマンドの配列
+   */
+  private getAllAvailableCommands(): string[] {
+    const globalCommands = this.commandParser.getAvailableCommands();
+    const phaseCommands = this.currentPhase ? this.currentPhase.getAvailableCommands() : [];
+    return [...new Set([...globalCommands, ...phaseCommands])].sort();
+  }
+
+  /**
+   * ディレクトリ引数の補完処理
+   * @param currentArg 現在の引数
+   * @returns 補完候補の配列
+   */
+  private completeDirectoryArgument(currentArg: string): [string[], string] {
+    const directories = this.getDirectoryCompletions(currentArg);
+
+    // マッチするディレクトリがない場合は全ディレクトリを表示
+    const hits = directories.length > 0 ? directories : this.getAllDirectories();
+
+    return [hits, currentArg];
+  }
+
+  /**
+   * 現在ディレクトリの全ディレクトリを取得する
+   * @returns 全ディレクトリの配列
+   */
+  private getAllDirectories(): string[] {
+    if (!this.currentWorld) return [];
+
+    try {
+      const fileSystem = this.currentWorld.getFileSystem();
+      return fileSystem.getDirectoryCompletions('');
+    } catch (_error) {
+      return [];
+    }
   }
 
   /**
@@ -232,6 +294,22 @@ export class Game {
       }
     }
     return prefix;
+  }
+
+  /**
+   * ディレクトリの補完候補を取得する
+   * @param partialPath 部分的なパス
+   * @returns ディレクトリ名の配列
+   */
+  private getDirectoryCompletions(partialPath: string): string[] {
+    if (!this.currentWorld) return [];
+
+    try {
+      const fileSystem = this.currentWorld.getFileSystem();
+      return fileSystem.getDirectoryCompletions(partialPath);
+    } catch (_error) {
+      return [];
+    }
   }
 
   private async cleanup(): Promise<void> {
