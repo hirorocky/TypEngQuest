@@ -10,6 +10,7 @@ import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { CommandParser } from './CommandParser';
+import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } from './completion';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -20,6 +21,7 @@ export class Game {
   private currentWorld: World | null = null;
   private isTestMode: boolean;
   private commandParser: CommandParser;
+  private tabCompleter: TabCompleter;
 
   constructor(isTestMode: boolean = false) {
     this.state = {
@@ -28,6 +30,13 @@ export class Game {
     };
 
     this.commandParser = new CommandParser();
+
+    // Tab補完システムを初期化
+    this.tabCompleter = new TabCompleter(this.commandParser);
+
+    // 補完プロバイダーを追加
+    this.tabCompleter.addProvider(new CommandCompletionProvider());
+    this.tabCompleter.addProvider(new DirectoryCompletionProvider());
 
     this.rl = readline.createInterface({
       input: process.stdin,
@@ -197,119 +206,7 @@ export class Game {
    * @returns 補完候補の配列
    */
   private completer(line: string): [string[], string] {
-    const input = line.trim();
-    const parts = input.split(' ');
-
-    // コマンドの補完（最初の単語または引数がない場合）
-    if (parts.length <= 1) {
-      return this.completeCommand(input);
-    }
-
-    // 引数の補完（cdコマンドなど）
-    const command = parts[0];
-    const currentArg = parts[parts.length - 1]; // 現在補完対象の引数
-
-    if (command === 'cd' && this.currentWorld) {
-      return this.completeDirectoryArgument(currentArg);
-    }
-
-    return [[], currentArg];
-  }
-
-  /**
-   * コマンド名の補完処理
-   * @param input 入力されたコマンド名
-   * @returns 補完候補の配列
-   */
-  private completeCommand(input: string): [string[], string] {
-    // グローバルコマンドとフェーズ固有のコマンドを両方取得
-    const globalCompletions = this.commandParser.getCompletions(input);
-    const phaseCompletions = this.currentPhase
-      ? this.currentPhase
-          .getAvailableCommands()
-          .filter(cmd => cmd.toLowerCase().startsWith(input.toLowerCase()))
-      : [];
-
-    // 重複を除去してマージ
-    const allCompletions = [...new Set([...globalCompletions, ...phaseCompletions])].sort();
-
-    // マッチするものがない場合は全コマンドを表示
-    const hits = allCompletions.length > 0 ? allCompletions : this.getAllAvailableCommands();
-
-    return [hits, input];
-  }
-
-  /**
-   * 利用可能な全コマンドを取得する
-   * @returns 全コマンドの配列
-   */
-  private getAllAvailableCommands(): string[] {
-    const globalCommands = this.commandParser.getAvailableCommands();
-    const phaseCommands = this.currentPhase ? this.currentPhase.getAvailableCommands() : [];
-    return [...new Set([...globalCommands, ...phaseCommands])].sort();
-  }
-
-  /**
-   * ディレクトリ引数の補完処理
-   * @param currentArg 現在の引数
-   * @returns 補完候補の配列
-   */
-  private completeDirectoryArgument(currentArg: string): [string[], string] {
-    const directories = this.getDirectoryCompletions(currentArg);
-
-    // マッチするディレクトリがない場合は全ディレクトリを表示
-    const hits = directories.length > 0 ? directories : this.getAllDirectories();
-
-    return [hits, currentArg];
-  }
-
-  /**
-   * 現在ディレクトリの全ディレクトリを取得する
-   * @returns 全ディレクトリの配列
-   */
-  private getAllDirectories(): string[] {
-    if (!this.currentWorld) return [];
-
-    try {
-      const fileSystem = this.currentWorld.getFileSystem();
-      return fileSystem.getDirectoryCompletions('');
-    } catch (_error) {
-      return [];
-    }
-  }
-
-  /**
-   * 文字列配列の共通プレフィックスを見つける
-   * @param strings 文字列配列
-   * @returns 共通プレフィックス
-   */
-  private findCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    if (strings.length === 1) return strings[0];
-
-    let prefix = strings[0];
-    for (let i = 1; i < strings.length; i++) {
-      while (prefix.length > 0 && !strings[i].startsWith(prefix)) {
-        prefix = prefix.slice(0, -1);
-      }
-    }
-    return prefix;
-  }
-
-  /**
-   * ディレクトリの補完候補を取得する
-   * @param partialPath 部分的なパス
-   * @returns ディレクトリ名の配列
-   */
-  private getDirectoryCompletions(partialPath: string): string[] {
-    if (!this.currentWorld) return [];
-
-    try {
-      const fileSystem = this.currentWorld.getFileSystem();
-      return fileSystem.getDirectoryCompletions(partialPath);
-    } catch (_error) {
-      return [];
-    }
+    return this.tabCompleter.complete(line, this.currentPhase, this.currentWorld);
   }
 
   private async cleanup(): Promise<void> {
