@@ -328,6 +328,14 @@ export class ExplorationPhase extends Phase {
 
     Display.newLine();
 
+    // ゲームコマンド
+    Display.printInfo('game:');
+    this.gameCommands.forEach(command => {
+      Display.printCommand(command.name, command.description);
+    });
+
+    Display.newLine();
+
     // システムコマンド
     Display.printInfo('system:');
     Display.printCommand('help', 'show this help');
@@ -380,7 +388,8 @@ export class ExplorationPhase extends Phase {
   public getAvailableCommands(): string[] {
     const navigationCommands = Array.from(this.navigationCommands.keys());
     const interactionCommands = Array.from(this.interactionCommands.keys());
+    const gameCommands = Array.from(this.gameCommands.keys());
     const systemCommands = ['help', 'clear', 'exit'];
-    return [...navigationCommands, ...interactionCommands, ...systemCommands];
+    return [...navigationCommands, ...interactionCommands, ...gameCommands, ...systemCommands];
   }
 }

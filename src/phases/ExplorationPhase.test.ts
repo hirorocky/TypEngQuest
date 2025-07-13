@@ -349,6 +349,7 @@ describe('ExplorationPhase', () => {
       expect(commands).toContain('ls');
       expect(commands).toContain('pwd');
       expect(commands).toContain('tree');
+      expect(commands).toContain('status'); // gameCommand
       expect(commands).toContain('help');
       expect(commands).toContain('clear');
       expect(commands).toContain('exit');
