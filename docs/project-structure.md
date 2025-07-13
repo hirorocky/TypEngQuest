@@ -40,18 +40,18 @@ TypEngQuest/
 │   │   ├── domains.ts              # ドメイン定義
 │   │   └── domains.test.ts         # domainsのテスト
 │   │
-│   ├── player/                     # プレイヤーシステム [部分実装 1/4]
+│   ├── player/                     # プレイヤーシステム [部分実装 2/4]
 │   │   ├── Player.ts               # プレイヤークラス
-│   │   └── Player.test.ts          # Playerのテスト
+│   │   ├── Player.test.ts          # Playerのテスト
+│   │   ├── Stats.ts                # ステータス管理
+│   │   └── Stats.test.ts           # Statsのテスト
 │   │   # 以下未実装:
-│   │   # ├── Stats.ts               # ステータス管理
-│   │   # ├── Stats.test.ts          # Statsのテスト
 │   │   # ├── Equipment.ts           # 装備管理
 │   │   # ├── Equipment.test.ts      # Equipmentのテスト
 │   │   # ├── Inventory.ts           # インベントリ管理
 │   │   # └── Inventory.test.ts      # Inventoryのテスト
 │   │
-│   ├── commands/                   # コマンド実装 [部分実装 16/21]
+│   ├── commands/                   # コマンド実装 [部分実装 18/21]
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
 │   │   ├── title/                  # タイトルフェーズ用コマンド [完全実装]
@@ -72,21 +72,21 @@ TypEngQuest/
 │   │   │   ├── TreeCommand.test.ts # TreeCommandのテスト
 │   │   │   ├── FileCommand.ts      # fileコマンド（ファイルタイプ検出）
 │   │   │   └── FileCommand.test.ts # FileCommandのテスト
-│   │   └── interaction/            # ファイル相互作用コマンド [完全実装]
-│   │       ├── BattleCommand.ts    # battleコマンド（モンスターとの戦闘）
-│   │       ├── BattleCommand.test.ts # BattleCommandのテスト
-│   │       ├── OpenCommand.ts      # openコマンド（宝箱開封）
-│   │       ├── OpenCommand.test.ts # OpenCommandのテスト
-│   │       ├── SaveCommand.ts      # saveコマンド（ゲーム保存）
-│   │       ├── SaveCommand.test.ts # SaveCommandのテスト
-│   │       ├── RestCommand.ts      # restコマンド（HP/MP回復）
-│   │       ├── RestCommand.test.ts # RestCommandのテスト
-│   │       ├── ExecuteCommand.ts   # executeコマンド（イベント実行）
-│   │       └── ExecuteCommand.test.ts # ExecuteCommandのテスト
+│   │   ├── interaction/            # ファイル相互作用コマンド [完全実装]
+│   │   │   ├── BattleCommand.ts    # battleコマンド（モンスターとの戦闘）
+│   │   │   ├── BattleCommand.test.ts # BattleCommandのテスト
+│   │   │   ├── OpenCommand.ts      # openコマンド（宝箱開封）
+│   │   │   ├── OpenCommand.test.ts # OpenCommandのテスト
+│   │   │   ├── SaveCommand.ts      # saveコマンド（ゲーム保存）
+│   │   │   ├── SaveCommand.test.ts # SaveCommandのテスト
+│   │   │   ├── RestCommand.ts      # restコマンド（HP/MP回復）
+│   │   │   ├── RestCommand.test.ts # RestCommandのテスト
+│   │   │   ├── ExecuteCommand.ts   # executeコマンド（イベント実行）
+│   │   │   └── ExecuteCommand.test.ts # ExecuteCommandのテスト
+│   │   └── game/                   # ゲーム固有コマンド [部分実装 1/3]
+│   │       ├── StatusCommand.ts    # statusコマンド
+│   │       └── StatusCommand.test.ts # StatusCommandのテスト
 │   │   # 以下未実装:
-│   │   # └── game/                   # ゲーム固有コマンド
-│   │   #     ├── StatusCommand.ts    # statusコマンド
-│   │   #     ├── StatusCommand.test.ts # StatusCommandのテスト
 │   │   #     ├── InventoryCommand.ts # inventoryコマンド
 │   │   #     ├── InventoryCommand.test.ts # InventoryCommandのテスト
 │   │   #     ├── RetireCommand.ts    # retireコマンド
@@ -163,23 +163,23 @@ TypEngQuest/
 
 ## 実装状況サマリー
 
-### ✅ 実装済み (32%)
+### ✅ 実装済み (35%)
 - **Core**: Game、Phase、CommandParser、types（完全実装）
 - **UI**: Display、colors（部分実装）
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase（完全実装）
-- **Player**: Player（部分実装）
-- **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）（部分実装）
+- **Player**: Player、Stats（部分実装）
+- **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（1つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
 
-### ❌ 未実装 (68%)
-- **Player系**: Stats、Equipment、Inventory（0%）
+### ❌ 未実装 (65%)
+- **Player系**: Equipment、Inventory（0%）
 - **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
 - **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
 - **Items系**: Item、ConsumableItem、EquipmentItem、KeyItem（0%）
 - **Events系**: RandomEvent、GoodEvents、BadEvents（0%）
 - **Save系**: SaveManager、SaveData、SaveValidator（0%）
-- **Commands**: file/（4つ）、game/（3つ）（0%）
+- **Commands**: file/（4つ）、game/（2つ）（0%）
 - **Utils**: Random、FileUtils、StringUtils、Logger（0%）
 - **Phases**: DialogPhase、InventoryPhase、BattlePhase、TypingPhase（0%）
 - **Data**: すべてのJSONファイル（0%）
@@ -197,8 +197,8 @@ TypEngQuest/
 - **FileSystem.ts**: ゲーム内ファイルシステムのツリー構造管理
 
 ### Player（プレイヤーシステム）
-- **Player.ts**: プレイヤーの状態管理
-- **Stats.ts**: ステータス計算と管理
+- **Player.ts**: プレイヤーの基本情報管理（名前、レベル、JSON対応）
+- **Stats.ts**: HP/MP管理、ステータス計算、一時的能力値変化、レベルベース自動計算
 - **Equipment.ts**: 装備の文法チェックと効果計算
 
 ### Battle（戦闘システム）
@@ -465,16 +465,17 @@ TypingPhase
 ### プレイヤーシステム (src/player/)
 
 #### Player.ts
-- プレイヤー状態の統合管理
-- HP/MPの管理
-- レベル計算
-- 状態異常の管理
+- プレイヤー基本情報の統合管理（名前、レベル）
+- Statsインスタンスの管理
+- JSON シリアライゼーション対応
+- 拡張性を考慮した設計基盤
 
 #### Stats.ts
-- 基本ステータスの管理
-- ステータス計算式の実装
-- バフ/デバフの適用
-- 一時的効果の管理
+- HP/MP自動計算（HP=100+レベル×20、MP=50+レベル×10）
+- 現在HP/MP管理（ダメージ・回復処理）
+- 基本ステータスの管理（攻撃力・防御力・速度・命中率・運）
+- 一時的能力値変化システム（バフ/デバフ）
+- JSON シリアライゼーション対応
 
 #### Equipment.ts
 - 装備スロット管理（最大5個）
@@ -636,7 +637,7 @@ TypingPhase
 - **ChmodCommand.ts**: 実行権限付与、イベント準備処理
 
 #### game/ (ゲーム固有コマンド)
-- **StatusCommand.ts**: プレイヤーステータス表示、装備効果表示
+- **StatusCommand.ts**: プレイヤーステータス表示、HP/MPバー表示、全ステータス値表示
 - **InventoryCommand.ts**: インベントリフェーズへの遷移
 - **RetireCommand.ts**: ワールドリタイア確認、新ワールド生成
 
