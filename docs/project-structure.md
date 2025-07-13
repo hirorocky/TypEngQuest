@@ -28,19 +28,19 @@ TypEngQuest/
 │   │   # ├── TypingPhase.ts          # タイピングチャレンジフェーズ
 │   │   # └── TypingPhase.test.ts     # TypingPhaseのテスト
 │   │
-│   ├── world/                      # ワールド関連 [部分実装 2/5]
+│   ├── world/                      # ワールド関連 [完全実装]
 │   │   ├── FileSystem.ts           # ファイルシステム実装
 │   │   ├── FileSystem.test.ts      # FileSystemのテスト
 │   │   ├── FileNode.ts             # ファイル・ディレクトリノード
-│   │   └── FileNode.test.ts        # FileNodeのテスト
-│   │   # 以下未実装:
-│   │   # ├── World.ts                # ワールドクラス
-│   │   # ├── World.test.ts           # Worldのテスト
-│   │   # ├── WorldGenerator.ts       # ワールド生成器
-│   │   # ├── WorldGenerator.test.ts  # WorldGeneratorのテスト
-│   │   # └── domains.ts              # ドメイン定義
+│   │   ├── FileNode.test.ts        # FileNodeのテスト
+│   │   ├── World.ts                # ワールドクラス
+│   │   ├── World.test.ts           # Worldのテスト
+│   │   ├── WorldGenerator.ts       # ワールド生成器
+│   │   ├── WorldGenerator.test.ts  # WorldGeneratorのテスト
+│   │   ├── domains.ts              # ドメイン定義
+│   │   └── domains.test.ts         # domainsのテスト
 │   │
-│   ├── commands/                   # コマンド実装 [部分実装 9/18]
+│   ├── commands/                   # コマンド実装 [部分実装 16/21]
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
 │   │   ├── title/                  # タイトルフェーズ用コマンド [完全実装]
@@ -50,27 +50,29 @@ TypEngQuest/
 │   │   │   ├── LoadCommand.test.ts # LoadCommandのテスト
 │   │   │   ├── ExitCommand.ts      # exitコマンド
 │   │   │   └── ExitCommand.test.ts # ExitCommandのテスト
-│   │   └── exploration/            # 探索フェーズ用コマンド [完全実装]
-│   │       ├── CdCommand.ts        # cdコマンド（ナビゲーション）
-│   │       ├── CdCommand.test.ts   # CdCommandのテスト
-│   │       ├── LsCommand.ts        # lsコマンド（ナビゲーション）
-│   │       ├── LsCommand.test.ts   # LsCommandのテスト
-│   │       ├── PwdCommand.ts       # pwdコマンド（ナビゲーション）
-│   │       ├── PwdCommand.test.ts  # PwdCommandのテスト
-│   │       ├── TreeCommand.ts      # treeコマンド（ナビゲーション）
-│   │       └── TreeCommand.test.ts # TreeCommandのテスト
+│   │   ├── exploration/            # 探索フェーズ用コマンド [完全実装]
+│   │   │   ├── CdCommand.ts        # cdコマンド（ナビゲーション）
+│   │   │   ├── CdCommand.test.ts   # CdCommandのテスト
+│   │   │   ├── LsCommand.ts        # lsコマンド（ナビゲーション）
+│   │   │   ├── LsCommand.test.ts   # LsCommandのテスト
+│   │   │   ├── PwdCommand.ts       # pwdコマンド（ナビゲーション）
+│   │   │   ├── PwdCommand.test.ts  # PwdCommandのテスト
+│   │   │   ├── TreeCommand.ts      # treeコマンド（ナビゲーション）
+│   │   │   ├── TreeCommand.test.ts # TreeCommandのテスト
+│   │   │   ├── FileCommand.ts      # fileコマンド（ファイルタイプ検出）
+│   │   │   └── FileCommand.test.ts # FileCommandのテスト
+│   │   └── interaction/            # ファイル相互作用コマンド [完全実装]
+│   │       ├── BattleCommand.ts    # battleコマンド（モンスターとの戦闘）
+│   │       ├── BattleCommand.test.ts # BattleCommandのテスト
+│   │       ├── OpenCommand.ts      # openコマンド（宝箱開封）
+│   │       ├── OpenCommand.test.ts # OpenCommandのテスト
+│   │       ├── SaveCommand.ts      # saveコマンド（ゲーム保存）
+│   │       ├── SaveCommand.test.ts # SaveCommandのテスト
+│   │       ├── RestCommand.ts      # restコマンド（HP/MP回復）
+│   │       ├── RestCommand.test.ts # RestCommandのテスト
+│   │       ├── ExecuteCommand.ts   # executeコマンド（イベント実行）
+│   │       └── ExecuteCommand.test.ts # ExecuteCommandのテスト
 │   │   # 以下未実装:
-│   │   # ├── file/                   # ファイル操作コマンド
-│   │   # │   ├── CatCommand.ts       # catコマンド
-│   │   # │   ├── CatCommand.test.ts  # CatCommandのテスト
-│   │   # │   ├── HeadCommand.ts      # headコマンド
-│   │   # │   ├── HeadCommand.test.ts # HeadCommandのテスト
-│   │   # │   ├── FileCommand.ts      # fileコマンド
-│   │   # │   ├── FileCommand.test.ts # FileCommandのテスト
-│   │   # │   ├── VimCommand.ts       # vimコマンド
-│   │   # │   ├── VimCommand.test.ts  # VimCommandのテスト
-│   │   # │   ├── ChmodCommand.ts     # chmodコマンド
-│   │   # │   └── ChmodCommand.test.ts # ChmodCommandのテスト
 │   │   # └── game/                   # ゲーム固有コマンド
 │   │   #     ├── StatusCommand.ts    # statusコマンド
 │   │   #     ├── StatusCommand.test.ts # StatusCommandのテスト
@@ -150,22 +152,22 @@ TypEngQuest/
 
 ## 実装状況サマリー
 
-### ✅ 実装済み (19%)
+### ✅ 実装済み (30%)
 - **Core**: Game、Phase、CommandParser、types（完全実装）
 - **UI**: Display、colors（部分実装）
-- **World**: FileNode、FileSystem（部分実装）
+- **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase（完全実装）
-- **Commands**: BaseCommand、title/（3つ）、exploration/（4つ）（部分実装）
+- **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
 
-### ❌ 未実装 (81%)
+### ❌ 未実装 (70%)
 - **Player系**: Player、Stats、Equipment、Inventory（0%）
 - **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
 - **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
 - **Items系**: Item、ConsumableItem、EquipmentItem、KeyItem（0%）
 - **Events系**: RandomEvent、GoodEvents、BadEvents（0%）
 - **Save系**: SaveManager、SaveData、SaveValidator（0%）
-- **Commands**: file/（5つ）、game/（3つ）（0%）
+- **Commands**: file/（4つ）、game/（3つ）（0%）
 - **Utils**: Random、FileUtils、StringUtils、Logger（0%）
 - **Phases**: DialogPhase、InventoryPhase、BattlePhase、TypingPhase（0%）
 - **Data**: すべてのJSONファイル（0%）
@@ -605,6 +607,14 @@ TypingPhase
 - **LsCommand.ts**: ファイル一覧表示、オプション処理（-a, -l）
 - **PwdCommand.ts**: 現在位置表示、パスフォーマット
 - **TreeCommand.ts**: ツリー表示、深さ制限、ASCII art生成
+- **FileCommand.ts**: ファイルタイプ判定、利用可能なアクション表示
+
+#### interaction/ (ファイル相互作用コマンド)
+- **BattleCommand.ts**: モンスターファイルとの戦闘開始（プログラミング言語ファイル）
+- **OpenCommand.ts**: 宝箱ファイルの開封処理（設定ファイル）
+- **SaveCommand.ts**: セーブポイントでのゲーム保存（ドキュメントファイル）
+- **RestCommand.ts**: セーブポイントでのHP/MP回復（ドキュメントファイル）
+- **ExecuteCommand.ts**: イベントファイルの実行（実行可能ファイル）
 
 #### file/ (ファイル操作コマンド)
 - **CatCommand.ts**: ファイル内容表示、ファイル作用の実行
