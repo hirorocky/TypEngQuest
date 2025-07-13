@@ -40,6 +40,17 @@ TypEngQuest/
 │   │   ├── domains.ts              # ドメイン定義
 │   │   └── domains.test.ts         # domainsのテスト
 │   │
+│   ├── player/                     # プレイヤーシステム [部分実装 1/4]
+│   │   ├── Player.ts               # プレイヤークラス
+│   │   └── Player.test.ts          # Playerのテスト
+│   │   # 以下未実装:
+│   │   # ├── Stats.ts               # ステータス管理
+│   │   # ├── Stats.test.ts          # Statsのテスト
+│   │   # ├── Equipment.ts           # 装備管理
+│   │   # ├── Equipment.test.ts      # Equipmentのテスト
+│   │   # ├── Inventory.ts           # インベントリ管理
+│   │   # └── Inventory.test.ts      # Inventoryのテスト
+│   │
 │   ├── commands/                   # コマンド実装 [部分実装 16/21]
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
@@ -152,16 +163,17 @@ TypEngQuest/
 
 ## 実装状況サマリー
 
-### ✅ 実装済み (30%)
+### ✅ 実装済み (32%)
 - **Core**: Game、Phase、CommandParser、types（完全実装）
 - **UI**: Display、colors（部分実装）
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase（完全実装）
+- **Player**: Player（部分実装）
 - **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
 
-### ❌ 未実装 (70%)
-- **Player系**: Player、Stats、Equipment、Inventory（0%）
+### ❌ 未実装 (68%)
+- **Player系**: Stats、Equipment、Inventory（0%）
 - **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
 - **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
 - **Items系**: Item、ConsumableItem、EquipmentItem、KeyItem（0%）
