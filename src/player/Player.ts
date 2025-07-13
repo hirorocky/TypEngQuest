@@ -1,9 +1,12 @@
+import { Stats, StatsData } from './Stats';
+
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
  */
 export interface PlayerData {
   name: string;
   level: number;
+  stats: StatsData;
 }
 
 /**
@@ -14,6 +17,7 @@ export class Player {
 
   public readonly name: string;
   private level: number;
+  private stats: Stats;
 
   /**
    * プレイヤーを初期化する
@@ -22,6 +26,15 @@ export class Player {
   constructor(name: string) {
     this.name = name;
     this.level = Player.DEFAULT_LEVEL;
+    this.stats = new Stats(this.level);
+  }
+
+  /**
+   * プレイヤー名を取得する
+   * @returns プレイヤー名
+   */
+  getName(): string {
+    return this.name;
   }
 
   /**
@@ -33,6 +46,14 @@ export class Player {
   }
 
   /**
+   * プレイヤーのステータスを取得する
+   * @returns Statsインスタンス
+   */
+  getStats(): Stats {
+    return this.stats;
+  }
+
+  /**
    * プレイヤーデータをJSON形式で出力する
    * @returns プレイヤーデータのJSONオブジェクト
    */
@@ -40,6 +61,7 @@ export class Player {
     return {
       name: this.name,
       level: this.level,
+      stats: this.stats.toJSON(),
     };
   }
 
@@ -54,6 +76,7 @@ export class Player {
 
     const player = new Player(data.name);
     player.level = data.level;
+    player.stats = Stats.fromJSON(data.stats);
 
     return player;
   }
@@ -73,6 +96,10 @@ export class Player {
     }
 
     if (typeof data.level !== 'number' || !Number.isInteger(data.level)) {
+      throw new Error('Invalid player data');
+    }
+
+    if (typeof data.stats !== 'object' || data.stats === null) {
       throw new Error('Invalid player data');
     }
   }

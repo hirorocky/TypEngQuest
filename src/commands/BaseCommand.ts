@@ -1,10 +1,6 @@
 import { PhaseType, GameState, CommandResult } from '../core/types';
 import { FileSystem } from '../world/FileSystem';
-
-// プレイヤーとバトルの仮インターフェース（後で実装予定）
-export interface Player {
-  // TODO: プレイヤー実装時に詳細を定義
-}
+import { Player } from '../player/Player';
 
 export interface Battle {
   // TODO: バトル実装時に詳細を定義

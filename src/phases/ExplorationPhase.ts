@@ -12,6 +12,7 @@ import { OpenCommand } from '../commands/interaction/OpenCommand';
 import { SaveCommand } from '../commands/interaction/SaveCommand';
 import { RestCommand } from '../commands/interaction/RestCommand';
 import { ExecuteCommand } from '../commands/interaction/ExecuteCommand';
+import { StatusCommand } from '../commands/game/StatusCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
@@ -20,6 +21,7 @@ import { BaseCommand } from '../commands/BaseCommand';
 export class ExplorationPhase extends Phase {
   private navigationCommands: Map<string, BaseCommand>;
   private interactionCommands: Map<string, BaseCommand>;
+  private gameCommands: Map<string, BaseCommand>;
   protected world: World; // worldを必須に
 
   constructor(world: World) {
@@ -33,8 +35,10 @@ export class ExplorationPhase extends Phase {
     // コマンドを初期化
     this.navigationCommands = new Map();
     this.interactionCommands = new Map();
+    this.gameCommands = new Map();
     this.registerNavigationCommands();
     this.registerInteractionCommands();
+    this.registerGameCommands();
   }
 
   /**
@@ -68,6 +72,17 @@ export class ExplorationPhase extends Phase {
 
     commands.forEach(command => {
       this.interactionCommands.set(command.name, command);
+    });
+  }
+
+  /**
+   * ゲームコマンドを登録する
+   */
+  private registerGameCommands(): void {
+    const commands: BaseCommand[] = [new StatusCommand()];
+
+    commands.forEach(command => {
+      this.gameCommands.set(command.name, command);
     });
   }
 
@@ -123,6 +138,20 @@ export class ExplorationPhase extends Phase {
       const result = interactionCommand.execute(args, context);
 
       // インタラクションコマンドの結果をそのまま返す
+      return result;
+    }
+
+    // ゲームコマンドの処理
+    if (this.gameCommands.has(command)) {
+      const gameCommand = this.gameCommands.get(command)!;
+      const context = {
+        currentPhase: 'exploration' as const,
+        fileSystem: this.world.fileSystem,
+        // TODO: Playerインスタンスを適切に渡す必要がある（現在は仮実装）
+      };
+      const result = gameCommand.execute(args, context);
+
+      // ゲームコマンドの結果をそのまま返す
       return result;
     }
 
