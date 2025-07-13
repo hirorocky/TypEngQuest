@@ -6,6 +6,7 @@ import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
 import { TreeCommand } from '../commands/exploration/TreeCommand';
+import { FileCommand } from '../commands/exploration/FileCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
@@ -37,6 +38,7 @@ export class ExplorationPhase extends Phase {
       new LsCommand(),
       new PwdCommand(),
       new TreeCommand(),
+      new FileCommand(),
     ];
 
     commands.forEach(command => {
