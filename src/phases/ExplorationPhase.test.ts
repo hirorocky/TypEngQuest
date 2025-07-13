@@ -6,6 +6,7 @@ import { ExplorationPhase } from './ExplorationPhase';
 import { Display } from '../ui/Display';
 import { PhaseTypes } from '../core/types';
 import { World } from '../world/World';
+import { Player } from '../player/Player';
 import { getDomainData } from '../world/domains';
 import { FileSystem } from '../world/FileSystem';
 import { FileNode } from '../world/FileNode';
@@ -15,6 +16,7 @@ jest.mock('../ui/Display');
 
 describe('ExplorationPhase', () => {
   let phase: ExplorationPhase;
+  let player: Player;
   let mockPrint: jest.Mock;
   let mockPrintLine: jest.Mock;
   let mockClear: jest.Mock;
@@ -70,7 +72,8 @@ describe('ExplorationPhase', () => {
       } as any;
     }
 
-    phase = new ExplorationPhase(world!);
+    player = new Player('TestPlayer');
+    phase = new ExplorationPhase(world!, player);
 
     // Displayメソッドのモック設定
     mockPrint = Display.print as jest.Mock;

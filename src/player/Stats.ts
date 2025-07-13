@@ -4,6 +4,13 @@
  * ダメージ・回復処理、バフ・デバフ処理、JSONシリアライゼーションを提供する
  */
 export class Stats {
+  // ゲームバランスパラメータ定数
+  private static readonly BASE_HP = 100;
+  private static readonly HP_PER_LEVEL = 20;
+  private static readonly BASE_MP = 50;
+  private static readonly MP_PER_LEVEL = 10;
+  private static readonly BASE_STAT = 10;
+
   private level: number;
   private currentHP: number;
   private currentMP: number;
@@ -26,11 +33,11 @@ export class Stats {
    */
   constructor(level: number = 0) {
     this.level = Math.max(0, level); // 負の値は0にクランプ
-    this.baseAttack = 10;
-    this.baseDefense = 10;
-    this.baseSpeed = 10;
-    this.baseAccuracy = 10;
-    this.baseFortune = 10;
+    this.baseAttack = Stats.BASE_STAT;
+    this.baseDefense = Stats.BASE_STAT;
+    this.baseSpeed = Stats.BASE_STAT;
+    this.baseAccuracy = Stats.BASE_STAT;
+    this.baseFortune = Stats.BASE_STAT;
     this.temporaryBoosts = {
       attack: 0,
       defense: 0,
@@ -46,20 +53,20 @@ export class Stats {
 
   /**
    * 最大HPを計算する
-   * 計算式: 100 + (レベル × 20)
+   * 計算式: BASE_HP + (レベル × HP_PER_LEVEL)
    * @returns 最大HP
    */
   private calculateMaxHP(): number {
-    return 100 + this.level * 20;
+    return Stats.BASE_HP + this.level * Stats.HP_PER_LEVEL;
   }
 
   /**
    * 最大MPを計算する
-   * 計算式: 50 + (レベル × 10)
+   * 計算式: BASE_MP + (レベル × MP_PER_LEVEL)
    * @returns 最大MP
    */
   private calculateMaxMP(): number {
-    return 50 + this.level * 10;
+    return Stats.BASE_MP + this.level * Stats.MP_PER_LEVEL;
   }
 
   /**

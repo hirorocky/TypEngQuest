@@ -2,6 +2,7 @@ import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
+import { Player } from '../player/Player';
 import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
@@ -23,14 +24,19 @@ export class ExplorationPhase extends Phase {
   private interactionCommands: Map<string, BaseCommand>;
   private gameCommands: Map<string, BaseCommand>;
   protected world: World; // worldを必須に
+  private player: Player; // playerを必須に
 
-  constructor(world: World) {
+  constructor(world: World, player: Player) {
     super(world);
 
     if (!world) {
       throw new Error('World is required for ExplorationPhase');
     }
+    if (!player) {
+      throw new Error('Player is required for ExplorationPhase');
+    }
     this.world = world;
+    this.player = player;
 
     // コマンドを初期化
     this.navigationCommands = new Map();
@@ -147,7 +153,7 @@ export class ExplorationPhase extends Phase {
       const context = {
         currentPhase: 'exploration' as const,
         fileSystem: this.world.fileSystem,
-        // TODO: Playerインスタンスを適切に渡す必要がある（現在は仮実装）
+        player: this.player,
       };
       const result = gameCommand.execute(args, context);
 
