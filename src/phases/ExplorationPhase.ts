@@ -310,7 +310,6 @@ export class ExplorationPhase extends Phase {
   private showHelp(): void {
     Display.newLine();
     Display.printHeader('available commands');
-    Display.printLine('------------------');
 
     // ナビゲーションコマンド
     Display.printInfo('navigation:');
