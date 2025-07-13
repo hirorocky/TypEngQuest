@@ -1,7 +1,9 @@
+import { TemporaryStatus } from './TemporaryStatus';
+
 /**
  * プレイヤーのステータス管理クラス
  * HP、MP、攻撃力、防御力、速度、精度、幸運を管理し、
- * ダメージ・回復処理、バフ・デバフ処理、JSONシリアライゼーションを提供する
+ * ダメージ・回復処理、一時ステータス処理、JSONシリアライゼーションを提供する
  */
 export class Stats {
   // ゲームバランスパラメータ定数
@@ -26,6 +28,7 @@ export class Stats {
     accuracy: number;
     fortune: number;
   };
+  private temporaryStatuses: TemporaryStatus[];
 
   /**
    * Statsクラスのコンストラクタ
@@ -45,6 +48,7 @@ export class Stats {
       accuracy: 0,
       fortune: 0,
     };
+    this.temporaryStatuses = [];
 
     // HP/MPを最大値で初期化
     this.currentHP = this.calculateMaxHP();
@@ -232,6 +236,56 @@ export class Stats {
   }
 
   /**
+   * 一時ステータスを追加する
+   * 同じIDまたは非スタック可能な同名ステータスは上書きされる
+   * @param status - 追加する一時ステータス
+   */
+  addTemporaryStatus(status: TemporaryStatus): void {
+    // 同じIDが存在する場合は上書き
+    const existingIndex = this.temporaryStatuses.findIndex(s => s.id === status.id);
+    if (existingIndex !== -1) {
+      this.temporaryStatuses[existingIndex] = { ...status };
+      return;
+    }
+
+    // stackable=falseの場合、同じ名前の効果は上書き
+    if (!status.stackable) {
+      const sameNameIndex = this.temporaryStatuses.findIndex(s => s.name === status.name);
+      if (sameNameIndex !== -1) {
+        this.temporaryStatuses[sameNameIndex] = { ...status };
+        return;
+      }
+    }
+
+    // 新しいステータスを追加
+    this.temporaryStatuses.push({ ...status });
+  }
+
+  /**
+   * 指定されたIDの一時ステータスを削除する
+   * @param id - 削除する一時ステータスのID
+   */
+  removeTemporaryStatus(id: string): void {
+    this.temporaryStatuses = this.temporaryStatuses.filter(status => status.id !== id);
+  }
+
+  /**
+   * 全ての一時ステータスを取得する
+   * @returns 一時ステータスの配列
+   */
+  getTemporaryStatuses(): TemporaryStatus[] {
+    return [...this.temporaryStatuses];
+  }
+
+  /**
+   * 状態異常のみを取得する
+   * @returns 状態異常の配列
+   */
+  getActiveStatusAilments(): TemporaryStatus[] {
+    return this.temporaryStatuses.filter(status => status.type === 'status_ailment');
+  }
+
+  /**
    * StatsオブジェクトをJSONに変換する
    * @returns JSON形式のデータ
    */
@@ -246,6 +300,7 @@ export class Stats {
       baseAccuracy: this.baseAccuracy,
       baseFortune: this.baseFortune,
       temporaryBoosts: { ...this.temporaryBoosts },
+      temporaryStatuses: this.temporaryStatuses.map(status => ({ ...status })),
     };
   }
 
@@ -269,6 +324,9 @@ export class Stats {
     stats.baseAccuracy = data.baseAccuracy;
     stats.baseFortune = data.baseFortune;
     stats.temporaryBoosts = { ...data.temporaryBoosts };
+    stats.temporaryStatuses = data.temporaryStatuses
+      ? data.temporaryStatuses.map((status: any) => ({ ...status }))
+      : [];
 
     return stats;
   }
@@ -356,4 +414,5 @@ export interface StatsData {
     accuracy: number;
     fortune: number;
   };
+  temporaryStatuses?: TemporaryStatus[];
 }

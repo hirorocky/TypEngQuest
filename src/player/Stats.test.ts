@@ -1,4 +1,5 @@
 import { Stats } from './Stats';
+import { TemporaryStatus } from './TemporaryStatus';
 
 describe('Stats', () => {
   describe('初期化', () => {
@@ -227,6 +228,7 @@ describe('Stats', () => {
           accuracy: 0,
           fortune: 0,
         },
+        temporaryStatuses: [],
       });
     });
 
@@ -282,6 +284,215 @@ describe('Stats', () => {
       stats.applyTemporaryBoost('attack', -999);
 
       expect(stats.getAttack()).toBe(0); // 負の値にはならない
+    });
+  });
+
+  describe('一時ステータス管理システム', () => {
+    describe('addTemporaryStatus', () => {
+      test('一時ステータスを追加する', () => {
+        const stats = new Stats(1);
+        const status: TemporaryStatus = {
+          id: 'buff-attack-001',
+          name: '攻撃力アップ',
+          type: 'buff',
+          effects: { attack: 10 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status);
+        const statuses = stats.getTemporaryStatuses();
+
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0]).toEqual(status);
+      });
+
+      test('同じIDの一時ステータスは上書きされる', () => {
+        const stats = new Stats(1);
+        const status1: TemporaryStatus = {
+          id: 'same-id',
+          name: '最初の効果',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 2,
+          stackable: false,
+        };
+        const status2: TemporaryStatus = {
+          id: 'same-id',
+          name: '上書きする効果',
+          type: 'buff',
+          effects: { attack: 10 },
+          duration: 4,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status1);
+        stats.addTemporaryStatus(status2);
+        const statuses = stats.getTemporaryStatuses();
+
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0].name).toBe('上書きする効果');
+        expect(statuses[0].effects.attack).toBe(10);
+      });
+
+      test('stackable=falseの同じ名前の効果は上書きされる', () => {
+        const stats = new Stats(1);
+        const status1: TemporaryStatus = {
+          id: 'attack-buff-1',
+          name: '攻撃力アップ',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 2,
+          stackable: false,
+        };
+        const status2: TemporaryStatus = {
+          id: 'attack-buff-2',
+          name: '攻撃力アップ',
+          type: 'buff',
+          effects: { attack: 8 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status1);
+        stats.addTemporaryStatus(status2);
+        const statuses = stats.getTemporaryStatuses();
+
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0].id).toBe('attack-buff-2');
+        expect(statuses[0].effects.attack).toBe(8);
+      });
+
+      test('stackable=trueの同じ名前の効果は両方保持される', () => {
+        const stats = new Stats(1);
+        const status1: TemporaryStatus = {
+          id: 'stack-1',
+          name: 'スタック可能効果',
+          type: 'buff',
+          effects: { attack: 3 },
+          duration: 2,
+          stackable: true,
+        };
+        const status2: TemporaryStatus = {
+          id: 'stack-2',
+          name: 'スタック可能効果',
+          type: 'buff',
+          effects: { attack: 4 },
+          duration: 3,
+          stackable: true,
+        };
+
+        stats.addTemporaryStatus(status1);
+        stats.addTemporaryStatus(status2);
+        const statuses = stats.getTemporaryStatuses();
+
+        expect(statuses).toHaveLength(2);
+        expect(statuses.find(s => s.id === 'stack-1')).toBeDefined();
+        expect(statuses.find(s => s.id === 'stack-2')).toBeDefined();
+      });
+    });
+
+    describe('removeTemporaryStatus', () => {
+      test('指定されたIDの一時ステータスを削除する', () => {
+        const stats = new Stats(1);
+        const status1: TemporaryStatus = {
+          id: 'remove-test-1',
+          name: '削除テスト1',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 3,
+          stackable: false,
+        };
+        const status2: TemporaryStatus = {
+          id: 'remove-test-2',
+          name: '削除テスト2',
+          type: 'buff',
+          effects: { defense: 3 },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status1);
+        stats.addTemporaryStatus(status2);
+        expect(stats.getTemporaryStatuses()).toHaveLength(2);
+
+        stats.removeTemporaryStatus('remove-test-1');
+        const statuses = stats.getTemporaryStatuses();
+
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0].id).toBe('remove-test-2');
+      });
+
+      test('存在しないIDを指定しても例外が発生しない', () => {
+        const stats = new Stats(1);
+
+        expect(() => {
+          stats.removeTemporaryStatus('non-existent-id');
+        }).not.toThrow();
+      });
+    });
+
+    describe('getTemporaryStatuses', () => {
+      test('一時ステータスの配列を取得する', () => {
+        const stats = new Stats(1);
+        const status: TemporaryStatus = {
+          id: 'get-test',
+          name: '取得テスト',
+          type: 'debuff',
+          effects: { speed: -2 },
+          duration: 1,
+          stackable: false,
+        };
+
+        expect(stats.getTemporaryStatuses()).toEqual([]);
+
+        stats.addTemporaryStatus(status);
+        expect(stats.getTemporaryStatuses()).toEqual([status]);
+      });
+    });
+
+    describe('getActiveStatusAilments', () => {
+      test('状態異常のみを取得する', () => {
+        const stats = new Stats(1);
+        const buff: TemporaryStatus = {
+          id: 'buff-test',
+          name: 'バフテスト',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 3,
+          stackable: false,
+        };
+        const ailment: TemporaryStatus = {
+          id: 'poison-test',
+          name: '毒',
+          type: 'status_ailment',
+          effects: { hpPerTurn: -2 },
+          duration: 4,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(buff);
+        stats.addTemporaryStatus(ailment);
+
+        const ailments = stats.getActiveStatusAilments();
+        expect(ailments).toHaveLength(1);
+        expect(ailments[0].id).toBe('poison-test');
+      });
+
+      test('状態異常がない場合は空の配列を返す', () => {
+        const stats = new Stats(1);
+        const buff: TemporaryStatus = {
+          id: 'buff-only',
+          name: 'バフのみ',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(buff);
+        expect(stats.getActiveStatusAilments()).toEqual([]);
+      });
     });
   });
 });
