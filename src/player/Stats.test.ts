@@ -1,4 +1,4 @@
-import { Stats } from './Stats';
+import { Stats, TotalStats } from './Stats';
 import { TemporaryStatus } from './TemporaryStatus';
 
 describe('Stats', () => {
@@ -492,6 +492,221 @@ describe('Stats', () => {
 
         stats.addTemporaryStatus(buff);
         expect(stats.getActiveStatusAilments()).toEqual([]);
+      });
+    });
+  });
+
+  describe('効果計算システム（一時ステータス統合）', () => {
+    describe('getTotalStats', () => {
+      test('基本ステータス + 一時ステータス効果の総和計算', () => {
+        const stats = new Stats(1);
+        const baseAttack = stats.getAttack();
+        const baseDefense = stats.getDefense();
+
+        const buff: TemporaryStatus = {
+          id: 'total-test-1',
+          name: '総合バフ',
+          type: 'buff',
+          effects: {
+            attack: 15,
+            defense: 10,
+          },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(buff);
+        const totalStats: TotalStats = stats.getTotalStats();
+
+        expect(totalStats.attack).toBe(baseAttack + 15);
+        expect(totalStats.defense).toBe(baseDefense + 10);
+        expect(totalStats.speed).toBe(stats.getSpeed()); // 変更なし
+      });
+
+      test('複数バフ/デバフの重ね合わせ', () => {
+        const stats = new Stats(1);
+        const baseAttack = stats.getAttack();
+
+        const buff1: TemporaryStatus = {
+          id: 'stack-buff-1',
+          name: 'スタック攻撃バフ1',
+          type: 'buff',
+          effects: { attack: 8 },
+          duration: 3,
+          stackable: true,
+        };
+
+        const buff2: TemporaryStatus = {
+          id: 'stack-buff-2',
+          name: 'スタック攻撃バフ2',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 2,
+          stackable: true,
+        };
+
+        const debuff: TemporaryStatus = {
+          id: 'attack-debuff',
+          name: '攻撃デバフ',
+          type: 'debuff',
+          effects: { attack: -3 },
+          duration: 4,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(buff1);
+        stats.addTemporaryStatus(buff2);
+        stats.addTemporaryStatus(debuff);
+
+        const totalStats = stats.getTotalStats();
+        expect(totalStats.attack).toBe(baseAttack + 8 + 5 - 3); // 10 + 8 + 5 - 3 = 20
+      });
+
+      test('状態異常による特殊効果', () => {
+        const stats = new Stats(1);
+        const baseSpeed = stats.getSpeed(); // 一時ステータス追加前の速度を記録
+
+        const poison: TemporaryStatus = {
+          id: 'poison-effect',
+          name: '毒',
+          type: 'status_ailment',
+          effects: {
+            hpPerTurn: -2,
+            cannotRun: true,
+          },
+          duration: 3,
+          stackable: false,
+        };
+
+        const paralysis: TemporaryStatus = {
+          id: 'paralysis-effect',
+          name: '麻痺',
+          type: 'status_ailment',
+          effects: {
+            cannotAct: true,
+            speed: -5,
+          },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(poison);
+        stats.addTemporaryStatus(paralysis);
+
+        const totalStats = stats.getTotalStats();
+        expect(totalStats.hpPerTurn).toBe(-2);
+        expect(totalStats.cannotRun).toBe(true);
+        expect(totalStats.cannotAct).toBe(true);
+        expect(totalStats.speed).toBe(Math.max(0, baseSpeed - 5)); // 負にならない
+      });
+
+      test('負の値にならないことを確認', () => {
+        const stats = new Stats(1);
+
+        const majorDebuff: TemporaryStatus = {
+          id: 'major-debuff',
+          name: '大デバフ',
+          type: 'debuff',
+          effects: {
+            attack: -999,
+            defense: -999,
+          },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(majorDebuff);
+        const totalStats = stats.getTotalStats();
+
+        expect(totalStats.attack).toBe(0); // 負にならない
+        expect(totalStats.defense).toBe(0); // 負にならない
+      });
+    });
+
+    describe('一時ステータス反映ゲッターメソッド', () => {
+      test('getAttackが一時ステータス効果を含む', () => {
+        const stats = new Stats(1);
+        const originalAttack = stats.getAttack();
+
+        const buff: TemporaryStatus = {
+          id: 'attack-test',
+          name: '攻撃バフ',
+          type: 'buff',
+          effects: { attack: 12 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(buff);
+        expect(stats.getAttack()).toBe(originalAttack + 12);
+      });
+
+      test('getDefenseが一時ステータス効果を含む', () => {
+        const stats = new Stats(1);
+        const originalDefense = stats.getDefense();
+
+        const debuff: TemporaryStatus = {
+          id: 'defense-test',
+          name: '防御デバフ',
+          type: 'debuff',
+          effects: { defense: -4 },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(debuff);
+        expect(stats.getDefense()).toBe(Math.max(0, originalDefense - 4));
+      });
+
+      test('getSpeedが一時ステータス効果を含む', () => {
+        const stats = new Stats(1);
+        const originalSpeed = stats.getSpeed();
+
+        const speedBuff: TemporaryStatus = {
+          id: 'speed-test',
+          name: 'スピードアップ',
+          type: 'buff',
+          effects: { speed: 7 },
+          duration: 4,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(speedBuff);
+        expect(stats.getSpeed()).toBe(originalSpeed + 7);
+      });
+
+      test('getAccuracyが一時ステータス効果を含む', () => {
+        const stats = new Stats(1);
+        const originalAccuracy = stats.getAccuracy();
+
+        const accuracyBuff: TemporaryStatus = {
+          id: 'accuracy-test',
+          name: '命中アップ',
+          type: 'buff',
+          effects: { accuracy: 5 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(accuracyBuff);
+        expect(stats.getAccuracy()).toBe(originalAccuracy + 5);
+      });
+
+      test('getFortuneが一時ステータス効果を含む', () => {
+        const stats = new Stats(1);
+        const originalFortune = stats.getFortune();
+
+        const fortuneDebuff: TemporaryStatus = {
+          id: 'fortune-test',
+          name: '運気ダウン',
+          type: 'debuff',
+          effects: { fortune: -2 },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(fortuneDebuff);
+        expect(stats.getFortune()).toBe(Math.max(0, originalFortune - 2));
       });
     });
   });

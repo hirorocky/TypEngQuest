@@ -106,43 +106,48 @@ export class Stats {
   }
 
   /**
-   * 攻撃力を取得する（基本値 + 一時的なブースト）
+   * 攻撃力を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
    * @returns 攻撃力
    */
   getAttack(): number {
-    return Math.max(0, this.baseAttack + this.temporaryBoosts.attack);
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('attack');
+    return Math.max(0, this.baseAttack + this.temporaryBoosts.attack + temporaryStatusBonus);
   }
 
   /**
-   * 防御力を取得する（基本値 + 一時的なブースト）
+   * 防御力を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
    * @returns 防御力
    */
   getDefense(): number {
-    return Math.max(0, this.baseDefense + this.temporaryBoosts.defense);
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('defense');
+    return Math.max(0, this.baseDefense + this.temporaryBoosts.defense + temporaryStatusBonus);
   }
 
   /**
-   * 速度を取得する（基本値 + 一時的なブースト）
+   * 速度を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
    * @returns 速度
    */
   getSpeed(): number {
-    return Math.max(0, this.baseSpeed + this.temporaryBoosts.speed);
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('speed');
+    return Math.max(0, this.baseSpeed + this.temporaryBoosts.speed + temporaryStatusBonus);
   }
 
   /**
-   * 精度を取得する（基本値 + 一時的なブースト）
+   * 精度を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
    * @returns 精度
    */
   getAccuracy(): number {
-    return Math.max(0, this.baseAccuracy + this.temporaryBoosts.accuracy);
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('accuracy');
+    return Math.max(0, this.baseAccuracy + this.temporaryBoosts.accuracy + temporaryStatusBonus);
   }
 
   /**
-   * 幸運を取得する（基本値 + 一時的なブースト）
+   * 幸運を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
    * @returns 幸運
    */
   getFortune(): number {
-    return Math.max(0, this.baseFortune + this.temporaryBoosts.fortune);
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('fortune');
+    return Math.max(0, this.baseFortune + this.temporaryBoosts.fortune + temporaryStatusBonus);
   }
 
   /**
@@ -286,6 +291,56 @@ export class Stats {
   }
 
   /**
+   * 指定されたステータスの一時ステータス効果の総和を計算する
+   * @param statType - ステータスタイプ
+   * @returns 効果の総和
+   */
+  private calculateTemporaryStatusEffect(
+    statType: 'attack' | 'defense' | 'speed' | 'accuracy' | 'fortune'
+  ): number {
+    return this.temporaryStatuses.reduce((total, status) => {
+      const effect = status.effects[statType];
+      return total + (effect || 0);
+    }, 0);
+  }
+
+  /**
+   * 全ての一時ステータス効果を含む総合ステータスを取得する
+   * @returns 総合ステータス
+   */
+  getTotalStats(): TotalStats {
+    const result: TotalStats = {
+      attack: this.getAttack(),
+      defense: this.getDefense(),
+      speed: this.getSpeed(),
+      accuracy: this.getAccuracy(),
+      fortune: this.getFortune(),
+      hpPerTurn: 0,
+      mpPerTurn: 0,
+      cannotAct: false,
+      cannotRun: false,
+    };
+
+    // 特殊効果（ターンごとのHP/MP変化、状態異常効果）を計算
+    this.temporaryStatuses.forEach(status => {
+      if (status.effects.hpPerTurn) {
+        result.hpPerTurn += status.effects.hpPerTurn;
+      }
+      if (status.effects.mpPerTurn) {
+        result.mpPerTurn += status.effects.mpPerTurn;
+      }
+      if (status.effects.cannotAct) {
+        result.cannotAct = true;
+      }
+      if (status.effects.cannotRun) {
+        result.cannotRun = true;
+      }
+    });
+
+    return result;
+  }
+
+  /**
    * StatsオブジェクトをJSONに変換する
    * @returns JSON形式のデータ
    */
@@ -415,4 +470,19 @@ export interface StatsData {
     fortune: number;
   };
   temporaryStatuses?: TemporaryStatus[];
+}
+
+/**
+ * 一時ステータス効果を含む総合ステータス
+ */
+export interface TotalStats {
+  attack: number;
+  defense: number;
+  speed: number;
+  accuracy: number;
+  fortune: number;
+  hpPerTurn: number;
+  mpPerTurn: number;
+  cannotAct: boolean;
+  cannotRun: boolean;
 }
