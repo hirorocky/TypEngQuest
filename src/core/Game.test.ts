@@ -121,6 +121,9 @@ describe('Game', () => {
       }
 
       jest.spyOn(game as any, 'generateDefaultWorld').mockReturnValue(testWorld);
+      jest
+        .spyOn(game as any, 'generateDefaultPlayer')
+        .mockReturnValue(new (require('../player/Player').Player)('TestPlayer'));
 
       const result = game['createPhase']('exploration');
       expect(result).toBeDefined();

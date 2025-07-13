@@ -9,6 +9,7 @@ import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
+import { Player } from '../player/Player';
 import { CommandParser } from './CommandParser';
 import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } from './completion';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
@@ -19,6 +20,7 @@ export class Game {
   private rl: readline.Interface;
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
+  private currentPlayer: Player | null = null;
   private isTestMode: boolean;
   private commandParser: CommandParser;
   private tabCompleter: TabCompleter;
@@ -153,7 +155,11 @@ export class Game {
           // デフォルトワールドを生成
           this.currentWorld = this.generateDefaultWorld();
         }
-        return new ExplorationPhase(this.currentWorld);
+        // プレイヤーが存在しない場合はデフォルトプレイヤーを生成
+        if (!this.currentPlayer) {
+          this.currentPlayer = this.generateDefaultPlayer();
+        }
+        return new ExplorationPhase(this.currentWorld, this.currentPlayer);
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);
@@ -172,6 +178,14 @@ export class Game {
       // デフォルトはランダムドメインのレベル1
       return World.generateRandomWorld(1);
     }
+  }
+
+  /**
+   * デフォルトプレイヤーを生成する
+   * 設定に基づいて後でカスタマイズ可能
+   */
+  private generateDefaultPlayer(): Player {
+    return new Player('Player');
   }
 
   private setupSignalHandlers(): void {

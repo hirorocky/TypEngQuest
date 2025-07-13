@@ -11,6 +11,7 @@
 import { ExplorationPhase } from '../../phases/ExplorationPhase';
 import { FileSystem } from '../../world/FileSystem';
 import { World } from '../../world/World';
+import { Player } from '../../player/Player';
 import { TestGameHelper } from './helpers/TestGameHelper';
 import { withMocks } from './helpers/SimplifiedMockHelper';
 
@@ -18,6 +19,7 @@ describe('Explorationフェーズの統合テスト', () => {
   let gameHelper: TestGameHelper;
   let explorationPhase: ExplorationPhase;
   let fileSystem: FileSystem;
+  let player: Player;
 
   beforeEach(async () => {
     gameHelper = new TestGameHelper();
@@ -32,7 +34,8 @@ describe('Explorationフェーズの統合テスト', () => {
         this.fileSystem = fileSystem;
       }
     })();
-    explorationPhase = new ExplorationPhase(world);
+    player = new Player('TestPlayer');
+    explorationPhase = new ExplorationPhase(world, player);
     await explorationPhase.initialize();
   });
 

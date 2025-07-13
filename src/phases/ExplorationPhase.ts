@@ -2,6 +2,7 @@ import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
+import { Player } from '../player/Player';
 import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
@@ -12,6 +13,7 @@ import { OpenCommand } from '../commands/interaction/OpenCommand';
 import { SaveCommand } from '../commands/interaction/SaveCommand';
 import { RestCommand } from '../commands/interaction/RestCommand';
 import { ExecuteCommand } from '../commands/interaction/ExecuteCommand';
+import { StatusCommand } from '../commands/game/StatusCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
@@ -20,21 +22,29 @@ import { BaseCommand } from '../commands/BaseCommand';
 export class ExplorationPhase extends Phase {
   private navigationCommands: Map<string, BaseCommand>;
   private interactionCommands: Map<string, BaseCommand>;
+  private gameCommands: Map<string, BaseCommand>;
   protected world: World; // worldを必須に
+  private player: Player; // playerを必須に
 
-  constructor(world: World) {
+  constructor(world: World, player: Player) {
     super(world);
 
     if (!world) {
       throw new Error('World is required for ExplorationPhase');
     }
+    if (!player) {
+      throw new Error('Player is required for ExplorationPhase');
+    }
     this.world = world;
+    this.player = player;
 
     // コマンドを初期化
     this.navigationCommands = new Map();
     this.interactionCommands = new Map();
+    this.gameCommands = new Map();
     this.registerNavigationCommands();
     this.registerInteractionCommands();
+    this.registerGameCommands();
   }
 
   /**
@@ -68,6 +78,17 @@ export class ExplorationPhase extends Phase {
 
     commands.forEach(command => {
       this.interactionCommands.set(command.name, command);
+    });
+  }
+
+  /**
+   * ゲームコマンドを登録する
+   */
+  private registerGameCommands(): void {
+    const commands: BaseCommand[] = [new StatusCommand()];
+
+    commands.forEach(command => {
+      this.gameCommands.set(command.name, command);
     });
   }
 
@@ -123,6 +144,20 @@ export class ExplorationPhase extends Phase {
       const result = interactionCommand.execute(args, context);
 
       // インタラクションコマンドの結果をそのまま返す
+      return result;
+    }
+
+    // ゲームコマンドの処理
+    if (this.gameCommands.has(command)) {
+      const gameCommand = this.gameCommands.get(command)!;
+      const context = {
+        currentPhase: 'exploration' as const,
+        fileSystem: this.world.fileSystem,
+        player: this.player,
+      };
+      const result = gameCommand.execute(args, context);
+
+      // ゲームコマンドの結果をそのまま返す
       return result;
     }
 
@@ -275,7 +310,6 @@ export class ExplorationPhase extends Phase {
   private showHelp(): void {
     Display.newLine();
     Display.printHeader('available commands');
-    Display.printLine('------------------');
 
     // ナビゲーションコマンド
     Display.printInfo('navigation:');
@@ -288,6 +322,14 @@ export class ExplorationPhase extends Phase {
     // インタラクションコマンド
     Display.printInfo('interaction:');
     this.interactionCommands.forEach(command => {
+      Display.printCommand(command.name, command.description);
+    });
+
+    Display.newLine();
+
+    // ゲームコマンド
+    Display.printInfo('game:');
+    this.gameCommands.forEach(command => {
       Display.printCommand(command.name, command.description);
     });
 
@@ -345,7 +387,8 @@ export class ExplorationPhase extends Phase {
   public getAvailableCommands(): string[] {
     const navigationCommands = Array.from(this.navigationCommands.keys());
     const interactionCommands = Array.from(this.interactionCommands.keys());
+    const gameCommands = Array.from(this.gameCommands.keys());
     const systemCommands = ['help', 'clear', 'exit'];
-    return [...navigationCommands, ...interactionCommands, ...systemCommands];
+    return [...navigationCommands, ...interactionCommands, ...gameCommands, ...systemCommands];
   }
 }
