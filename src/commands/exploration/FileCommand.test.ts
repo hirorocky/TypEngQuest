@@ -1,7 +1,7 @@
 import { FileCommand } from './FileCommand';
-import { BaseCommand, CommandContext } from '../BaseCommand';
+import { CommandContext } from '../BaseCommand';
 import { FileSystem } from '../../world/FileSystem';
-import { FileNode, NodeType, FileType } from '../../world/FileNode';
+import { FileNode, NodeType } from '../../world/FileNode';
 import { PhaseTypes } from '../../core/types';
 
 describe('FileCommand', () => {

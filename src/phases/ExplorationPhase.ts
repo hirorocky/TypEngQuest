@@ -7,6 +7,11 @@ import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
 import { TreeCommand } from '../commands/exploration/TreeCommand';
 import { FileCommand } from '../commands/exploration/FileCommand';
+import { BattleCommand } from '../commands/interaction/BattleCommand';
+import { OpenCommand } from '../commands/interaction/OpenCommand';
+import { SaveCommand } from '../commands/interaction/SaveCommand';
+import { RestCommand } from '../commands/interaction/RestCommand';
+import { ExecuteCommand } from '../commands/interaction/ExecuteCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
@@ -14,6 +19,7 @@ import { BaseCommand } from '../commands/BaseCommand';
  */
 export class ExplorationPhase extends Phase {
   private navigationCommands: Map<string, BaseCommand>;
+  private interactionCommands: Map<string, BaseCommand>;
   protected world: World; // worldを必須に
 
   constructor(world: World) {
@@ -24,9 +30,11 @@ export class ExplorationPhase extends Phase {
     }
     this.world = world;
 
-    // ナビゲーションコマンドを初期化
+    // コマンドを初期化
     this.navigationCommands = new Map();
+    this.interactionCommands = new Map();
     this.registerNavigationCommands();
+    this.registerInteractionCommands();
   }
 
   /**
@@ -43,6 +51,23 @@ export class ExplorationPhase extends Phase {
 
     commands.forEach(command => {
       this.navigationCommands.set(command.name, command);
+    });
+  }
+
+  /**
+   * インタラクションコマンドを登録する
+   */
+  private registerInteractionCommands(): void {
+    const commands: BaseCommand[] = [
+      new BattleCommand(),
+      new OpenCommand(),
+      new SaveCommand(),
+      new RestCommand(),
+      new ExecuteCommand(),
+    ];
+
+    commands.forEach(command => {
+      this.interactionCommands.set(command.name, command);
     });
   }
 
@@ -85,6 +110,19 @@ export class ExplorationPhase extends Phase {
       const result = navCommand.execute(args, context);
 
       // ナビゲーションコマンドの結果をそのまま返す
+      return result;
+    }
+
+    // インタラクションコマンドの処理
+    if (this.interactionCommands.has(command)) {
+      const interactionCommand = this.interactionCommands.get(command)!;
+      const context = {
+        currentPhase: 'exploration' as const,
+        fileSystem: this.world.fileSystem,
+      };
+      const result = interactionCommand.execute(args, context);
+
+      // インタラクションコマンドの結果をそのまま返す
       return result;
     }
 
@@ -134,6 +172,11 @@ export class ExplorationPhase extends Phase {
       return this.handleNavigationCommand(command, args);
     }
 
+    // インタラクションコマンドの処理
+    if (this.interactionCommands.has(command)) {
+      return this.handleInteractionCommand(command, args);
+    }
+
     // システムコマンドの処理
     return this.handleSystemCommand(command);
   }
@@ -159,6 +202,34 @@ export class ExplorationPhase extends Phase {
       }
     } else {
       Display.printError(result.message || 'operation failed');
+    }
+
+    Display.newLine();
+    this.showPrompt();
+    return { type: PhaseTypes.CONTINUE };
+  }
+
+  /**
+   * インタラクションコマンドを処理する
+   */
+  private handleInteractionCommand(command: string, args: string[]): PhaseResult {
+    const interactionCommand = this.interactionCommands.get(command)!;
+    const context = {
+      currentPhase: 'exploration' as const,
+      fileSystem: this.world.fileSystem,
+    };
+    const result = interactionCommand.execute(args, context);
+
+    if (result.success) {
+      if (result.output && result.output.length > 0) {
+        // 出力がある場合は表示
+        result.output.forEach(line => Display.printLine(line));
+      } else if (result.message) {
+        // メッセージのみの場合
+        Display.printSuccess(result.message || 'interaction completed');
+      }
+    } else {
+      Display.printError(result.message || 'interaction failed');
     }
 
     Display.newLine();
@@ -209,6 +280,14 @@ export class ExplorationPhase extends Phase {
     // ナビゲーションコマンド
     Display.printInfo('navigation:');
     this.navigationCommands.forEach(command => {
+      Display.printCommand(command.name, command.description);
+    });
+
+    Display.newLine();
+
+    // インタラクションコマンド
+    Display.printInfo('interaction:');
+    this.interactionCommands.forEach(command => {
       Display.printCommand(command.name, command.description);
     });
 
@@ -265,7 +344,8 @@ export class ExplorationPhase extends Phase {
    */
   public getAvailableCommands(): string[] {
     const navigationCommands = Array.from(this.navigationCommands.keys());
+    const interactionCommands = Array.from(this.interactionCommands.keys());
     const systemCommands = ['help', 'clear', 'exit'];
-    return [...navigationCommands, ...systemCommands];
+    return [...navigationCommands, ...interactionCommands, ...systemCommands];
   }
 }
