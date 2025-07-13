@@ -46,7 +46,7 @@ describe('FileCommand', () => {
     });
 
     test('説明が正しく設定されている', () => {
-      expect(command.description).toBe('ファイルタイプとアクションを表示する');
+      expect(command.description).toBe('show file type and available actions');
     });
   });
 
@@ -54,13 +54,13 @@ describe('FileCommand', () => {
     test('引数なしの場合はエラーになる', () => {
       const result = command.validateArgs([]);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名を指定してください');
+      expect(result.error).toBe('filename required');
     });
 
     test('引数が2つ以上の場合はエラーになる', () => {
       const result = command.validateArgs(['file1.js', 'file2.js']);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名は1つだけ指定してください');
+      expect(result.error).toBe('too many arguments');
     });
 
     test('正しい引数の場合は成功する', () => {
@@ -94,10 +94,6 @@ describe('FileCommand', () => {
         '',
         'Available actions:',
         '  battle monster.js - Start battle with the monster',
-        '  cat monster.js    - View and start battle',
-        '  head monster.js   - Preview monster strength',
-        '  vim monster.js    - Edit and start battle',
-        '  nano monster.js   - Edit and start battle',
       ]);
     });
 
@@ -111,10 +107,6 @@ describe('FileCommand', () => {
         '',
         'Available actions:',
         '  open config.json  - Open treasure chest',
-        '  cat config.json   - View and obtain items',
-        '  head config.json  - Preview chest contents',
-        '  jq . config.json  - Parse and obtain items',
-        '  yq . config.json  - Parse and obtain items',
       ]);
     });
 
@@ -129,9 +121,6 @@ describe('FileCommand', () => {
         'Available actions:',
         '  save save.md      - Save game progress',
         '  rest save.md      - Recover HP/MP',
-        '  cat save.md       - View content and save options',
-        '  vim save.md       - Edit and save game',
-        '  nano save.md      - Edit and save game',
       ]);
     });
 
@@ -145,9 +134,6 @@ describe('FileCommand', () => {
         '',
         'Available actions:',
         '  execute script.exe - Run the event',
-        '  ./script.exe       - Execute the script',
-        '  file script.exe    - Check file information',
-        '  chmod +x script.exe - Prepare for execution (reduces bad effects)',
       ]);
     });
 
@@ -160,8 +146,7 @@ describe('FileCommand', () => {
         'Description: Contains no special content',
         '',
         'Available actions:',
-        '  cat empty.txt     - View file (no effect)',
-        '  head empty.txt    - Preview file (no effect)',
+        '  [No special actions available]',
       ]);
     });
   });

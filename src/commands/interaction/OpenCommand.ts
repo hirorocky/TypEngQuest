@@ -7,7 +7,7 @@ import { FileType } from '../../world/FileNode';
  */
 export class OpenCommand extends BaseCommand {
   public name = 'open';
-  public description = '宝箱ファイルを開く';
+  public description = 'open treasure chest file';
 
   /**
    * 引数の検証を行う
@@ -16,11 +16,11 @@ export class OpenCommand extends BaseCommand {
    */
   public validateArgs(args: string[]): ValidationResult {
     if (!args || args.length === 0) {
-      return { valid: false, error: 'ファイル名を指定してください' };
+      return { valid: false, error: 'filename required' };
     }
 
     if (args.length > 1) {
-      return { valid: false, error: 'ファイル名は1つだけ指定してください' };
+      return { valid: false, error: 'too many arguments' };
     }
 
     return { valid: true };

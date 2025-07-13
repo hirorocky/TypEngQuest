@@ -7,7 +7,7 @@ import { FileType } from '../../world/FileNode';
  */
 export class RestCommand extends BaseCommand {
   public name = 'rest';
-  public description = 'セーブポイントでHP/MPを回復する';
+  public description = 'recover hp/mp at save point';
 
   /**
    * 引数の検証を行う
@@ -16,11 +16,11 @@ export class RestCommand extends BaseCommand {
    */
   public validateArgs(args: string[]): ValidationResult {
     if (!args || args.length === 0) {
-      return { valid: false, error: 'ファイル名を指定してください' };
+      return { valid: false, error: 'filename required' };
     }
 
     if (args.length > 1) {
-      return { valid: false, error: 'ファイル名は1つだけ指定してください' };
+      return { valid: false, error: 'too many arguments' };
     }
 
     return { valid: true };

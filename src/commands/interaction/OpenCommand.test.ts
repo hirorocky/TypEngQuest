@@ -42,7 +42,7 @@ describe('OpenCommand', () => {
     });
 
     test('説明が正しく設定されている', () => {
-      expect(command.description).toBe('宝箱ファイルを開く');
+      expect(command.description).toBe('open treasure chest file');
     });
   });
 
@@ -50,13 +50,13 @@ describe('OpenCommand', () => {
     test('引数なしの場合はエラーになる', () => {
       const result = command.validateArgs([]);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名を指定してください');
+      expect(result.error).toBe('filename required');
     });
 
     test('引数が2つ以上の場合はエラーになる', () => {
       const result = command.validateArgs(['file1.json', 'file2.json']);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名は1つだけ指定してください');
+      expect(result.error).toBe('too many arguments');
     });
 
     test('正しい引数の場合は成功する', () => {

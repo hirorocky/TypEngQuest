@@ -42,7 +42,7 @@ describe('BattleCommand', () => {
     });
 
     test('説明が正しく設定されている', () => {
-      expect(command.description).toBe('モンスターファイルとバトルする');
+      expect(command.description).toBe('start battle with monster file');
     });
   });
 
@@ -50,13 +50,13 @@ describe('BattleCommand', () => {
     test('引数なしの場合はエラーになる', () => {
       const result = command.validateArgs([]);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名を指定してください');
+      expect(result.error).toBe('filename required');
     });
 
     test('引数が2つ以上の場合はエラーになる', () => {
       const result = command.validateArgs(['file1.js', 'file2.js']);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe('ファイル名は1つだけ指定してください');
+      expect(result.error).toBe('too many arguments');
     });
 
     test('正しい引数の場合は成功する', () => {

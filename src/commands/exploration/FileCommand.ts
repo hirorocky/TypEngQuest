@@ -7,7 +7,7 @@ import { FileType } from '../../world/FileNode';
  */
 export class FileCommand extends BaseCommand {
   public name = 'file';
-  public description = 'ファイルタイプとアクションを表示する';
+  public description = 'show file type and available actions';
 
   /**
    * 引数の検証を行う
@@ -16,11 +16,11 @@ export class FileCommand extends BaseCommand {
    */
   public validateArgs(args: string[]): ValidationResult {
     if (!args || args.length === 0) {
-      return { valid: false, error: 'ファイル名を指定してください' };
+      return { valid: false, error: 'filename required' };
     }
 
     if (args.length > 1) {
-      return { valid: false, error: 'ファイル名は1つだけ指定してください' };
+      return { valid: false, error: 'too many arguments' };
     }
 
     return { valid: true };
@@ -133,42 +133,27 @@ export class FileCommand extends BaseCommand {
     switch (fileType) {
       case FileType.MONSTER:
         actions.push(`battle ${fileName} - Start battle with the monster`);
-        actions.push(`cat ${fileName}    - View and start battle`);
-        actions.push(`head ${fileName}   - Preview monster strength`);
-        actions.push(`vim ${fileName}    - Edit and start battle`);
-        actions.push(`nano ${fileName}   - Edit and start battle`);
         break;
 
       case FileType.TREASURE:
         actions.push(`open ${fileName}  - Open treasure chest`);
-        actions.push(`cat ${fileName}   - View and obtain items`);
-        actions.push(`head ${fileName}  - Preview chest contents`);
-        actions.push(`jq . ${fileName}  - Parse and obtain items`);
-        actions.push(`yq . ${fileName}  - Parse and obtain items`);
         break;
 
       case FileType.SAVE_POINT:
         actions.push(`save ${fileName}      - Save game progress`);
         actions.push(`rest ${fileName}      - Recover HP/MP`);
-        actions.push(`cat ${fileName}       - View content and save options`);
-        actions.push(`vim ${fileName}       - Edit and save game`);
-        actions.push(`nano ${fileName}      - Edit and save game`);
         break;
 
       case FileType.EVENT:
         actions.push(`execute ${fileName} - Run the event`);
-        actions.push(`./${fileName}       - Execute the script`);
-        actions.push(`file ${fileName}    - Check file information`);
-        actions.push(`chmod +x ${fileName} - Prepare for execution (reduces bad effects)`);
         break;
 
       case FileType.EMPTY:
-        actions.push(`cat ${fileName}     - View file (no effect)`);
-        actions.push(`head ${fileName}    - Preview file (no effect)`);
+        actions.push(`[No special actions available]`);
         break;
 
       default:
-        actions.push(`cat ${fileName}     - View file`);
+        actions.push(`[No special actions available]`);
         break;
     }
 
