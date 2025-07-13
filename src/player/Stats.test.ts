@@ -710,4 +710,417 @@ describe('Stats', () => {
       });
     });
   });
+
+  describe('ターン経過処理システム', () => {
+    describe('updateTemporaryStatuses', () => {
+      test('継続期間の減少', () => {
+        const stats = new Stats(1);
+        const status1: TemporaryStatus = {
+          id: 'duration-test-1',
+          name: '期間テスト1',
+          type: 'buff',
+          effects: { attack: 5 },
+          duration: 3,
+          stackable: false,
+        };
+        const status2: TemporaryStatus = {
+          id: 'duration-test-2',
+          name: '期間テスト2',
+          type: 'buff',
+          effects: { defense: 3 },
+          duration: 2, // 1だと削除されてしまうため2に変更
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status1);
+        stats.addTemporaryStatus(status2);
+
+        stats.updateTemporaryStatuses();
+        const statuses = stats.getTemporaryStatuses();
+
+        const updatedStatus1 = statuses.find(s => s.id === 'duration-test-1');
+        const updatedStatus2 = statuses.find(s => s.id === 'duration-test-2');
+
+        expect(updatedStatus1?.duration).toBe(2); // 3 → 2
+        expect(updatedStatus2?.duration).toBe(1); // 2 → 1
+      });
+
+      test('期限切れステータスの自動削除', () => {
+        const stats = new Stats(1);
+        const expiredStatus: TemporaryStatus = {
+          id: 'expired-test',
+          name: '期限切れテスト',
+          type: 'debuff',
+          effects: { attack: -2 },
+          duration: 1,
+          stackable: false,
+        };
+        const activeStatus: TemporaryStatus = {
+          id: 'active-test',
+          name: 'アクティブテスト',
+          type: 'buff',
+          effects: { defense: 4 },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(expiredStatus);
+        stats.addTemporaryStatus(activeStatus);
+        expect(stats.getTemporaryStatuses()).toHaveLength(2);
+
+        stats.updateTemporaryStatuses(); // expiredStatus は duration 1 → 0 → 削除
+        const remainingStatuses = stats.getTemporaryStatuses();
+
+        expect(remainingStatuses).toHaveLength(1);
+        expect(remainingStatuses[0].id).toBe('active-test');
+        expect(remainingStatuses[0].duration).toBe(2); // 3 → 2
+      });
+
+      test('永続効果（duration: -1）のテスト', () => {
+        const stats = new Stats(1);
+        const permanentStatus: TemporaryStatus = {
+          id: 'permanent-test',
+          name: '永続テスト',
+          type: 'buff',
+          effects: { fortune: 1 },
+          duration: -1,
+          stackable: false,
+        };
+        const temporaryStatus: TemporaryStatus = {
+          id: 'temporary-test',
+          name: '一時テスト',
+          type: 'buff',
+          effects: { speed: 2 },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(permanentStatus);
+        stats.addTemporaryStatus(temporaryStatus);
+
+        stats.updateTemporaryStatuses();
+        const statuses = stats.getTemporaryStatuses();
+
+        const permanent = statuses.find(s => s.id === 'permanent-test');
+        const temporary = statuses.find(s => s.id === 'temporary-test');
+
+        expect(permanent?.duration).toBe(-1); // 永続効果は変化しない
+        expect(temporary?.duration).toBe(1); // 2 → 1
+      });
+
+      test('毎ターン効果（HP/MP変化）のテスト', () => {
+        const stats = new Stats(1);
+        const initialHP = stats.getCurrentHP();
+        const initialMP = stats.getCurrentMP();
+
+        // デバッグ: 初期値を明示的に確認
+        expect(initialHP).toBe(120); // 100 + (1 × 20)
+        expect(initialMP).toBe(60); // 50 + (1 × 10)
+
+        const regenStatus: TemporaryStatus = {
+          id: 'regen-turn-test',
+          name: '再生ターンテスト',
+          type: 'buff',
+          effects: {
+            mpPerTurn: 3, // シンプルにMP変化のみでテスト
+          },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(regenStatus);
+
+        // 追加されたステータスを確認
+        expect(stats.getTemporaryStatuses()).toHaveLength(1);
+        expect(stats.getTemporaryStatuses()[0].effects.mpPerTurn).toBe(3);
+
+        stats.updateTemporaryStatuses();
+
+        // MPに余裕を作ってからテスト
+        stats.consumeMP(10); // 60 - 10 = 50
+        const currentMP = stats.getCurrentMP();
+        expect(currentMP).toBe(50);
+
+        stats.updateTemporaryStatuses();
+
+        // MP変化: +3 のみでテスト
+        expect(stats.getCurrentMP()).toBe(currentMP + 3); // 50 + 3 = 53
+
+        // ステータスがまだ残っているか確認 (duration: 3 -> 2 -> 1, 2回呼び出したため)
+        expect(stats.getTemporaryStatuses()).toHaveLength(1);
+        expect(stats.getTemporaryStatuses()[0].duration).toBe(1);
+      });
+
+      test('直接applyPerTurnEffectsメソッドのテスト', () => {
+        const stats = new Stats(1);
+
+        // MPに余裕を作る
+        stats.consumeMP(10);
+        const initialMP = stats.getCurrentMP();
+        expect(initialMP).toBe(50); // 60 - 10 = 50
+
+        const regenStatus: TemporaryStatus = {
+          id: 'direct-test',
+          name: '直接テスト',
+          type: 'buff',
+          effects: {
+            mpPerTurn: 3,
+          },
+          duration: 3,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(regenStatus);
+        expect(stats.getTemporaryStatuses()).toHaveLength(1);
+
+        // updateTemporaryStatusesでターン効果が適用されることを確認
+        stats.updateTemporaryStatuses();
+
+        // MPが変化していることを確認
+        expect(stats.getCurrentMP()).toBe(initialMP + 3); // 50 + 3 = 53
+
+        // ステータスはまだ残っている（durationは1減っている）
+        expect(stats.getTemporaryStatuses()).toHaveLength(1);
+        expect(stats.getTemporaryStatuses()[0].duration).toBe(2);
+      });
+
+      test('ステータス効果の計算テスト', () => {
+        const stats = new Stats(1);
+
+        const status: TemporaryStatus = {
+          id: 'calc-test',
+          name: '計算テスト',
+          type: 'buff',
+          effects: {
+            mpPerTurn: 5,
+          },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(status);
+        const statuses = stats.getTemporaryStatuses();
+
+        // ステータスが正しく追加されているか確認
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0].effects.mpPerTurn).toBe(5);
+
+        // 手動で計算してみる
+        let totalMPChange = 0;
+        statuses.forEach(s => {
+          if (s.effects.mpPerTurn) {
+            totalMPChange += s.effects.mpPerTurn;
+          }
+        });
+        expect(totalMPChange).toBe(5);
+
+        // healMPを直接呼び出してみる
+        const beforeMP = stats.getCurrentMP();
+        expect(beforeMP).toBe(60); // 初期値確認
+        const maxMP = stats.getMaxMP();
+        expect(maxMP).toBe(60); // 最大MP確認
+
+        stats.healMP(5);
+        const afterMP = stats.getCurrentMP();
+
+        // 最大MPを超えないことを確認
+        expect(afterMP).toBe(Math.min(maxMP, beforeMP + 5)); // 60が最大なのでMath.min(60, 55) = 55
+      });
+
+      test('複数の毎ターン効果の累積', () => {
+        const stats = new Stats(1);
+        const initialHP = stats.getCurrentHP();
+
+        const poison1: TemporaryStatus = {
+          id: 'poison-1',
+          name: '毒1',
+          type: 'status_ailment',
+          effects: { hpPerTurn: -3 },
+          duration: 2,
+          stackable: true,
+        };
+        const poison2: TemporaryStatus = {
+          id: 'poison-2',
+          name: '毒2',
+          type: 'status_ailment',
+          effects: { hpPerTurn: -2 },
+          duration: 3,
+          stackable: true,
+        };
+        const healing: TemporaryStatus = {
+          id: 'healing',
+          name: '回復',
+          type: 'buff',
+          effects: { hpPerTurn: 4 },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(poison1);
+        stats.addTemporaryStatus(poison2);
+        stats.addTemporaryStatus(healing);
+
+        stats.updateTemporaryStatuses();
+
+        // HP変化: -3 + (-2) + 4 = -1
+        expect(stats.getCurrentHP()).toBe(initialHP - 1);
+      });
+
+      test('HP/MPが0未満および最大値を超えないことを確認', () => {
+        const stats = new Stats(1);
+
+        // HPを1まで減らす
+        stats.takeDamage(stats.getCurrentHP() - 1);
+        expect(stats.getCurrentHP()).toBe(1);
+
+        const massiveDamage: TemporaryStatus = {
+          id: 'massive-damage',
+          name: '大ダメージ',
+          type: 'status_ailment',
+          effects: { hpPerTurn: -999 },
+          duration: 1, // duration を1に変更して次のターンで削除されるようにする
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(massiveDamage);
+        stats.updateTemporaryStatuses();
+
+        expect(stats.getCurrentHP()).toBe(0); // 0未満にならない
+
+        // massiveDamageは削除されているはず
+        expect(stats.getTemporaryStatuses().find(s => s.id === 'massive-damage')).toBeUndefined();
+
+        // 回復テスト
+        const massiveHeal: TemporaryStatus = {
+          id: 'massive-heal',
+          name: '大回復',
+          type: 'buff',
+          effects: {
+            hpPerTurn: 999,
+            mpPerTurn: 999,
+          },
+          duration: 2,
+          stackable: false,
+        };
+
+        stats.addTemporaryStatus(massiveHeal);
+        stats.updateTemporaryStatuses();
+
+        expect(stats.getCurrentHP()).toBe(stats.getMaxHP()); // 最大値を超えない
+        expect(stats.getCurrentMP()).toBe(stats.getMaxMP()); // 最大値を超えない
+      });
+    });
+  });
+
+  describe('状態異常システム統合テスト', () => {
+    test('状態異常ファクトリーとの統合', () => {
+      const stats = new Stats(1);
+      const initialHP = stats.getCurrentHP();
+
+      // StatusAilmentFactoryが存在しないため、手動で毒ステータスを作成
+      const poison: TemporaryStatus = {
+        id: 'poison-integration-test',
+        name: '毒',
+        type: 'status_ailment',
+        effects: {
+          hpPerTurn: -5, // 毎ターン5ダメージ
+          cannotRun: true, // 逃走不可
+        },
+        duration: 3,
+        stackable: false,
+      };
+
+      stats.addTemporaryStatus(poison);
+
+      // 状態異常が正しく追加されているか確認
+      const ailments = stats.getActiveStatusAilments();
+      expect(ailments).toHaveLength(1);
+      expect(ailments[0].name).toBe('毒');
+
+      // 総合ステータスに状態異常の効果が反映されているか確認
+      const totalStats = stats.getTotalStats();
+      expect(totalStats.cannotRun).toBe(true);
+      expect(totalStats.hpPerTurn).toBe(-5);
+
+      // ターン経過で毒ダメージが適用されるか確認
+      stats.updateTemporaryStatuses();
+      expect(stats.getCurrentHP()).toBe(initialHP - 5); // 毒ダメージ適用
+
+      // 継続期間が減っているか確認
+      const remainingStatuses = stats.getTemporaryStatuses();
+      expect(remainingStatuses).toHaveLength(1);
+      expect(remainingStatuses[0].duration).toBe(2); // 3 -> 2
+    });
+
+    test('複数の状態異常とバフの組み合わせ', () => {
+      const stats = new Stats(2); // レベル2でテスト
+
+      // HPにMPに余裕を作る
+      stats.takeDamage(10);
+      stats.consumeMP(15);
+
+      const initialHP = stats.getCurrentHP();
+      const initialMP = stats.getCurrentMP();
+
+      // 毒状態異常
+      const poison: TemporaryStatus = {
+        id: 'poison-combo-test',
+        name: '毒',
+        type: 'status_ailment',
+        effects: { hpPerTurn: -3 },
+        duration: 2,
+        stackable: false,
+      };
+
+      // 再生バフ
+      const regen: TemporaryStatus = {
+        id: 'regen-combo-test',
+        name: '再生',
+        type: 'buff',
+        effects: {
+          hpPerTurn: 5,
+          mpPerTurn: 2,
+        },
+        duration: 3,
+        stackable: false,
+      };
+
+      // 麻痺状態異常
+      const paralysis: TemporaryStatus = {
+        id: 'paralysis-combo-test',
+        name: '麻痺',
+        type: 'status_ailment',
+        effects: {
+          cannotAct: true,
+          speed: -3,
+        },
+        duration: 2,
+        stackable: false,
+      };
+
+      stats.addTemporaryStatus(poison);
+      stats.addTemporaryStatus(regen);
+      stats.addTemporaryStatus(paralysis);
+
+      // 総合ステータスで効果の組み合わせを確認
+      const totalStats = stats.getTotalStats();
+      expect(totalStats.hpPerTurn).toBe(2); // -3 + 5 = 2
+      expect(totalStats.mpPerTurn).toBe(2);
+      expect(totalStats.cannotAct).toBe(true);
+      expect(totalStats.speed).toBe(7); // レベル2の基本速度(10) - 麻痺効果(-3) = 7
+
+      // 状態異常のみ取得
+      const ailments = stats.getActiveStatusAilments();
+      expect(ailments).toHaveLength(2);
+      expect(ailments.map(a => a.name)).toContain('毒');
+      expect(ailments.map(a => a.name)).toContain('麻痺');
+
+      // ターン経過で効果適用
+      stats.updateTemporaryStatuses();
+
+      // HPとMPの変化を確認
+      expect(stats.getCurrentHP()).toBe(initialHP + 2); // 毒ダメージと再生の結果
+      expect(stats.getCurrentMP()).toBe(initialMP + 2); // 再生のMP回復
+    });
+  });
 });

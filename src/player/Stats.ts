@@ -291,6 +291,59 @@ export class Stats {
   }
 
   /**
+   * ターン経過処理を実行する
+   * 継続期間を減らし、期限切れステータスを削除し、毎ターン効果を適用する
+   */
+  updateTemporaryStatuses(): void {
+    // 毎ターン効果を先に適用
+    this.applyPerTurnEffects();
+
+    // 継続期間を減らし、期限切れステータスを削除
+    this.temporaryStatuses = this.temporaryStatuses
+      .map(status => {
+        // 永続効果（duration: -1）は変更しない
+        if (status.duration === -1) {
+          return status;
+        }
+        // 継続期間を1減らす
+        return { ...status, duration: status.duration - 1 };
+      })
+      .filter(status => status.duration !== 0); // duration が 0 になったものを削除
+  }
+
+  /**
+   * 毎ターン効果（HP/MP変化）を適用する
+   */
+  private applyPerTurnEffects(): void {
+    let totalHPChange = 0;
+    let totalMPChange = 0;
+
+    // 全ての一時ステータスから毎ターン効果を集計
+    this.temporaryStatuses.forEach(status => {
+      if (status.effects.hpPerTurn) {
+        totalHPChange += status.effects.hpPerTurn;
+      }
+      if (status.effects.mpPerTurn) {
+        totalMPChange += status.effects.mpPerTurn;
+      }
+    });
+
+    // HP変化を適用
+    if (totalHPChange > 0) {
+      this.healHP(totalHPChange);
+    } else if (totalHPChange < 0) {
+      this.takeDamage(-totalHPChange);
+    }
+
+    // MP変化を適用
+    if (totalMPChange > 0) {
+      this.healMP(totalMPChange);
+    } else if (totalMPChange < 0) {
+      this.consumeMP(-totalMPChange);
+    }
+  }
+
+  /**
    * 指定されたステータスの一時ステータス効果の総和を計算する
    * @param statType - ステータスタイプ
    * @returns 効果の総和
