@@ -1,6 +1,10 @@
 import { Item, ItemData, ItemType, ItemRarity } from './Item';
 import { Player } from '../player/Player';
-import { TemporaryStatus, TemporaryStatusName } from '../player/TemporaryStatus';
+import {
+  TemporaryStatus,
+  TemporaryStatusName,
+  TemporaryStatusEffects,
+} from '../player/TemporaryStatus';
 import { randomUUID } from 'crypto';
 
 /**
@@ -47,6 +51,30 @@ export interface ConsumableItemData extends ItemData {
  */
 export class ConsumableItem extends Item {
   private readonly effects: ItemEffect[];
+
+  /**
+   * バフエフェクトタイプから対応するステータスタイプへのマッピング
+   */
+  private static readonly EFFECT_TO_STAT_MAP: Partial<
+    Record<EffectType, keyof TemporaryStatusEffects>
+  > = {
+    [EffectType.BUFF_ATTACK]: 'attack',
+    [EffectType.BUFF_DEFENSE]: 'defense',
+    [EffectType.BUFF_SPEED]: 'speed',
+    [EffectType.BUFF_ACCURACY]: 'accuracy',
+    [EffectType.BUFF_FORTUNE]: 'fortune',
+  };
+
+  /**
+   * ステータスタイプからTemporaryStatusNameへのマッピング
+   */
+  private static readonly STAT_TO_NAME_MAP: Record<string, TemporaryStatusName> = {
+    attack: 'Attack Up',
+    defense: 'Defense Up',
+    speed: 'Speed Up',
+    accuracy: 'Accuracy Up',
+    fortune: 'Fortune Up',
+  };
 
   /**
    * 消費アイテムを初期化する
@@ -193,23 +221,10 @@ export class ConsumableItem extends Item {
    */
   private applyBuffEffectByType(effect: ItemEffect, player: Player): void {
     const duration = effect.duration || 5;
+    const statType = ConsumableItem.EFFECT_TO_STAT_MAP[effect.type];
 
-    switch (effect.type) {
-      case EffectType.BUFF_ATTACK:
-        this.applyBuffEffect('attack', effect.value, duration, player);
-        break;
-      case EffectType.BUFF_DEFENSE:
-        this.applyBuffEffect('defense', effect.value, duration, player);
-        break;
-      case EffectType.BUFF_SPEED:
-        this.applyBuffEffect('speed', effect.value, duration, player);
-        break;
-      case EffectType.BUFF_ACCURACY:
-        this.applyBuffEffect('accuracy', effect.value, duration, player);
-        break;
-      case EffectType.BUFF_FORTUNE:
-        this.applyBuffEffect('fortune', effect.value, duration, player);
-        break;
+    if (statType) {
+      this.applyBuffEffect(statType, effect.value, duration, player);
     }
   }
 
@@ -221,20 +236,21 @@ export class ConsumableItem extends Item {
    * @param player - 適用先のプレイヤー
    */
   private applyBuffEffect(
-    statType: 'attack' | 'defense' | 'speed' | 'accuracy' | 'fortune',
+    statType: keyof TemporaryStatusEffects,
     value: number,
     duration: number,
     player: Player
   ): void {
+    const name = ConsumableItem.STAT_TO_NAME_MAP[statType];
     const buffStatus: TemporaryStatus = {
       id: `${statType}-buff-${randomUUID()}`,
-      name: `${statType.charAt(0).toUpperCase() + statType.slice(1)} Up` as TemporaryStatusName,
+      name,
       type: 'buff',
       effects: {
         [statType]: Math.abs(value),
       },
       duration,
-      stackable: true,
+      stackable: true, // Can stack multiple buffs
     };
     player.getStats().addTemporaryStatus(buffStatus);
   }
