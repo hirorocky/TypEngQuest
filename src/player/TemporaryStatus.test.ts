@@ -5,7 +5,7 @@ describe('TemporaryStatus', () => {
     test('TemporaryStatusオブジェクトの基本プロパティが正しく設定される', () => {
       const status: TemporaryStatus = {
         id: 'buff-attack-001',
-        name: '攻撃力アップ',
+        name: 'Attack Up',
         type: 'buff',
         effects: {
           attack: 10,
@@ -15,7 +15,7 @@ describe('TemporaryStatus', () => {
       };
 
       expect(status.id).toBe('buff-attack-001');
-      expect(status.name).toBe('攻撃力アップ');
+      expect(status.name).toBe('Attack Up');
       expect(status.type).toBe('buff');
       expect(status.effects.attack).toBe(10);
       expect(status.duration).toBe(3);
@@ -25,7 +25,7 @@ describe('TemporaryStatus', () => {
     test('複数の効果を持つTemporaryStatusが正しく定義される', () => {
       const status: TemporaryStatus = {
         id: 'buff-multi-001',
-        name: '全能力アップ',
+        name: 'All Stats Up',
         type: 'buff',
         effects: {
           attack: 5,
@@ -49,7 +49,7 @@ describe('TemporaryStatus', () => {
     test('デバフ効果が正しく定義される', () => {
       const status: TemporaryStatus = {
         id: 'debuff-attack-001',
-        name: '攻撃力ダウン',
+        name: 'Attack Down',
         type: 'debuff',
         effects: {
           attack: -5,
@@ -65,7 +65,7 @@ describe('TemporaryStatus', () => {
     test('状態異常が正しく定義される', () => {
       const status: TemporaryStatus = {
         id: 'poison-001',
-        name: '毒',
+        name: 'Poison',
         type: 'status_ailment',
         effects: {
           hpPerTurn: -3,
@@ -83,7 +83,7 @@ describe('TemporaryStatus', () => {
     test('永続効果（duration: -1）が正しく設定される', () => {
       const status: TemporaryStatus = {
         id: 'permanent-001',
-        name: '永続ブースト',
+        name: 'Attack Up',
         type: 'buff',
         effects: {
           attack: 1,
@@ -100,7 +100,7 @@ describe('TemporaryStatus', () => {
     test('すべてのステータス効果が正しく定義される', () => {
       const status: TemporaryStatus = {
         id: 'test-all-effects',
-        name: 'テスト用効果',
+        name: 'All Stats Up',
         type: 'buff',
         effects: {
           attack: 1,
@@ -141,7 +141,7 @@ describe('TemporaryStatus', () => {
     test('TemporaryStatusがJSONに正しく変換される', () => {
       const status: TemporaryStatus = {
         id: 'test-serialize',
-        name: 'シリアライズテスト',
+        name: 'Attack Up',
         type: 'buff',
         effects: {
           attack: 10,
@@ -155,7 +155,7 @@ describe('TemporaryStatus', () => {
       const parsed = JSON.parse(json);
 
       expect(parsed.id).toBe('test-serialize');
-      expect(parsed.name).toBe('シリアライズテスト');
+      expect(parsed.name).toBe('Attack Up');
       expect(parsed.type).toBe('buff');
       expect(parsed.effects.attack).toBe(10);
       expect(parsed.effects.defense).toBe(5);
@@ -166,7 +166,7 @@ describe('TemporaryStatus', () => {
     test('JSONからTemporaryStatusが正しく復元される', () => {
       const data: TemporaryStatusData = {
         id: 'test-deserialize',
-        name: 'デシリアライズテスト',
+        name: 'Speed Down',
         type: 'debuff',
         effects: {
           speed: -3,
@@ -180,7 +180,7 @@ describe('TemporaryStatus', () => {
       const parsed: TemporaryStatus = JSON.parse(json);
 
       expect(parsed.id).toBe('test-deserialize');
-      expect(parsed.name).toBe('デシリアライズテスト');
+      expect(parsed.name).toBe('Speed Down');
       expect(parsed.type).toBe('debuff');
       expect(parsed.effects.speed).toBe(-3);
       expect(parsed.effects.cannotAct).toBe(true);
@@ -191,7 +191,7 @@ describe('TemporaryStatus', () => {
     test('部分的な効果を持つTemporaryStatusがJSONで正しく扱われる', () => {
       const status: TemporaryStatus = {
         id: 'partial-effects',
-        name: '部分効果',
+        name: 'Poison',
         type: 'status_ailment',
         effects: {
           hpPerTurn: -1,

@@ -7,7 +7,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で毒状態異常を生成する', () => {
         const poison = StatusAilmentFactory.createPoison();
 
-        expect(poison.name).toBe('毒');
+        expect(poison.name).toBe('Poison');
         expect(poison.type).toBe('status_ailment');
         expect(poison.effects.hpPerTurn).toBe(-3); // デフォルトダメージ
         expect(poison.effects.cannotRun).toBe(true);
@@ -34,7 +34,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で麻痺状態異常を生成する', () => {
         const paralysis = StatusAilmentFactory.createParalysis();
 
-        expect(paralysis.name).toBe('麻痺');
+        expect(paralysis.name).toBe('Paralysis');
         expect(paralysis.type).toBe('status_ailment');
         expect(paralysis.effects.cannotAct).toBe(true);
         expect(paralysis.effects.speed).toBe(-5);
@@ -54,7 +54,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で睡眠状態異常を生成する', () => {
         const sleep = StatusAilmentFactory.createSleep();
 
-        expect(sleep.name).toBe('睡眠');
+        expect(sleep.name).toBe('Sleep');
         expect(sleep.type).toBe('status_ailment');
         expect(sleep.effects.cannotAct).toBe(true);
         expect(sleep.effects.defense).toBe(-3);
@@ -76,7 +76,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で攻撃力アップバフを生成する', () => {
         const buff = StatusAilmentFactory.createAttackBoost();
 
-        expect(buff.name).toBe('攻撃力アップ');
+        expect(buff.name).toBe('Attack Up');
         expect(buff.type).toBe('buff');
         expect(buff.effects.attack).toBe(5); // デフォルトブースト
         expect(buff.duration).toBe(3); // デフォルト継続期間
@@ -102,7 +102,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で防御力アップバフを生成する', () => {
         const buff = StatusAilmentFactory.createDefenseBoost();
 
-        expect(buff.name).toBe('防御力アップ');
+        expect(buff.name).toBe('Defense Up');
         expect(buff.type).toBe('buff');
         expect(buff.effects.defense).toBe(5);
         expect(buff.duration).toBe(3);
@@ -115,7 +115,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で再生効果を生成する', () => {
         const regen = StatusAilmentFactory.createRegeneration();
 
-        expect(regen.name).toBe('再生');
+        expect(regen.name).toBe('Regeneration');
         expect(regen.type).toBe('buff');
         expect(regen.effects.hpPerTurn).toBe(5); // デフォルト回復量
         expect(regen.duration).toBe(5); // デフォルト継続期間
@@ -143,7 +143,7 @@ describe('StatusAilmentFactory', () => {
       test('デフォルト値で全ステータスダウンデバフを生成する', () => {
         const debuff = StatusAilmentFactory.createAllStatsDown();
 
-        expect(debuff.name).toBe('全能力ダウン');
+        expect(debuff.name).toBe('All Stats Down');
         expect(debuff.type).toBe('debuff');
         expect(debuff.effects.attack).toBe(-2);
         expect(debuff.effects.defense).toBe(-2);

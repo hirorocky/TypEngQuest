@@ -4,6 +4,33 @@
 export type TemporaryStatusType = 'buff' | 'debuff' | 'status_ailment';
 
 /**
+ * 一時ステータスの名前
+ */
+export type TemporaryStatusName =
+  // Buffs
+  | 'Attack Up'
+  | 'Defense Up'
+  | 'Speed Up'
+  | 'Accuracy Up'
+  | 'Fortune Up'
+  | 'All Stats Up'
+  | 'Regeneration'
+  // Debuffs
+  | 'Attack Down'
+  | 'Defense Down'
+  | 'Speed Down'
+  | 'Accuracy Down'
+  | 'Fortune Down'
+  | 'All Stats Down'
+  // Status Ailments
+  | 'Poison'
+  | 'Paralysis'
+  | 'Sleep'
+  | 'Confusion'
+  | 'Burn'
+  | 'Freeze';
+
+/**
  * 一時ステータスの効果
  */
 export interface TemporaryStatusEffects {
@@ -34,8 +61,8 @@ export interface TemporaryStatusEffects {
 export interface TemporaryStatus {
   /** 一意識別子 */
   id: string;
-  /** 名前（例: "攻撃力アップ", "毒"） */
-  name: string;
+  /** 名前（例: "Attack Up", "Poison"） */
+  name: TemporaryStatusName;
   /** 種別 */
   type: TemporaryStatusType;
   /** ステータスへの影響 */
@@ -52,7 +79,7 @@ export interface TemporaryStatus {
  */
 export interface TemporaryStatusData {
   id: string;
-  name: string;
+  name: TemporaryStatusName;
   type: TemporaryStatusType;
   effects: TemporaryStatusEffects;
   duration: number;

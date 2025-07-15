@@ -1,4 +1,4 @@
-import { TemporaryStatus } from './TemporaryStatus';
+import { TemporaryStatus, TemporaryStatusName } from './TemporaryStatus';
 
 /**
  * 状態異常を生成するファクトリークラス
@@ -14,7 +14,7 @@ export class StatusAilmentFactory {
   static createPoison(duration: number = 3, damage: number = 3): TemporaryStatus {
     return {
       id: `poison-${Date.now()}-${Math.random()}`,
-      name: '毒',
+      name: 'Poison' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
         hpPerTurn: -Math.abs(damage), // ダメージは負の値
@@ -33,7 +33,7 @@ export class StatusAilmentFactory {
   static createParalysis(duration: number = 2): TemporaryStatus {
     return {
       id: `paralysis-${Date.now()}-${Math.random()}`,
-      name: '麻痺',
+      name: 'Paralysis' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
         cannotAct: true, // 行動不能
@@ -52,7 +52,7 @@ export class StatusAilmentFactory {
   static createSleep(duration: number = 2): TemporaryStatus {
     return {
       id: `sleep-${Date.now()}-${Math.random()}`,
-      name: '睡眠',
+      name: 'Sleep' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
         cannotAct: true, // 行動不能
@@ -72,7 +72,7 @@ export class StatusAilmentFactory {
   static createAttackBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
       id: `attack-boost-${Date.now()}-${Math.random()}`,
-      name: '攻撃力アップ',
+      name: 'Attack Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
         attack: Math.abs(boost), // 正の値にする
@@ -91,7 +91,7 @@ export class StatusAilmentFactory {
   static createDefenseBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
       id: `defense-boost-${Date.now()}-${Math.random()}`,
-      name: '防御力アップ',
+      name: 'Defense Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
         defense: Math.abs(boost), // 正の値にする
@@ -111,7 +111,7 @@ export class StatusAilmentFactory {
     const abspenalty = Math.abs(penalty);
     return {
       id: `all-stats-down-${Date.now()}-${Math.random()}`,
-      name: '全能力ダウン',
+      name: 'All Stats Down' as TemporaryStatusName,
       type: 'debuff',
       effects: {
         attack: -abspenalty,
@@ -134,7 +134,7 @@ export class StatusAilmentFactory {
   static createRegeneration(duration: number = 5, healAmount: number = 5): TemporaryStatus {
     return {
       id: `regeneration-${Date.now()}-${Math.random()}`,
-      name: '再生',
+      name: 'Regeneration' as TemporaryStatusName,
       type: 'buff',
       effects: {
         hpPerTurn: Math.abs(healAmount), // 正の値にする

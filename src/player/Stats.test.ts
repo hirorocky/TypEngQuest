@@ -1,5 +1,5 @@
 import { Stats, TotalStats } from './Stats';
-import { TemporaryStatus } from './TemporaryStatus';
+import { TemporaryStatus, TemporaryStatusName } from './TemporaryStatus';
 
 describe('Stats', () => {
   describe('初期化', () => {
@@ -293,7 +293,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status: TemporaryStatus = {
           id: 'buff-attack-001',
-          name: '攻撃力アップ',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 10 },
           duration: 3,
@@ -311,7 +311,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status1: TemporaryStatus = {
           id: 'same-id',
-          name: '最初の効果',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 2,
@@ -319,7 +319,7 @@ describe('Stats', () => {
         };
         const status2: TemporaryStatus = {
           id: 'same-id',
-          name: '上書きする効果',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 10 },
           duration: 4,
@@ -331,7 +331,7 @@ describe('Stats', () => {
         const statuses = stats.getTemporaryStatuses();
 
         expect(statuses).toHaveLength(1);
-        expect(statuses[0].name).toBe('上書きする効果');
+        expect(statuses[0].name).toBe('Attack Up');
         expect(statuses[0].effects.attack).toBe(10);
       });
 
@@ -339,7 +339,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status1: TemporaryStatus = {
           id: 'attack-buff-1',
-          name: '攻撃力アップ',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 2,
@@ -347,7 +347,7 @@ describe('Stats', () => {
         };
         const status2: TemporaryStatus = {
           id: 'attack-buff-2',
-          name: '攻撃力アップ',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 8 },
           duration: 3,
@@ -367,7 +367,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status1: TemporaryStatus = {
           id: 'stack-1',
-          name: 'スタック可能効果',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 3 },
           duration: 2,
@@ -375,7 +375,7 @@ describe('Stats', () => {
         };
         const status2: TemporaryStatus = {
           id: 'stack-2',
-          name: 'スタック可能効果',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 4 },
           duration: 3,
@@ -397,7 +397,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status1: TemporaryStatus = {
           id: 'remove-test-1',
-          name: '削除テスト1',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 3,
@@ -405,7 +405,7 @@ describe('Stats', () => {
         };
         const status2: TemporaryStatus = {
           id: 'remove-test-2',
-          name: '削除テスト2',
+          name: 'Defense Up',
           type: 'buff',
           effects: { defense: 3 },
           duration: 2,
@@ -437,7 +437,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status: TemporaryStatus = {
           id: 'get-test',
-          name: '取得テスト',
+          name: 'Speed Up',
           type: 'debuff',
           effects: { speed: -2 },
           duration: 1,
@@ -456,7 +456,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const buff: TemporaryStatus = {
           id: 'buff-test',
-          name: 'バフテスト',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 3,
@@ -464,7 +464,7 @@ describe('Stats', () => {
         };
         const ailment: TemporaryStatus = {
           id: 'poison-test',
-          name: '毒',
+          name: 'Poison',
           type: 'status_ailment',
           effects: { hpPerTurn: -2 },
           duration: 4,
@@ -483,7 +483,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const buff: TemporaryStatus = {
           id: 'buff-only',
-          name: 'バフのみ',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 3,
@@ -505,7 +505,7 @@ describe('Stats', () => {
 
         const buff: TemporaryStatus = {
           id: 'total-test-1',
-          name: '総合バフ',
+          name: 'All Stats Up',
           type: 'buff',
           effects: {
             attack: 15,
@@ -529,7 +529,7 @@ describe('Stats', () => {
 
         const buff1: TemporaryStatus = {
           id: 'stack-buff-1',
-          name: 'スタック攻撃バフ1',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 8 },
           duration: 3,
@@ -538,7 +538,7 @@ describe('Stats', () => {
 
         const buff2: TemporaryStatus = {
           id: 'stack-buff-2',
-          name: 'スタック攻撃バフ2',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 2,
@@ -547,7 +547,7 @@ describe('Stats', () => {
 
         const debuff: TemporaryStatus = {
           id: 'attack-debuff',
-          name: '攻撃デバフ',
+          name: 'Attack Down',
           type: 'debuff',
           effects: { attack: -3 },
           duration: 4,
@@ -568,7 +568,7 @@ describe('Stats', () => {
 
         const poison: TemporaryStatus = {
           id: 'poison-effect',
-          name: '毒',
+          name: 'Poison',
           type: 'status_ailment',
           effects: {
             hpPerTurn: -2,
@@ -580,7 +580,7 @@ describe('Stats', () => {
 
         const paralysis: TemporaryStatus = {
           id: 'paralysis-effect',
-          name: '麻痺',
+          name: 'Paralysis',
           type: 'status_ailment',
           effects: {
             cannotAct: true,
@@ -605,7 +605,7 @@ describe('Stats', () => {
 
         const majorDebuff: TemporaryStatus = {
           id: 'major-debuff',
-          name: '大デバフ',
+          name: 'All Stats Down',
           type: 'debuff',
           effects: {
             attack: -999,
@@ -630,7 +630,7 @@ describe('Stats', () => {
 
         const buff: TemporaryStatus = {
           id: 'attack-test',
-          name: '攻撃バフ',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 12 },
           duration: 3,
@@ -647,7 +647,7 @@ describe('Stats', () => {
 
         const debuff: TemporaryStatus = {
           id: 'defense-test',
-          name: '防御デバフ',
+          name: 'Defense Down',
           type: 'debuff',
           effects: { defense: -4 },
           duration: 2,
@@ -664,7 +664,7 @@ describe('Stats', () => {
 
         const speedBuff: TemporaryStatus = {
           id: 'speed-test',
-          name: 'スピードアップ',
+          name: 'Speed Up',
           type: 'buff',
           effects: { speed: 7 },
           duration: 4,
@@ -681,7 +681,7 @@ describe('Stats', () => {
 
         const accuracyBuff: TemporaryStatus = {
           id: 'accuracy-test',
-          name: '命中アップ',
+          name: 'Accuracy Up',
           type: 'buff',
           effects: { accuracy: 5 },
           duration: 3,
@@ -698,7 +698,7 @@ describe('Stats', () => {
 
         const fortuneDebuff: TemporaryStatus = {
           id: 'fortune-test',
-          name: '運気ダウン',
+          name: 'Fortune Down',
           type: 'debuff',
           effects: { fortune: -2 },
           duration: 2,
@@ -717,7 +717,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const status1: TemporaryStatus = {
           id: 'duration-test-1',
-          name: '期間テスト1',
+          name: 'Attack Up',
           type: 'buff',
           effects: { attack: 5 },
           duration: 3,
@@ -725,7 +725,7 @@ describe('Stats', () => {
         };
         const status2: TemporaryStatus = {
           id: 'duration-test-2',
-          name: '期間テスト2',
+          name: 'Defense Up',
           type: 'buff',
           effects: { defense: 3 },
           duration: 2, // 1だと削除されてしまうため2に変更
@@ -749,7 +749,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const expiredStatus: TemporaryStatus = {
           id: 'expired-test',
-          name: '期限切れテスト',
+          name: 'Speed Up',
           type: 'debuff',
           effects: { attack: -2 },
           duration: 1,
@@ -757,7 +757,7 @@ describe('Stats', () => {
         };
         const activeStatus: TemporaryStatus = {
           id: 'active-test',
-          name: 'アクティブテスト',
+          name: 'Attack Up',
           type: 'buff',
           effects: { defense: 4 },
           duration: 3,
@@ -780,7 +780,7 @@ describe('Stats', () => {
         const stats = new Stats(1);
         const permanentStatus: TemporaryStatus = {
           id: 'permanent-test',
-          name: '永続テスト',
+          name: 'Accuracy Up',
           type: 'buff',
           effects: { fortune: 1 },
           duration: -1,
@@ -788,7 +788,7 @@ describe('Stats', () => {
         };
         const temporaryStatus: TemporaryStatus = {
           id: 'temporary-test',
-          name: '一時テスト',
+          name: 'Fortune Up',
           type: 'buff',
           effects: { speed: 2 },
           duration: 2,
@@ -819,7 +819,7 @@ describe('Stats', () => {
 
         const regenStatus: TemporaryStatus = {
           id: 'regen-turn-test',
-          name: '再生ターンテスト',
+          name: 'Regeneration',
           type: 'buff',
           effects: {
             mpPerTurn: 3, // シンプルにMP変化のみでテスト
@@ -861,7 +861,7 @@ describe('Stats', () => {
 
         const regenStatus: TemporaryStatus = {
           id: 'direct-test',
-          name: '直接テスト',
+          name: 'Regeneration',
           type: 'buff',
           effects: {
             mpPerTurn: 3,
@@ -889,7 +889,7 @@ describe('Stats', () => {
 
         const status: TemporaryStatus = {
           id: 'calc-test',
-          name: '計算テスト',
+          name: 'Regeneration',
           type: 'buff',
           effects: {
             mpPerTurn: 5,
@@ -933,7 +933,7 @@ describe('Stats', () => {
 
         const poison1: TemporaryStatus = {
           id: 'poison-1',
-          name: '毒1',
+          name: 'Poison',
           type: 'status_ailment',
           effects: { hpPerTurn: -3 },
           duration: 2,
@@ -941,7 +941,7 @@ describe('Stats', () => {
         };
         const poison2: TemporaryStatus = {
           id: 'poison-2',
-          name: '毒2',
+          name: 'Burn',
           type: 'status_ailment',
           effects: { hpPerTurn: -2 },
           duration: 3,
@@ -949,7 +949,7 @@ describe('Stats', () => {
         };
         const healing: TemporaryStatus = {
           id: 'healing',
-          name: '回復',
+          name: 'Regeneration',
           type: 'buff',
           effects: { hpPerTurn: 4 },
           duration: 2,
@@ -975,7 +975,7 @@ describe('Stats', () => {
 
         const massiveDamage: TemporaryStatus = {
           id: 'massive-damage',
-          name: '大ダメージ',
+          name: 'Poison',
           type: 'status_ailment',
           effects: { hpPerTurn: -999 },
           duration: 1, // duration を1に変更して次のターンで削除されるようにする
@@ -993,7 +993,7 @@ describe('Stats', () => {
         // 回復テスト
         const massiveHeal: TemporaryStatus = {
           id: 'massive-heal',
-          name: '大回復',
+          name: 'Regeneration',
           type: 'buff',
           effects: {
             hpPerTurn: 999,
@@ -1020,7 +1020,7 @@ describe('Stats', () => {
       // StatusAilmentFactoryが存在しないため、手動で毒ステータスを作成
       const poison: TemporaryStatus = {
         id: 'poison-integration-test',
-        name: '毒',
+        name: 'Poison' as TemporaryStatusName,
         type: 'status_ailment',
         effects: {
           hpPerTurn: -5, // 毎ターン5ダメージ
@@ -1035,7 +1035,7 @@ describe('Stats', () => {
       // 状態異常が正しく追加されているか確認
       const ailments = stats.getActiveStatusAilments();
       expect(ailments).toHaveLength(1);
-      expect(ailments[0].name).toBe('毒');
+      expect(ailments[0].name).toBe('Poison');
 
       // 総合ステータスに状態異常の効果が反映されているか確認
       const totalStats = stats.getTotalStats();
@@ -1065,7 +1065,7 @@ describe('Stats', () => {
       // 毒状態異常
       const poison: TemporaryStatus = {
         id: 'poison-combo-test',
-        name: '毒',
+        name: 'Poison' as TemporaryStatusName,
         type: 'status_ailment',
         effects: { hpPerTurn: -3 },
         duration: 2,
@@ -1075,7 +1075,7 @@ describe('Stats', () => {
       // 再生バフ
       const regen: TemporaryStatus = {
         id: 'regen-combo-test',
-        name: '再生',
+        name: 'Regeneration' as TemporaryStatusName,
         type: 'buff',
         effects: {
           hpPerTurn: 5,
@@ -1088,7 +1088,7 @@ describe('Stats', () => {
       // 麻痺状態異常
       const paralysis: TemporaryStatus = {
         id: 'paralysis-combo-test',
-        name: '麻痺',
+        name: 'Paralysis' as TemporaryStatusName,
         type: 'status_ailment',
         effects: {
           cannotAct: true,
@@ -1112,8 +1112,8 @@ describe('Stats', () => {
       // 状態異常のみ取得
       const ailments = stats.getActiveStatusAilments();
       expect(ailments).toHaveLength(2);
-      expect(ailments.map(a => a.name)).toContain('毒');
-      expect(ailments.map(a => a.name)).toContain('麻痺');
+      expect(ailments.map(a => a.name)).toContain('Poison');
+      expect(ailments.map(a => a.name)).toContain('Paralysis');
 
       // ターン経過で効果適用
       stats.updateTemporaryStatuses();
