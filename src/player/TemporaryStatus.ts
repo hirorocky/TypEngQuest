@@ -74,14 +74,95 @@ export interface TemporaryStatus {
 }
 
 /**
- * 一時ステータスのJSONデータ構造
- * TemporaryStatusと同じ構造だが、JSONシリアライゼーション用に明示的に定義
+ * オブジェクトがTemporaryStatusEffectsの有効な構造かどうかを検証する
+ * @param obj - 検証するオブジェクト
+ * @returns 有効な場合true
  */
-export interface TemporaryStatusData {
-  id: string;
-  name: TemporaryStatusName;
-  type: TemporaryStatusType;
-  effects: TemporaryStatusEffects;
-  duration: number;
-  stackable: boolean;
+export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffects {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
+  // 数値プロパティのチェック
+  const numberProps = [
+    'attack',
+    'defense',
+    'speed',
+    'accuracy',
+    'fortune',
+    'hpPerTurn',
+    'mpPerTurn',
+  ];
+  for (const prop of numberProps) {
+    if (obj[prop] !== undefined && typeof obj[prop] !== 'number') {
+      return false;
+    }
+  }
+
+  // 真偽値プロパティのチェック
+  const booleanProps = ['cannotAct', 'cannotRun'];
+  for (const prop of booleanProps) {
+    if (obj[prop] !== undefined && typeof obj[prop] !== 'boolean') {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * 有効なTemporaryStatusNameの定数配列
+ */
+const VALID_TEMPORARY_STATUS_NAMES: TemporaryStatusName[] = [
+  'Attack Up',
+  'Defense Up',
+  'Speed Up',
+  'Accuracy Up',
+  'Fortune Up',
+  'All Stats Up',
+  'Regeneration',
+  'Attack Down',
+  'Defense Down',
+  'Speed Down',
+  'Accuracy Down',
+  'Fortune Down',
+  'All Stats Down',
+  'Poison',
+  'Paralysis',
+  'Sleep',
+  'Confusion',
+  'Burn',
+  'Freeze',
+];
+
+/**
+ * 有効なTemporaryStatusTypeの定数配列
+ */
+const VALID_TEMPORARY_STATUS_TYPES: TemporaryStatusType[] = ['buff', 'debuff', 'status_ailment'];
+
+/**
+ * オブジェクトがTemporaryStatusの有効な構造かどうかを検証する
+ * @param obj - 検証するオブジェクト
+ * @returns 有効な場合true
+ */
+export function isTemporaryStatus(obj: any): obj is TemporaryStatus {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
+  // 必須プロパティのチェック
+  if (typeof obj.id !== 'string') return false;
+  if (typeof obj.name !== 'string') return false;
+  if (typeof obj.type !== 'string') return false;
+  if (typeof obj.duration !== 'number') return false;
+  if (typeof obj.stackable !== 'boolean') return false;
+
+  // 名前が有効なTemporaryStatusNameかチェック
+  if (!VALID_TEMPORARY_STATUS_NAMES.includes(obj.name as TemporaryStatusName)) return false;
+
+  // 種別が有効なTemporaryStatusTypeかチェック
+  if (!VALID_TEMPORARY_STATUS_TYPES.includes(obj.type as TemporaryStatusType)) return false;
+
+  // 効果が有効な構造かチェック
+  return isTemporaryStatusEffects(obj.effects);
 }

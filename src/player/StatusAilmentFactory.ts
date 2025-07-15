@@ -1,4 +1,5 @@
 import { TemporaryStatus, TemporaryStatusName } from './TemporaryStatus';
+import { randomUUID } from 'crypto';
 
 /**
  * 状態異常を生成するファクトリークラス
@@ -13,7 +14,7 @@ export class StatusAilmentFactory {
    */
   static createPoison(duration: number = 3, damage: number = 3): TemporaryStatus {
     return {
-      id: `poison-${Date.now()}-${Math.random()}`,
+      id: `poison-${randomUUID()}`,
       name: 'Poison' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
@@ -32,7 +33,7 @@ export class StatusAilmentFactory {
    */
   static createParalysis(duration: number = 2): TemporaryStatus {
     return {
-      id: `paralysis-${Date.now()}-${Math.random()}`,
+      id: `paralysis-${randomUUID()}`,
       name: 'Paralysis' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
@@ -51,7 +52,7 @@ export class StatusAilmentFactory {
    */
   static createSleep(duration: number = 2): TemporaryStatus {
     return {
-      id: `sleep-${Date.now()}-${Math.random()}`,
+      id: `sleep-${randomUUID()}`,
       name: 'Sleep' as TemporaryStatusName,
       type: 'status_ailment',
       effects: {
@@ -71,7 +72,7 @@ export class StatusAilmentFactory {
    */
   static createAttackBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
-      id: `attack-boost-${Date.now()}-${Math.random()}`,
+      id: `attack-boost-${randomUUID()}`,
       name: 'Attack Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
@@ -90,7 +91,7 @@ export class StatusAilmentFactory {
    */
   static createDefenseBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
-      id: `defense-boost-${Date.now()}-${Math.random()}`,
+      id: `defense-boost-${randomUUID()}`,
       name: 'Defense Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
@@ -110,7 +111,7 @@ export class StatusAilmentFactory {
   static createAllStatsDown(duration: number = 2, penalty: number = 2): TemporaryStatus {
     const abspenalty = Math.abs(penalty);
     return {
-      id: `all-stats-down-${Date.now()}-${Math.random()}`,
+      id: `all-stats-down-${randomUUID()}`,
       name: 'All Stats Down' as TemporaryStatusName,
       type: 'debuff',
       effects: {
@@ -133,7 +134,7 @@ export class StatusAilmentFactory {
    */
   static createRegeneration(duration: number = 5, healAmount: number = 5): TemporaryStatus {
     return {
-      id: `regeneration-${Date.now()}-${Math.random()}`,
+      id: `regeneration-${randomUUID()}`,
       name: 'Regeneration' as TemporaryStatusName,
       type: 'buff',
       effects: {

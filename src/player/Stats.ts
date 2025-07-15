@@ -1,4 +1,4 @@
-import { TemporaryStatus } from './TemporaryStatus';
+import { TemporaryStatus, isTemporaryStatus } from './TemporaryStatus';
 
 /**
  * プレイヤーのステータス管理クラス
@@ -362,35 +362,81 @@ export class Stats {
    * @returns 総合ステータス
    */
   getTotalStats(): TotalStats {
-    const result: TotalStats = {
-      attack: this.getAttack(),
-      defense: this.getDefense(),
-      speed: this.getSpeed(),
-      accuracy: this.getAccuracy(),
-      fortune: this.getFortune(),
-      hpPerTurn: 0,
-      mpPerTurn: 0,
-      cannotAct: false,
-      cannotRun: false,
+    const effects = this.aggregateTemporaryEffects();
+
+    return {
+      attack: Math.max(0, this.baseAttack + this.temporaryBoosts.attack + effects.stats.attack),
+      defense: Math.max(0, this.baseDefense + this.temporaryBoosts.defense + effects.stats.defense),
+      speed: Math.max(0, this.baseSpeed + this.temporaryBoosts.speed + effects.stats.speed),
+      accuracy: Math.max(
+        0,
+        this.baseAccuracy + this.temporaryBoosts.accuracy + effects.stats.accuracy
+      ),
+      fortune: Math.max(0, this.baseFortune + this.temporaryBoosts.fortune + effects.stats.fortune),
+      hpPerTurn: effects.turn.hpPerTurn,
+      mpPerTurn: effects.turn.mpPerTurn,
+      cannotAct: effects.flags.cannotAct,
+      cannotRun: effects.flags.cannotRun,
     };
+  }
 
-    // 特殊効果（ターンごとのHP/MP変化、状態異常効果）を計算
-    this.temporaryStatuses.forEach(status => {
-      if (status.effects.hpPerTurn) {
-        result.hpPerTurn += status.effects.hpPerTurn;
-      }
-      if (status.effects.mpPerTurn) {
-        result.mpPerTurn += status.effects.mpPerTurn;
-      }
-      if (status.effects.cannotAct) {
-        result.cannotAct = true;
-      }
-      if (status.effects.cannotRun) {
-        result.cannotRun = true;
-      }
-    });
+  /**
+   * 全ての一時ステータスからの効果を集約する
+   * @returns 集約された効果
+   */
+  private aggregateTemporaryEffects() {
+    const statEffects = { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 0 };
+    const turnEffects = { hpPerTurn: 0, mpPerTurn: 0 };
+    const flagEffects = { cannotAct: false, cannotRun: false };
 
-    return result;
+    for (const status of this.temporaryStatuses) {
+      this.applyStatEffects(status, statEffects);
+      this.applyTurnEffects(status, turnEffects);
+      this.applyFlagEffects(status, flagEffects);
+    }
+
+    return {
+      stats: statEffects,
+      turn: turnEffects,
+      flags: flagEffects,
+    };
+  }
+
+  /**
+   * 一時ステータスからステータス効果を適用する
+   * @param status - 一時ステータス
+   * @param effects - 適用先の効果オブジェクト
+   */
+  private applyStatEffects(status: TemporaryStatus, effects: any) {
+    effects.attack += status.effects.attack || 0;
+    effects.defense += status.effects.defense || 0;
+    effects.speed += status.effects.speed || 0;
+    effects.accuracy += status.effects.accuracy || 0;
+    effects.fortune += status.effects.fortune || 0;
+  }
+
+  /**
+   * 一時ステータスからターン効果を適用する
+   * @param status - 一時ステータス
+   * @param effects - 適用先の効果オブジェクト
+   */
+  private applyTurnEffects(status: TemporaryStatus, effects: any) {
+    effects.hpPerTurn += status.effects.hpPerTurn || 0;
+    effects.mpPerTurn += status.effects.mpPerTurn || 0;
+  }
+
+  /**
+   * 一時ステータスからフラグ効果を適用する
+   * @param status - 一時ステータス
+   * @param effects - 適用先の効果オブジェクト
+   */
+  private applyFlagEffects(status: TemporaryStatus, effects: any) {
+    if (status.effects.cannotAct) {
+      effects.cannotAct = true;
+    }
+    if (status.effects.cannotRun) {
+      effects.cannotRun = true;
+    }
   }
 
   /**
@@ -433,7 +479,7 @@ export class Stats {
     stats.baseFortune = data.baseFortune;
     stats.temporaryBoosts = { ...data.temporaryBoosts };
     stats.temporaryStatuses = data.temporaryStatuses
-      ? data.temporaryStatuses.map((status: any) => ({ ...status }))
+      ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
       : [];
 
     return stats;

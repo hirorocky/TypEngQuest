@@ -1,4 +1,4 @@
-import { TemporaryStatus, TemporaryStatusData, TemporaryStatusType } from './TemporaryStatus';
+import { TemporaryStatus, TemporaryStatusType } from './TemporaryStatus';
 
 describe('TemporaryStatus', () => {
   describe('TemporaryStatusの基本プロパティ', () => {
@@ -164,7 +164,7 @@ describe('TemporaryStatus', () => {
     });
 
     test('JSONからTemporaryStatusが正しく復元される', () => {
-      const data: TemporaryStatusData = {
+      const data: TemporaryStatus = {
         id: 'test-deserialize',
         name: 'Speed Down',
         type: 'debuff',
