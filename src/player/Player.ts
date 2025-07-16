@@ -1,5 +1,6 @@
 import { Stats, StatsData } from './Stats';
 import { Inventory, InventoryData } from './Inventory';
+import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
@@ -26,11 +27,27 @@ export class Player {
    * プレイヤーを初期化する
    * @param name - プレイヤーの名前
    */
-  constructor(name: string) {
+  constructor(name: string, istestMode: boolean = false) {
     this.name = name;
     this.level = Player.DEFAULT_LEVEL;
     this.stats = new Stats(this.level);
     this.inventory = new Inventory();
+    if (istestMode) {
+      this.stats.takeDamage(50);
+      this.stats.consumeMP(20);
+      for (let i = 0; i < 15; i++) {
+        this.inventory.addItem(
+          new ConsumableItem({
+            id: `test-item-${i}`,
+            name: `Test Item ${i}`,
+            description: `This is a test item for the player.`,
+            type: ItemType.CONSUMABLE,
+            rarity: ItemRarity.COMMON,
+            effects: [{ type: EffectType.HEAL_HP, value: 50 }],
+          })
+        );
+      }
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
+import { ScrollableList, ListItem } from '../ui/ScrollableList';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Item } from '../items/Item';
@@ -12,7 +13,6 @@ import { ConsumableItem } from '../items/ConsumableItem';
 export class InventoryPhase extends Phase {
   protected world: World;
   private player: Player;
-  private selectedIndex: number = 0;
 
   constructor(world: World, player: Player) {
     super(world);
@@ -59,18 +59,11 @@ export class InventoryPhase extends Phase {
 
     // アイテムのリストを表示
     items.forEach((item, index) => {
-      const marker = index === this.selectedIndex ? '>' : ' ';
       const itemInfo = this.formatItemInfo(item);
-      Display.printLine(`${marker} ${index + 1}. ${itemInfo}`);
+      Display.println(`  ${index + 1}. ${itemInfo}`);
     });
 
     Display.newLine();
-
-    // 選択されたアイテムの詳細を表示
-    if (items.length > 0) {
-      const selectedItem = items[this.selectedIndex];
-      this.displayItemDetails(selectedItem);
-    }
   }
 
   /**
@@ -102,38 +95,10 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * アイテムの詳細情報を表示する
-   */
-  private displayItemDetails(item: Item): void {
-    Display.printInfo('selected item:');
-    Display.printLine(`  name: ${item.getDisplayName()}`);
-    Display.printLine(`  description: ${item.getDescription()}`);
-    Display.printLine(`  type: ${item.getType()}`);
-    Display.printLine(`  rarity: ${item.getRarity()}`);
-
-    // 消費アイテムの場合は効果を表示
-    if (item instanceof ConsumableItem) {
-      const effects = item.getEffects();
-      if (effects.length > 0) {
-        Display.printLine('  effects:');
-        effects.forEach(effect => {
-          Display.printLine(`    ${effect.type}: ${effect.value}`);
-        });
-      }
-    }
-
-    Display.newLine();
-  }
-
-  /**
    * 入力を処理してCommandResultを返す
    */
   async processInput(input: string): Promise<CommandResult> {
     const [command] = input.trim().split(/\s+/);
-
-    // 移動コマンド
-    const moveResult = this.handleMoveCommand(command);
-    if (moveResult) return moveResult;
 
     // アイテム操作コマンド
     const itemResult = await this.handleItemCommand(command);
@@ -155,27 +120,11 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 移動コマンドを処理する
-   */
-  private handleMoveCommand(command: string): CommandResult | null {
-    if (command === 'up' || command === 'u') {
-      return this.moveSelection(-1);
-    }
-    if (command === 'down' || command === 'd') {
-      return this.moveSelection(1);
-    }
-    return null;
-  }
-
-  /**
    * アイテム操作コマンドを処理する
    */
   private async handleItemCommand(command: string): Promise<CommandResult | null> {
-    if (command === 'use') {
-      return await this.useSelectedItem();
-    }
-    if (command === 'drop') {
-      return this.dropSelectedItem();
+    if (command === 'consume') {
+      return await this.consumeItem();
     }
     return null;
   }
@@ -214,52 +163,49 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 選択を移動する
+   * 消費アイテムを選択して使用する
    */
-  private moveSelection(direction: number): CommandResult {
-    const items = this.player.getInventory().getItems();
+  private async consumeItem(): Promise<CommandResult> {
+    const consumableItems = this.getConsumableItems();
 
-    if (items.length === 0) {
+    if (consumableItems.length === 0) {
       return {
         success: false,
-        message: 'no items to select',
+        message: 'no consumable items available',
       };
     }
 
-    const newIndex = this.selectedIndex + direction;
-    if (newIndex < 0 || newIndex >= items.length) {
+    const choices: ListItem[] = consumableItems.map((item, index) => ({
+      name: this.formatItemInfo(item),
+      value: index,
+    }));
+
+    const list = new ScrollableList(choices, {
+      message: 'Select an item to consume:',
+      pageSize: 8,
+      loop: false,
+      onSelectionChange: item => {
+        const selectedItem = consumableItems[item.value];
+        this.displaySelectedItemDetails(selectedItem);
+      },
+    });
+
+    const selectedIndex = await list.waitForSelection();
+
+    // リスト選択後、少し待ってから画面をリフレッシュ
+    await new Promise(resolve => {
+      global.setTimeout(resolve, 100);
+    });
+
+    if (selectedIndex === null) {
+      this.refreshDisplay();
       return {
         success: false,
-        message: 'cannot move selection further',
+        message: 'consumption cancelled',
       };
     }
 
-    this.selectedIndex = newIndex;
-    this.refreshDisplay();
-    return { success: true };
-  }
-
-  /**
-   * 選択されたアイテムを使用する
-   */
-  private async useSelectedItem(): Promise<CommandResult> {
-    const items = this.player.getInventory().getItems();
-
-    if (items.length === 0) {
-      return {
-        success: false,
-        message: 'no items to use',
-      };
-    }
-
-    const selectedItem = items[this.selectedIndex];
-
-    if (!(selectedItem instanceof ConsumableItem)) {
-      return {
-        success: false,
-        message: 'this item cannot be used',
-      };
-    }
+    const selectedItem = consumableItems[selectedIndex];
 
     // アイテムを使用
     try {
@@ -268,58 +214,47 @@ export class InventoryPhase extends Phase {
       // アイテムをインベントリから削除
       this.player.getInventory().removeItem(selectedItem);
 
-      // 選択インデックスを調整
-      const newItemCount = this.player.getInventory().getItemCount();
-      if (this.selectedIndex >= newItemCount && newItemCount > 0) {
-        this.selectedIndex = newItemCount - 1;
-      } else if (newItemCount === 0) {
-        this.selectedIndex = 0;
-      }
-
       this.refreshDisplay();
       return {
         success: true,
-        message: `used ${selectedItem.getDisplayName()}`,
+        message: `consumed ${selectedItem.getDisplayName()}`,
       };
     } catch (error) {
+      this.refreshDisplay();
       return {
         success: false,
-        message: `failed to use item: ${error instanceof Error ? error.message : 'unknown error'}`,
+        message: `failed to consume item: ${error instanceof Error ? error.message : 'unknown error'}`,
       };
     }
   }
 
   /**
-   * 選択されたアイテムを捨てる
+   * 消費可能なアイテムのリストを取得する
    */
-  private dropSelectedItem(): CommandResult {
-    const items = this.player.getInventory().getItems();
+  private getConsumableItems(): ConsumableItem[] {
+    const allItems = this.player.getInventory().getItems();
+    return allItems.filter(item => item instanceof ConsumableItem) as ConsumableItem[];
+  }
 
-    if (items.length === 0) {
-      return {
-        success: false,
-        message: 'no items to drop',
-      };
+  /**
+   * 選択されたアイテムの詳細情報を表示する
+   */
+  private displaySelectedItemDetails(item: ConsumableItem): void {
+    Display.newLine();
+    Display.printHeader('Selected Item Details');
+    Display.println(`Name: ${item.getDisplayName()}`);
+    Display.println(`Description: ${item.getDescription()}`);
+    Display.println(`Type: ${item.getType()}`);
+    Display.println(`Rarity: ${this.getRarityColor(item.getRarity())}${item.getRarity()}`);
+
+    const effects = item.getEffects();
+    if (effects.length > 0) {
+      Display.println('Effects:');
+      effects.forEach(effect => {
+        Display.println(`  ${effect.type}: ${effect.value}`);
+      });
     }
-
-    const selectedItem = items[this.selectedIndex];
-
-    // アイテムをインベントリから削除
-    this.player.getInventory().removeItem(selectedItem);
-
-    // 選択インデックスを調整
-    const newItemCount = this.player.getInventory().getItemCount();
-    if (this.selectedIndex >= newItemCount && newItemCount > 0) {
-      this.selectedIndex = newItemCount - 1;
-    } else if (newItemCount === 0) {
-      this.selectedIndex = 0;
-    }
-
-    this.refreshDisplay();
-    return {
-      success: true,
-      message: `dropped ${selectedItem.getDisplayName()}`,
-    };
+    Display.newLine();
   }
 
   /**
@@ -339,13 +274,10 @@ export class InventoryPhase extends Phase {
    */
   private showHelp(): void {
     Display.printInfo('commands:');
-    Display.printCommand('up/u', 'move selection up');
-    Display.printCommand('down/d', 'move selection down');
-    Display.printCommand('use', 'use selected item');
-    Display.printCommand('drop', 'drop selected item');
-    Display.printCommand('back/b', 'return to exploration');
-    Display.printCommand('help/h', 'show this help');
-    Display.printCommand('clear', 'clear screen');
+    Display.printCommand('consume', 'select and consume item');
+    Display.printCommand('back/b/exit', 'return to exploration');
+    Display.printCommand('help/h/?', 'show this help');
+    Display.printCommand('clear/cls', 'clear screen');
     Display.newLine();
   }
 
@@ -384,5 +316,12 @@ export class InventoryPhase extends Phase {
   protected processCommand(_input: string): PhaseResult {
     // このメソッドは使用されないが、抽象クラスの実装のため必要
     return { type: PhaseTypes.CONTINUE };
+  }
+
+  /**
+   * 利用可能なコマンドの一覧を取得する
+   */
+  public getAvailableCommands(): string[] {
+    return ['consume', 'back', 'b', 'exit', 'help', 'h', '?', 'clear', 'cls'];
   }
 }

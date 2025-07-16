@@ -7,6 +7,7 @@ import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
+import { InventoryPhase } from '../phases/InventoryPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
@@ -161,6 +162,16 @@ export class Game {
         }
         return new ExplorationPhase(this.currentWorld, this.currentPlayer);
 
+      case 'inventory':
+        // inventoryフェーズではワールドとプレイヤーが必要
+        if (!this.currentWorld) {
+          throw new Error('World is required for inventory phase');
+        }
+        if (!this.currentPlayer) {
+          throw new Error('Player is required for inventory phase');
+        }
+        return new InventoryPhase(this.currentWorld, this.currentPlayer);
+
       default:
         throw new Error(`Unknown phase type: ${phaseType}`);
     }
@@ -185,7 +196,7 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultPlayer(): Player {
-    return new Player('Player');
+    return new Player('Test Player', this.isTestMode);
   }
 
   private setupSignalHandlers(): void {

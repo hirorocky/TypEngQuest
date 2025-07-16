@@ -9,10 +9,17 @@ export class Display {
     process.stdout.write('\x1b[2J\x1b[0f');
   }
 
+  // 標準出力にテキストを出力する
   static print(text: string): void {
     process.stdout.write(text);
   }
 
+  // 標準出力にテキストを改行付きで出力する
+  static println(text: string): void {
+    process.stdout.write(text + '\n');
+  }
+
+  // 画面の横線を引く
   static printLine(char: string = '-', length: number = 50): void {
     console.log(char.repeat(length));
   }

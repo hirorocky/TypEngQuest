@@ -591,6 +591,91 @@ export class FileSystem {
   }
 
   /**
+   * ファイル補完候補を取得する
+   * @param partialPath 部分的なパス
+   * @returns マッチするファイル名の配列
+   */
+  public getFileCompletions(partialPath: string): string[] {
+    if (!partialPath) {
+      // 空の場合は現在ディレクトリの全ファイルを返す
+      const result = this.ls();
+      if (result.success && result.files) {
+        return result.files
+          .filter(file => file.isFile())
+          .map(file => file.name)
+          .sort();
+      }
+      return [];
+    }
+
+    // 絶対パスの場合
+    if (partialPath.startsWith('/')) {
+      return this.getAbsolutePathFileCompletions(partialPath);
+    }
+
+    // 相対パスの場合
+    return this.getRelativePathFileCompletions(partialPath);
+  }
+
+  /**
+   * 絶対パスのファイル補完候補を取得する
+   * @param absolutePath 絶対パス
+   * @returns マッチするファイル名の配列
+   */
+  private getAbsolutePathFileCompletions(absolutePath: string): string[] {
+    // 最後のスラッシュより前の部分をディレクトリパスとして解釈
+    const lastSlashIndex = absolutePath.lastIndexOf('/');
+    const dirPath = absolutePath.substring(0, lastSlashIndex);
+    const partial = absolutePath.substring(lastSlashIndex + 1);
+
+    const targetNode = this.getNodeByPath(dirPath || '/');
+    if (!targetNode || !targetNode.isDirectory()) {
+      return [];
+    }
+
+    return targetNode.children
+      .filter(child => child.isFile())
+      .map(child => child.name)
+      .filter(name => name.toLowerCase().startsWith(partial.toLowerCase()))
+      .map(name => `${dirPath}/${name}`)
+      .sort();
+  }
+
+  /**
+   * 相対パスのファイル補完候補を取得する
+   * @param relativePath 相対パス
+   * @returns マッチするファイル名の配列
+   */
+  private getRelativePathFileCompletions(relativePath: string): string[] {
+    // パスに / が含まれる場合（サブディレクトリ内の補完）
+    if (relativePath.includes('/')) {
+      const lastSlashIndex = relativePath.lastIndexOf('/');
+      const dirPath = relativePath.substring(0, lastSlashIndex);
+      const partial = relativePath.substring(lastSlashIndex + 1);
+
+      const targetNode = this.getNodeByPath(dirPath);
+      if (!targetNode || !targetNode.isDirectory()) {
+        return [];
+      }
+
+      return targetNode.children
+        .filter(child => child.isFile())
+        .map(child => child.name)
+        .filter(name => name.toLowerCase().startsWith(partial.toLowerCase()))
+        .map(name => `${dirPath}/${name}`)
+        .sort();
+    }
+
+    // 単純な名前の補完
+    const files = this.currentNode.children
+      .filter(child => child.isFile())
+      .map(child => child.name)
+      .filter(name => name.toLowerCase().startsWith(relativePath.toLowerCase()));
+
+    return files.sort();
+  }
+
+  /**
    * テスト用の固定ファイル構造を作成する（createSampleStructureのエイリアス）
    * 既存のユニットテストとの互換性のために保持
    * @returns テスト用FileSystemインスタンス
