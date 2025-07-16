@@ -67,6 +67,9 @@ describe('Player', () => {
             fortune: 0,
           },
         }),
+        inventory: expect.objectContaining({
+          items: [],
+        }),
       });
     });
   });
@@ -92,6 +95,9 @@ describe('Player', () => {
             accuracy: 0,
             fortune: 0,
           },
+        },
+        inventory: {
+          items: [],
         },
       };
 
