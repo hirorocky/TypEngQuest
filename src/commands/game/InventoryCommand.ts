@@ -26,7 +26,7 @@ export class InventoryCommand extends BaseCommand {
    * @param context 実行コンテキスト
    * @returns 実行結果
    */
-  protected executeInternal(args: string[], context: CommandContext): CommandResult {
+  protected executeInternal(_args: string[], context: CommandContext): CommandResult {
     const player = this.getPlayer(context);
     if (!player) {
       return this.error('player not available');

@@ -111,11 +111,10 @@ export class OpenCommand extends BaseCommand {
    * @param fileName ファイル名
    * @returns 生成されたアイテム
    */
-  private generateItem(fileName: string): ConsumableItem {
+  private generateItem(_fileName: string): ConsumableItem {
     const itemId = `treasure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // ファイル拡張子に基づいてアイテムタイプを決定
-    const extension = this.getExtension(fileName);
+    // ランダムにアイテムタイプを決定
     const isHPPotion = Math.random() < 0.5;
     
     if (isHPPotion) {
