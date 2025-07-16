@@ -13,8 +13,8 @@ export interface InventoryData {
  * プレイヤーのアイテム管理を行う
  */
 export class Inventory {
+  private static readonly MAX_ITEMS: number = 100;
   private items: Item[] = [];
-  private readonly maxItems: number = 100;
 
   /**
    * インベントリを初期化する
@@ -37,7 +37,7 @@ export class Inventory {
       throw new Error('Item cannot be null');
     }
 
-    if (this.items.length >= this.maxItems) {
+    if (this.items.length >= Inventory.MAX_ITEMS) {
       return false;
     }
 
@@ -120,7 +120,7 @@ export class Inventory {
    * @returns 満杯の場合true
    */
   isFull(): boolean {
-    return this.items.length >= this.maxItems;
+    return this.items.length >= Inventory.MAX_ITEMS;
   }
 
   /**
@@ -144,16 +144,14 @@ export class Inventory {
       throw new Error('Invalid inventory data');
     }
 
-    const items: Item[] = [];
-    for (const itemData of data.items) {
-      // 現在は消費アイテムのみサポート
-      if (itemData.type === ItemType.CONSUMABLE) {
-        items.push(ConsumableItem.fromJSON(itemData));
-      } else {
-        // その他のタイプは基本のItemクラスで復元
-        items.push(Item.fromJSON(itemData));
+    const items = data.items.map((itemData: any) => {
+      switch (itemData.type) {
+        case ItemType.CONSUMABLE:
+          return ConsumableItem.fromJSON(itemData);
+        default:
+          return Item.fromJSON(itemData);
       }
-    }
+    });
 
     return new Inventory(items);
   }

@@ -11,6 +11,14 @@ export class OpenCommand extends BaseCommand {
   public name = 'open';
   public description = 'open treasure chest file';
 
+  // アイテム生成用定数
+  private static readonly RARITY_COMMON_THRESHOLD = 0.6;
+  private static readonly RARITY_RARE_THRESHOLD = 0.85;
+  private static readonly RARITY_EPIC_THRESHOLD = 0.95;
+  private static readonly HEAL_VALUE_MIN = 25;
+  private static readonly HEAL_VALUE_MAX = 74;
+  private static readonly HP_POTION_PROBABILITY = 0.5;
+
   /**
    * 引数の検証を行う
    * @param args コマンド引数
@@ -113,29 +121,22 @@ export class OpenCommand extends BaseCommand {
    */
   private generateItem(_fileName: string): ConsumableItem {
     const itemId = `treasure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // ランダムにアイテムタイプを決定
-    const isHPPotion = Math.random() < 0.5;
-    
-    if (isHPPotion) {
-      return new ConsumableItem({
-        id: itemId,
-        name: 'Life Potion',
-        description: 'Restores HP when consumed',
-        type: ItemType.CONSUMABLE,
-        rarity: this.getRandomRarity(),
-        effects: [{ type: EffectType.HEAL_HP, value: this.getRandomHealValue() }],
-      });
-    } else {
-      return new ConsumableItem({
-        id: itemId,
-        name: 'Mana Potion',
-        description: 'Restores MP when consumed',
-        type: ItemType.CONSUMABLE,
-        rarity: this.getRandomRarity(),
-        effects: [{ type: EffectType.HEAL_MP, value: this.getRandomHealValue() }],
-      });
-    }
+    const isHPPotion = Math.random() < OpenCommand.HP_POTION_PROBABILITY;
+
+    const name = isHPPotion ? 'Life Potion' : 'Mana Potion';
+    const description = isHPPotion
+      ? 'Restores HP when consumed'
+      : 'Restores MP when consumed';
+    const effectType = isHPPotion ? EffectType.HEAL_HP : EffectType.HEAL_MP;
+
+    return new ConsumableItem({
+      id: itemId,
+      name,
+      description,
+      type: ItemType.CONSUMABLE,
+      rarity: this.getRandomRarity(),
+      effects: [{ type: effectType, value: this.getRandomHealValue() }],
+    });
   }
 
   /**
@@ -144,9 +145,9 @@ export class OpenCommand extends BaseCommand {
    */
   private getRandomRarity(): ItemRarity {
     const rand = Math.random();
-    if (rand < 0.6) return ItemRarity.COMMON;
-    if (rand < 0.85) return ItemRarity.RARE;
-    if (rand < 0.95) return ItemRarity.EPIC;
+    if (rand < OpenCommand.RARITY_COMMON_THRESHOLD) return ItemRarity.COMMON;
+    if (rand < OpenCommand.RARITY_RARE_THRESHOLD) return ItemRarity.RARE;
+    if (rand < OpenCommand.RARITY_EPIC_THRESHOLD) return ItemRarity.EPIC;
     return ItemRarity.LEGENDARY;
   }
 
@@ -155,7 +156,8 @@ export class OpenCommand extends BaseCommand {
    * @returns 回復値
    */
   private getRandomHealValue(): number {
-    return Math.floor(Math.random() * 50) + 25; // 25-74の範囲
+    const range = OpenCommand.HEAL_VALUE_MAX - OpenCommand.HEAL_VALUE_MIN + 1;
+    return Math.floor(Math.random() * range) + OpenCommand.HEAL_VALUE_MIN;
   }
 
   /**
