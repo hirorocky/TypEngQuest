@@ -86,6 +86,7 @@ export class FileNode {
   public parent: FileNode | null = null;
   public children: FileNode[] = [];
   public fileType: FileType;
+  private interacted: boolean = false;
 
   /**
    * FileNodeインスタンスを作成する
@@ -244,5 +245,21 @@ export class FileNode {
     }
 
     return '/' + pathParts.join('/');
+  }
+
+  /**
+   * このノードが作用済みかどうかを判定する
+   * @returns 作用済みの場合true
+   */
+  public isInteracted(): boolean {
+    return this.interacted;
+  }
+
+  /**
+   * このノードの作用状態を設定する
+   * @param interacted 作用状態
+   */
+  public setInteracted(interacted: boolean): void {
+    this.interacted = interacted;
   }
 }

@@ -3,14 +3,18 @@ import { CommandContext } from '../BaseCommand';
 import { FileSystem } from '../../world/FileSystem';
 import { FileNode, NodeType } from '../../world/FileNode';
 import { PhaseTypes } from '../../core/types';
+import { Player } from '../../player/Player';
+import { ItemType } from '../../items/Item';
 
 describe('OpenCommand', () => {
   let command: OpenCommand;
   let fileSystem: FileSystem;
   let context: CommandContext;
+  let player: Player;
 
   beforeEach(() => {
     command = new OpenCommand();
+    player = new Player('TestPlayer');
     
     // テスト用のファイル構造を構築
     const root = new FileNode('projects', NodeType.DIRECTORY);
@@ -33,6 +37,7 @@ describe('OpenCommand', () => {
     context = {
       currentPhase: PhaseTypes.EXPLORATION,
       fileSystem,
+      player,
     };
   });
 
@@ -88,15 +93,9 @@ describe('OpenCommand', () => {
     test('宝箱ファイル（JSON）の場合は成功する', () => {
       const result = command.execute(['config.json'], context);
       expect(result.success).toBe(true);
-      expect(result.output).toEqual([
-        'Opening treasure chest: config.json...',
-        '',
-        '📦 You found a treasure chest!',
-        'Type: Configuration Treasure',
-        '',
-        '[Treasure system not yet implemented]',
-        'The chest is empty for now...',
-      ]);
+      expect(result.output).toContain('Opening treasure chest: config.json...');
+      expect(result.output).toContain('📦 You found a treasure chest!');
+      expect(result.output).toContain('Type: Configuration Treasure');
     });
 
     test('宝箱ファイル（YAML）の場合は成功する', () => {
@@ -105,7 +104,34 @@ describe('OpenCommand', () => {
       
       const result = command.execute(['settings.yaml'], context);
       expect(result.success).toBe(true);
-      expect(result.output![3]).toBe('Type: Configuration Treasure');
+      expect(result.output).toContain('Type: Configuration Treasure');
+    });
+
+    test('宝箱を開くとアイテムがインベントリに追加される', () => {
+      const result = command.execute(['config.json'], context);
+      expect(result.success).toBe(true);
+      
+      // インベントリに消費アイテムが追加されているか確認
+      const inventory = player.getInventory();
+      expect(inventory.getItemCount()).toBe(1);
+      
+      const items = inventory.findItemsByType(ItemType.CONSUMABLE);
+      expect(items).toHaveLength(1);
+      expect(items[0].getName()).toMatch(/potion/i);
+    });
+
+    test('作用済みファイルは再度開けない', () => {
+      const treasureFile = fileSystem.currentNode.findChild('config.json');
+      expect(treasureFile).toBeTruthy();
+      
+      // 最初は開ける
+      const result1 = command.execute(['config.json'], context);
+      expect(result1.success).toBe(true);
+      
+      // 作用済みになっているので再度開けない
+      const result2 = command.execute(['config.json'], context);
+      expect(result2.success).toBe(false);
+      expect(result2.message).toBe('config.json has already been opened');
     });
   });
 
@@ -135,6 +161,16 @@ describe('OpenCommand', () => {
       const result = command.execute(['config.json'], contextWithoutFs);
       expect(result.success).toBe(false);
       expect(result.message).toBe('filesystem not available');
+    });
+
+    test('プレイヤーがない場合はエラーになる', () => {
+      const contextWithoutPlayer: CommandContext = {
+        currentPhase: PhaseTypes.EXPLORATION,
+        fileSystem,
+      };
+      const result = command.execute(['config.json'], contextWithoutPlayer);
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('player not available');
     });
   });
 });

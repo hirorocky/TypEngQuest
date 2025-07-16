@@ -1,4 +1,5 @@
 import { Stats, StatsData } from './Stats';
+import { Inventory, InventoryData } from './Inventory';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
@@ -7,6 +8,7 @@ export interface PlayerData {
   name: string;
   level: number;
   stats: StatsData;
+  inventory: InventoryData;
 }
 
 /**
@@ -18,6 +20,7 @@ export class Player {
   public readonly name: string;
   private level: number;
   private stats: Stats;
+  private inventory: Inventory;
 
   /**
    * プレイヤーを初期化する
@@ -27,6 +30,7 @@ export class Player {
     this.name = name;
     this.level = Player.DEFAULT_LEVEL;
     this.stats = new Stats(this.level);
+    this.inventory = new Inventory();
   }
 
   /**
@@ -54,6 +58,14 @@ export class Player {
   }
 
   /**
+   * プレイヤーのインベントリを取得する
+   * @returns Inventoryインスタンス
+   */
+  getInventory(): Inventory {
+    return this.inventory;
+  }
+
+  /**
    * プレイヤーデータをJSON形式で出力する
    * @returns プレイヤーデータのJSONオブジェクト
    */
@@ -62,6 +74,7 @@ export class Player {
       name: this.name,
       level: this.level,
       stats: this.stats.toJSON(),
+      inventory: this.inventory.toJSON(),
     };
   }
 
@@ -77,6 +90,7 @@ export class Player {
     const player = new Player(data.name);
     player.level = data.level;
     player.stats = Stats.fromJSON(data.stats);
+    player.inventory = Inventory.fromJSON(data.inventory);
 
     return player;
   }
@@ -100,6 +114,10 @@ export class Player {
     }
 
     if (typeof data.stats !== 'object' || data.stats === null) {
+      throw new Error('Invalid player data');
+    }
+
+    if (typeof data.inventory !== 'object' || data.inventory === null) {
       throw new Error('Invalid player data');
     }
   }
