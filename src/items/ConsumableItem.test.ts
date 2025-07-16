@@ -1,4 +1,4 @@
-import { ConsumableItem, ConsumableItemData, EffectType, EffectTarget } from './ConsumableItem';
+import { ConsumableItem, ConsumableItemData, EffectType } from './ConsumableItem';
 import { ItemType, ItemRarity } from './Item';
 import { Player } from '../player/Player';
 
@@ -20,7 +20,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -33,7 +32,6 @@ describe('ConsumableItem', () => {
       expect(item.getRarity()).toBe(ItemRarity.COMMON);
       expect(item.getEffects()).toHaveLength(1);
       expect(item.getEffects()[0].type).toBe(EffectType.HEAL_HP);
-      expect(item.getEffects()[0].target).toBe(EffectTarget.SELF);
       expect(item.getEffects()[0].value).toBe(50);
     });
 
@@ -47,12 +45,10 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 100,
           },
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -88,7 +84,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -110,7 +105,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -130,7 +124,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 30,
           },
         ],
@@ -152,7 +145,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 30,
           },
         ],
@@ -160,26 +152,6 @@ describe('ConsumableItem', () => {
 
       // MPは満タンのまま
       expect(item.canUse(mockPlayer)).toBe(false);
-    });
-
-    it('バフアイテムは常に使用可能', () => {
-      const item = new ConsumableItem({
-        id: 'attack_boost',
-        name: 'Attack Boost',
-        description: 'Increases attack by 10',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
-        effects: [
-          {
-            type: EffectType.BUFF_ATTACK,
-            target: EffectTarget.SELF,
-            value: 10,
-            duration: 5,
-          },
-        ],
-      });
-
-      expect(item.canUse(mockPlayer)).toBe(true);
     });
 
     it('複数効果のアイテムは最低1つの効果が使用可能なら使用可能', () => {
@@ -192,12 +164,10 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 30,
           },
         ],
@@ -219,12 +189,10 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 30,
           },
         ],
@@ -246,7 +214,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -271,7 +238,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 30,
           },
         ],
@@ -286,30 +252,6 @@ describe('ConsumableItem', () => {
       expect(mockPlayer.getStats().getCurrentMP()).toBe(Math.min(initialMP, consumedMP + 30));
     });
 
-    it('バフ効果を正しく適用する', async () => {
-      const item = new ConsumableItem({
-        id: 'attack_boost',
-        name: 'Attack Boost',
-        description: 'Increases attack by 10',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
-        effects: [
-          {
-            type: EffectType.BUFF_ATTACK,
-            target: EffectTarget.SELF,
-            value: 10,
-            duration: 5,
-          },
-        ],
-      });
-
-      const initialAttack = mockPlayer.getStats().getAttack();
-
-      await item.use(mockPlayer);
-
-      expect(mockPlayer.getStats().getAttack()).toBe(initialAttack + 10);
-    });
-
     it('複数効果を正しく適用する', async () => {
       const item = new ConsumableItem({
         id: 'super_potion',
@@ -320,12 +262,10 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 100,
           },
           {
             type: EffectType.HEAL_MP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -352,7 +292,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -374,7 +313,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -391,7 +329,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -410,7 +347,6 @@ describe('ConsumableItem', () => {
         effects: [
           {
             type: EffectType.HEAL_HP,
-            target: EffectTarget.SELF,
             value: 50,
           },
         ],
@@ -447,18 +383,6 @@ describe('ConsumableItem', () => {
     it('正しい値を持つ', () => {
       expect(EffectType.HEAL_HP).toBe('heal_hp');
       expect(EffectType.HEAL_MP).toBe('heal_mp');
-      expect(EffectType.BUFF_ATTACK).toBe('buff_attack');
-      expect(EffectType.BUFF_DEFENSE).toBe('buff_defense');
-      expect(EffectType.BUFF_SPEED).toBe('buff_speed');
-      expect(EffectType.BUFF_ACCURACY).toBe('buff_accuracy');
-      expect(EffectType.BUFF_FORTUNE).toBe('buff_fortune');
-    });
-  });
-
-  describe('EffectTarget enum', () => {
-    it('正しい値を持つ', () => {
-      expect(EffectTarget.SELF).toBe('self');
-      expect(EffectTarget.ENEMY).toBe('enemy');
     });
   });
 });

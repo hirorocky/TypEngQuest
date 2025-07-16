@@ -1,11 +1,5 @@
 import { Item, ItemData, ItemType, ItemRarity } from './Item';
 import { Player } from '../player/Player';
-import {
-  TemporaryStatus,
-  TemporaryStatusName,
-  TemporaryStatusEffects,
-} from '../player/TemporaryStatus';
-import { randomUUID } from 'crypto';
 
 /**
  * 効果タイプを定義する列挙型
@@ -13,19 +7,6 @@ import { randomUUID } from 'crypto';
 export enum EffectType {
   HEAL_HP = 'heal_hp',
   HEAL_MP = 'heal_mp',
-  BUFF_ATTACK = 'buff_attack',
-  BUFF_DEFENSE = 'buff_defense',
-  BUFF_SPEED = 'buff_speed',
-  BUFF_ACCURACY = 'buff_accuracy',
-  BUFF_FORTUNE = 'buff_fortune',
-}
-
-/**
- * 効果の対象を定義する列挙型
- */
-export enum EffectTarget {
-  SELF = 'self',
-  ENEMY = 'enemy',
 }
 
 /**
@@ -33,9 +14,7 @@ export enum EffectTarget {
  */
 export interface ItemEffect {
   type: EffectType;
-  target: EffectTarget;
   value: number;
-  duration?: number;
 }
 
 /**
@@ -47,34 +26,10 @@ export interface ConsumableItemData extends ItemData {
 
 /**
  * 消費アイテムクラス
- * HP/MP回復、バフ効果などを持つ消費可能なアイテム
+ * HP/MP回復効果を持つ消費可能なアイテム
  */
 export class ConsumableItem extends Item {
   private readonly effects: ItemEffect[];
-
-  /**
-   * バフエフェクトタイプから対応するステータスタイプへのマッピング
-   */
-  private static readonly EFFECT_TO_STAT_MAP: Partial<
-    Record<EffectType, keyof TemporaryStatusEffects>
-  > = {
-    [EffectType.BUFF_ATTACK]: 'attack',
-    [EffectType.BUFF_DEFENSE]: 'defense',
-    [EffectType.BUFF_SPEED]: 'speed',
-    [EffectType.BUFF_ACCURACY]: 'accuracy',
-    [EffectType.BUFF_FORTUNE]: 'fortune',
-  };
-
-  /**
-   * ステータスタイプからTemporaryStatusNameへのマッピング
-   */
-  private static readonly STAT_TO_NAME_MAP: Record<string, TemporaryStatusName> = {
-    attack: 'Attack Up',
-    defense: 'Defense Up',
-    speed: 'Speed Up',
-    accuracy: 'Accuracy Up',
-    fortune: 'Fortune Up',
-  };
 
   /**
    * 消費アイテムを初期化する
@@ -136,12 +91,6 @@ export class ConsumableItem extends Item {
         return stats.getCurrentHP() < stats.getMaxHP();
       case EffectType.HEAL_MP:
         return stats.getCurrentMP() < stats.getMaxMP();
-      case EffectType.BUFF_ATTACK:
-      case EffectType.BUFF_DEFENSE:
-      case EffectType.BUFF_SPEED:
-      case EffectType.BUFF_ACCURACY:
-      case EffectType.BUFF_FORTUNE:
-        return true; // バフ効果は常に使用可能
       default:
         return false;
     }
@@ -169,35 +118,7 @@ export class ConsumableItem extends Item {
    * @param player - 適用先のプレイヤー
    */
   private async applyEffect(effect: ItemEffect, player: Player): Promise<void> {
-    if (this.isHealingEffect(effect)) {
-      this.applyHealingEffect(effect, player);
-    } else if (this.isBuffEffect(effect)) {
-      this.applyBuffEffectByType(effect, player);
-    }
-  }
-
-  /**
-   * 回復効果かどうかを判定する
-   * @param effect - 効果
-   * @returns 回復効果の場合true
-   */
-  private isHealingEffect(effect: ItemEffect): boolean {
-    return effect.type === EffectType.HEAL_HP || effect.type === EffectType.HEAL_MP;
-  }
-
-  /**
-   * バフ効果かどうかを判定する
-   * @param effect - 効果
-   * @returns バフ効果の場合true
-   */
-  private isBuffEffect(effect: ItemEffect): boolean {
-    return [
-      EffectType.BUFF_ATTACK,
-      EffectType.BUFF_DEFENSE,
-      EffectType.BUFF_SPEED,
-      EffectType.BUFF_ACCURACY,
-      EffectType.BUFF_FORTUNE,
-    ].includes(effect.type);
+    this.applyHealingEffect(effect, player);
   }
 
   /**
@@ -212,47 +133,6 @@ export class ConsumableItem extends Item {
     } else if (effect.type === EffectType.HEAL_MP) {
       stats.healMP(effect.value);
     }
-  }
-
-  /**
-   * 効果タイプに応じてバフ効果を適用する
-   * @param effect - 効果
-   * @param player - プレイヤー
-   */
-  private applyBuffEffectByType(effect: ItemEffect, player: Player): void {
-    const duration = effect.duration || 5;
-    const statType = ConsumableItem.EFFECT_TO_STAT_MAP[effect.type];
-
-    if (statType) {
-      this.applyBuffEffect(statType, effect.value, duration, player);
-    }
-  }
-
-  /**
-   * バフ効果を適用する
-   * @param statType - ステータスタイプ
-   * @param value - 効果値
-   * @param duration - 継続時間
-   * @param player - 適用先のプレイヤー
-   */
-  private applyBuffEffect(
-    statType: keyof TemporaryStatusEffects,
-    value: number,
-    duration: number,
-    player: Player
-  ): void {
-    const name = ConsumableItem.STAT_TO_NAME_MAP[statType];
-    const buffStatus: TemporaryStatus = {
-      id: `${statType}-buff-${randomUUID()}`,
-      name,
-      type: 'buff',
-      effects: {
-        [statType]: Math.abs(value),
-      },
-      duration,
-      stackable: true, // Can stack multiple buffs
-    };
-    player.getStats().addTemporaryStatus(buffStatus);
   }
 
   /**
@@ -321,9 +201,7 @@ export class ConsumableItem extends Item {
       typeof effect === 'object' &&
       effect !== null &&
       Object.values(EffectType).includes(effect.type) &&
-      Object.values(EffectTarget).includes(effect.target) &&
-      typeof effect.value === 'number' &&
-      (effect.duration === undefined || typeof effect.duration === 'number')
+      typeof effect.value === 'number'
     );
   }
 }
