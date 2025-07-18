@@ -86,11 +86,15 @@ export class ExplorationPhase extends Phase {
    * ゲームコマンドを登録する
    */
   private registerGameCommands(): void {
-    const commands: BaseCommand[] = [new StatusCommand(), new InventoryCommand()];
+    const statusCommand = new StatusCommand();
+    const inventoryCommand = new InventoryCommand();
 
-    commands.forEach(command => {
-      this.gameCommands.set(command.name, command);
-    });
+    // 通常のコマンド登録
+    this.gameCommands.set(statusCommand.name, statusCommand);
+    this.gameCommands.set(inventoryCommand.name, inventoryCommand);
+
+    // inventoryコマンドのエイリアス 'inv' を登録
+    this.gameCommands.set('inv', inventoryCommand);
   }
 
   public getName(): string {

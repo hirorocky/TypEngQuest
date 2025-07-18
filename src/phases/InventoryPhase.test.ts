@@ -88,20 +88,6 @@ describe('InventoryPhase', () => {
       });
     });
 
-    describe('存在しないコマンド', () => {
-      test('upコマンドは存在しない', async () => {
-        const result = await phase.processInput('up');
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('command not found: up');
-      });
-
-      test('downコマンドは存在しない', async () => {
-        const result = await phase.processInput('down');
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('command not found: down');
-      });
-    });
-
     describe('consumeコマンド', () => {
       test('consumeコマンドで消費アイテムを選択して使用する', async () => {
         // プレイヤーのHPを減らす

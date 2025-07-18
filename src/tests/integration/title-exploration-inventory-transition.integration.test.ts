@@ -86,18 +86,8 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
 
       // inventoryコマンドのエイリアスをテスト
       const result = await explorationPhase.processInput('inv');
-      
-      // inventoryコマンドがエイリアスを持つ場合の動作確認
-      // 実装によってはinvがサポートされていない可能性があるので、
-      // まずはコマンドの存在確認を行う
-      if (result.success) {
-        expect(result.nextPhase).toBe('inventory');
-      } else {
-        // inventoryの完全なコマンド名でテスト
-        const fullResult = await explorationPhase.processInput('inventory');
-        expect(fullResult.success).toBe(true);
-        expect(fullResult.nextPhase).toBe('inventory');
-      }
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('inventory');
     }));
   });
 
