@@ -14,6 +14,7 @@ import { SaveCommand } from '../commands/interaction/SaveCommand';
 import { RestCommand } from '../commands/interaction/RestCommand';
 import { ExecuteCommand } from '../commands/interaction/ExecuteCommand';
 import { StatusCommand } from '../commands/game/StatusCommand';
+import { InventoryCommand } from '../commands/game/InventoryCommand';
 import { BaseCommand } from '../commands/BaseCommand';
 
 /**
@@ -85,11 +86,15 @@ export class ExplorationPhase extends Phase {
    * ゲームコマンドを登録する
    */
   private registerGameCommands(): void {
-    const commands: BaseCommand[] = [new StatusCommand()];
+    const statusCommand = new StatusCommand();
+    const inventoryCommand = new InventoryCommand();
 
-    commands.forEach(command => {
-      this.gameCommands.set(command.name, command);
-    });
+    // 通常のコマンド登録
+    this.gameCommands.set(statusCommand.name, statusCommand);
+    this.gameCommands.set(inventoryCommand.name, inventoryCommand);
+
+    // inventoryコマンドのエイリアス 'inv' を登録
+    this.gameCommands.set('inv', inventoryCommand);
   }
 
   public getName(): string {
@@ -140,6 +145,7 @@ export class ExplorationPhase extends Phase {
       const context = {
         currentPhase: 'exploration' as const,
         fileSystem: this.world.fileSystem,
+        player: this.player,
       };
       const result = interactionCommand.execute(args, context);
 
@@ -252,6 +258,7 @@ export class ExplorationPhase extends Phase {
     const context = {
       currentPhase: 'exploration' as const,
       fileSystem: this.world.fileSystem,
+      player: this.player,
     };
     const result = interactionCommand.execute(args, context);
 
