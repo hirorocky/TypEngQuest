@@ -119,10 +119,10 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       await game['transitionToPhase']('inventory');
       const inventoryPhase = (game as any).currentPhase;
       
-      // 空のインベントリでの移動コマンドテスト
-      const upResult = await inventoryPhase.processInput('up');
-      expect(upResult.success).toBe(false);
-      expect(upResult.message).toContain('no items');
+      // 空のインベントリでのconsumeコマンドテスト
+      const consumeResult = await inventoryPhase.processInput('consume');
+      expect(consumeResult.success).toBe(false);
+      expect(consumeResult.message).toContain('no consumable items');
 
       // 戻るコマンドのテスト
       const exitResult = await inventoryPhase.processInput('exit');
@@ -161,10 +161,14 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       await game['transitionToPhase']('inventory');
       const inventoryPhase = (game as any).currentPhase;
 
+      // ScrollableListのモックを設定
+      const { ScrollableList } = require('../../ui/ScrollableList');
+      jest.spyOn(ScrollableList.prototype, 'waitForSelection').mockResolvedValue(0);
+      
       // アイテムの使用テスト
-      const useResult = await inventoryPhase.processInput('use');
-      expect(useResult.success).toBe(true);
-      expect(useResult.message).toContain('used Test Potion');
+      const consumeResult = await inventoryPhase.processInput('consume');
+      expect(consumeResult.success).toBe(true);
+      expect(consumeResult.message).toContain('consumed Test Potion');
 
       // アイテムが削除されたことを確認
       const items = player.getInventory().getItems();
@@ -308,7 +312,11 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       await game['transitionToPhase']('inventory');
       const inventoryPhase = (game as any).currentPhase;
       
-      await inventoryPhase.processInput('use');
+      // ScrollableListのモックを設定
+      const { ScrollableList } = require('../../ui/ScrollableList');
+      jest.spyOn(ScrollableList.prototype, 'waitForSelection').mockResolvedValue(0);
+      
+      await inventoryPhase.processInput('consume');
 
       // アイテム使用後の状態確認
       expect(player.getInventory().getItemCount()).toBe(0);

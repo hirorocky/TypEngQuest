@@ -4,6 +4,7 @@ import { Player } from '../player/Player';
 import { ConsumableItem, EffectType } from '../items/ConsumableItem';
 import { ItemType, ItemRarity } from '../items/Item';
 import { Display } from '../ui/Display';
+import { ScrollableList } from '../ui/ScrollableList';
 import { PhaseTypes } from '../core/types';
 
 // Displayをモック
@@ -69,7 +70,7 @@ describe('InventoryPhase', () => {
       phase.enter();
 
       expect(Display.printInfo).toHaveBeenCalledWith('items: 1/100');
-      expect(Display.printLine).toHaveBeenCalledWith('> 1. Test Potion [common]');
+      expect(Display.println).toHaveBeenCalledWith('  1. Test Potion [common]');
     });
   });
 
@@ -87,59 +88,37 @@ describe('InventoryPhase', () => {
       });
     });
 
-    describe('選択移動', () => {
-      test('upコマンドで選択を上に移動する', async () => {
-        // 複数のアイテムを追加
-        player.getInventory().addItem(testItem);
-        player.getInventory().addItem(testItem);
-
-        // 初期状態は0番目が選択されている
-        const result1 = await phase.processInput('up');
-        expect(result1.success).toBe(false);
-        expect(result1.message).toBe('cannot move selection further');
-
-        // 下に移動してから上に移動
-        await phase.processInput('down');
-        const result2 = await phase.processInput('up');
-        expect(result2.success).toBe(true);
+    describe('存在しないコマンド', () => {
+      test('upコマンドは存在しない', async () => {
+        const result = await phase.processInput('up');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('command not found: up');
       });
 
-      test('downコマンドで選択を下に移動する', async () => {
-        // 複数のアイテムを追加
-        player.getInventory().addItem(testItem);
-        player.getInventory().addItem(testItem);
-
-        const result1 = await phase.processInput('down');
-        expect(result1.success).toBe(true);
-
-        // 最後まで移動した後はエラー
-        const result2 = await phase.processInput('down');
-        expect(result2.success).toBe(false);
-        expect(result2.message).toBe('cannot move selection further');
-      });
-
-      test('アイテムがない場合は選択移動できない', async () => {
-        const result1 = await phase.processInput('up');
-        expect(result1.success).toBe(false);
-        expect(result1.message).toBe('no items to select');
-
-        const result2 = await phase.processInput('down');
-        expect(result2.success).toBe(false);
-        expect(result2.message).toBe('no items to select');
+      test('downコマンドは存在しない', async () => {
+        const result = await phase.processInput('down');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('command not found: down');
       });
     });
 
-    describe('アイテム使用', () => {
-      test('useコマンドで選択されたアイテムを使用する', async () => {
+    describe('consumeコマンド', () => {
+      test('consumeコマンドで消費アイテムを選択して使用する', async () => {
         // プレイヤーのHPを減らす
         player.getStats().takeDamage(30);
         const initialHp = player.getStats().getCurrentHP();
 
         player.getInventory().addItem(testItem);
 
-        const result = await phase.processInput('use');
+        // ScrollableListのモックを設定
+        const mockWaitForSelection = jest.fn().mockResolvedValue(0);
+        jest
+          .spyOn(ScrollableList.prototype, 'waitForSelection')
+          .mockImplementation(mockWaitForSelection);
+
+        const result = await phase.processInput('consume');
         expect(result.success).toBe(true);
-        expect(result.message).toContain('used');
+        expect(result.message).toBe('consumed Test Potion');
 
         // HPが回復しているか確認
         const finalHp = player.getStats().getCurrentHP();
@@ -150,28 +129,23 @@ describe('InventoryPhase', () => {
       });
 
       test('アイテムがない場合は使用できない', async () => {
+        const result = await phase.processInput('consume');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('no consumable items available');
+      });
+
+      test('useコマンドは存在しない', async () => {
         const result = await phase.processInput('use');
         expect(result.success).toBe(false);
-        expect(result.message).toBe('no items to use');
+        expect(result.message).toBe('command not found: use');
       });
     });
 
     describe('アイテム廃棄', () => {
-      test('dropコマンドで選択されたアイテムを捨てる', async () => {
-        player.getInventory().addItem(testItem);
-
-        const result = await phase.processInput('drop');
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('dropped Test Potion');
-
-        // アイテムがインベントリから削除されているか確認
-        expect(player.getInventory().getItemCount()).toBe(0);
-      });
-
-      test('アイテムがない場合は捨てられない', async () => {
+      test('dropコマンドは存在しない', async () => {
         const result = await phase.processInput('drop');
         expect(result.success).toBe(false);
-        expect(result.message).toBe('no items to drop');
+        expect(result.message).toBe('command not found: drop');
       });
     });
 
