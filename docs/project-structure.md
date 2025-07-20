@@ -13,16 +13,16 @@ TypEngQuest/
 │   │   ├── CommandParser.test.ts   # CommandParserのテスト
 │   │   └── types.ts                # 共通型定義
 │   │
-│   ├── phases/                     # 各フェーズの実装 [部分実装 2/6]
+│   ├── phases/                     # 各フェーズの実装 [部分実装 3/6]
 │   │   ├── TitlePhase.ts           # タイトルフェーズ
 │   │   ├── TitlePhase.test.ts      # TitlePhaseのテスト
 │   │   ├── ExplorationPhase.ts     # マップ探索フェーズ
-│   │   └── ExplorationPhase.test.ts # ExplorationPhaseのテスト
+│   │   ├── ExplorationPhase.test.ts # ExplorationPhaseのテスト
+│   │   ├── InventoryPhase.ts       # インベントリフェーズ
+│   │   └── InventoryPhase.test.ts  # InventoryPhaseのテスト
 │   │   # 以下未実装:
 │   │   # ├── DialogPhase.ts          # ダイアログフェーズ
 │   │   # ├── DialogPhase.test.ts     # DialogPhaseのテスト
-│   │   # ├── InventoryPhase.ts       # インベントリフェーズ
-│   │   # ├── InventoryPhase.test.ts  # InventoryPhaseのテスト
 │   │   # ├── BattlePhase.ts          # バトルフェーズ
 │   │   # ├── BattlePhase.test.ts     # BattlePhaseのテスト
 │   │   # ├── TypingPhase.ts          # タイピングチャレンジフェーズ
@@ -40,18 +40,30 @@ TypEngQuest/
 │   │   ├── domains.ts              # ドメイン定義
 │   │   └── domains.test.ts         # domainsのテスト
 │   │
-│   ├── player/                     # プレイヤーシステム [部分実装 2/4]
+│   ├── player/                     # プレイヤーシステム [部分実装 3/4]
 │   │   ├── Player.ts               # プレイヤークラス
 │   │   ├── Player.test.ts          # Playerのテスト
 │   │   ├── Stats.ts                # ステータス管理
-│   │   └── Stats.test.ts           # Statsのテスト
+│   │   ├── Stats.test.ts           # Statsのテスト
+│   │   ├── Inventory.ts            # インベントリ管理
+│   │   └── Inventory.test.ts       # Inventoryのテスト
 │   │   # 以下未実装:
 │   │   # ├── Equipment.ts           # 装備管理
-│   │   # ├── Equipment.test.ts      # Equipmentのテスト
-│   │   # ├── Inventory.ts           # インベントリ管理
-│   │   # └── Inventory.test.ts      # Inventoryのテスト
+│   │   # └── Equipment.test.ts      # Equipmentのテスト
 │   │
-│   ├── commands/                   # コマンド実装 [部分実装 18/21]
+│   ├── items/                      # アイテムシステム [部分実装 3/4]
+│   │   ├── Item.ts                 # アイテム基底クラス
+│   │   ├── Item.test.ts            # Itemのテスト
+│   │   ├── ConsumableItem.ts       # 消費アイテムクラス
+│   │   ├── ConsumableItem.test.ts  # ConsumableItemのテスト
+│   │   ├── EquipmentItem.ts        # 装備アイテムクラス
+│   │   ├── EquipmentItem.test.ts   # EquipmentItemのテスト
+│   │   └── index.ts                # 統合エクスポート
+│   │   # 以下未実装:
+│   │   # ├── KeyItem.ts             # だいじなものクラス
+│   │   # └── KeyItem.test.ts        # KeyItemのテスト
+│   │
+│   ├── commands/                   # コマンド実装 [部分実装 19/21]
 │   │   ├── BaseCommand.ts          # コマンド基底クラス
 │   │   ├── BaseCommand.test.ts     # BaseCommandのテスト
 │   │   ├── title/                  # タイトルフェーズ用コマンド [完全実装]
@@ -83,25 +95,26 @@ TypEngQuest/
 │   │   │   ├── RestCommand.test.ts # RestCommandのテスト
 │   │   │   ├── ExecuteCommand.ts   # executeコマンド（イベント実行）
 │   │   │   └── ExecuteCommand.test.ts # ExecuteCommandのテスト
-│   │   └── game/                   # ゲーム固有コマンド [部分実装 1/3]
+│   │   └── game/                   # ゲーム固有コマンド [部分実装 2/3]
 │   │       ├── StatusCommand.ts    # statusコマンド
-│   │       └── StatusCommand.test.ts # StatusCommandのテスト
+│   │       ├── StatusCommand.test.ts # StatusCommandのテスト
+│   │       ├── InventoryCommand.ts # inventoryコマンド
+│   │       └── InventoryCommand.test.ts # InventoryCommandのテスト
 │   │   # 以下未実装:
-│   │   #     ├── InventoryCommand.ts # inventoryコマンド
-│   │   #     ├── InventoryCommand.test.ts # InventoryCommandのテスト
 │   │   #     ├── RetireCommand.ts    # retireコマンド
 │   │   #     └── RetireCommand.test.ts # RetireCommandのテスト
 │   │
-│   ├── ui/                         # UIコンポーネント [部分実装 2/4]
+│   ├── ui/                         # UIコンポーネント [部分実装 4/6]
 │   │   ├── Display.ts              # 画面表示管理
 │   │   ├── Display.test.ts         # Displayのテスト
-│   │   └── colors.ts               # 色定義
+│   │   ├── ScrollableList.ts       # スクロール可能リスト
+│   │   ├── colors.ts               # 色定義
+│   │   └── colors.test.ts          # colorsのテスト
 │   │   # 以下未実装:
 │   │   # ├── Prompt.ts               # プロンプト表示
 │   │   # ├── Prompt.test.ts          # Promptのテスト
 │   │   # ├── ProgressBar.ts          # プログレスバー
-│   │   # ├── ProgressBar.test.ts     # ProgressBarのテスト
-│   │   # └── colors.test.ts          # colorsのテスト
+│   │   # └── ProgressBar.test.ts     # ProgressBarのテスト
 │   │
 │   └── tests/                      # 統合テスト・テストセットアップ [完全実装]
 │       ├── integration/            # 統合テスト
@@ -146,15 +159,17 @@ TypEngQuest/
 ├── README.md                       # プロジェクトREADME
 └── CLAUDE.md                       # Claude用指示ファイル
 
+├── data/                           # ゲームデータ [部分実装]
+│   └── skills/                     # 技データ
+│       └── skills.json             # 技定義（20個の技データ）
+│
 # 未実装のデータファイル（設計のみ）:
-# data/                           # ゲームデータ
+# data/
 # ├── items/                      # アイテムデータ
 # │   ├── consumables.json        # 消費アイテム定義
 # │   └── equipment.json          # 装備アイテム定義
 # ├── enemies/                    # 敵データ
 # │   └── enemies.json            # 敵定義
-# ├── skills/                     # 技データ
-# │   └── skills.json             # 技定義
 # └── words/                      # タイピング用単語
 #     ├── easy.json               # 簡単な単語
 #     ├── medium.json             # 中程度の単語
@@ -163,26 +178,28 @@ TypEngQuest/
 
 ## 実装状況サマリー
 
-### ✅ 実装済み (35%)
+### ✅ 実装済み (45%)
 - **Core**: Game、Phase、CommandParser、types（完全実装）
-- **UI**: Display、colors（部分実装）
+- **UI**: Display、colors、ScrollableList（部分実装）
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
-- **Phases**: TitlePhase、ExplorationPhase（完全実装）
-- **Player**: Player、Stats（部分実装）
-- **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（1つ）（部分実装）
+- **Phases**: TitlePhase、ExplorationPhase、InventoryPhase（部分実装）
+- **Player**: Player、Stats、Inventory（完全実装）
+- **Items**: Item、ConsumableItem、EquipmentItem（部分実装）
+- **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（2つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
+- **Data**: skills.json（部分実装）
 
-### ❌ 未実装 (65%)
-- **Player系**: Equipment、Inventory（0%）
+### ❌ 未実装 (55%)
+- **Player系**: Equipment（0%）
 - **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
 - **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
-- **Items系**: Item、ConsumableItem、EquipmentItem、KeyItem（0%）
+- **Items系**: KeyItem（0%）
 - **Events系**: RandomEvent、GoodEvents、BadEvents（0%）
 - **Save系**: SaveManager、SaveData、SaveValidator（0%）
-- **Commands**: file/（4つ）、game/（2つ）（0%）
+- **Commands**: file/（4つ）、game/（1つ）（0%）
 - **Utils**: Random、FileUtils、StringUtils、Logger（0%）
-- **Phases**: DialogPhase、InventoryPhase、BattlePhase、TypingPhase（0%）
-- **Data**: すべてのJSONファイル（0%）
+- **Phases**: DialogPhase、BattlePhase、TypingPhase（0%）
+- **Data**: その他のJSONファイル（0%）
 
 ## 主要クラス・モジュールの責務
 
