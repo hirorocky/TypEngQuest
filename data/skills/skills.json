@@ -1,0 +1,284 @@
+{
+  "skills": [
+    {
+      "id": "basic_attack",
+      "name": "Basic Attack",
+      "mpCost": 0,
+      "successRate": 100,
+      "typingDifficulty": 1,
+      "effect": {
+        "type": "damage",
+        "power": 20,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "power_strike",
+      "name": "Power Strike",
+      "mpCost": 5,
+      "successRate": 90,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "damage",
+        "power": 40,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "fire_ball",
+      "name": "Fire Ball",
+      "mpCost": 8,
+      "successRate": 85,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "damage",
+        "power": 35,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "ice_shard",
+      "name": "Ice Shard",
+      "mpCost": 8,
+      "successRate": 85,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "damage",
+        "power": 35,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "thunder_bolt",
+      "name": "Thunder Bolt",
+      "mpCost": 10,
+      "successRate": 80,
+      "typingDifficulty": 4,
+      "effect": {
+        "type": "damage",
+        "power": 45,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "heal",
+      "name": "Heal",
+      "mpCost": 10,
+      "successRate": 100,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "heal",
+        "power": 30,
+        "target": "self"
+      }
+    },
+    {
+      "id": "greater_heal",
+      "name": "Greater Heal",
+      "mpCost": 20,
+      "successRate": 100,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "heal",
+        "power": 60,
+        "target": "self"
+      }
+    },
+    {
+      "id": "attack_boost",
+      "name": "Attack Boost",
+      "mpCost": 15,
+      "successRate": 95,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "temporary_status",
+        "power": 20,
+        "target": "self",
+        "duration": 5,
+        "temporaryStatus": {
+          "attack": 20
+        }
+      }
+    },
+    {
+      "id": "defense_boost",
+      "name": "Defense Boost",
+      "mpCost": 15,
+      "successRate": 95,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "temporary_status",
+        "power": 20,
+        "target": "self",
+        "duration": 5,
+        "temporaryStatus": {
+          "defense": 20
+        }
+      }
+    },
+    {
+      "id": "speed_boost",
+      "name": "Speed Boost",
+      "mpCost": 12,
+      "successRate": 95,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "temporary_status",
+        "power": 15,
+        "target": "self",
+        "duration": 5,
+        "temporaryStatus": {
+          "speed": 15
+        }
+      }
+    },
+    {
+      "id": "weaken",
+      "name": "Weaken",
+      "mpCost": 12,
+      "successRate": 85,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "temporary_status",
+        "power": 15,
+        "target": "enemy",
+        "duration": 4,
+        "temporaryStatus": {
+          "attack": -15
+        }
+      }
+    },
+    {
+      "id": "armor_break",
+      "name": "Armor Break",
+      "mpCost": 15,
+      "successRate": 80,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "temporary_status",
+        "power": 20,
+        "target": "enemy",
+        "duration": 4,
+        "temporaryStatus": {
+          "defense": -20
+        }
+      }
+    },
+    {
+      "id": "slow",
+      "name": "Slow",
+      "mpCost": 10,
+      "successRate": 90,
+      "typingDifficulty": 2,
+      "effect": {
+        "type": "temporary_status",
+        "power": 10,
+        "target": "enemy",
+        "duration": 4,
+        "temporaryStatus": {
+          "speed": -10
+        }
+      }
+    },
+    {
+      "id": "poison_blade",
+      "name": "Poison Blade",
+      "mpCost": 15,
+      "successRate": 75,
+      "typingDifficulty": 4,
+      "effect": {
+        "type": "temporary_status",
+        "power": 5,
+        "target": "enemy",
+        "duration": 3,
+        "temporaryStatus": {
+          "hpPerTurn": -5
+        }
+      }
+    },
+    {
+      "id": "paralyze",
+      "name": "Paralyze",
+      "mpCost": 18,
+      "successRate": 70,
+      "typingDifficulty": 4,
+      "effect": {
+        "type": "temporary_status",
+        "power": 0,
+        "target": "enemy",
+        "duration": 2,
+        "temporaryStatus": {
+          "cannotAct": true
+        }
+      }
+    },
+    {
+      "id": "burning_strike",
+      "name": "Burning Strike",
+      "mpCost": 20,
+      "successRate": 75,
+      "typingDifficulty": 4,
+      "effect": {
+        "type": "temporary_status",
+        "power": 8,
+        "target": "enemy",
+        "duration": 3,
+        "temporaryStatus": {
+          "hpPerTurn": -8
+        }
+      }
+    },
+    {
+      "id": "critical_strike",
+      "name": "Critical Strike",
+      "mpCost": 25,
+      "successRate": 70,
+      "typingDifficulty": 5,
+      "effect": {
+        "type": "damage",
+        "power": 80,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "meteor",
+      "name": "Meteor",
+      "mpCost": 30,
+      "successRate": 65,
+      "typingDifficulty": 5,
+      "effect": {
+        "type": "damage",
+        "power": 100,
+        "target": "enemy"
+      }
+    },
+    {
+      "id": "divine_protection",
+      "name": "Divine Protection",
+      "mpCost": 25,
+      "successRate": 90,
+      "typingDifficulty": 3,
+      "effect": {
+        "type": "temporary_status",
+        "power": 30,
+        "target": "self",
+        "duration": 10,
+        "temporaryStatus": {
+          "defense": 30
+        }
+      }
+    },
+    {
+      "id": "dark_strike",
+      "name": "Dark Strike",
+      "mpCost": 20,
+      "successRate": 80,
+      "typingDifficulty": 4,
+      "effect": {
+        "type": "damage",
+        "power": 50,
+        "target": "enemy"
+      }
+    }
+  ]
+}
