@@ -1,6 +1,8 @@
 import { Stats, StatsData } from './Stats';
 import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
+import { EquipmentItem, EquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
@@ -22,6 +24,8 @@ export class Player {
   private level: number;
   private stats: Stats;
   private inventory: Inventory;
+  private equippedItems: EquipmentItem[] = [];
+  private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
    * プレイヤーを初期化する
@@ -32,6 +36,7 @@ export class Player {
     this.level = Player.DEFAULT_LEVEL;
     this.stats = new Stats(this.level);
     this.inventory = new Inventory();
+    this.equipmentCalculator = new EquipmentEffectCalculator();
     if (istestMode) {
       this.stats.takeDamage(50);
       this.stats.consumeMP(20);
@@ -59,11 +64,14 @@ export class Player {
   }
 
   /**
-   * プレイヤーのレベルを取得する
+   * プレイヤーのレベルを取得する（装備アイテムのグレード平均値）
    * @returns プレイヤーのレベル
    */
   getLevel(): number {
-    return this.level;
+    if (this.equippedItems.length === 0) {
+      return this.level;
+    }
+    return this.equipmentCalculator.calculateAverageGrade(this.equippedItems);
   }
 
   /**
@@ -80,6 +88,36 @@ export class Player {
    */
   getInventory(): Inventory {
     return this.inventory;
+  }
+
+  /**
+   * 装備アイテムを設定する
+   * @param equipments - 装備するアイテムのリスト
+   */
+  setEquippedItems(equipments: EquipmentItem[]): void {
+    this.equippedItems = [...equipments];
+    // レベルが変わる可能性があるため、ステータスを更新
+    const newLevel = this.getLevel();
+    if (newLevel !== this.level) {
+      this.level = newLevel;
+      this.stats = new Stats(this.level);
+    }
+  }
+
+  /**
+   * 装備中のアイテムのステータス合計を取得する
+   * @returns 装備ステータスの合計
+   */
+  getEquippedItemStats(): EquipmentStats {
+    return this.equipmentCalculator.calculateTotalStats(this.equippedItems);
+  }
+
+  /**
+   * 装備中のアイテムから使用可能な技を取得する
+   * @returns 使用可能な技のリスト
+   */
+  getEquippedItemSkills(): Skill[] {
+    return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
   }
 
   /**
@@ -105,9 +143,11 @@ export class Player {
     Player.validatePlayerData(data);
 
     const player = new Player(data.name);
+    // レベルを直接設定（装備がない場合のレベル値）
     player.level = data.level;
     player.stats = Stats.fromJSON(data.stats);
     player.inventory = Inventory.fromJSON(data.inventory);
+    player.equipmentCalculator = new EquipmentEffectCalculator();
 
     return player;
   }

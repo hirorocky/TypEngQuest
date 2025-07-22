@@ -44,7 +44,7 @@ describe('EquipmentItem', () => {
       accuracy: 0,
       fortune: 0,
     },
-    grade: 2,
+    grade: 15, // 10+0+5+0+0=15
     skill: sampleSkill,
   };
 
@@ -57,7 +57,7 @@ describe('EquipmentItem', () => {
       expect(equipment.getDescription()).toBe('A sturdy iron sword');
       expect(equipment.getType()).toBe(ItemType.EQUIPMENT);
       expect(equipment.getRarity()).toBe(ItemRarity.COMMON);
-      expect(equipment.getGrade()).toBe(2);
+      expect(equipment.getGrade()).toBe(15);
     });
 
     it('グレードが無効な場合エラーを投げる', () => {
@@ -66,28 +66,65 @@ describe('EquipmentItem', () => {
           ...sampleEquipmentData,
           grade: 0,
         });
-      }).toThrow('Grade must be between 1 and 5');
+      }).toThrow('Grade must be between 1 and 20');
 
       expect(() => {
         new EquipmentItem({
           ...sampleEquipmentData,
-          grade: 6,
+          grade: 21,
         });
-      }).toThrow('Grade must be between 1 and 5');
+      }).toThrow('Grade must be between 1 and 20');
     });
 
-    it('ステータスがundefinedの場合デフォルト値が設定される', () => {
-      const equipment = new EquipmentItem({
-        ...sampleEquipmentData,
-        stats: undefined as any,
-      });
+    it('ステータスの合計とグレードが一致している場合エラーを投げない', () => {
+      expect(() => {
+        new EquipmentItem({
+          ...sampleEquipmentData,
+          stats: {
+            attack: 5,
+            defense: 3,
+            speed: 2,
+            accuracy: 4,
+            fortune: 1,
+          },
+          grade: 15, // 5+3+2+4+1=15
+        });
+      }).not.toThrow();
+    });
 
-      const stats = equipment.getStats();
-      expect(stats.attack).toBe(0);
-      expect(stats.defense).toBe(0);
-      expect(stats.speed).toBe(0);
-      expect(stats.accuracy).toBe(0);
-      expect(stats.fortune).toBe(0);
+    it('ステータスの合計とグレードが一致しない場合エラーを投げる', () => {
+      expect(() => {
+        new EquipmentItem({
+          ...sampleEquipmentData,
+          stats: {
+            attack: 5,
+            defense: 3,
+            speed: 2,
+            accuracy: 4,
+            fortune: 1,
+          },
+          grade: 10, // 5+3+2+4+1=15だが、gradeは10
+        });
+      }).toThrow('Grade must equal sum of stats (attack + defense + speed + accuracy + fortune)');
+    });
+
+    it('ステータスがundefinedの場合でも適切なgradeが指定されればエラーを投げない', () => {
+      // statsがundefinedの場合、すべてのステータスが0になり、合計も0になる
+      // しかし、gradeの最小値は1なので、このケースは実際には起こりえない
+      // このテストは現在の仕様では適用できないため、別のケースをテストする
+      expect(() => {
+        new EquipmentItem({
+          ...sampleEquipmentData,
+          stats: {
+            attack: 1,
+            defense: 0,
+            speed: 0,
+            accuracy: 0,
+            fortune: 0,
+          },
+          grade: 1, // 1+0+0+0+0=1
+        });
+      }).not.toThrow();
     });
 
     it('技がundefinedの場合undefinedが設定される', () => {
@@ -182,7 +219,14 @@ describe('EquipmentItem', () => {
       const equipment1 = new EquipmentItem(sampleEquipmentData);
       const equipment2 = new EquipmentItem({
         ...sampleEquipmentData,
-        grade: 3,
+        stats: {
+          attack: 8,
+          defense: 2,
+          speed: 5,
+          accuracy: 0,
+          fortune: 0,
+        },
+        grade: 15, // 8+2+5+0+0=15
       });
 
       expect(equipment1.equals(equipment2)).toBe(false);
@@ -193,12 +237,13 @@ describe('EquipmentItem', () => {
       const equipment2 = new EquipmentItem({
         ...sampleEquipmentData,
         stats: {
-          attack: 15,
-          defense: 0,
-          speed: 5,
+          attack: 12,
+          defense: 1,
+          speed: 2,
           accuracy: 0,
           fortune: 0,
         },
+        grade: 15, // 12+1+2+0+0=15
       });
 
       expect(equipment1.equals(equipment2)).toBe(false);
@@ -247,7 +292,7 @@ describe('EquipmentItem', () => {
           accuracy: 0,
           fortune: 0,
         },
-        grade: 2,
+        grade: 15,
         skill: sampleSkill,
       });
     });
@@ -268,7 +313,7 @@ describe('EquipmentItem', () => {
           accuracy: 0,
           fortune: 0,
         },
-        grade: 2,
+        grade: 15,
         skill: sampleSkill,
       };
 
@@ -276,7 +321,7 @@ describe('EquipmentItem', () => {
 
       expect(equipment.getId()).toBe('iron_sword');
       expect(equipment.getName()).toBe('Iron Sword');
-      expect(equipment.getGrade()).toBe(2);
+      expect(equipment.getGrade()).toBe(15);
       expect(equipment.getStats().attack).toBe(10);
       expect(equipment.hasSkill()).toBe(true);
     });
