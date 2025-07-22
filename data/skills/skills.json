@@ -8,8 +8,8 @@
       "typingDifficulty": 1,
       "effect": {
         "type": "damage",
-        "value": 20,
-        "element": "physical"
+        "power": 20,
+        "target": "enemy"
       }
     },
     {
@@ -20,8 +20,8 @@
       "typingDifficulty": 2,
       "effect": {
         "type": "damage",
-        "value": 40,
-        "element": "physical"
+        "power": 40,
+        "target": "enemy"
       }
     },
     {
@@ -32,8 +32,8 @@
       "typingDifficulty": 3,
       "effect": {
         "type": "damage",
-        "value": 35,
-        "element": "fire"
+        "power": 35,
+        "target": "enemy"
       }
     },
     {
@@ -44,8 +44,8 @@
       "typingDifficulty": 3,
       "effect": {
         "type": "damage",
-        "value": 35,
-        "element": "ice"
+        "power": 35,
+        "target": "enemy"
       }
     },
     {
@@ -56,8 +56,8 @@
       "typingDifficulty": 4,
       "effect": {
         "type": "damage",
-        "value": 45,
-        "element": "thunder"
+        "power": 45,
+        "target": "enemy"
       }
     },
     {
@@ -68,7 +68,7 @@
       "typingDifficulty": 2,
       "effect": {
         "type": "heal",
-        "value": 30,
+        "power": 30,
         "target": "self"
       }
     },
@@ -80,7 +80,7 @@
       "typingDifficulty": 3,
       "effect": {
         "type": "heal",
-        "value": 60,
+        "power": 60,
         "target": "self"
       }
     },
@@ -91,10 +91,13 @@
       "successRate": 95,
       "typingDifficulty": 2,
       "effect": {
-        "type": "buff",
-        "value": 20,
+        "type": "temporary_status",
+        "power": 20,
         "target": "self",
-        "duration": 5
+        "duration": 5,
+        "temporaryStatus": {
+          "attack": 20
+        }
       }
     },
     {
@@ -104,10 +107,13 @@
       "successRate": 95,
       "typingDifficulty": 2,
       "effect": {
-        "type": "buff",
-        "value": 20,
+        "type": "temporary_status",
+        "power": 20,
         "target": "self",
-        "duration": 5
+        "duration": 5,
+        "temporaryStatus": {
+          "defense": 20
+        }
       }
     },
     {
@@ -117,10 +123,13 @@
       "successRate": 95,
       "typingDifficulty": 2,
       "effect": {
-        "type": "buff",
-        "value": 15,
+        "type": "temporary_status",
+        "power": 15,
         "target": "self",
-        "duration": 5
+        "duration": 5,
+        "temporaryStatus": {
+          "speed": 15
+        }
       }
     },
     {
@@ -130,10 +139,13 @@
       "successRate": 85,
       "typingDifficulty": 3,
       "effect": {
-        "type": "debuff",
-        "value": 15,
+        "type": "temporary_status",
+        "power": 15,
         "target": "enemy",
-        "duration": 4
+        "duration": 4,
+        "temporaryStatus": {
+          "attack": -15
+        }
       }
     },
     {
@@ -143,10 +155,13 @@
       "successRate": 80,
       "typingDifficulty": 3,
       "effect": {
-        "type": "debuff",
-        "value": 20,
+        "type": "temporary_status",
+        "power": 20,
         "target": "enemy",
-        "duration": 4
+        "duration": 4,
+        "temporaryStatus": {
+          "defense": -20
+        }
       }
     },
     {
@@ -156,10 +171,13 @@
       "successRate": 90,
       "typingDifficulty": 2,
       "effect": {
-        "type": "debuff",
-        "value": 10,
+        "type": "temporary_status",
+        "power": 10,
         "target": "enemy",
-        "duration": 4
+        "duration": 4,
+        "temporaryStatus": {
+          "speed": -10
+        }
       }
     },
     {
@@ -169,11 +187,13 @@
       "successRate": 75,
       "typingDifficulty": 4,
       "effect": {
-        "type": "status_ailment",
-        "value": 5,
+        "type": "temporary_status",
+        "power": 5,
         "target": "enemy",
-        "ailmentType": "poison",
-        "duration": 3
+        "duration": 3,
+        "temporaryStatus": {
+          "hpPerTurn": -5
+        }
       }
     },
     {
@@ -183,11 +203,13 @@
       "successRate": 70,
       "typingDifficulty": 4,
       "effect": {
-        "type": "status_ailment",
-        "value": 0,
+        "type": "temporary_status",
+        "power": 0,
         "target": "enemy",
-        "ailmentType": "paralysis",
-        "duration": 2
+        "duration": 2,
+        "temporaryStatus": {
+          "cannotAct": true
+        }
       }
     },
     {
@@ -197,11 +219,13 @@
       "successRate": 75,
       "typingDifficulty": 4,
       "effect": {
-        "type": "status_ailment",
-        "value": 8,
+        "type": "temporary_status",
+        "power": 8,
         "target": "enemy",
-        "ailmentType": "burn",
-        "duration": 3
+        "duration": 3,
+        "temporaryStatus": {
+          "hpPerTurn": -8
+        }
       }
     },
     {
@@ -212,8 +236,8 @@
       "typingDifficulty": 5,
       "effect": {
         "type": "damage",
-        "value": 80,
-        "element": "physical"
+        "power": 80,
+        "target": "enemy"
       }
     },
     {
@@ -224,8 +248,8 @@
       "typingDifficulty": 5,
       "effect": {
         "type": "damage",
-        "value": 100,
-        "element": "fire"
+        "power": 100,
+        "target": "enemy"
       }
     },
     {
@@ -235,22 +259,25 @@
       "successRate": 90,
       "typingDifficulty": 3,
       "effect": {
-        "type": "buff",
-        "value": 30,
+        "type": "temporary_status",
+        "power": 30,
         "target": "self",
-        "duration": 10
+        "duration": 10,
+        "temporaryStatus": {
+          "defense": 30
+        }
       }
     },
     {
-      "id": "life_drain",
-      "name": "Life Drain",
+      "id": "dark_strike",
+      "name": "Dark Strike",
       "mpCost": 20,
       "successRate": 80,
       "typingDifficulty": 4,
       "effect": {
         "type": "damage",
-        "value": 50,
-        "element": "dark"
+        "power": 50,
+        "target": "enemy"
       }
     }
   ]

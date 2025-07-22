@@ -1,5 +1,6 @@
 import { Item, ItemType, ItemRarity, ItemData } from './Item';
 import { Player } from '../player/Player';
+import { TemporaryStatusEffects } from '../player/TemporaryStatus';
 
 /**
  * 装備アイテムのステータス
@@ -16,12 +17,11 @@ export interface EquipmentStats {
  * スキル効果のインターフェース
  */
 export interface SkillEffect {
-  type: 'damage' | 'heal' | 'buff' | 'debuff' | 'status_ailment';
-  value: number;
-  element?: string;
-  target?: 'self' | 'enemy';
+  type: 'damage' | 'heal' | 'temporary_status';
+  power: number;
+  target: 'self' | 'enemy' | 'all';
   duration?: number;
-  ailmentType?: string;
+  temporaryStatus?: TemporaryStatusEffects;
 }
 
 /**
@@ -42,7 +42,7 @@ export interface Skill {
 export interface EquipmentItemData extends ItemData {
   stats: EquipmentStats;
   grade: number;
-  skills: Skill[];
+  skill?: Skill;
 }
 
 /**
@@ -50,9 +50,22 @@ export interface EquipmentItemData extends ItemData {
  * 武器や防具などの装備可能なアイテムを表現する
  */
 export class EquipmentItem extends Item {
+  private static readonly REQUIRED_STATS: readonly string[] = [
+    'attack',
+    'defense',
+    'speed',
+    'accuracy',
+    'fortune',
+  ] as const;
+  private static readonly VALID_EFFECT_TYPES: readonly string[] = [
+    'damage',
+    'heal',
+    'temporary_status',
+  ] as const;
+
   private readonly stats: EquipmentStats;
   private readonly grade: number;
-  private readonly skills: Skill[];
+  private readonly skill?: Skill;
 
   /**
    * 装備アイテムを初期化する
@@ -80,7 +93,7 @@ export class EquipmentItem extends Item {
       accuracy: 0,
       fortune: 0,
     };
-    this.skills = data.skills || [];
+    this.skill = data.skill;
   }
 
   /**
@@ -100,29 +113,19 @@ export class EquipmentItem extends Item {
   }
 
   /**
-   * 技リストを取得する
-   * @returns 技の配列
+   * 技を取得する
+   * @returns 技、または未定義
    */
-  getSkills(): Skill[] {
-    return [...this.skills];
-  }
-
-  /**
-   * IDで技を検索する
-   * @param skillId - 技のID
-   * @returns 見つかった技、見つからない場合はundefined
-   */
-  getSkillById(skillId: string): Skill | undefined {
-    return this.skills.find(skill => skill.id === skillId);
+  getSkill(): Skill | undefined {
+    return this.skill ? { ...this.skill } : undefined;
   }
 
   /**
    * 技を持っているか確認する
-   * @param skillId - 技のID
    * @returns 技を持っている場合true
    */
-  hasSkill(skillId: string): boolean {
-    return this.skills.some(skill => skill.id === skillId);
+  hasSkill(): boolean {
+    return this.skill !== undefined;
   }
 
   /**
@@ -155,10 +158,10 @@ export class EquipmentItem extends Item {
 
     const baseEquals = super.equals(other);
     const gradeEquals = this.grade === other.grade;
-    const statsEquals = JSON.stringify(this.stats) === JSON.stringify(other.stats);
-    const skillsEquals = JSON.stringify(this.skills) === JSON.stringify(other.skills);
+    const statsEquals = this.compareStats(other.stats);
+    const skillEquals = this.compareSkill(other.skill);
 
-    return baseEquals && gradeEquals && statsEquals && skillsEquals;
+    return baseEquals && gradeEquals && statsEquals && skillEquals;
   }
 
   /**
@@ -170,8 +173,116 @@ export class EquipmentItem extends Item {
       ...super.toJSON(),
       stats: { ...this.stats },
       grade: this.grade,
-      skills: [...this.skills],
+      skill: this.skill ? { ...this.skill } : undefined,
     };
+  }
+
+  /**
+   * ステータスを比較する
+   * @param otherStats - 比較対象のステータス
+   * @returns 等しい場合true
+   */
+  private compareStats(otherStats: EquipmentStats): boolean {
+    return (
+      this.stats.attack === otherStats.attack &&
+      this.stats.defense === otherStats.defense &&
+      this.stats.speed === otherStats.speed &&
+      this.stats.accuracy === otherStats.accuracy &&
+      this.stats.fortune === otherStats.fortune
+    );
+  }
+
+  /**
+   * スキルを比較する
+   * @param otherSkill - 比較対象のスキル
+   * @returns 等しい場合true
+   */
+  private compareSkill(otherSkill?: Skill): boolean {
+    if (this.skill === undefined && otherSkill === undefined) {
+      return true;
+    }
+    if (this.skill === undefined || otherSkill === undefined) {
+      return false;
+    }
+    return (
+      this.skill.id === otherSkill.id &&
+      this.skill.name === otherSkill.name &&
+      this.skill.mpCost === otherSkill.mpCost &&
+      this.skill.successRate === otherSkill.successRate &&
+      this.skill.typingDifficulty === otherSkill.typingDifficulty &&
+      this.compareSkillEffect(this.skill.effect, otherSkill.effect)
+    );
+  }
+
+  /**
+   * スキル効果を比較する
+   * @param effect1 - 比較対象1
+   * @param effect2 - 比較対象2
+   * @returns 等しい場合true
+   */
+  private compareSkillEffect(effect1: SkillEffect, effect2: SkillEffect): boolean {
+    // 基本プロパティの比較
+    if (!this.compareSkillEffectBasic(effect1, effect2)) {
+      return false;
+    }
+
+    // temporaryStatusの比較
+    return this.compareTemporaryStatus(effect1.temporaryStatus, effect2.temporaryStatus);
+  }
+
+  /**
+   * スキル効果の基本プロパティを比較する
+   * @param effect1 - 比較対象1
+   * @param effect2 - 比較対象2
+   * @returns 等しい場合true
+   */
+  private compareSkillEffectBasic(effect1: SkillEffect, effect2: SkillEffect): boolean {
+    return (
+      effect1.type === effect2.type &&
+      effect1.power === effect2.power &&
+      effect1.target === effect2.target &&
+      effect1.duration === effect2.duration
+    );
+  }
+
+  /**
+   * 一時ステータスを比較する
+   * @param ts1 - 比較対象1
+   * @param ts2 - 比較対象2
+   * @returns 等しい場合true
+   */
+  private compareTemporaryStatus(
+    ts1?: TemporaryStatusEffects,
+    ts2?: TemporaryStatusEffects
+  ): boolean {
+    // 両方undefinedの場合
+    if (ts1 === undefined && ts2 === undefined) {
+      return true;
+    }
+    // 片方だけundefinedの場合
+    if (ts1 === undefined || ts2 === undefined) {
+      return false;
+    }
+
+    // 数値プロパティの比較
+    const numberProps: (keyof TemporaryStatusEffects)[] = [
+      'attack',
+      'defense',
+      'speed',
+      'accuracy',
+      'fortune',
+      'hpPerTurn',
+      'mpPerTurn',
+    ];
+
+    for (const prop of numberProps) {
+      if (ts1[prop] !== ts2[prop]) {
+        return false;
+      }
+    }
+
+    // 真偽値プロパティの比較
+    return ts1.cannotAct === ts2.cannotAct && ts1.cannotRun === ts2.cannotRun;
   }
 
   /**
@@ -197,7 +308,7 @@ export class EquipmentItem extends Item {
       rarity: data.rarity,
       stats: data.stats,
       grade: data.grade,
-      skills: data.skills,
+      skill: data.skill,
     });
   }
 
@@ -251,11 +362,11 @@ export class EquipmentItem extends Item {
       return false;
     }
 
-    if (!Array.isArray(data.skills)) {
+    if (data.skill !== undefined && !EquipmentItem.validateSkill(data.skill)) {
       return false;
     }
 
-    return data.skills.every((skill: any) => EquipmentItem.validateSkill(skill));
+    return true;
   }
 
   /**
@@ -268,8 +379,7 @@ export class EquipmentItem extends Item {
       return false;
     }
 
-    const requiredStats = ['attack', 'defense', 'speed', 'accuracy', 'fortune'];
-    for (const stat of requiredStats) {
+    for (const stat of EquipmentItem.REQUIRED_STATS) {
       if (typeof stats[stat] !== 'number') {
         return false;
       }
@@ -324,7 +434,17 @@ export class EquipmentItem extends Item {
       return false;
     }
 
-    const validEffectTypes = ['damage', 'heal', 'buff', 'debuff', 'status_ailment'];
-    return validEffectTypes.includes(effect.type) && typeof effect.value === 'number';
+    if (!EquipmentItem.VALID_EFFECT_TYPES.includes(effect.type)) return false;
+    if (typeof effect.power !== 'number') return false;
+    if (!['self', 'enemy', 'all'].includes(effect.target)) return false;
+
+    // temporary_status型の場合、temporaryStatusプロパティが必須
+    if (effect.type === 'temporary_status') {
+      if (!effect.temporaryStatus || typeof effect.temporaryStatus !== 'object') {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

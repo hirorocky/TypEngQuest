@@ -12,8 +12,8 @@ describe('EquipmentItem', () => {
     typingDifficulty: 2,
     effect: {
       type: 'damage',
-      value: 50,
-      element: 'physical',
+      power: 50,
+      target: 'enemy',
     },
   };
 
@@ -25,7 +25,8 @@ describe('EquipmentItem', () => {
     typingDifficulty: 1,
     effect: {
       type: 'heal',
-      value: 30,
+      power: 30,
+      target: 'self',
     },
   };
 
@@ -44,7 +45,7 @@ describe('EquipmentItem', () => {
       fortune: 0,
     },
     grade: 2,
-    skills: [sampleSkill],
+    skill: sampleSkill,
   };
 
   describe('コンストラクタ', () => {
@@ -89,13 +90,13 @@ describe('EquipmentItem', () => {
       expect(stats.fortune).toBe(0);
     });
 
-    it('技がundefinedの場合空配列が設定される', () => {
+    it('技がundefinedの場合undefinedが設定される', () => {
       const equipment = new EquipmentItem({
         ...sampleEquipmentData,
-        skills: undefined as any,
+        skill: undefined,
       });
 
-      expect(equipment.getSkills()).toEqual([]);
+      expect(equipment.getSkill()).toBeUndefined();
     });
   });
 
@@ -112,41 +113,22 @@ describe('EquipmentItem', () => {
     });
   });
 
-  describe('getSkills', () => {
-    it('装備の技リストを取得できる', () => {
+  describe('getSkill', () => {
+    it('装備の技を取得できる', () => {
       const equipment = new EquipmentItem(sampleEquipmentData);
-      const skills = equipment.getSkills();
-
-      expect(skills).toHaveLength(1);
-      expect(skills[0].id).toBe('slash');
-      expect(skills[0].name).toBe('Slash');
-    });
-
-    it('複数の技を持つ装備の技リストを取得できる', () => {
-      const equipment = new EquipmentItem({
-        ...sampleEquipmentData,
-        skills: [sampleSkill, sampleSkill2],
-      });
-      const skills = equipment.getSkills();
-
-      expect(skills).toHaveLength(2);
-      expect(skills[0].id).toBe('slash');
-      expect(skills[1].id).toBe('heal');
-    });
-  });
-
-  describe('getSkillById', () => {
-    it('IDで技を検索できる', () => {
-      const equipment = new EquipmentItem(sampleEquipmentData);
-      const skill = equipment.getSkillById('slash');
+      const skill = equipment.getSkill();
 
       expect(skill).toBeDefined();
+      expect(skill?.id).toBe('slash');
       expect(skill?.name).toBe('Slash');
     });
 
-    it('存在しないIDの場合undefinedを返す', () => {
-      const equipment = new EquipmentItem(sampleEquipmentData);
-      const skill = equipment.getSkillById('nonexistent');
+    it('技を持たない装備の場合undefinedを返す', () => {
+      const equipment = new EquipmentItem({
+        ...sampleEquipmentData,
+        skill: undefined,
+      });
+      const skill = equipment.getSkill();
 
       expect(skill).toBeUndefined();
     });
@@ -156,8 +138,15 @@ describe('EquipmentItem', () => {
     it('技を持っているか確認できる', () => {
       const equipment = new EquipmentItem(sampleEquipmentData);
 
-      expect(equipment.hasSkill('slash')).toBe(true);
-      expect(equipment.hasSkill('nonexistent')).toBe(false);
+      expect(equipment.hasSkill()).toBe(true);
+    });
+
+    it('技を持たない場合falseを返す', () => {
+      const equipment = new EquipmentItem({
+        ...sampleEquipmentData,
+        skill: undefined,
+      });
+      expect(equipment.hasSkill()).toBe(false);
     });
   });
 
@@ -219,7 +208,7 @@ describe('EquipmentItem', () => {
       const equipment1 = new EquipmentItem(sampleEquipmentData);
       const equipment2 = new EquipmentItem({
         ...sampleEquipmentData,
-        skills: [sampleSkill2],
+        skill: sampleSkill2,
       });
 
       expect(equipment1.equals(equipment2)).toBe(false);
@@ -259,7 +248,7 @@ describe('EquipmentItem', () => {
           fortune: 0,
         },
         grade: 2,
-        skills: [sampleSkill],
+        skill: sampleSkill,
       });
     });
   });
@@ -280,7 +269,7 @@ describe('EquipmentItem', () => {
           fortune: 0,
         },
         grade: 2,
-        skills: [sampleSkill],
+        skill: sampleSkill,
       };
 
       const equipment = EquipmentItem.fromJSON(json);
@@ -289,7 +278,7 @@ describe('EquipmentItem', () => {
       expect(equipment.getName()).toBe('Iron Sword');
       expect(equipment.getGrade()).toBe(2);
       expect(equipment.getStats().attack).toBe(10);
-      expect(equipment.getSkills()).toHaveLength(1);
+      expect(equipment.hasSkill()).toBe(true);
     });
 
     it('不正なタイプのJSONデータでエラーを投げる', () => {
@@ -325,21 +314,10 @@ describe('EquipmentItem', () => {
       }).toThrow('Invalid equipment item data');
     });
 
-    it('skillsが配列でない場合エラーを投げる', () => {
-      const json = {
-        ...sampleEquipmentData,
-        skills: 'invalid' as any,
-      };
-
-      expect(() => {
-        EquipmentItem.fromJSON(json);
-      }).toThrow('Invalid equipment item data');
-    });
-
     it('無効なスキルデータの場合エラーを投げる', () => {
       const json = {
         ...sampleEquipmentData,
-        skills: [{ invalid: 'skill' }] as any,
+        skill: { invalid: 'skill' } as any,
       };
 
       expect(() => {
@@ -400,7 +378,7 @@ describe('EquipmentItem', () => {
         typingDifficulty: 2,
         effect: {
           type: 'damage',
-          value: 50,
+          power: 50,
         },
       } as any;
 
@@ -421,7 +399,7 @@ describe('EquipmentItem', () => {
         ...sampleSkill,
         effect: {
           type: 'invalid',
-          value: 50,
+          power: 50,
         },
       };
 
