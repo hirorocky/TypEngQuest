@@ -217,10 +217,10 @@ describe('EquipmentEffectCalculator', () => {
       expect(averageGrade).toBe(13); // (15+12)/2 = 13.5 → 13（小数点切り捨て）
     });
 
-    it('空の配列の場合、1を返す', () => {
+    it('空の配列の場合、0を返す', () => {
       const averageGrade = calculator.calculateAverageGrade([]);
 
-      expect(averageGrade).toBe(1);
+      expect(averageGrade).toBe(0);
     });
 
     it('小数点以下がある場合、切り捨てされる', () => {

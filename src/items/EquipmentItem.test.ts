@@ -65,15 +65,17 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           grade: 0,
+          stats: { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 0 }, // グレード0と一致
         });
-      }).toThrow('Grade must be between 1 and 20');
+      }).toThrow('Grade must be between 1 and 100');
 
       expect(() => {
         new EquipmentItem({
           ...sampleEquipmentData,
-          grade: 21,
+          grade: 101,
+          stats: { attack: 101, defense: 0, speed: 0, accuracy: 0, fortune: 0 }, // グレード101と一致
         });
-      }).toThrow('Grade must be between 1 and 20');
+      }).toThrow('Grade must be between 1 and 100');
     });
 
     it('ステータスの合計とグレードが一致している場合エラーを投げない', () => {

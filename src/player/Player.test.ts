@@ -18,10 +18,10 @@ describe('Player', () => {
   });
 
   describe('getLevel', () => {
-    test('初期レベルは1を返す', () => {
+    test('初期レベル（装備なし）は0を返す', () => {
       const player = new Player('Hero');
 
-      expect(player.getLevel()).toBe(1);
+      expect(player.getLevel()).toBe(0);
     });
   });
 
@@ -39,8 +39,8 @@ describe('Player', () => {
       const stats = player.getStats();
 
       expect(stats).toBeDefined();
-      expect(stats.getMaxHP()).toBe(120); // レベル1: 100 + (1 × 20)
-      expect(stats.getMaxMP()).toBe(60); // レベル1: 50 + (1 × 10)
+      expect(stats.getMaxHP()).toBe(100); // レベル0: 100 + (0 × 20)
+      expect(stats.getMaxMP()).toBe(50); // レベル0: 50 + (0 × 10)
     });
   });
 
@@ -51,11 +51,10 @@ describe('Player', () => {
 
       expect(json).toEqual({
         name: 'Hero',
-        level: 1,
         stats: expect.objectContaining({
-          level: 1,
-          currentHP: 120,
-          currentMP: 60,
+          level: 0,
+          currentHP: 100,
+          currentMP: 50,
           baseAttack: 10,
           baseDefense: 10,
           baseSpeed: 10,
@@ -80,7 +79,6 @@ describe('Player', () => {
     test('JSONデータからプレイヤーを復元できる', () => {
       const jsonData = {
         name: 'SavedHero',
-        level: 5,
         stats: {
           level: 5,
           currentHP: 180,
@@ -106,7 +104,7 @@ describe('Player', () => {
       const player = Player.fromJSON(jsonData);
 
       expect(player.name).toBe('SavedHero');
-      expect(player.getLevel()).toBe(5);
+      expect(player.getLevel()).toBe(0); // 装備がない場合レベルは0
       expect(player.getStats().getCurrentHP()).toBe(180);
       expect(player.getStats().getCurrentMP()).toBe(90);
     });
@@ -114,7 +112,6 @@ describe('Player', () => {
     test('不正なJSONデータでエラーを投げる', () => {
       const invalidData = {
         name: 123, // 文字列でない
-        level: 'invalid', // 数値でない
         stats: {},
       };
 
@@ -124,7 +121,7 @@ describe('Player', () => {
     test('必須フィールドが欠けている場合エラーを投げる', () => {
       const incompleteData = {
         name: 'Hero',
-        // level, stats が欠けている
+        // stats が欠けている
       };
 
       expect(() => Player.fromJSON(incompleteData)).toThrow('Invalid player data');
@@ -133,7 +130,6 @@ describe('Player', () => {
     test('statsフィールドが欠けている場合エラーを投げる', () => {
       const dataWithoutStats = {
         name: 'Hero',
-        level: 1,
         // stats が欠けている
       };
 
@@ -154,22 +150,22 @@ describe('Player', () => {
       const player = new Player('勇者');
 
       expect(player.name).toBe('勇者');
-      expect(player.getLevel()).toBe(1);
+      expect(player.getLevel()).toBe(0); // 装備なしの場合レベル0
     });
 
     test('プレイヤー名に特殊文字が含まれていても正常に動作する', () => {
       const player = new Player('Player@123!');
 
       expect(player.name).toBe('Player@123!');
-      expect(player.getLevel()).toBe(1);
+      expect(player.getLevel()).toBe(0); // 装備なしの場合レベル0
     });
   });
 
   describe('setEquippedItems', () => {
-    test('装備アイテムが設定されていない場合、レベルは1を返す', () => {
+    test('装備アイテムが設定されていない場合、レベルは0を返す', () => {
       const player = new Player('Hero');
 
-      expect(player.getLevel()).toBe(1);
+      expect(player.getLevel()).toBe(0);
     });
 
     test('装備アイテムが設定されている場合、グレード平均値をレベルとして返す', () => {
@@ -212,7 +208,7 @@ describe('Player', () => {
 
       player.setEquippedItems([equipment1, equipment2]);
 
-      expect(player.getLevel()).toBe(13); // (15+12)/2 = 13.5 → 13（小数点切り捨て）
+      expect(player.getLevel()).toBe(5); // (15+12)/5スロット = 27/5 = 5.4 → 5（小数点切り捨て）
     });
 
     test('複数の装備アイテムの場合、正しいレベルが計算される', () => {
@@ -251,7 +247,7 @@ describe('Player', () => {
       const equipments = equipmentDataList.map(data => new EquipmentItem(data));
       player.setEquippedItems(equipments);
 
-      expect(player.getLevel()).toBe(2); // (1+2+3)/3 = 2.0
+      expect(player.getLevel()).toBe(1); // (1+2+3)/5スロット = 6/5 = 1.2 → 1（小数点切り捨て）
     });
 
     test('単一の装備アイテムの場合、そのグレードがレベルになる', () => {
@@ -276,7 +272,7 @@ describe('Player', () => {
       const equipment = new EquipmentItem(equipmentData);
       player.setEquippedItems([equipment]);
 
-      expect(player.getLevel()).toBe(15);
+      expect(player.getLevel()).toBe(3); // 15/5スロット = 3.0
     });
   });
 

@@ -9,7 +9,6 @@ import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculato
  */
 export interface PlayerData {
   name: string;
-  level: number;
   stats: StatsData;
   inventory: InventoryData;
 }
@@ -18,10 +17,7 @@ export interface PlayerData {
  * プレイヤークラス - ゲーム内のプレイヤー情報を管理する
  */
 export class Player {
-  private static readonly DEFAULT_LEVEL = 1;
-
   public readonly name: string;
-  private level: number;
   private stats: Stats;
   private inventory: Inventory;
   private equippedItems: EquipmentItem[] = [];
@@ -33,8 +29,7 @@ export class Player {
    */
   constructor(name: string, istestMode: boolean = false) {
     this.name = name;
-    this.level = Player.DEFAULT_LEVEL;
-    this.stats = new Stats(this.level);
+    this.stats = new Stats(0); // 初期レベルは0（装備なし）
     this.inventory = new Inventory();
     this.equipmentCalculator = new EquipmentEffectCalculator();
     if (istestMode) {
@@ -68,10 +63,7 @@ export class Player {
    * @returns プレイヤーのレベル
    */
   getLevel(): number {
-    if (this.equippedItems.length === 0) {
-      return this.level;
-    }
-    return this.equipmentCalculator.calculateAverageGrade(this.equippedItems);
+    return this.equipmentCalculator.calculateAverageGradeBySlots(this.equippedItems, 5);
   }
 
   /**
@@ -96,12 +88,9 @@ export class Player {
    */
   setEquippedItems(equipments: EquipmentItem[]): void {
     this.equippedItems = [...equipments];
-    // レベルが変わる可能性があるため、ステータスを更新
+    // レベルが変わる可能性があるため、ステータスを更新（HP/MP/一時効果は保持）
     const newLevel = this.getLevel();
-    if (newLevel !== this.level) {
-      this.level = newLevel;
-      this.stats = new Stats(this.level);
-    }
+    this.stats.updateLevel(newLevel);
   }
 
   /**
@@ -127,7 +116,6 @@ export class Player {
   toJSON(): PlayerData {
     return {
       name: this.name,
-      level: this.level,
       stats: this.stats.toJSON(),
       inventory: this.inventory.toJSON(),
     };
@@ -143,8 +131,6 @@ export class Player {
     Player.validatePlayerData(data);
 
     const player = new Player(data.name);
-    // レベルを直接設定（装備がない場合のレベル値）
-    player.level = data.level;
     player.stats = Stats.fromJSON(data.stats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
@@ -163,10 +149,6 @@ export class Player {
     }
 
     if (typeof data.name !== 'string') {
-      throw new Error('Invalid player data');
-    }
-
-    if (typeof data.level !== 'number' || !Number.isInteger(data.level)) {
       throw new Error('Invalid player data');
     }
 

@@ -440,6 +440,35 @@ export class Stats {
   }
 
   /**
+   * レベルを更新する（HP/MP/一時効果は保持）
+   * @param newLevel - 新しいレベル
+   */
+  updateLevel(newLevel: number): void {
+    const oldLevel = this.level;
+    this.level = Math.max(0, newLevel);
+
+    // レベルが変わらない場合は何もしない
+    if (oldLevel === this.level) {
+      return;
+    }
+
+    // HPの割合を保持
+    const oldMaxHP = Stats.BASE_HP + oldLevel * Stats.HP_PER_LEVEL;
+    const hpRatio = oldMaxHP > 0 ? this.currentHP / oldMaxHP : 1;
+
+    // MPの割合を保持
+    const oldMaxMP = Stats.BASE_MP + oldLevel * Stats.MP_PER_LEVEL;
+    const mpRatio = oldMaxMP > 0 ? this.currentMP / oldMaxMP : 1;
+
+    // 新しい最大値に合わせてHP/MPを調整
+    const newMaxHP = this.calculateMaxHP();
+    const newMaxMP = this.calculateMaxMP();
+
+    this.currentHP = Math.min(Math.floor(newMaxHP * hpRatio), newMaxHP);
+    this.currentMP = Math.min(Math.floor(newMaxMP * mpRatio), newMaxMP);
+  }
+
+  /**
    * StatsオブジェクトをJSONに変換する
    * @returns JSON形式のデータ
    */
