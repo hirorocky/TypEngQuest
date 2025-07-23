@@ -1,13 +1,14 @@
 import { Stats, StatsData } from './Stats';
 import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
+import { EquipmentItem, EquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
  */
 export interface PlayerData {
   name: string;
-  level: number;
   stats: StatsData;
   inventory: InventoryData;
 }
@@ -16,12 +17,11 @@ export interface PlayerData {
  * プレイヤークラス - ゲーム内のプレイヤー情報を管理する
  */
 export class Player {
-  private static readonly DEFAULT_LEVEL = 1;
-
   public readonly name: string;
-  private level: number;
   private stats: Stats;
   private inventory: Inventory;
+  private equippedItems: EquipmentItem[] = [];
+  private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
    * プレイヤーを初期化する
@@ -29,9 +29,9 @@ export class Player {
    */
   constructor(name: string, istestMode: boolean = false) {
     this.name = name;
-    this.level = Player.DEFAULT_LEVEL;
-    this.stats = new Stats(this.level);
+    this.stats = new Stats(0); // 初期レベルは0（装備なし）
     this.inventory = new Inventory();
+    this.equipmentCalculator = new EquipmentEffectCalculator();
     if (istestMode) {
       this.stats.takeDamage(50);
       this.stats.consumeMP(20);
@@ -59,11 +59,11 @@ export class Player {
   }
 
   /**
-   * プレイヤーのレベルを取得する
+   * プレイヤーのレベルを取得する（装備アイテムのグレード平均値）
    * @returns プレイヤーのレベル
    */
   getLevel(): number {
-    return this.level;
+    return this.equipmentCalculator.calculateAverageGradeBySlots(this.equippedItems, 5);
   }
 
   /**
@@ -83,13 +83,39 @@ export class Player {
   }
 
   /**
+   * 装備アイテムを設定する
+   * @param equipments - 装備するアイテムのリスト
+   */
+  setEquippedItems(equipments: EquipmentItem[]): void {
+    this.equippedItems = [...equipments];
+    // レベルが変わる可能性があるため、ステータスを更新（HP/MP/一時効果は保持）
+    const newLevel = this.getLevel();
+    this.stats.updateLevel(newLevel);
+  }
+
+  /**
+   * 装備中のアイテムのステータス合計を取得する
+   * @returns 装備ステータスの合計
+   */
+  getEquippedItemStats(): EquipmentStats {
+    return this.equipmentCalculator.calculateTotalStats(this.equippedItems);
+  }
+
+  /**
+   * 装備中のアイテムから使用可能な技を取得する
+   * @returns 使用可能な技のリスト
+   */
+  getEquippedItemSkills(): Skill[] {
+    return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
+  }
+
+  /**
    * プレイヤーデータをJSON形式で出力する
    * @returns プレイヤーデータのJSONオブジェクト
    */
   toJSON(): PlayerData {
     return {
       name: this.name,
-      level: this.level,
       stats: this.stats.toJSON(),
       inventory: this.inventory.toJSON(),
     };
@@ -105,9 +131,9 @@ export class Player {
     Player.validatePlayerData(data);
 
     const player = new Player(data.name);
-    player.level = data.level;
     player.stats = Stats.fromJSON(data.stats);
     player.inventory = Inventory.fromJSON(data.inventory);
+    player.equipmentCalculator = new EquipmentEffectCalculator();
 
     return player;
   }
@@ -123,10 +149,6 @@ export class Player {
     }
 
     if (typeof data.name !== 'string') {
-      throw new Error('Invalid player data');
-    }
-
-    if (typeof data.level !== 'number' || !Number.isInteger(data.level)) {
       throw new Error('Invalid player data');
     }
 

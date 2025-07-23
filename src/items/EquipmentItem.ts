@@ -70,7 +70,7 @@ export class EquipmentItem extends Item {
   /**
    * 装備アイテムを初期化する
    * @param data - 装備アイテムの初期化データ
-   * @throws {Error} グレードが1-5の範囲外の場合
+   * @throws {Error} グレードが1-100の範囲外の場合
    */
   constructor(data: EquipmentItemData) {
     super({
@@ -81,24 +81,57 @@ export class EquipmentItem extends Item {
       rarity: data.rarity,
     });
 
-    if (data.grade < 1 || data.grade > 5) {
-      throw new Error('Grade must be between 1 and 5');
-    }
-
-    this.grade = data.grade;
-    this.stats = data.stats || {
+    // statsがundefinedの場合、デフォルト値を設定
+    const stats = data.stats || {
       attack: 0,
       defense: 0,
       speed: 0,
       accuracy: 0,
       fortune: 0,
     };
+
+    // 実際に使用するstatsでグレードを検証
+    this.validateGradeAndStats(data.grade, stats);
+    this.grade = data.grade;
+    this.stats = stats;
     this.skill = data.skill;
   }
 
   /**
+   * グレードとステータスの妥当性を検証する
+   * @param grade - 装備のグレード
+   * @param stats - 装備のステータス
+   * @throws {Error} グレードまたはステータスが不正な場合
+   */
+  private validateGradeAndStats(grade: number, stats: EquipmentStats): void {
+    if (grade < 1 || grade > 100) {
+      throw new Error('Grade must be between 1 and 100');
+    }
+
+    const statsSum = this.calculateStatsSum(stats);
+    if (grade !== statsSum) {
+      throw new Error(
+        'Grade must equal sum of stats (attack + defense + speed + accuracy + fortune)'
+      );
+    }
+  }
+
+  /**
+   * ステータスの合計値を計算する
+   * @param stats - ステータス
+   * @returns ステータスの合計値
+   */
+  private calculateStatsSum(stats?: EquipmentStats): number {
+    if (!stats) {
+      return 0;
+    }
+
+    return stats.attack + stats.defense + stats.speed + stats.accuracy + stats.fortune;
+  }
+
+  /**
    * グレードを取得する
-   * @returns グレード（1-5）
+   * @returns グレード（1-100）
    */
   getGrade(): number {
     return this.grade;
