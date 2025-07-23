@@ -33,7 +33,7 @@ export class EquipmentEffectCalculator {
   }
 
   /**
-   * 装備中のアイテムのグレード平均値を計算する（小数点切り捨て）
+   * 装備中のアイテムのグレード平均値を最大スロット数5で計算する（小数点切り捨て）
    * @param equipments - 装備中のアイテムリスト
    * @returns グレードの平均値（小数点切り捨て）
    */
@@ -46,7 +46,7 @@ export class EquipmentEffectCalculator {
       return sum + equipment.getGrade();
     }, 0);
 
-    const averageGrade = totalGrade / equipments.length;
+    const averageGrade = totalGrade / 5;
 
     // 小数点切り捨て
     return Math.floor(averageGrade);

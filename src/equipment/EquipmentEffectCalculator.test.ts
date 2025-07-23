@@ -153,7 +153,7 @@ describe('EquipmentEffectCalculator', () => {
   });
 
   describe('calculateAverageGrade', () => {
-    it('単一の装備アイテムの場合、そのグレードを返す', () => {
+    it('単一の装備アイテムの場合、固定分母5でグレードを計算する', () => {
       const equipmentData: EquipmentItemData = {
         id: 'sword',
         name: 'Iron Sword',
@@ -173,10 +173,10 @@ describe('EquipmentEffectCalculator', () => {
 
       const averageGrade = calculator.calculateAverageGrade([equipment]);
 
-      expect(averageGrade).toBe(15);
+      expect(averageGrade).toBe(3); // 15/5 = 3.0
     });
 
-    it('複数の装備アイテムの場合、平均グレード（小数点切り捨て）を返す', () => {
+    it('複数の装備アイテムの場合、固定分母5でグレード（小数点切り捨て）を返す', () => {
       const equipment1Data: EquipmentItemData = {
         id: 'sword',
         name: 'Iron Sword',
@@ -214,7 +214,7 @@ describe('EquipmentEffectCalculator', () => {
 
       const averageGrade = calculator.calculateAverageGrade([equipment1, equipment2]);
 
-      expect(averageGrade).toBe(13); // (15+12)/2 = 13.5 → 13（小数点切り捨て）
+      expect(averageGrade).toBe(5); // (15+12)/5 = 27/5 = 5.4 → 5（小数点切り捨て）
     });
 
     it('空の配列の場合、0を返す', () => {
@@ -257,7 +257,7 @@ describe('EquipmentEffectCalculator', () => {
       const equipments = equipmentDataList.map(data => new EquipmentItem(data));
       const averageGrade = calculator.calculateAverageGrade(equipments);
 
-      expect(averageGrade).toBe(2); // (1+2+3)/3 = 2.0
+      expect(averageGrade).toBe(1); // (1+2+3)/5 = 6/5 = 1.2 → 1（小数点切り捨て）
     });
 
     it('より複雑な小数点切り捨てのケース', () => {
@@ -285,7 +285,7 @@ describe('EquipmentEffectCalculator', () => {
       const equipments = equipmentDataList.map(data => new EquipmentItem(data));
       const averageGrade = calculator.calculateAverageGrade(equipments);
 
-      expect(averageGrade).toBe(1); // (1+2)/2 = 1.5 → 1（小数点切り捨て）
+      expect(averageGrade).toBe(0); // (1+2)/5 = 3/5 = 0.6 → 0（小数点切り捨て）
     });
   });
 
