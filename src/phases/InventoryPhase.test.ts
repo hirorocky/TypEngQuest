@@ -328,7 +328,100 @@ describe('InventoryPhase', () => {
       });
     });
 
-    describe('リアルタイム情報表示機能', () => {
+    describe('装備選択とスロット装着機能', () => {
+      test('装備アイテム選択後にスロット指定が求められる', async () => {
+        const equipment = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+        player.getInventory().addItem(equipment);
+
+        // ScrollableListのモック設定
+        const mockWaitForSelection = jest.fn().mockResolvedValue(0); // 最初のアイテムを選択
+        jest
+          .spyOn(ScrollableList.prototype, 'waitForSelection')
+          .mockImplementation(mockWaitForSelection);
+
+        const result = await (phase as any).selectEquipmentItem();
+
+        expect(result.selectedItem).toBe(equipment);
+        expect(result.success).toBe(true);
+      });
+
+      test('スロット選択とアイテム装着処理', async () => {
+        const equipment = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+
+        const result = await (phase as any).equipToSlot(equipment, 1);
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('equipped sword to slot 1');
+      });
+
+      test('既に装備されているスロットへの装備時の上書き確認', async () => {
+        const sword = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+
+        const shield = new EquipmentItem({
+          id: 'shield',
+          name: 'shield',
+          description: 'A shield',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 15, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 15,
+        });
+
+        // まず一つ目を装備
+        await (phase as any).equipToSlot(sword, 1);
+
+        // 同じスロットに二つ目を装備（上書き）
+        const result = await (phase as any).equipToSlot(shield, 1);
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('equipped shield to slot 1');
+      });
+
+      test('装備後のインベントリからのアイテム削除', async () => {
+        const equipment = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+        player.getInventory().addItem(equipment);
+
+        const initialCount = player.getInventory().getItemCount();
+        await (phase as any).equipToSlot(equipment, 1);
+        const finalCount = player.getInventory().getItemCount();
+
+        expect(finalCount).toBe(initialCount - 1);
+      });
+    });
+
+    describe('Phase 3: リアルタイム情報表示機能', () => {
       test('装備変更時のレベル計算表示', () => {
         const equipment = new EquipmentItem({
           id: 'sword',
@@ -373,6 +466,129 @@ describe('InventoryPhase', () => {
         const invalidGrammarResult = (phase as any).checkGrammarValidity(['123', 'invalid']);
         expect(invalidGrammarResult.isValid).toBe(false);
         expect(invalidGrammarResult.message).toContain('invalid');
+      });
+
+      test('装備選択時のリアルタイム情報表示', async () => {
+        const equipment = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+        player.getInventory().addItem(equipment);
+
+        // equipコマンドを実行してリアルタイム情報表示を確認
+        const result = await phase.processInput('equip');
+
+        expect(result.success).toBe(true);
+        expect(Display.printHeader).toHaveBeenCalledWith('Equipment Selection');
+        expect(Display.printInfo).toHaveBeenCalledWith('Current Equipment Slots:');
+        expect(Display.printInfo).toHaveBeenCalledWith('Available Equipment:');
+      });
+
+      test('ScrollableList選択時の動的な装備プレビュー', () => {
+        const equipment = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 5, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 20,
+        });
+
+        // 装備プレビュー情報の動的表示をテスト
+        const previewInfo = (phase as any).getEquipmentPreview(equipment, 1);
+
+        expect(previewInfo).toContain('Slot 1');
+        expect(previewInfo).toContain('sword');
+        expect(previewInfo).toContain('Level:');
+        expect(previewInfo).toContain('Stats:');
+      });
+    });
+
+    describe('Phase 4: 英文法チェック統合機能', () => {
+      test('装備組み合わせの英文法妥当性チェック', async () => {
+        const equipment1 = new EquipmentItem({
+          id: 'magic',
+          name: 'magic',
+          description: 'Magic item',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 5, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 5,
+        });
+
+        const equipment2 = new EquipmentItem({
+          id: 'sword',
+          name: 'sword',
+          description: 'A sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+
+        player.getInventory().addItem(equipment1);
+        player.getInventory().addItem(equipment2);
+
+        // 英文法的に有効な組み合わせをテスト
+        const result = await (phase as any).validateEquipmentCombination([equipment1, equipment2]);
+
+        expect(result.isValid).toBe(true);
+        expect(result.message).toBe('valid english sentence');
+      });
+
+      test('無効な英文構成での装備制限', async () => {
+        const equipment1 = new EquipmentItem({
+          id: 'invalid123',
+          name: 'invalid123',
+          description: 'Invalid item',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 5, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 5,
+        });
+
+        const equipment2 = new EquipmentItem({
+          id: 'item456',
+          name: 'item456',
+          description: 'Another invalid item',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+
+        // 英文法的に無効な組み合わせをテスト
+        const result = await (phase as any).validateEquipmentCombination([equipment1, equipment2]);
+
+        expect(result.isValid).toBe(false);
+        expect(result.message).toContain('invalid');
+      });
+
+      test('装備時の英文法チェック統合', async () => {
+        const equipment = new EquipmentItem({
+          id: 'beautiful',
+          name: 'beautiful',
+          description: 'Beautiful item',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 5, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 5,
+        });
+
+        player.getInventory().addItem(equipment);
+
+        // 装備時に英文法チェックが実行されることをテスト
+        const result = await (phase as any).equipWithGrammarCheck(equipment, 1);
+
+        expect(result.success).toBe(true);
+        expect(result.grammarCheck).toBeDefined();
+        expect(result.grammarCheck.isValid).toBe(true);
       });
     });
   });

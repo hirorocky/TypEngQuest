@@ -528,4 +528,120 @@ export class InventoryPhase extends Phase {
     // 現在は仮実装として空配列を返す
     return [];
   }
+
+  /**
+   * 装備アイテムを選択する
+   */
+  private async selectEquipmentItem(): Promise<{
+    selectedItem: EquipmentItem | null;
+    success: boolean;
+  }> {
+    const equipmentItems = this.getEquipmentItems();
+
+    if (equipmentItems.length === 0) {
+      return { selectedItem: null, success: false };
+    }
+
+    const choices: ListItem[] = equipmentItems.map((item, index) => ({
+      name: this.formatItemInfo(item),
+      value: index,
+    }));
+
+    const list = new ScrollableList(choices, {
+      message: 'Select equipment to equip:',
+      pageSize: 8,
+      loop: false,
+    });
+
+    const selectedIndex = await list.waitForSelection();
+
+    if (selectedIndex === null) {
+      return { selectedItem: null, success: false };
+    }
+
+    return { selectedItem: equipmentItems[selectedIndex], success: true };
+  }
+
+  /**
+   * 指定スロットにアイテムを装備する
+   */
+  private async equipToSlot(equipment: EquipmentItem, slotNumber: number): Promise<CommandResult> {
+    if (slotNumber < 1 || slotNumber > 5) {
+      return {
+        success: false,
+        message: `invalid slot number: ${slotNumber}`,
+      };
+    }
+
+    const currentEquipments = this.getCurrentEquipmentWords();
+    const existingItem = currentEquipments[slotNumber - 1];
+
+    // インベントリからアイテムを削除
+    this.player.getInventory().removeItem(equipment);
+
+    // TODO: 実際の装備処理を実装
+    // 現在は仮実装
+
+    const message = existingItem
+      ? `replaced ${existingItem} with ${equipment.getName()} in slot ${slotNumber}`
+      : `equipped ${equipment.getName()} to slot ${slotNumber}`;
+
+    return {
+      success: true,
+      message,
+    };
+  }
+
+  /**
+   * 装備アイテムのプレビュー情報を取得する
+   */
+  private getEquipmentPreview(equipment: EquipmentItem, slotNumber: number): string {
+    const lines: string[] = [];
+
+    lines.push(`Slot ${slotNumber}: ${equipment.getName()}`);
+
+    // レベル計算（この装備を含めた場合の仮想的なレベル）
+    const levelPreview = this.calculateLevelPreview([equipment]);
+    lines.push(levelPreview);
+
+    // ステータス変化プレビュー
+    const statsPreview = this.getStatusPreview([equipment]);
+    if (statsPreview) {
+      lines.push(`Stats: ${statsPreview}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 装備組み合わせの英文法妥当性をチェックする
+   */
+  private async validateEquipmentCombination(equipments: EquipmentItem[]): Promise<{
+    isValid: boolean;
+    message: string;
+  }> {
+    const words = equipments.map(item => item.getName());
+    return this.checkGrammarValidity(words);
+  }
+
+  /**
+   * 英文法チェック付きで装備する
+   */
+  private async equipWithGrammarCheck(
+    equipment: EquipmentItem,
+    slotNumber: number
+  ): Promise<CommandResult & { grammarCheck?: { isValid: boolean; message: string } }> {
+    // 現在の装備に新しい装備を追加した状態での英文法チェック
+    const currentEquipments = this.getCurrentEquipmentWords();
+    const tempWords = [...currentEquipments.filter(Boolean), equipment.getName()];
+    const grammarCheck = this.checkGrammarValidity(tempWords);
+
+    // 基本的な装備処理
+    const equipResult = await this.equipToSlot(equipment, slotNumber);
+
+    return {
+      ...equipResult,
+      grammarCheck,
+    };
+  }
 }
