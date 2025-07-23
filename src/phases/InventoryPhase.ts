@@ -6,6 +6,9 @@ import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Item } from '../items/Item';
 import { ConsumableItem } from '../items/ConsumableItem';
+import { EquipmentItem } from '../items/EquipmentItem';
+import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
+import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
  * インベントリフェーズ - アイテムの管理と使用を行う
@@ -13,6 +16,8 @@ import { ConsumableItem } from '../items/ConsumableItem';
 export class InventoryPhase extends Phase {
   protected world: World;
   private player: Player;
+  private grammarChecker: EquipmentGrammarChecker;
+  private effectCalculator: EquipmentEffectCalculator;
 
   constructor(world: World, player: Player) {
     super(world);
@@ -25,6 +30,8 @@ export class InventoryPhase extends Phase {
     }
     this.world = world;
     this.player = player;
+    this.grammarChecker = new EquipmentGrammarChecker();
+    this.effectCalculator = new EquipmentEffectCalculator();
   }
 
   public getName(): string {
@@ -98,10 +105,12 @@ export class InventoryPhase extends Phase {
    * 入力を処理してCommandResultを返す
    */
   async processInput(input: string): Promise<CommandResult> {
-    const [command] = input.trim().split(/\s+/);
+    const parts = input.trim().split(/\s+/);
+    const command = parts[0];
+    const args = parts.slice(1);
 
     // アイテム操作コマンド
-    const itemResult = await this.handleItemCommand(command);
+    const itemResult = await this.handleItemCommand(command, args);
     if (itemResult) return itemResult;
 
     // フェーズ遷移コマンド
@@ -122,9 +131,25 @@ export class InventoryPhase extends Phase {
   /**
    * アイテム操作コマンドを処理する
    */
-  private async handleItemCommand(command: string): Promise<CommandResult | null> {
+  private async handleItemCommand(command: string, args: string[]): Promise<CommandResult | null> {
     if (command === 'consume') {
       return await this.consumeItem();
+    }
+    if (command === 'equip') {
+      return await this.equipItem();
+    }
+    if (command === 'unequip') {
+      if (args.length < 1) {
+        return {
+          success: false,
+          message: 'usage: unequip <slot_number>',
+        };
+      }
+      const slotNumber = parseInt(args[0], 10);
+      return await this.unequipItem(slotNumber);
+    }
+    if (command === 'equipments') {
+      return await this.showEquipments();
     }
     return null;
   }
@@ -275,6 +300,9 @@ export class InventoryPhase extends Phase {
   private showHelp(): void {
     Display.printInfo('commands:');
     Display.printCommand('consume', 'select and consume item');
+    Display.printCommand('equip', 'equip item to slots');
+    Display.printCommand('unequip <slot>', 'unequip item from slot');
+    Display.printCommand('equipments', 'show current equipment');
     Display.printCommand('back/b/exit', 'return to exploration');
     Display.printCommand('help/h/?', 'show this help');
     Display.printCommand('clear/cls', 'clear screen');
@@ -322,6 +350,182 @@ export class InventoryPhase extends Phase {
    * 利用可能なコマンドの一覧を取得する
    */
   public getAvailableCommands(): string[] {
-    return ['consume', 'back', 'b', 'exit', 'help', 'h', '?', 'clear', 'cls'];
+    return [
+      'consume',
+      'equip',
+      'unequip',
+      'equipments',
+      'back',
+      'b',
+      'exit',
+      'help',
+      'h',
+      '?',
+      'clear',
+      'cls',
+    ];
+  }
+
+  /**
+   * 装備アイテムを選択して装備する
+   */
+  private async equipItem(): Promise<CommandResult> {
+    const equipmentItems = this.getEquipmentItems();
+
+    if (equipmentItems.length === 0) {
+      return {
+        success: false,
+        message: 'no equipment items available',
+      };
+    }
+
+    // 装備選択UIに移行
+    Display.clear();
+    Display.printHeader('Equipment Selection');
+    Display.newLine();
+
+    this.displayEquipmentSlots();
+    this.displayAvailableEquipment(equipmentItems);
+
+    return {
+      success: true,
+      message: 'equipment selection mode started',
+    };
+  }
+
+  /**
+   * 指定スロットの装備を解除する
+   */
+  private async unequipItem(slotNumber: number): Promise<CommandResult> {
+    if (slotNumber < 1 || slotNumber > 5) {
+      return {
+        success: false,
+        message: `invalid slot number: ${slotNumber}`,
+      };
+    }
+
+    // 現在の装備を取得（仮実装：Playerから実際の装備を取得する）
+    const currentEquipments = this.getCurrentEquipmentWords();
+
+    if (!currentEquipments[slotNumber - 1]) {
+      return {
+        success: false,
+        message: `slot ${slotNumber} is already empty`,
+      };
+    }
+
+    // TODO: 実際の装備解除処理を実装
+    return {
+      success: true,
+      message: `unequipped from slot ${slotNumber}`,
+    };
+  }
+
+  /**
+   * 現在の装備状況を表示する
+   */
+  private async showEquipments(): Promise<CommandResult> {
+    const currentEquipments = this.getCurrentEquipmentWords();
+
+    if (currentEquipments.length === 0 || currentEquipments.every(item => !item)) {
+      return {
+        success: true,
+        message: 'no equipment',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'current equipment displayed',
+    };
+  }
+
+  /**
+   * 装備可能なアイテムのリストを取得する
+   */
+  private getEquipmentItems(): EquipmentItem[] {
+    const allItems = this.player.getInventory().getItems();
+    return allItems.filter(item => item instanceof EquipmentItem) as EquipmentItem[];
+  }
+
+  /**
+   * 装備スロット情報をフォーマットする
+   */
+  private formatEquipmentSlots(currentEquipment: string[]): string[] {
+    const slots: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const item = currentEquipment[i];
+      const slotInfo = item ? `Slot ${i + 1}: ${item}` : `Slot ${i + 1}: [empty]`;
+      slots.push(slotInfo);
+    }
+    return slots;
+  }
+
+  /**
+   * 装備変更時のレベル計算をプレビューする
+   */
+  private calculateLevelPreview(equipments: EquipmentItem[]): string {
+    const level = this.effectCalculator.calculateAverageGradeBySlots(equipments, 5);
+    return `Level: ${level}`;
+  }
+
+  /**
+   * ステータス変化のプレビューを取得する
+   */
+  private getStatusPreview(equipments: EquipmentItem[]): string {
+    const stats = this.effectCalculator.calculateTotalStats(equipments);
+    const lines: string[] = [];
+
+    if (stats.attack > 0) lines.push(`Attack: +${stats.attack}`);
+    if (stats.defense > 0) lines.push(`Defense: +${stats.defense}`);
+    if (stats.speed > 0) lines.push(`Speed: +${stats.speed}`);
+    if (stats.accuracy > 0) lines.push(`Accuracy: +${stats.accuracy}`);
+    if (stats.fortune > 0) lines.push(`Fortune: +${stats.fortune}`);
+
+    return lines.join(', ');
+  }
+
+  /**
+   * 英文法の妥当性をチェックする
+   */
+  private checkGrammarValidity(words: string[]): { isValid: boolean; message: string } {
+    const isValid = this.grammarChecker.isValidSentence(words);
+    const message = isValid
+      ? 'valid english sentence'
+      : this.grammarChecker.getGrammarErrorMessage(words);
+
+    return { isValid, message };
+  }
+
+  /**
+   * 現在の装備スロット状況を表示する
+   */
+  private displayEquipmentSlots(): void {
+    Display.printInfo('Current Equipment Slots:');
+    const currentEquipment: string[] = []; // TODO: 実際の装備を取得
+    const slotInfo = this.formatEquipmentSlots(currentEquipment);
+    slotInfo.forEach(slot => Display.println(`  ${slot}`));
+    Display.newLine();
+  }
+
+  /**
+   * 利用可能な装備アイテムを表示する
+   */
+  private displayAvailableEquipment(equipmentItems: EquipmentItem[]): void {
+    Display.printInfo('Available Equipment:');
+    equipmentItems.forEach((item, index) => {
+      const itemInfo = this.formatItemInfo(item);
+      Display.println(`  ${index + 1}. ${itemInfo}`);
+    });
+    Display.newLine();
+  }
+
+  /**
+   * 現在の装備単語を取得する（仮実装）
+   */
+  private getCurrentEquipmentWords(): string[] {
+    // TODO: Playerクラスから実際の装備を取得する
+    // 現在は仮実装として空配列を返す
+    return [];
   }
 }
