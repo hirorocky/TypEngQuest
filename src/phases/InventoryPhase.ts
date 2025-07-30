@@ -19,7 +19,6 @@ export class InventoryPhase extends Phase {
   private player: Player;
   private grammarChecker: EquipmentGrammarChecker;
   private effectCalculator: EquipmentEffectCalculator;
-  private suppressNextQuit: boolean = false;
 
   constructor(world: World, player: Player) {
     super(world);
@@ -110,13 +109,6 @@ export class InventoryPhase extends Phase {
     const parts = input.trim().split(/\s+/);
     const command = parts[0];
     const args = parts.slice(1);
-
-    // EquipmentUI終了後の'q'キーを抑制
-    if (command === 'q' && this.suppressNextQuit) {
-      console.log('🔧 InventoryPhase: Suppressed q command from EquipmentUI');
-      this.suppressNextQuit = false;
-      return { success: true };
-    }
 
     // アイテム操作コマンド
     const itemResult = await this.handleItemCommand(command, args);
@@ -391,9 +383,6 @@ export class InventoryPhase extends Phase {
     // リッチな装備UIを起動
     console.log('🔧 InventoryPhase: Starting equipment UI');
     const equipmentUI = new EquipmentUI(this.player);
-
-    // 次の'q'キーを抑制するフラグを設定
-    this.suppressNextQuit = true;
 
     await equipmentUI.start();
     console.log('🔧 InventoryPhase: Equipment UI returned, refreshing display');

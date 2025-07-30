@@ -16,7 +16,6 @@ export class EquipmentUI {
   private selectedItemIndex: number = 0;
   private isActive: boolean = false;
   private originalSigintHandler: ((...args: any[]) => void) | undefined;
-  private originalStdinListeners: { event: string; listener: (...args: any[]) => void }[] = [];
 
   constructor(player: Player) {
     this.player = player;
@@ -36,9 +35,6 @@ export class EquipmentUI {
     // SIGINTハンドラーを一時的に無効化（qキーでのみ終了するため）
     this.disableSigintHandler();
 
-    // 既存のstdinリスナーを一時的に無効化
-    this.disableStdinListeners();
-
     try {
       while (this.isActive) {
         this.render();
@@ -49,16 +45,18 @@ export class EquipmentUI {
 
       // 'q'キーが親のゲームループに渡らないよう、少し待つ
       await new Promise(resolve => global.setTimeout(resolve, 100));
-
-      // stdinの入力バッファをクリア
-      this.clearInputBuffer();
-
-      // さらに確実にするため、一時的にキーボード入力を消費
-      await this.flushKeyboardInput();
     } finally {
+      // stdinのrawModeを確実にfalseに戻す
+      if (typeof process.stdin.setRawMode === 'function') {
+        process.stdin.setRawMode(false);
+      }
+      
       // 終了時にハンドラーを復元
-      this.restoreStdinListeners();
       this.restoreSigintHandler();
+      
+      // stdinをresumeして、readlineが再び入力を受け取れるようにする
+      process.stdin.resume();
+      
       console.log('🔧 EquipmentUI: Equipment UI ended, returning to inventory');
     }
   }
@@ -102,129 +100,9 @@ export class EquipmentUI {
     }
   }
 
-  /**
-   * 既存のstdinリスナーを一時的に無効化
-   */
-  private disableStdinListeners(): void {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
 
-    const stdin = process.stdin;
 
-    // 既存のリスナーをすべて保存
-    const events = ['data', 'line', 'keypress'];
-    events.forEach(event => {
-      const listeners = stdin.listeners(event);
-      listeners.forEach(listener => {
-        const typedListener = listener as (...args: any[]) => void;
-        this.originalStdinListeners.push({ event, listener: typedListener });
-        stdin.removeListener(event, typedListener);
-        console.log(`🔧 EquipmentUI: Disabled stdin listener for '${event}'`);
-      });
-    });
-  }
 
-  /**
-   * stdinリスナーを復元
-   */
-  private restoreStdinListeners(): void {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    const stdin = process.stdin;
-
-    // 保存していたリスナーを復元
-    this.originalStdinListeners.forEach(({ event, listener }) => {
-      stdin.on(event, listener);
-      console.log(`🔧 EquipmentUI: Restored stdin listener for '${event}'`);
-    });
-
-    // 配列をクリア
-    this.originalStdinListeners = [];
-  }
-
-  /**
-   * stdinの入力バッファをクリアする
-   */
-  private clearInputBuffer(): void {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    const stdin = process.stdin;
-
-    // stdinを一時的にpauseしてバッファをクリア
-    stdin.pause();
-
-    // readableが利用可能な場合のみ実行
-    if (stdin.readable) {
-      // バッファされた入力をクリア
-      let chunk;
-      while ((chunk = stdin.read()) !== null) {
-        console.log('🔧 EquipmentUI: Cleared buffered input:', JSON.stringify(chunk));
-      }
-    }
-
-    // より確実にバッファをクリアするため、internalBufferもクリア（安全チェック付き）
-    try {
-      if ((stdin as any)._readableState && (stdin as any)._readableState.buffer) {
-        const buffer = (stdin as any)._readableState.buffer;
-        if (typeof buffer.clear === 'function') {
-          buffer.clear();
-          console.log('🔧 EquipmentUI: Cleared internal buffer');
-        } else if (buffer.head) {
-          // BufferListの場合は手動でクリア
-          buffer.head = buffer.tail = null;
-          buffer.length = 0;
-          console.log('🔧 EquipmentUI: Manually cleared buffer list');
-        }
-      }
-    } catch (error) {
-      console.log('🔧 EquipmentUI: Error clearing buffer:', error);
-    }
-  }
-
-  /**
-   * キーボード入力を完全にフラッシュする
-   */
-  private async flushKeyboardInput(): Promise<void> {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    return new Promise(resolve => {
-      const stdin = process.stdin;
-      let flushed = false;
-
-      // 一時的なリスナーを設定して、任意の入力を消費
-      const flushListener = (data: Buffer) => {
-        console.log('🔧 EquipmentUI: Flushed input:', JSON.stringify(data.toString()));
-        if (!flushed) {
-          flushed = true;
-          stdin.removeListener('data', flushListener);
-          resolve();
-        }
-      };
-
-      stdin.on('data', flushListener);
-
-      // 100ms後にタイムアウト
-      global.setTimeout(() => {
-        if (!flushed) {
-          flushed = true;
-          stdin.removeListener('data', flushListener);
-          console.log('🔧 EquipmentUI: Flush timeout - no input to consume');
-          resolve();
-        }
-      }, 100);
-    });
-  }
 
   /**
    * 画面を描画する
