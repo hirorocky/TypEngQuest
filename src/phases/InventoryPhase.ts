@@ -2,6 +2,7 @@ import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { ScrollableList, ListItem } from '../ui/ScrollableList';
+import { EquipmentUI } from '../ui/EquipmentUI';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Item } from '../items/Item';
@@ -18,6 +19,7 @@ export class InventoryPhase extends Phase {
   private player: Player;
   private grammarChecker: EquipmentGrammarChecker;
   private effectCalculator: EquipmentEffectCalculator;
+  private suppressNextQuit: boolean = false;
 
   constructor(world: World, player: Player) {
     super(world);
@@ -108,6 +110,13 @@ export class InventoryPhase extends Phase {
     const parts = input.trim().split(/\s+/);
     const command = parts[0];
     const args = parts.slice(1);
+
+    // EquipmentUI終了後の'q'キーを抑制
+    if (command === 'q' && this.suppressNextQuit) {
+      console.log('🔧 InventoryPhase: Suppressed q command from EquipmentUI');
+      this.suppressNextQuit = false;
+      return { success: true };
+    }
 
     // アイテム操作コマンド
     const itemResult = await this.handleItemCommand(command, args);
@@ -379,17 +388,23 @@ export class InventoryPhase extends Phase {
       };
     }
 
-    // 装備選択UIに移行
-    Display.clear();
-    Display.printHeader('Equipment Selection');
-    Display.newLine();
+    // リッチな装備UIを起動
+    console.log('🔧 InventoryPhase: Starting equipment UI');
+    const equipmentUI = new EquipmentUI(this.player);
 
-    this.displayEquipmentSlots();
-    this.displayAvailableEquipment(equipmentItems);
+    // 次の'q'キーを抑制するフラグを設定
+    this.suppressNextQuit = true;
+
+    await equipmentUI.start();
+    console.log('🔧 InventoryPhase: Equipment UI returned, refreshing display');
+
+    // UI終了後、画面をリフレッシュ
+    this.refreshDisplay();
+    console.log('🔧 InventoryPhase: Display refreshed, ready for next command');
 
     return {
       success: true,
-      message: 'equipment selection mode started',
+      message: 'equipment management completed',
     };
   }
 
@@ -404,20 +419,22 @@ export class InventoryPhase extends Phase {
       };
     }
 
-    // 現在の装備を取得（仮実装：Playerから実際の装備を取得する）
-    const currentEquipments = this.getCurrentEquipmentWords();
+    const slotIndex = slotNumber - 1;
+    const equipmentSlots = this.player.getEquipmentSlots();
 
-    if (!currentEquipments[slotNumber - 1]) {
+    if (!equipmentSlots[slotIndex]) {
       return {
         success: false,
         message: `slot ${slotNumber} is already empty`,
       };
     }
 
-    // TODO: 実際の装備解除処理を実装
+    const equippedItem = equipmentSlots[slotIndex];
+    this.player.equipToSlot(slotIndex, null);
+
     return {
       success: true,
-      message: `unequipped from slot ${slotNumber}`,
+      message: `unequipped ${equippedItem?.getName()} from slot ${slotNumber}`,
     };
   }
 
@@ -425,13 +442,38 @@ export class InventoryPhase extends Phase {
    * 現在の装備状況を表示する
    */
   private async showEquipments(): Promise<CommandResult> {
-    const currentEquipments = this.getCurrentEquipmentWords();
+    const equipmentSlots = this.player.getEquipmentSlots();
+    const equippedItems = equipmentSlots.filter(item => item !== null);
 
-    if (currentEquipments.length === 0 || currentEquipments.every(item => !item)) {
+    Display.printInfo('Current Equipment:');
+
+    if (equippedItems.length === 0) {
+      Display.println('  No equipment equipped');
       return {
         success: true,
         message: 'no equipment',
       };
+    }
+
+    equipmentSlots.forEach((item, index) => {
+      const slotDisplay = item ? `${item.getName()} [${item.getRarity()}]` : '[empty]';
+      Display.println(`  Slot ${index + 1}: ${slotDisplay}`);
+    });
+
+    // 英文構成チェック
+    const equippedNames = this.getCurrentEquipmentWords().filter(name => name !== '');
+    const grammarResult = this.checkGrammarValidity(equippedNames);
+    const grammarStatus = grammarResult.isValid ? '✓ Valid English' : '✗ Invalid Grammar';
+    Display.println(`  Grammar: ${grammarStatus}`);
+    if (!grammarResult.isValid) {
+      Display.println(`    ${grammarResult.message}`);
+    }
+
+    // レベルとステータス表示
+    Display.println(`  Level: ${this.player.getLevel()}`);
+    const statsText = this.getStatusPreview([...equippedItems]);
+    if (statsText) {
+      Display.println(`  Total Stats: ${statsText}`);
     }
 
     return {
@@ -502,7 +544,7 @@ export class InventoryPhase extends Phase {
    */
   private displayEquipmentSlots(): void {
     Display.printInfo('Current Equipment Slots:');
-    const currentEquipment: string[] = []; // TODO: 実際の装備を取得
+    const currentEquipment = this.getCurrentEquipmentWords();
     const slotInfo = this.formatEquipmentSlots(currentEquipment);
     slotInfo.forEach(slot => Display.println(`  ${slot}`));
     Display.newLine();
@@ -521,12 +563,10 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 現在の装備単語を取得する（仮実装）
+   * 現在の装備単語を取得する
    */
   private getCurrentEquipmentWords(): string[] {
-    // TODO: Playerクラスから実際の装備を取得する
-    // 現在は仮実装として空配列を返す
-    return [];
+    return this.player.getEquippedItemNames();
   }
 
   /**
@@ -573,17 +613,14 @@ export class InventoryPhase extends Phase {
       };
     }
 
-    const currentEquipments = this.getCurrentEquipmentWords();
-    const existingItem = currentEquipments[slotNumber - 1];
+    const slotIndex = slotNumber - 1;
+    const equipmentSlots = this.player.getEquipmentSlots();
+    const existingItem = equipmentSlots[slotIndex];
 
-    // インベントリからアイテムを削除
-    this.player.getInventory().removeItem(equipment);
-
-    // TODO: 実際の装備処理を実装
-    // 現在は仮実装
+    this.player.equipToSlot(slotIndex, equipment);
 
     const message = existingItem
-      ? `replaced ${existingItem} with ${equipment.getName()} in slot ${slotNumber}`
+      ? `replaced ${existingItem.getName()} with ${equipment.getName()} in slot ${slotNumber}`
       : `equipped ${equipment.getName()} to slot ${slotNumber}`;
 
     return {

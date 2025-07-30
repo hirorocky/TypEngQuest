@@ -21,6 +21,7 @@ export class Player {
   private stats: Stats;
   private inventory: Inventory;
   private equippedItems: EquipmentItem[] = [];
+  private equipmentSlots: (EquipmentItem | null)[] = [null, null, null, null, null]; // 5つのスロット
   private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
@@ -47,6 +48,102 @@ export class Player {
           })
         );
       }
+
+      // テスト用装備アイテムを追加
+      const testEquipments = [
+        new EquipmentItem({
+          id: 'ancient-sword',
+          name: 'ancient',
+          description: 'An ancient blade with mysterious power',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.LEGENDARY,
+          stats: { attack: 5, defense: 5, speed: 0, accuracy: 0, fortune: 5 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'magical-shield',
+          name: 'magical',
+          description: 'A shield imbued with protective magic',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 0, defense: 20, speed: -5, accuracy: 0, fortune: 0 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'swift-boots',
+          name: 'swift',
+          description: 'Boots that enhance movement speed',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.RARE,
+          stats: { attack: 0, defense: 0, speed: 15, accuracy: 5, fortune: 0 },
+          grade: 20,
+        }),
+        new EquipmentItem({
+          id: 'steel-sword',
+          name: 'steel',
+          description: 'A well-crafted steel sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 12, defense: 0, speed: 0, accuracy: 3, fortune: 0 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'wooden-shield',
+          name: 'wooden',
+          description: 'A basic wooden shield for protection',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 8, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 8,
+        }),
+        new EquipmentItem({
+          id: 'powerful-gauntlets',
+          name: 'powerful',
+          description: 'Gauntlets that boost physical strength',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.RARE,
+          stats: { attack: 18, defense: 3, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 21,
+        }),
+        new EquipmentItem({
+          id: 'blessed-amulet',
+          name: 'blessed',
+          description: 'An amulet blessed by divine power',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 20 },
+          grade: 20,
+        }),
+        new EquipmentItem({
+          id: 'crystal-orb',
+          name: 'crystal',
+          description: 'A mystical crystal orb',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.LEGENDARY,
+          stats: { attack: 30, defense: 0, speed: 5, accuracy: 15, fortune: 10 },
+          grade: 60,
+        }),
+        new EquipmentItem({
+          id: 'silver-ring',
+          name: 'silver',
+          description: 'A polished silver ring',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 0, speed: 2, accuracy: 5, fortune: 3 },
+          grade: 10,
+        }),
+        new EquipmentItem({
+          id: 'enchanted-bow',
+          name: 'enchanted',
+          description: 'A bow enhanced with magical properties',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 22, defense: 0, speed: 8, accuracy: 20, fortune: 0 },
+          grade: 50,
+        }),
+      ];
+
+      testEquipments.forEach(equipment => this.inventory.addItem(equipment));
     }
   }
 
@@ -107,6 +204,54 @@ export class Player {
    */
   getEquippedItemSkills(): Skill[] {
     return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
+  }
+
+  /**
+   * 装備スロットの状態を取得する
+   * @returns 装備スロットの配列
+   */
+  getEquipmentSlots(): (EquipmentItem | null)[] {
+    return [...this.equipmentSlots];
+  }
+
+  /**
+   * 指定スロットにアイテムを装備する
+   * @param slotIndex - スロットのインデックス（0-4）
+   * @param equipment - 装備するアイテム（nullで装備解除）
+   */
+  equipToSlot(slotIndex: number, equipment: EquipmentItem | null): void {
+    if (slotIndex < 0 || slotIndex >= 5) {
+      throw new Error(`Invalid slot index: ${slotIndex}`);
+    }
+
+    // 既存の装備を解除してインベントリに戻す
+    const currentEquipment = this.equipmentSlots[slotIndex];
+    if (currentEquipment) {
+      this.inventory.addItem(currentEquipment);
+    }
+
+    // 新しい装備をセット
+    this.equipmentSlots[slotIndex] = equipment;
+
+    // 装備をインベントリから削除
+    if (equipment) {
+      this.inventory.removeItem(equipment);
+    }
+
+    // equippedItemsを更新
+    this.equippedItems = this.equipmentSlots.filter(item => item !== null) as EquipmentItem[];
+
+    // レベル更新
+    const newLevel = this.getLevel();
+    this.stats.updateLevel(newLevel);
+  }
+
+  /**
+   * 装備中のアイテム名を取得する
+   * @returns 装備中のアイテム名の配列
+   */
+  getEquippedItemNames(): string[] {
+    return this.equipmentSlots.map(item => (item ? item.getName() : ''));
   }
 
   /**

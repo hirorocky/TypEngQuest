@@ -189,7 +189,7 @@ describe('InventoryPhase', () => {
         const result = await phase.processInput('equip');
 
         expect(result.success).toBe(true);
-        expect(result.message).toContain('equipment selection mode started');
+        expect(result.message).toContain('equipment management completed');
       });
 
       test('装備アイテムが存在しない場合のエラーメッセージ', async () => {
@@ -398,7 +398,7 @@ describe('InventoryPhase', () => {
         const result = await (phase as any).equipToSlot(shield, 1);
 
         expect(result.success).toBe(true);
-        expect(result.message).toContain('equipped shield to slot 1');
+        expect(result.message).toContain('replaced sword with shield in slot 1');
       });
 
       test('装備後のインベントリからのアイテム削除', async () => {
@@ -484,9 +484,7 @@ describe('InventoryPhase', () => {
         const result = await phase.processInput('equip');
 
         expect(result.success).toBe(true);
-        expect(Display.printHeader).toHaveBeenCalledWith('Equipment Selection');
-        expect(Display.printInfo).toHaveBeenCalledWith('Current Equipment Slots:');
-        expect(Display.printInfo).toHaveBeenCalledWith('Available Equipment:');
+        expect(result.message).toContain('equipment management completed');
       });
 
       test('ScrollableList選択時の動的な装備プレビュー', () => {
