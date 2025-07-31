@@ -15,7 +15,7 @@ export class EquipmentUI {
   private currentSlot: number = 0;
   private selectedItemIndex: number = 0;
   private isActive: boolean = false;
-  private originalSigintHandler: ((...args: any[]) => void) | undefined;
+  private originalDataListeners: Array<(...args: any[]) => void> = [];
 
   constructor(player: Player) {
     this.player = player;
@@ -32,8 +32,8 @@ export class EquipmentUI {
     this.currentSlot = 0;
     this.selectedItemIndex = 0;
 
-    // SIGINTハンドラーを一時的に無効化（qキーでのみ終了するため）
-    this.disableSigintHandler();
+    // 既存のstdinリスナーを保存
+    this.saveExistingListeners();
 
     try {
       while (this.isActive) {
@@ -42,19 +42,18 @@ export class EquipmentUI {
         console.log('🔧 EquipmentUI: Loop iteration, isActive =', this.isActive);
       }
       console.log('🔧 EquipmentUI: Exiting equipment UI loop');
-
-      // 'q'キーが親のゲームループに渡らないよう、少し待つ
-      await new Promise(resolve => global.setTimeout(resolve, 100));
     } finally {
-      // stdinのrawModeを確実にfalseに戻す
+      // 確実にrawModeを終了
       if (typeof process.stdin.setRawMode === 'function') {
         process.stdin.setRawMode(false);
       }
+
+      // 保存していたリスナーを復元
+      this.restoreExistingListeners();
       
-      // 終了時にハンドラーを復元
-      this.restoreSigintHandler();
-      
-      // stdinをresumeして、readlineが再び入力を受け取れるようにする
+      // stdinの状態をクリーンアップ
+      process.stdin.pause();
+      await new Promise(resolve => global.setTimeout(resolve, 50));
       process.stdin.resume();
       
       console.log('🔧 EquipmentUI: Equipment UI ended, returning to inventory');
@@ -62,43 +61,31 @@ export class EquipmentUI {
   }
 
   /**
-   * SIGINTハンドラーを一時的に無効化
+   * 既存のstdinリスナーを保存
    */
-  private disableSigintHandler(): void {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    // 既存のSIGINTハンドラーを保存
-    this.originalSigintHandler = process.listeners('SIGINT')[0] as (...args: any[]) => void;
-
-    // 既存のハンドラーを削除
-    process.removeAllListeners('SIGINT');
-
-    // 何もしないハンドラーを設定（Ctrl+Cを無効化）
-    process.on('SIGINT', () => {
-      // 何もしない - qキーでのみ終了可能
-    });
+  private saveExistingListeners(): void {
+    this.originalDataListeners = process.stdin.listeners('data') as Array<(...args: any[]) => void>;
+    console.log(`🔧 EquipmentUI: Saved ${this.originalDataListeners.length} existing listeners`);
   }
 
   /**
-   * SIGINTハンドラーを復元
+   * 保存していたstdinリスナーを復元
    */
-  private restoreSigintHandler(): void {
-    // テスト環境では何もしない
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    // 一時的なハンドラーを削除
-    process.removeAllListeners('SIGINT');
-
-    // 元のハンドラーを復元
-    if (this.originalSigintHandler) {
-      process.on('SIGINT', this.originalSigintHandler);
-    }
+  private restoreExistingListeners(): void {
+    // 現在のリスナーをすべて削除
+    process.stdin.removeAllListeners('data');
+    
+    // 保存していたリスナーを復元
+    this.originalDataListeners.forEach(listener => {
+      process.stdin.on('data', listener);
+    });
+    
+    console.log(`🔧 EquipmentUI: Restored ${this.originalDataListeners.length} listeners`);
+    this.originalDataListeners = [];
   }
+
+
+
 
 
 
@@ -224,9 +211,10 @@ export class EquipmentUI {
 
   /**
    * キー入力を処理する
+   * readlineとの競合を避けるため、非同期的なアプローチを使用
    */
   private async handleInput(): Promise<void> {
-    // テスト環境では自動終了（デバッグ用に一時的に無効化）
+    // テスト環境では自動終了
     if (process.env.NODE_ENV === 'test' && process.env.DEBUG_UI !== 'true') {
       this.isActive = false;
       return Promise.resolve();
@@ -234,32 +222,78 @@ export class EquipmentUI {
 
     return new Promise(resolve => {
       const stdin = process.stdin;
+      let resolved = false;
 
-      // setRawModeが利用可能かチェック
+      // raw modeは最小限の時間だけ使用
       if (typeof stdin.setRawMode === 'function') {
         stdin.setRawMode(true);
       }
 
-      stdin.resume();
+      // エンコーディングを設定
       stdin.setEncoding('utf8');
+      stdin.resume();
 
-      const onKeyPress = (key: string) => {
+      const onData = (chunk: any) => {
+        if (resolved) return;
+        
+        const key = chunk.toString();
+        
+        // 即座にraw modeを終了
         if (typeof stdin.setRawMode === 'function') {
           stdin.setRawMode(false);
         }
-        stdin.pause();
-        stdin.removeListener('data', onKeyPress);
-
-        // キー入力を処理し、処理された場合はイベントを消費
+        
+        // 自分のリスナーのみを削除（既存のリスナーは保持）
+        stdin.removeListener('data', onData);
+        stdin.removeListener('error', onError);
+        
+        // キー入力を処理
         const consumed = this.processKeyInput(key);
         console.log(
-          `🔧 EquipmentUI: Key '${key}' processed, consumed: ${consumed}, isActive: ${this.isActive}`
+          `🔧 EquipmentUI: Key '${key.replace(/\n/g, '\\n').replace(/\t/g, '\\t')}' processed, consumed: ${consumed}, isActive: ${this.isActive}`
         );
 
+        resolved = true;
         resolve();
       };
 
-      stdin.on('data', onKeyPress);
+      const onError = (error: Error) => {
+        console.error('🔧 EquipmentUI: Input error:', error);
+        if (typeof stdin.setRawMode === 'function') {
+          stdin.setRawMode(false);
+        }
+        stdin.removeListener('data', onData);
+        stdin.removeListener('error', onError);
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
+
+      stdin.on('data', onData);
+      stdin.on('error', onError);
+
+      // タイムアウト保護（10秒後に自動終了）
+      const timeout = global.setTimeout(() => {
+        if (!resolved) {
+          console.log('🔧 EquipmentUI: Input timeout, auto-exiting');
+          if (typeof stdin.setRawMode === 'function') {
+            stdin.setRawMode(false);
+          }
+          stdin.removeListener('data', onData);
+          stdin.removeListener('error', onError);
+          this.isActive = false;
+          resolved = true;
+          resolve();
+        }
+      }, 10000);
+
+      // resolveが呼ばれたらタイムアウトをクリア
+      const originalResolve = resolve;
+      resolve = () => {
+        global.clearTimeout(timeout);
+        originalResolve();
+      };
     });
   }
 
