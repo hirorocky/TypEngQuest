@@ -7,6 +7,8 @@ export type PhaseType =
   | 'exploration'
   | 'dialog'
   | 'inventory'
+  | 'itemConsumption'
+  | 'itemEquipment'
   | 'battle'
   | 'typing'
   | 'continue';
@@ -16,6 +18,8 @@ export const PhaseTypes = {
   EXPLORATION: 'exploration' as const,
   DIALOG: 'dialog' as const,
   INVENTORY: 'inventory' as const,
+  ITEM_CONSUMPTION: 'itemConsumption' as const,
+  ITEM_EQUIPMENT: 'itemEquipment' as const,
   BATTLE: 'battle' as const,
   TYPING: 'typing' as const,
   CONTINUE: 'continue' as const,

@@ -27,11 +27,11 @@ describe('InventoryPhase consume item integration', () => {
       // 消費アイテムなしでconsumeコマンドを実行
       const result = await inventoryPhase.processInput('consume');
       
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('no consumable items available');
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('itemConsumption');
     });
 
-    it('should successfully consume a health potion', async () => {
+    it('should transition to ItemConsumptionPhase for consuming items', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -47,37 +47,13 @@ describe('InventoryPhase consume item integration', () => {
       
       player.getInventory().addItem(healthPotion);
       
-      // プレイヤーのHPを減らす
-      player.getStats().takeDamage(30);
-      const initialHp = player.getStats().getCurrentHP();
-      
-      // モックして即座に最初のアイテムを選択
-      jest.spyOn(inventoryPhase as any, 'consumeItem').mockImplementation(async () => {
-        const consumableItems = player.getInventory().getItems().filter(item => item instanceof ConsumableItem);
-        if (consumableItems.length > 0) {
-          const item = consumableItems[0] as ConsumableItem;
-          await item.use(player);
-          player.getInventory().removeItem(item);
-          return {
-            success: true,
-            message: `consumed ${item.getDisplayName()}`,
-          };
-        }
-        return {
-          success: false,
-          message: 'no consumable items available',
-        };
-      });
-      
       const result = await inventoryPhase.processInput('consume');
       
       expect(result.success).toBe(true);
-      expect(result.message).toBe('consumed Health Potion');
-      expect(player.getStats().getCurrentHP()).toBe(initialHp + 50);
-      expect(player.getInventory().getItemCount()).toBe(0);
+      expect(result.nextPhase).toBe('itemConsumption');
     });
 
-    it('should handle multiple consumable items', async () => {
+    it('should transition to ItemConsumptionPhase with multiple consumable items', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -103,11 +79,10 @@ describe('InventoryPhase consume item integration', () => {
       player.getInventory().addItem(healthPotion);
       player.getInventory().addItem(manaPotion);
       
-      // consumeItemメソッドが正しく消費アイテムを取得できることを確認
-      const consumableItems = (inventoryPhase as any).getConsumableItems();
-      expect(consumableItems).toHaveLength(2);
-      expect(consumableItems[0]).toBe(healthPotion);
-      expect(consumableItems[1]).toBe(manaPotion);
+      const result = await inventoryPhase.processInput('consume');
+      
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('itemConsumption');
     });
 
     it('should handle consume command with non-consumable items in inventory', async () => {
@@ -127,13 +102,13 @@ describe('InventoryPhase consume item integration', () => {
       
       const result = await inventoryPhase.processInput('consume');
       
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('no consumable items available');
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('itemConsumption');
     });
   });
 
-  describe('ScrollableList integration', () => {
-    it('should create proper list items for consumable items', async () => {
+  describe('Phase transition integration', () => {
+    it('should verify items are available for consumption phase', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -158,22 +133,18 @@ describe('InventoryPhase consume item integration', () => {
       player.getInventory().addItem(healthPotion);
       player.getInventory().addItem(epicPotion);
       
-      const consumableItems = (inventoryPhase as any).getConsumableItems();
+      // アイテムが正しくインベントリに追加されていることを確認
+      const consumableItems = player.getInventory().getItems().filter(item => item instanceof ConsumableItem);
       expect(consumableItems).toHaveLength(2);
       
-      // フォーマットされたアイテム情報を確認
-      const healthPotionInfo = (inventoryPhase as any).formatItemInfo(healthPotion);
-      const epicPotionInfo = (inventoryPhase as any).formatItemInfo(epicPotion);
-      
-      expect(healthPotionInfo).toContain('Health Potion');
-      expect(healthPotionInfo).toContain('common');
-      expect(epicPotionInfo).toContain('Epic Potion');
-      expect(epicPotionInfo).toContain('epic');
+      const result = await inventoryPhase.processInput('consume');
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('itemConsumption');
     });
   });
 
-  describe('Error handling', () => {
-    it('should handle item use failures gracefully', async () => {
+  describe('Command integration', () => {
+    it('should properly handle consume command transitions', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -187,63 +158,24 @@ describe('InventoryPhase consume item integration', () => {
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       
-      // useメソッドをモックしてエラーを投げる
-      jest.spyOn(faultyItem, 'use').mockImplementation(async () => {
-        throw new Error('Item use failed');
-      });
-      
       player.getInventory().addItem(faultyItem);
-      
-      // モックして即座に最初のアイテムを選択
-      jest.spyOn(inventoryPhase as any, 'consumeItem').mockImplementation(async () => {
-        const consumableItems = player.getInventory().getItems().filter(item => item instanceof ConsumableItem);
-        if (consumableItems.length > 0) {
-          const item = consumableItems[0] as ConsumableItem;
-          try {
-            await item.use(player);
-            player.getInventory().removeItem(item);
-            return {
-              success: true,
-              message: `consumed ${item.getDisplayName()}`,
-            };
-          } catch (error) {
-            return {
-              success: false,
-              message: `failed to consume item: ${error instanceof Error ? error.message : 'unknown error'}`,
-            };
-          }
-        }
-        return {
-          success: false,
-          message: 'no consumable items available',
-        };
-      });
       
       const result = await inventoryPhase.processInput('consume');
       
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('failed to consume item: Item use failed');
-      expect(player.getInventory().getItemCount()).toBe(1); // アイテムは削除されない
+      expect(result.success).toBe(true);
+      expect(result.nextPhase).toBe('itemConsumption');
+      expect(player.getInventory().getItemCount()).toBe(1); // アイテムはまだ残っている
     });
   });
 
   describe('UI integration', () => {
-    it('should include consume command in help display', () => {
-      const helpSpy = jest.spyOn(inventoryPhase as any, 'showHelp');
+    it('should handle inventory display and phase transitions', () => {
+      // enterメソッドが正常に動作することを確認
+      expect(() => inventoryPhase.enter()).not.toThrow();
       
-      inventoryPhase.enter();
-      
-      expect(helpSpy).toHaveBeenCalled();
-      
-      // showHelpメソッドを直接テスト
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      (inventoryPhase as any).showHelp();
-      
-      const helpOutput = consoleSpy.mock.calls.map(call => call[0]).join('\n');
-      expect(helpOutput).toContain('consume');
-      expect(helpOutput).toContain('select and consume item');
-      
-      consoleSpy.mockRestore();
+      // コマンドの基本動作確認
+      expect(inventoryPhase.getType()).toBe('inventory');
+      expect(inventoryPhase.getName()).toBe('inventory');
     });
   });
 });

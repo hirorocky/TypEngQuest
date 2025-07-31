@@ -111,8 +111,8 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       
       // 空のインベントリでのconsumeコマンドテスト
       const consumeResult = await inventoryPhase.processInput('consume');
-      expect(consumeResult.success).toBe(false);
-      expect(consumeResult.message).toContain('no consumable items');
+      expect(consumeResult.success).toBe(true);
+      expect(consumeResult.nextPhase).toBe('itemConsumption');
 
       // 戻るコマンドのテスト
       const exitResult = await inventoryPhase.processInput('exit');
@@ -158,11 +158,11 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       // アイテムの使用テスト
       const consumeResult = await inventoryPhase.processInput('consume');
       expect(consumeResult.success).toBe(true);
-      expect(consumeResult.message).toContain('consumed Test Potion');
+      expect(consumeResult.nextPhase).toBe('itemConsumption');
 
-      // アイテムが削除されたことを確認
+      // アイテムはまだインベントリに残っている（ItemConsumptionPhaseで削除される）
       const items = player.getInventory().getItems();
-      expect(items.length).toBe(0);
+      expect(items.length).toBe(1);
     }));
   });
 
@@ -308,9 +308,9 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       
       await inventoryPhase.processInput('consume');
 
-      // アイテム使用後の状態確認
-      expect(player.getInventory().getItemCount()).toBe(0);
-      expect(stats.getCurrentHP()).toBe(Math.min(maxHP, damagedHP + 30));
+      // アイテムはまだインベントリに残っている（ItemConsumptionPhaseで使用されるまで）
+      expect(player.getInventory().getItemCount()).toBe(1);
+      expect(stats.getCurrentHP()).toBe(damagedHP); // HPはまだ回復していない
     }));
   });
 });

@@ -1,15 +1,13 @@
 import { Phase } from '../core/Phase';
 import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
-import { ScrollableList, ListItem } from '../ui/ScrollableList';
-import { EquipmentUI } from '../ui/EquipmentUI';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Item } from '../items/Item';
-import { ConsumableItem } from '../items/ConsumableItem';
 import { EquipmentItem } from '../items/EquipmentItem';
 import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
+import { TabCompleter } from '../core/completion';
 
 /**
  * インベントリフェーズ - アイテムの管理と使用を行う
@@ -20,8 +18,8 @@ export class InventoryPhase extends Phase {
   private grammarChecker: EquipmentGrammarChecker;
   private effectCalculator: EquipmentEffectCalculator;
 
-  constructor(world: World, player: Player) {
-    super(world);
+  constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
+    super(world, tabCompleter);
 
     if (!world) {
       throw new Error('World is required for InventoryPhase');
@@ -134,10 +132,18 @@ export class InventoryPhase extends Phase {
    */
   private async handleItemCommand(command: string, args: string[]): Promise<CommandResult | null> {
     if (command === 'consume') {
-      return await this.consumeItem();
+      // ItemConsumptionPhaseに遷移
+      return {
+        success: true,
+        nextPhase: PhaseTypes.ITEM_CONSUMPTION,
+      };
     }
     if (command === 'equip') {
-      return await this.equipItem();
+      // ItemEquipmentPhaseに遷移
+      return {
+        success: true,
+        nextPhase: PhaseTypes.ITEM_EQUIPMENT,
+      };
     }
     if (command === 'unequip') {
       if (args.length < 1) {
@@ -189,113 +195,6 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 消費アイテムを選択して使用する
-   */
-  private async consumeItem(): Promise<CommandResult> {
-    const consumableItems = this.getConsumableItems();
-
-    if (consumableItems.length === 0) {
-      return {
-        success: false,
-        message: 'no consumable items available',
-      };
-    }
-
-    const choices: ListItem[] = consumableItems.map((item, index) => ({
-      name: this.formatItemInfo(item),
-      value: index,
-    }));
-
-    const list = new ScrollableList(choices, {
-      message: 'Select an item to consume:',
-      pageSize: 8,
-      loop: false,
-      onSelectionChange: item => {
-        const selectedItem = consumableItems[item.value];
-        this.displaySelectedItemDetails(selectedItem);
-      },
-    });
-
-    const selectedIndex = await list.waitForSelection();
-
-    // リスト選択後、少し待ってから画面をリフレッシュ
-    await new Promise(resolve => {
-      global.setTimeout(resolve, 100);
-    });
-
-    if (selectedIndex === null) {
-      this.refreshDisplay();
-      return {
-        success: false,
-        message: 'consumption cancelled',
-      };
-    }
-
-    const selectedItem = consumableItems[selectedIndex];
-
-    // アイテムを使用
-    try {
-      await selectedItem.use(this.player);
-
-      // アイテムをインベントリから削除
-      this.player.getInventory().removeItem(selectedItem);
-
-      this.refreshDisplay();
-      return {
-        success: true,
-        message: `consumed ${selectedItem.getDisplayName()}`,
-      };
-    } catch (error) {
-      this.refreshDisplay();
-      return {
-        success: false,
-        message: `failed to consume item: ${error instanceof Error ? error.message : 'unknown error'}`,
-      };
-    }
-  }
-
-  /**
-   * 消費可能なアイテムのリストを取得する
-   */
-  private getConsumableItems(): ConsumableItem[] {
-    const allItems = this.player.getInventory().getItems();
-    return allItems.filter(item => item instanceof ConsumableItem) as ConsumableItem[];
-  }
-
-  /**
-   * 選択されたアイテムの詳細情報を表示する
-   */
-  private displaySelectedItemDetails(item: ConsumableItem): void {
-    Display.newLine();
-    Display.printHeader('Selected Item Details');
-    Display.println(`Name: ${item.getDisplayName()}`);
-    Display.println(`Description: ${item.getDescription()}`);
-    Display.println(`Type: ${item.getType()}`);
-    Display.println(`Rarity: ${this.getRarityColor(item.getRarity())}${item.getRarity()}`);
-
-    const effects = item.getEffects();
-    if (effects.length > 0) {
-      Display.println('Effects:');
-      effects.forEach(effect => {
-        Display.println(`  ${effect.type}: ${effect.value}`);
-      });
-    }
-    Display.newLine();
-  }
-
-  /**
-   * 画面を更新する
-   */
-  private refreshDisplay(): void {
-    Display.clear();
-    Display.printHeader('inventory');
-    Display.newLine();
-    this.displayInventory();
-    this.showHelp();
-    this.showPrompt();
-  }
-
-  /**
    * ヘルプを表示する
    */
   private showHelp(): void {
@@ -324,6 +223,10 @@ export class InventoryPhase extends Phase {
     return 'inventory';
   }
 
+  getPrompt(): string {
+    return '[inventory]$ ';
+  }
+
   /**
    * フェーズの初期化処理
    */
@@ -335,7 +238,7 @@ export class InventoryPhase extends Phase {
    * フェーズのクリーンアップ処理
    */
   async cleanup(): Promise<void> {
-    // 特に処理なし
+    await super.cleanup();
   }
 
   public exit(): void {
@@ -365,36 +268,6 @@ export class InventoryPhase extends Phase {
       'clear',
       'cls',
     ];
-  }
-
-  /**
-   * 装備アイテムを選択して装備する
-   */
-  private async equipItem(): Promise<CommandResult> {
-    const equipmentItems = this.getEquipmentItems();
-
-    if (equipmentItems.length === 0) {
-      return {
-        success: false,
-        message: 'no equipment items available',
-      };
-    }
-
-    // リッチな装備UIを起動
-    console.log('🔧 InventoryPhase: Starting equipment UI');
-    const equipmentUI = new EquipmentUI(this.player);
-
-    await equipmentUI.start();
-    console.log('🔧 InventoryPhase: Equipment UI returned, refreshing display');
-
-    // UI終了後、画面をリフレッシュ
-    this.refreshDisplay();
-    console.log('🔧 InventoryPhase: Display refreshed, ready for next command');
-
-    return {
-      success: true,
-      message: 'equipment management completed',
-    };
   }
 
   /**
@@ -472,35 +345,6 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 装備可能なアイテムのリストを取得する
-   */
-  private getEquipmentItems(): EquipmentItem[] {
-    const allItems = this.player.getInventory().getItems();
-    return allItems.filter(item => item instanceof EquipmentItem) as EquipmentItem[];
-  }
-
-  /**
-   * 装備スロット情報をフォーマットする
-   */
-  private formatEquipmentSlots(currentEquipment: string[]): string[] {
-    const slots: string[] = [];
-    for (let i = 0; i < 5; i++) {
-      const item = currentEquipment[i];
-      const slotInfo = item ? `Slot ${i + 1}: ${item}` : `Slot ${i + 1}: [empty]`;
-      slots.push(slotInfo);
-    }
-    return slots;
-  }
-
-  /**
-   * 装備変更時のレベル計算をプレビューする
-   */
-  private calculateLevelPreview(equipments: EquipmentItem[]): string {
-    const level = this.effectCalculator.calculateAverageGradeBySlots(equipments, 5);
-    return `Level: ${level}`;
-  }
-
-  /**
    * ステータス変化のプレビューを取得する
    */
   private getStatusPreview(equipments: EquipmentItem[]): string {
@@ -529,145 +373,9 @@ export class InventoryPhase extends Phase {
   }
 
   /**
-   * 現在の装備スロット状況を表示する
-   */
-  private displayEquipmentSlots(): void {
-    Display.printInfo('Current Equipment Slots:');
-    const currentEquipment = this.getCurrentEquipmentWords();
-    const slotInfo = this.formatEquipmentSlots(currentEquipment);
-    slotInfo.forEach(slot => Display.println(`  ${slot}`));
-    Display.newLine();
-  }
-
-  /**
-   * 利用可能な装備アイテムを表示する
-   */
-  private displayAvailableEquipment(equipmentItems: EquipmentItem[]): void {
-    Display.printInfo('Available Equipment:');
-    equipmentItems.forEach((item, index) => {
-      const itemInfo = this.formatItemInfo(item);
-      Display.println(`  ${index + 1}. ${itemInfo}`);
-    });
-    Display.newLine();
-  }
-
-  /**
    * 現在の装備単語を取得する
    */
   private getCurrentEquipmentWords(): string[] {
     return this.player.getEquippedItemNames();
-  }
-
-  /**
-   * 装備アイテムを選択する
-   */
-  private async selectEquipmentItem(): Promise<{
-    selectedItem: EquipmentItem | null;
-    success: boolean;
-  }> {
-    const equipmentItems = this.getEquipmentItems();
-
-    if (equipmentItems.length === 0) {
-      return { selectedItem: null, success: false };
-    }
-
-    const choices: ListItem[] = equipmentItems.map((item, index) => ({
-      name: this.formatItemInfo(item),
-      value: index,
-    }));
-
-    const list = new ScrollableList(choices, {
-      message: 'Select equipment to equip:',
-      pageSize: 8,
-      loop: false,
-    });
-
-    const selectedIndex = await list.waitForSelection();
-
-    if (selectedIndex === null) {
-      return { selectedItem: null, success: false };
-    }
-
-    return { selectedItem: equipmentItems[selectedIndex], success: true };
-  }
-
-  /**
-   * 指定スロットにアイテムを装備する
-   */
-  private async equipToSlot(equipment: EquipmentItem, slotNumber: number): Promise<CommandResult> {
-    if (slotNumber < 1 || slotNumber > 5) {
-      return {
-        success: false,
-        message: `invalid slot number: ${slotNumber}`,
-      };
-    }
-
-    const slotIndex = slotNumber - 1;
-    const equipmentSlots = this.player.getEquipmentSlots();
-    const existingItem = equipmentSlots[slotIndex];
-
-    this.player.equipToSlot(slotIndex, equipment);
-
-    const message = existingItem
-      ? `replaced ${existingItem.getName()} with ${equipment.getName()} in slot ${slotNumber}`
-      : `equipped ${equipment.getName()} to slot ${slotNumber}`;
-
-    return {
-      success: true,
-      message,
-    };
-  }
-
-  /**
-   * 装備アイテムのプレビュー情報を取得する
-   */
-  private getEquipmentPreview(equipment: EquipmentItem, slotNumber: number): string {
-    const lines: string[] = [];
-
-    lines.push(`Slot ${slotNumber}: ${equipment.getName()}`);
-
-    // レベル計算（この装備を含めた場合の仮想的なレベル）
-    const levelPreview = this.calculateLevelPreview([equipment]);
-    lines.push(levelPreview);
-
-    // ステータス変化プレビュー
-    const statsPreview = this.getStatusPreview([equipment]);
-    if (statsPreview) {
-      lines.push(`Stats: ${statsPreview}`);
-    }
-
-    return lines.join('\n');
-  }
-
-  /**
-   * 装備組み合わせの英文法妥当性をチェックする
-   */
-  private async validateEquipmentCombination(equipments: EquipmentItem[]): Promise<{
-    isValid: boolean;
-    message: string;
-  }> {
-    const words = equipments.map(item => item.getName());
-    return this.checkGrammarValidity(words);
-  }
-
-  /**
-   * 英文法チェック付きで装備する
-   */
-  private async equipWithGrammarCheck(
-    equipment: EquipmentItem,
-    slotNumber: number
-  ): Promise<CommandResult & { grammarCheck?: { isValid: boolean; message: string } }> {
-    // 現在の装備に新しい装備を追加した状態での英文法チェック
-    const currentEquipments = this.getCurrentEquipmentWords();
-    const tempWords = [...currentEquipments.filter(Boolean), equipment.getName()];
-    const grammarCheck = this.checkGrammarValidity(tempWords);
-
-    // 基本的な装備処理
-    const equipResult = await this.equipToSlot(equipment, slotNumber);
-
-    return {
-      ...equipResult,
-      grammarCheck,
-    };
   }
 }

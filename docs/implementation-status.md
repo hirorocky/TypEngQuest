@@ -517,5 +517,31 @@
 **チェック済み**: インベントリ装備UIが動作し、英文法チェックが統合されること ✅
 **最終確認**: 2025-07-23 - プロジェクト7D完了
 
+### ✅ Readline管理のPhase移譲リファクタリング
+**目標**: 各Phaseが独自のreadlineインスタンスを管理し、責任を分離する
+
+**完了タスク**:
+- [x] Phase基底クラスにreadlineインスタンス管理機能追加
+- [x] startInputLoopメソッドによる入力処理ループ実装
+- [x] 各Phase固有のプロンプト表示（getPromptメソッド）
+- [x] PhaseTypeに'itemConsumption'と'itemEquipment'追加
+- [x] ItemConsumptionPhaseクラス作成（消費アイテム専用UI）
+- [x] ItemEquipmentPhaseクラス作成（装備管理専用UI）
+- [x] InventoryPhaseからconsumeItem/equipItem処理を移動
+- [x] Game.gameLoop()をPhase.startInputLoop()を使うように修正
+- [x] TabCompleterの共有メカニズム実装
+
+**成果物**:
+- 各Phaseが独自のreadlineインスタンスとプロンプトを管理
+- InventoryPhaseが3つの専門的なPhaseに分割
+  - InventoryPhase: アイテム一覧表示
+  - ItemConsumptionPhase: 消費アイテム選択UI
+  - ItemEquipmentPhase: 装備管理UI
+- Phase遷移時の適切なリソース管理
+- より高いテスタビリティと保守性
+
+**チェック済み**: 各Phaseが独自のreadlineインスタンスを管理し、専用UIが動作すること ✅
+**最終確認**: 2025-07-31 - リファクタリング完了
+
 ## アジャイル開発計画
 詳細は@docs/agile-development-plan.mdを参照

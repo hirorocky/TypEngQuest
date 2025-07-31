@@ -1,13 +1,13 @@
 /**
  * ゲームメインクラス
  */
-
-import * as readline from 'readline';
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { InventoryPhase } from '../phases/InventoryPhase';
+import { ItemConsumptionPhase } from '../phases/ItemConsumptionPhase';
+import { ItemEquipmentPhase } from '../phases/ItemEquipmentPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
@@ -18,7 +18,6 @@ import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } 
 export class Game {
   private state: GameState;
   private currentPhase: Phase | null = null;
-  private rl: readline.Interface;
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
   private currentPlayer: Player | null = null;
@@ -41,13 +40,6 @@ export class Game {
     this.tabCompleter.addProvider(new CommandCompletionProvider());
     this.tabCompleter.addProvider(new DirectoryCompletionProvider());
 
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      prompt: '> ',
-      completer: this.completer.bind(this),
-    });
-
     this.isTestMode = isTestMode;
     this.setupSignalHandlers();
   }
@@ -68,41 +60,19 @@ export class Game {
   }
 
   private async gameLoop(): Promise<void> {
-    return new Promise(resolve => {
-      const handleInput = async (input: string) => {
-        if (!this.state.isRunning) {
-          resolve();
-          return;
-        }
+    while (this.state.isRunning && this.currentPhase) {
+      try {
+        // Phaseに入力処理を委譲
+        const result = await this.currentPhase.startInputLoop();
 
-        try {
-          const result = await this.processInput(input.trim());
+        if (result) {
           await this.handleCommandResult(result);
-        } catch (error) {
-          Display.printError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-
-        if (this.state.isRunning) {
-          this.rl.prompt();
-        } else {
-          resolve();
-        }
-      };
-
-      this.rl.on('line', handleInput);
-      this.rl.prompt();
-    });
-  }
-
-  private async processInput(input: string): Promise<CommandResult> {
-    if (!this.currentPhase) {
-      return {
-        success: false,
-        message: 'No active phase to process input',
-      };
+      } catch (error) {
+        Display.printError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // エラー発生時はループを継続
+      }
     }
-
-    return await this.currentPhase.processInput(input);
   }
 
   private async handleCommandResult(result: CommandResult): Promise<void> {
@@ -146,34 +116,60 @@ export class Game {
   }
 
   private createPhase(phaseType: PhaseType): Phase {
-    switch (phaseType) {
-      case 'title':
-        return new TitlePhase();
+    const phaseFactories: Record<PhaseType, () => Phase> = {
+      title: () => new TitlePhase(undefined, this.tabCompleter),
+      exploration: () =>
+        new ExplorationPhase(this.currentWorld!, this.currentPlayer!, this.tabCompleter),
+      inventory: () =>
+        new InventoryPhase(this.currentWorld!, this.currentPlayer!, this.tabCompleter),
+      itemConsumption: () =>
+        new ItemConsumptionPhase(this.currentWorld!, this.currentPlayer!, this.tabCompleter),
+      itemEquipment: () =>
+        new ItemEquipmentPhase(this.currentWorld!, this.currentPlayer!, this.tabCompleter),
+      dialog: () => {
+        throw new Error('Dialog phase not implemented');
+      },
+      battle: () => {
+        throw new Error('Battle phase not implemented');
+      },
+      typing: () => {
+        throw new Error('Typing phase not implemented');
+      },
+      continue: () => {
+        throw new Error('Continue phase not implemented');
+      },
+    };
 
-      case 'exploration':
-        // explorationフェーズではワールドが必要
-        if (!this.currentWorld) {
-          // デフォルトワールドを生成
-          this.currentWorld = this.generateDefaultWorld();
-        }
-        // プレイヤーが存在しない場合はデフォルトプレイヤーを生成
-        if (!this.currentPlayer) {
-          this.currentPlayer = this.generateDefaultPlayer();
-        }
-        return new ExplorationPhase(this.currentWorld, this.currentPlayer);
+    const factory = phaseFactories[phaseType];
+    if (!factory) {
+      throw new Error(`Unknown phase type: ${phaseType}`);
+    }
 
-      case 'inventory':
-        // inventoryフェーズではワールドとプレイヤーが必要
-        if (!this.currentWorld) {
-          throw new Error('World is required for inventory phase');
-        }
-        if (!this.currentPlayer) {
-          throw new Error('Player is required for inventory phase');
-        }
-        return new InventoryPhase(this.currentWorld, this.currentPlayer);
+    // 共通のワールドとプレイヤーの初期化（有効なフェーズタイプが確認された後）
+    if (phaseType !== 'title') {
+      this.ensureWorldAndPlayer(phaseType);
+    }
 
-      default:
-        throw new Error(`Unknown phase type: ${phaseType}`);
+    return factory();
+  }
+
+  private ensureWorldAndPlayer(phaseType: PhaseType): void {
+    if (phaseType === 'exploration') {
+      // explorationフェーズではワールドを生成
+      if (!this.currentWorld) {
+        this.currentWorld = this.generateDefaultWorld();
+      }
+      if (!this.currentPlayer) {
+        this.currentPlayer = this.generateDefaultPlayer();
+      }
+    } else {
+      // その他のフェーズではワールドとプレイヤーが必須
+      if (!this.currentWorld) {
+        throw new Error(`World is required for ${phaseType} phase`);
+      }
+      if (!this.currentPlayer) {
+        throw new Error(`Player is required for ${phaseType} phase`);
+      }
     }
   }
 
@@ -230,16 +226,13 @@ export class Game {
    * @param line 現在の入力行
    * @returns 補完候補の配列
    */
-  private completer(line: string): [string[], string] {
-    return this.tabCompleter.complete(line, this.currentPhase, this.currentWorld);
-  }
 
   private async cleanup(): Promise<void> {
     if (this.currentPhase) {
       await this.currentPhase.cleanup();
     }
 
-    this.rl.close();
+    // PhaseのクリーンアップはhandleCommandResult内で行われる
 
     // シグナルハンドラーを削除
     this.signalHandlers.forEach(({ signal, handler }) => {
