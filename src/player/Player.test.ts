@@ -1,4 +1,6 @@
 import { Player } from './Player';
+import { BodyStats } from './BodyStats';
+import { EquipmentStats } from './EquipmentStats';
 import { EquipmentItem, EquipmentItemData } from '../items/EquipmentItem';
 import { ItemType, ItemRarity } from '../items/Item';
 
@@ -51,7 +53,7 @@ describe('Player', () => {
 
       expect(json).toEqual({
         name: 'Hero',
-        stats: expect.objectContaining({
+        bodyStats: expect.objectContaining({
           level: 0,
           currentHP: 100,
           currentMP: 50,
@@ -68,6 +70,13 @@ describe('Player', () => {
             fortune: 0,
           },
         }),
+        equipmentStats: expect.objectContaining({
+          attack: 0,
+          defense: 0,
+          speed: 0,
+          accuracy: 0,
+          fortune: 0,
+        }),
         inventory: expect.objectContaining({
           items: [],
         }),
@@ -79,7 +88,7 @@ describe('Player', () => {
     test('JSONデータからプレイヤーを復元できる', () => {
       const jsonData = {
         name: 'SavedHero',
-        stats: {
+        bodyStats: {
           level: 5,
           currentHP: 180,
           currentMP: 90,
@@ -95,6 +104,14 @@ describe('Player', () => {
             accuracy: 0,
             fortune: 0,
           },
+          temporaryStatuses: [],
+        },
+        equipmentStats: {
+          attack: 0,
+          defense: 0,
+          speed: 0,
+          accuracy: 0,
+          fortune: 0,
         },
         inventory: {
           items: [],
@@ -112,7 +129,9 @@ describe('Player', () => {
     test('不正なJSONデータでエラーを投げる', () => {
       const invalidData = {
         name: 123, // 文字列でない
-        stats: {},
+        bodyStats: {},
+        equipmentStats: {},
+        inventory: {},
       };
 
       expect(() => Player.fromJSON(invalidData)).toThrow('Invalid player data');
@@ -121,19 +140,21 @@ describe('Player', () => {
     test('必須フィールドが欠けている場合エラーを投げる', () => {
       const incompleteData = {
         name: 'Hero',
-        // stats が欠けている
+        // bodyStats が欠けている
       };
 
       expect(() => Player.fromJSON(incompleteData)).toThrow('Invalid player data');
     });
 
-    test('statsフィールドが欠けている場合エラーを投げる', () => {
-      const dataWithoutStats = {
+    test('bodyStatsフィールドが欠けている場合エラーを投げる', () => {
+      const dataWithoutBodyStats = {
         name: 'Hero',
-        // stats が欠けている
+        equipmentStats: {},
+        inventory: {},
+        // bodyStats が欠けている
       };
 
-      expect(() => Player.fromJSON(dataWithoutStats)).toThrow('Invalid player data');
+      expect(() => Player.fromJSON(dataWithoutBodyStats)).toThrow('Invalid player data');
     });
   });
 
@@ -387,6 +408,269 @@ describe('Player', () => {
       expect(skills).toHaveLength(1);
       expect(skills[0].id).toBe('slash');
       expect(skills[0].name).toBe('Slash');
+    });
+  });
+
+  describe('Stats Refactoring (BodyStats + EquipmentStats)', () => {
+    describe('BodyStats + EquipmentStats = Stats', () => {
+      test('Playerは本来のステータス（BodyStats）を持つ', () => {
+        const player = new Player('TestPlayer');
+        const bodyStats = player.getBodyStats();
+
+        expect(bodyStats).toBeInstanceOf(BodyStats);
+        expect(bodyStats.getLevel()).toBe(0);
+        expect(bodyStats.getBaseAttack()).toBe(10);
+        expect(bodyStats.getBaseDefense()).toBe(10);
+      });
+
+      test('Playerは装備ステータス（EquipmentStats）を持つ', () => {
+        const player = new Player('TestPlayer');
+        const equipmentStats = player.getEquipmentStats();
+
+        expect(equipmentStats).toBeInstanceOf(EquipmentStats);
+        expect(equipmentStats.getAttack()).toBe(0);
+        expect(equipmentStats.getDefense()).toBe(0);
+        expect(equipmentStats.isEmpty()).toBe(true);
+      });
+
+      test('総合ステータスはBodyStats + EquipmentStatsの合計になる', () => {
+        const player = new Player('TestPlayer');
+
+        // 装備アイテムを追加してスロットに装備
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        player.getInventory().addItem(sword);
+        player.equipToSlot(0, sword);
+
+        const totalStats = player.getTotalStats();
+        const bodyStats = player.getBodyStats();
+        const equipmentStats = player.getEquipmentStats();
+
+        // Body(10) + Equipment(15) = Total(25)
+        expect(totalStats.attack).toBe(bodyStats.getBaseAttack() + equipmentStats.getAttack());
+        expect(totalStats.defense).toBe(bodyStats.getBaseDefense() + equipmentStats.getDefense());
+        expect(totalStats.speed).toBe(bodyStats.getBaseSpeed() + equipmentStats.getSpeed());
+        expect(totalStats.accuracy).toBe(
+          bodyStats.getBaseAccuracy() + equipmentStats.getAccuracy()
+        );
+        expect(totalStats.fortune).toBe(bodyStats.getBaseFortune() + equipmentStats.getFortune());
+      });
+
+      test('装備変更時にEquipmentStatsが更新される', () => {
+        const player = new Player('TestPlayer');
+
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        const shield = new EquipmentItem({
+          id: 'test-shield',
+          name: 'Test Shield',
+          description: 'A test shield',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 12, speed: -2, accuracy: 1, fortune: 2 },
+          grade: 13, // 0 + 12 + (-2) + 1 + 2 = 13
+        });
+
+        player.getInventory().addItem(sword);
+        player.getInventory().addItem(shield);
+
+        // 剣を装備
+        player.equipToSlot(0, sword);
+        expect(player.getEquipmentStats().getAttack()).toBe(15);
+        expect(player.getEquipmentStats().getDefense()).toBe(2);
+
+        // 盾も装備
+        player.equipToSlot(1, shield);
+        expect(player.getEquipmentStats().getAttack()).toBe(15); // 剣のまま
+        expect(player.getEquipmentStats().getDefense()).toBe(14); // 2 + 12
+        expect(player.getEquipmentStats().getSpeed()).toBe(-1); // 1 + (-2)
+      });
+
+      test('装備解除時にEquipmentStatsが更新される', () => {
+        const player = new Player('TestPlayer');
+
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        player.getInventory().addItem(sword);
+        player.equipToSlot(0, sword);
+
+        expect(player.getEquipmentStats().getAttack()).toBe(15);
+
+        // 装備解除
+        player.equipToSlot(0, null);
+
+        expect(player.getEquipmentStats().getAttack()).toBe(0);
+        expect(player.getEquipmentStats().isEmpty()).toBe(true);
+      });
+
+      test('レベルアップでBodyStatsが更新される', () => {
+        const player = new Player('TestPlayer');
+        const initialHP = player.getBodyStats().getMaxHP();
+        const initialMP = player.getBodyStats().getMaxMP();
+
+        // レベル3相当の装備でレベルアップ
+        player.getBodyStats().updateLevel(3);
+
+        expect(player.getBodyStats().getLevel()).toBe(3);
+        expect(player.getBodyStats().getMaxHP()).toBe(initialHP + 60); // 20 * 3
+        expect(player.getBodyStats().getMaxMP()).toBe(initialMP + 30); // 10 * 3
+      });
+
+      test('従来のgetStats()は総合ステータスを返す', () => {
+        const player = new Player('TestPlayer');
+
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        player.getInventory().addItem(sword);
+        player.equipToSlot(0, sword);
+
+        const stats = player.getStats();
+        const totalStats = player.getTotalStats();
+
+        // 従来のgetStats()は総合ステータスと同じ値を返すべき
+        expect(stats.getAttack()).toBe(totalStats.attack);
+        expect(stats.getDefense()).toBe(totalStats.defense);
+        expect(stats.getSpeed()).toBe(totalStats.speed);
+        expect(stats.getAccuracy()).toBe(totalStats.accuracy);
+        expect(stats.getFortune()).toBe(totalStats.fortune);
+
+        // HP/MPはBodyStatsから取得
+        expect(stats.getCurrentHP()).toBe(player.getBodyStats().getCurrentHP());
+        expect(stats.getCurrentMP()).toBe(player.getBodyStats().getCurrentMP());
+        expect(stats.getMaxHP()).toBe(player.getBodyStats().getMaxHP());
+        expect(stats.getMaxMP()).toBe(player.getBodyStats().getMaxMP());
+      });
+    });
+
+    describe('一時ステータスとの統合', () => {
+      test('従来のStats一時ブーストは総合ステータスに加算される', () => {
+        const player = new Player('TestPlayer');
+
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        player.getInventory().addItem(sword);
+        player.equipToSlot(0, sword);
+
+        // 一時ブーストを適用
+        player.getBodyStats().applyTemporaryBoost('attack', 5);
+
+        const stats = player.getStats();
+        // BodyStats(10) + EquipmentStats(15) + TemporaryBoost(5) = 30
+        expect(stats.getAttack()).toBe(30);
+      });
+    });
+
+    describe('JSON シリアライゼーション', () => {
+      test('PlayerデータにBodyStatsとEquipmentStatsが含まれる', () => {
+        const player = new Player('TestPlayer');
+
+        const sword = new EquipmentItem({
+          id: 'test-sword',
+          name: 'Test Sword',
+          description: 'A test sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
+        });
+
+        player.getInventory().addItem(sword);
+        player.equipToSlot(0, sword);
+
+        const json = player.toJSON();
+
+        expect(json.bodyStats).toBeDefined();
+        expect(json.equipmentStats).toBeDefined();
+        expect(json.bodyStats.level).toBe(4); // 装備により平均レベル4 (21 / 5 = 4.2 -> 4)
+        expect(json.equipmentStats.attack).toBe(15);
+      });
+
+      test('JSONから復元時にBodyStatsとEquipmentStatsが正しく復元される', () => {
+        const playerData = {
+          name: 'TestPlayer',
+          bodyStats: {
+            level: 2,
+            currentHP: 120,
+            currentMP: 60,
+            baseAttack: 12,
+            baseDefense: 8,
+            baseSpeed: 10,
+            baseAccuracy: 11,
+            baseFortune: 9,
+            temporaryBoosts: {
+              attack: 0,
+              defense: 0,
+              speed: 0,
+              accuracy: 0,
+              fortune: 0,
+            },
+            temporaryStatuses: [],
+          },
+          equipmentStats: {
+            attack: 20,
+            defense: 5,
+            speed: 3,
+            accuracy: 8,
+            fortune: 2,
+          },
+          inventory: {
+            items: [],
+            maxSlots: 100,
+          },
+        };
+
+        const player = Player.fromJSON(playerData);
+
+        expect(player.getBodyStats().getLevel()).toBe(2);
+        expect(player.getBodyStats().getBaseAttack()).toBe(12);
+        expect(player.getEquipmentStats().getAttack()).toBe(20);
+        expect(player.getEquipmentStats().getDefense()).toBe(5);
+
+        // 総合ステータス確認
+        const totalStats = player.getTotalStats();
+        expect(totalStats.attack).toBe(32); // 12 + 20
+        expect(totalStats.defense).toBe(13); // 8 + 5
+      });
     });
   });
 });

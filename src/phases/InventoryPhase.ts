@@ -130,7 +130,7 @@ export class InventoryPhase extends Phase {
   /**
    * アイテム操作コマンドを処理する
    */
-  private async handleItemCommand(command: string, args: string[]): Promise<CommandResult | null> {
+  private async handleItemCommand(command: string, _args: string[]): Promise<CommandResult | null> {
     if (command === 'consume') {
       // ItemConsumptionPhaseに遷移
       return {
@@ -144,16 +144,6 @@ export class InventoryPhase extends Phase {
         success: true,
         nextPhase: PhaseTypes.ITEM_EQUIPMENT,
       };
-    }
-    if (command === 'unequip') {
-      if (args.length < 1) {
-        return {
-          success: false,
-          message: 'usage: unequip <slot_number>',
-        };
-      }
-      const slotNumber = parseInt(args[0], 10);
-      return await this.unequipItem(slotNumber);
     }
     if (command === 'equipments') {
       return await this.showEquipments();
@@ -201,7 +191,6 @@ export class InventoryPhase extends Phase {
     Display.printInfo('commands:');
     Display.printCommand('consume', 'select and consume item');
     Display.printCommand('equip', 'equip item to slots');
-    Display.printCommand('unequip <slot>', 'unequip item from slot');
     Display.printCommand('equipments', 'show current equipment');
     Display.printCommand('back/b/exit', 'return to exploration');
     Display.printCommand('help/h/?', 'show this help');
@@ -257,7 +246,6 @@ export class InventoryPhase extends Phase {
     return [
       'consume',
       'equip',
-      'unequip',
       'equipments',
       'back',
       'b',
@@ -268,36 +256,6 @@ export class InventoryPhase extends Phase {
       'clear',
       'cls',
     ];
-  }
-
-  /**
-   * 指定スロットの装備を解除する
-   */
-  private async unequipItem(slotNumber: number): Promise<CommandResult> {
-    if (slotNumber < 1 || slotNumber > 5) {
-      return {
-        success: false,
-        message: `invalid slot number: ${slotNumber}`,
-      };
-    }
-
-    const slotIndex = slotNumber - 1;
-    const equipmentSlots = this.player.getEquipmentSlots();
-
-    if (!equipmentSlots[slotIndex]) {
-      return {
-        success: false,
-        message: `slot ${slotNumber} is already empty`,
-      };
-    }
-
-    const equippedItem = equipmentSlots[slotIndex];
-    this.player.equipToSlot(slotIndex, null);
-
-    return {
-      success: true,
-      message: `unequipped ${equippedItem?.getName()} from slot ${slotNumber}`,
-    };
   }
 
   /**
