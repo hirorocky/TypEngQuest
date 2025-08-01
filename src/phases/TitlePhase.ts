@@ -5,9 +5,10 @@
 import { Phase } from '../core/Phase';
 import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
-import { bold, cyan, green, red } from '../ui/colors';
+import { bold, cyan, green, red, yellow } from '../ui/colors';
 import { World } from '../world/World';
 import { TabCompleter } from '../core/completion';
+import { TypingDifficulty } from '../typing/types';
 
 export class TitlePhase extends Phase {
   constructor(world?: World, tabCompleter?: TabCompleter) {
@@ -46,6 +47,13 @@ export class TitlePhase extends Phase {
     });
 
     this.registerCommand({
+      name: 'type',
+      aliases: ['t', 'typing'],
+      description: 'Start typing test (optional: difficulty 1-5)',
+      execute: async (args: string[]) => this.startTypingTest(args),
+    });
+
+    this.registerCommand({
       name: 'exit',
       aliases: ['quit', 'q'],
       description: 'Exit the game',
@@ -65,6 +73,7 @@ export class TitlePhase extends Phase {
     Display.printHeader('What would you like to do?');
     console.log(`  ${bold(green('start'))} - Begin your adventure`);
     console.log(`  ${bold(cyan('load'))}  - Continue from a save file`);
+    console.log(`  ${bold(yellow('type'))}  - Start typing test (specify difficulty 1-5)`);
     console.log(`  ${bold(red('exit'))}  - Leave the game`);
     console.log();
     console.log('Type a command and press Enter, or type "help" for more options.');
@@ -93,6 +102,38 @@ export class TitlePhase extends Phase {
     return {
       success: false,
       message: 'No save files found. Please start a new game.',
+    };
+  }
+
+  private async startTypingTest(args: string[]): Promise<CommandResult> {
+    let difficulty: TypingDifficulty | undefined;
+
+    // 引数がある場合は難易度として解析
+    if (args.length > 0) {
+      const difficultyArg = parseInt(args[0], 10);
+
+      if (isNaN(difficultyArg) || difficultyArg < 1 || difficultyArg > 5) {
+        return {
+          success: false,
+          message: 'Invalid difficulty. Please specify a number between 1-5.',
+        };
+      }
+
+      difficulty = difficultyArg as TypingDifficulty;
+    }
+
+    console.log('Starting typing test...');
+    if (difficulty) {
+      console.log(`Difficulty: ${difficulty}`);
+    } else {
+      console.log('Difficulty: Random');
+    }
+
+    return {
+      success: true,
+      message: 'Entering typing test mode',
+      nextPhase: 'typing',
+      data: { difficulty },
     };
   }
 

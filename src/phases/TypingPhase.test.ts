@@ -134,7 +134,7 @@ describe('TypingPhase', () => {
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Effect: 150%'));
 
       expect(result.data).toEqual({ result: mockResult });
-      expect(result.nextPhase).toBe(PhaseTypes.EXPLORATION);
+      expect(result.nextPhase).toBe(PhaseTypes.TITLE);
 
       consoleSpy.mockRestore();
     });
@@ -163,7 +163,7 @@ describe('TypingPhase', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('challenge cancelled'));
       expect(result.data).toEqual({ cancelled: true });
-      expect(result.nextPhase).toBe(PhaseTypes.EXPLORATION);
+      expect(result.nextPhase).toBe(PhaseTypes.TITLE);
 
       consoleSpy.mockRestore();
     });

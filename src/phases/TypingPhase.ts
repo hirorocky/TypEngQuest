@@ -5,6 +5,7 @@ import { TypingChallenge } from '../typing/TypingChallenge';
 import { WordDatabase } from '../typing/WordDatabase';
 import { TypingDifficulty, TypingProgress, TypingResult } from '../typing/types';
 import { green, red, gray } from '../ui/colors';
+import * as readline from 'readline';
 
 /**
  * タイピングチャレンジフェーズ - リアルタイムタイピングチャレンジを管理
@@ -30,6 +31,60 @@ export class TypingPhase {
    */
   getType() {
     return PhaseTypes.TYPING;
+  }
+
+  /**
+   * フェーズ初期化
+   */
+  async initialize(): Promise<void> {
+    // TypingPhaseでは特別な初期化は不要
+  }
+
+  /**
+   * フェーズクリーンアップ
+   */
+  async cleanup(): Promise<void> {
+    // TypingPhaseでは特別なクリーンアップは不要
+  }
+
+  /**
+   * 入力処理ループを開始
+   * @returns Phase遷移が必要な場合はCommandResultを返す
+   */
+  async startInputLoop(): Promise<CommandResult | null> {
+    // プレイヤーを作成（TypingPhaseでは使用しないが、インターフェース互換性のため）
+    const dummyPlayer = { name: 'TyperPlayer' } as any;
+
+    this.enter(dummyPlayer);
+
+    return new Promise(resolve => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      // Raw modeを有効にして文字単位で入力を受け取る
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+      }
+
+      const handleData = async (data: Buffer) => {
+        const char = data.toString();
+        const result = await this.handleInput(char, dummyPlayer);
+
+        if (result.nextPhase || result.data?.cancelled) {
+          // リスナーを削除してraw modeを無効化
+          process.stdin.removeListener('data', handleData);
+          if (process.stdin.isTTY) {
+            process.stdin.setRawMode(false);
+          }
+          rl.close();
+          resolve(result);
+        }
+      };
+
+      process.stdin.on('data', handleData);
+    });
   }
 
   /**
@@ -60,7 +115,7 @@ export class TypingPhase {
       return {
         success: true,
         message: 'Challenge cancelled',
-        nextPhase: PhaseTypes.EXPLORATION,
+        nextPhase: PhaseTypes.TITLE,
         data: { cancelled: true },
       };
     }
@@ -76,7 +131,7 @@ export class TypingPhase {
       return {
         success: true,
         message: 'Challenge complete',
-        nextPhase: PhaseTypes.EXPLORATION,
+        nextPhase: PhaseTypes.TITLE,
         data: { result },
       };
     }

@@ -39,6 +39,7 @@ describe('TitlePhase', () => {
       const commands = titlePhase.getAvailableCommands();
       expect(commands).toContain('start');
       expect(commands).toContain('load');
+      expect(commands).toContain('type');
       expect(commands).toContain('exit');
     });
 
@@ -98,6 +99,66 @@ describe('TitlePhase', () => {
 
         expect(result.success).toBe(false);
         expect(result.message).toContain('No save files found');
+      });
+    });
+
+    describe('type command', () => {
+      it('typeコマンドを実行する（難易度指定なし）', async () => {
+        const result = await titlePhase.processInput('type');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Entering typing test mode');
+        expect(result.nextPhase).toBe('typing');
+        expect(result.data?.difficulty).toBeUndefined();
+      });
+
+      it('難易度1を指定してtypeコマンドを実行する', async () => {
+        const result = await titlePhase.processInput('type 1');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Entering typing test mode');
+        expect(result.nextPhase).toBe('typing');
+        expect(result.data?.difficulty).toBe(1);
+      });
+
+      it('難易度5を指定してtypeコマンドを実行する', async () => {
+        const result = await titlePhase.processInput('type 5');
+
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('typing');
+        expect(result.data?.difficulty).toBe(5);
+      });
+
+      it('無効な難易度（0）を指定した場合はエラー', async () => {
+        const result = await titlePhase.processInput('type 0');
+
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('Invalid difficulty');
+        expect(result.nextPhase).toBeUndefined();
+      });
+
+      it('無効な難易度（6）を指定した場合はエラー', async () => {
+        const result = await titlePhase.processInput('type 6');
+
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('Invalid difficulty');
+        expect(result.nextPhase).toBeUndefined();
+      });
+
+      it('エイリアス"t"でtypeコマンドを実行する', async () => {
+        const result = await titlePhase.processInput('t 3');
+
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('typing');
+        expect(result.data?.difficulty).toBe(3);
+      });
+
+      it('エイリアス"typing"でtypeコマンドを実行する', async () => {
+        const result = await titlePhase.processInput('typing 2');
+
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('typing');
+        expect(result.data?.difficulty).toBe(2);
       });
     });
 

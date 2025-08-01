@@ -8,6 +8,7 @@ import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { InventoryPhase } from '../phases/InventoryPhase';
 import { ItemConsumptionPhase } from '../phases/ItemConsumptionPhase';
 import { ItemEquipmentPhase } from '../phases/ItemEquipmentPhase';
+import { TypingPhase } from '../phases/TypingPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
@@ -93,7 +94,7 @@ export class Game {
 
     // Handle phase transitions
     if (result.nextPhase) {
-      await this.transitionToPhase(result.nextPhase);
+      await this.transitionToPhase(result.nextPhase, result.data);
     }
 
     // Handle special data
@@ -102,20 +103,20 @@ export class Game {
     }
   }
 
-  private async transitionToPhase(phaseType: PhaseType): Promise<void> {
+  private async transitionToPhase(phaseType: PhaseType, data?: any): Promise<void> {
     // Cleanup current phase
     if (this.currentPhase) {
       await this.currentPhase.cleanup();
     }
 
     // Create and initialize new phase
-    this.currentPhase = this.createPhase(phaseType);
+    this.currentPhase = this.createPhase(phaseType, data);
     this.state.currentPhase = phaseType;
 
     await this.currentPhase.initialize();
   }
 
-  private createPhase(phaseType: PhaseType): Phase {
+  private createPhase(phaseType: PhaseType, data?: any): Phase {
     const phaseFactories: Record<PhaseType, () => Phase> = {
       title: () => new TitlePhase(undefined, this.tabCompleter),
       exploration: () =>
@@ -133,7 +134,8 @@ export class Game {
         throw new Error('Battle phase not implemented');
       },
       typing: () => {
-        throw new Error('Typing phase not implemented');
+        const difficulty = data?.difficulty;
+        return new TypingPhase(difficulty) as any; // TODO: Refactor TypingPhase to extend Phase
       },
       continue: () => {
         throw new Error('Continue phase not implemented');
@@ -146,7 +148,7 @@ export class Game {
     }
 
     // 共通のワールドとプレイヤーの初期化（有効なフェーズタイプが確認された後）
-    if (phaseType !== 'title') {
+    if (phaseType !== 'title' && phaseType !== 'typing') {
       this.ensureWorldAndPlayer(phaseType);
     }
 
