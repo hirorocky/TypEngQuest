@@ -2,6 +2,7 @@ import { CommandResult, PhaseTypes } from '../core/types';
 import { Player } from '../player/Player';
 import { Display } from '../ui/Display';
 import { TypingChallenge } from '../typing/TypingChallenge';
+import { WordDatabase } from '../typing/WordDatabase';
 import { TypingDifficulty, TypingProgress, TypingResult } from '../typing/types';
 import { green, red, gray } from '../ui/colors';
 
@@ -10,14 +11,17 @@ import { green, red, gray } from '../ui/colors';
  */
 export class TypingPhase {
   private challenge: TypingChallenge;
+  private wordDatabase: WordDatabase;
 
   /**
    * TypingPhaseのコンストラクタ
-   * @param text - タイピングする問題文
-   * @param difficulty - 難易度（1-5）
+   * @param difficulty - 難易度（1-5）、指定しない場合はランダム
    */
-  constructor(text: string, difficulty: TypingDifficulty) {
-    this.challenge = new TypingChallenge(text, difficulty);
+  constructor(difficulty?: TypingDifficulty) {
+    this.wordDatabase = new WordDatabase();
+    const selectedDifficulty = difficulty || this.getRandomDifficulty();
+    const text = this.wordDatabase.getRandomText(selectedDifficulty);
+    this.challenge = new TypingChallenge(text, selectedDifficulty);
   }
 
   /**
@@ -156,5 +160,13 @@ export class TypingPhase {
     } else {
       console.log(red('\nFailed...'));
     }
+  }
+
+  /**
+   * ランダムな難易度を選択
+   * @returns ランダムな難易度（1-5）
+   */
+  private getRandomDifficulty(): TypingDifficulty {
+    return (Math.floor(Math.random() * 5) + 1) as TypingDifficulty;
   }
 }

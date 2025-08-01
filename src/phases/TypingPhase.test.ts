@@ -2,15 +2,18 @@ import { TypingPhase } from './TypingPhase';
 import { PhaseTypes } from '../core/types';
 import { Player } from '../player/Player';
 import { TypingChallenge } from '../typing/TypingChallenge';
+import { WordDatabase } from '../typing/WordDatabase';
 import { TypingResult } from '../typing/types';
 
 // モックの作成
 jest.mock('../typing/TypingChallenge');
+jest.mock('../typing/WordDatabase');
 
 describe('TypingPhase', () => {
   let typingPhase: TypingPhase;
   let mockPlayer: Player;
   let mockChallenge: TypingChallenge;
+  let mockWordDatabase: WordDatabase;
 
   beforeEach(() => {
     mockPlayer = new Player('テストプレイヤー');
@@ -28,8 +31,17 @@ describe('TypingPhase', () => {
       getText: jest.fn().mockReturnValue('test text'),
     } as unknown as TypingChallenge;
 
+    mockWordDatabase = {
+      getRandomText: jest.fn().mockReturnValue('test text'),
+      getAllTextsForDifficulty: jest.fn().mockReturnValue(['test text']),
+      getTotalCount: jest.fn().mockReturnValue(1),
+    } as unknown as WordDatabase;
+
     (TypingChallenge as jest.MockedClass<typeof TypingChallenge>).mockImplementation(
       () => mockChallenge
+    );
+    (WordDatabase as jest.MockedClass<typeof WordDatabase>).mockImplementation(
+      () => mockWordDatabase
     );
   });
 
@@ -38,28 +50,39 @@ describe('TypingPhase', () => {
   });
 
   describe('コンストラクタ', () => {
-    test('問題文と難易度を指定してインスタンスを作成できる', () => {
-      typingPhase = new TypingPhase('test text', 1);
+    test('難易度を指定してインスタンスを作成できる', () => {
+      typingPhase = new TypingPhase(1);
       expect(typingPhase).toBeInstanceOf(TypingPhase);
       expect(typingPhase.getType()).toBe(PhaseTypes.TYPING);
     });
 
+    test('難易度を指定しないでインスタンスを作成できる', () => {
+      typingPhase = new TypingPhase();
+      expect(typingPhase).toBeInstanceOf(TypingPhase);
+      expect(typingPhase.getType()).toBe(PhaseTypes.TYPING);
+    });
+
+    test('WordDatabaseからランダムテキストを取得する', () => {
+      typingPhase = new TypingPhase(2);
+      expect(mockWordDatabase.getRandomText).toHaveBeenCalledWith(2);
+    });
+
     test('TypingChallengeが正しく初期化される', () => {
-      typingPhase = new TypingPhase('test text', 2);
+      typingPhase = new TypingPhase(2);
       expect(TypingChallenge).toHaveBeenCalledWith('test text', 2);
     });
   });
 
   describe('enter', () => {
     test('フェーズ開始時にタイピングチャレンジが開始される', () => {
-      typingPhase = new TypingPhase('test text', 1);
+      typingPhase = new TypingPhase(1);
       typingPhase.enter(mockPlayer);
 
       expect(mockChallenge.start).toHaveBeenCalled();
     });
 
     test('フェーズ開始時にプロンプトが表示される', () => {
-      typingPhase = new TypingPhase('test text', 1);
+      typingPhase = new TypingPhase(1);
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
       typingPhase.enter(mockPlayer);
@@ -74,7 +97,7 @@ describe('TypingPhase', () => {
 
   describe('handleInput', () => {
     beforeEach(() => {
-      typingPhase = new TypingPhase('test text', 1);
+      typingPhase = new TypingPhase(1);
       typingPhase.enter(mockPlayer);
     });
 
@@ -153,7 +176,7 @@ describe('TypingPhase', () => {
 
   describe('プログレス表示', () => {
     beforeEach(() => {
-      typingPhase = new TypingPhase('hello world', 1);
+      typingPhase = new TypingPhase(1);
       typingPhase.enter(mockPlayer);
     });
 
@@ -194,14 +217,14 @@ describe('TypingPhase', () => {
 
   describe('getPrompt', () => {
     test('タイピングフェーズ用のプロンプトを返す', () => {
-      typingPhase = new TypingPhase('test', 1);
+      typingPhase = new TypingPhase(1);
       expect(typingPhase.getPrompt()).toBe('typing> ');
     });
   });
 
   describe('getAvailableCommands', () => {
     test('タイピング中は空の配列を返す', () => {
-      typingPhase = new TypingPhase('test', 1);
+      typingPhase = new TypingPhase(1);
       expect(typingPhase.getAvailableCommands()).toEqual([]);
     });
   });
