@@ -1,7 +1,8 @@
-import { Stats, StatsData } from './Stats';
+import { BodyStats, BodyStatsData } from './BodyStats';
+import { EquipmentStats, EquipmentStatsData } from './EquipmentStats';
 import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
-import { EquipmentItem, EquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentItem, EquipmentStats as ItemEquipmentStats, Skill } from '../items/EquipmentItem';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
@@ -9,8 +10,20 @@ import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculato
  */
 export interface PlayerData {
   name: string;
-  stats: StatsData;
+  bodyStats: BodyStatsData;
+  equipmentStats: EquipmentStatsData;
   inventory: InventoryData;
+}
+
+/**
+ * 総合ステータス結果の型
+ */
+export interface TotalStatsResult {
+  attack: number;
+  defense: number;
+  speed: number;
+  accuracy: number;
+  fortune: number;
 }
 
 /**
@@ -18,9 +31,11 @@ export interface PlayerData {
  */
 export class Player {
   public readonly name: string;
-  private stats: Stats;
+  private bodyStats: BodyStats;
+  private equipmentStats: EquipmentStats;
   private inventory: Inventory;
   private equippedItems: EquipmentItem[] = [];
+  private equipmentSlots: (EquipmentItem | null)[] = [null, null, null, null, null]; // 5つのスロット
   private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
@@ -29,12 +44,13 @@ export class Player {
    */
   constructor(name: string, istestMode: boolean = false) {
     this.name = name;
-    this.stats = new Stats(0); // 初期レベルは0（装備なし）
+    this.bodyStats = new BodyStats(0); // 初期レベルは0
+    this.equipmentStats = new EquipmentStats();
     this.inventory = new Inventory();
     this.equipmentCalculator = new EquipmentEffectCalculator();
     if (istestMode) {
-      this.stats.takeDamage(50);
-      this.stats.consumeMP(20);
+      this.bodyStats.takeDamage(50);
+      this.bodyStats.consumeMP(20);
       for (let i = 0; i < 15; i++) {
         this.inventory.addItem(
           new ConsumableItem({
@@ -47,6 +63,102 @@ export class Player {
           })
         );
       }
+
+      // テスト用装備アイテムを追加
+      const testEquipments = [
+        new EquipmentItem({
+          id: 'ancient-sword',
+          name: 'ancient',
+          description: 'An ancient blade with mysterious power',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.LEGENDARY,
+          stats: { attack: 5, defense: 5, speed: 0, accuracy: 0, fortune: 5 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'magical-shield',
+          name: 'magical',
+          description: 'A shield imbued with protective magic',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 0, defense: 20, speed: -5, accuracy: 0, fortune: 0 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'swift-boots',
+          name: 'swift',
+          description: 'Boots that enhance movement speed',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.RARE,
+          stats: { attack: 0, defense: 0, speed: 15, accuracy: 5, fortune: 0 },
+          grade: 20,
+        }),
+        new EquipmentItem({
+          id: 'steel-sword',
+          name: 'steel',
+          description: 'A well-crafted steel sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 12, defense: 0, speed: 0, accuracy: 3, fortune: 0 },
+          grade: 15,
+        }),
+        new EquipmentItem({
+          id: 'wooden-shield',
+          name: 'wooden',
+          description: 'A basic wooden shield for protection',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 8, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 8,
+        }),
+        new EquipmentItem({
+          id: 'powerful-gauntlets',
+          name: 'powerful',
+          description: 'Gauntlets that boost physical strength',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.RARE,
+          stats: { attack: 18, defense: 3, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 21,
+        }),
+        new EquipmentItem({
+          id: 'blessed-amulet',
+          name: 'blessed',
+          description: 'An amulet blessed by divine power',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 20 },
+          grade: 20,
+        }),
+        new EquipmentItem({
+          id: 'crystal-orb',
+          name: 'crystal',
+          description: 'A mystical crystal orb',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.LEGENDARY,
+          stats: { attack: 30, defense: 0, speed: 5, accuracy: 15, fortune: 10 },
+          grade: 60,
+        }),
+        new EquipmentItem({
+          id: 'silver-ring',
+          name: 'silver',
+          description: 'A polished silver ring',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 0, defense: 0, speed: 2, accuracy: 5, fortune: 3 },
+          grade: 10,
+        }),
+        new EquipmentItem({
+          id: 'enchanted-bow',
+          name: 'enchanted',
+          description: 'A bow enhanced with magical properties',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.EPIC,
+          stats: { attack: 22, defense: 0, speed: 8, accuracy: 20, fortune: 0 },
+          grade: 50,
+        }),
+      ];
+
+      testEquipments.forEach(equipment => this.inventory.addItem(equipment));
     }
   }
 
@@ -67,11 +179,52 @@ export class Player {
   }
 
   /**
-   * プレイヤーのステータスを取得する
-   * @returns Statsインスタンス
+   * プレイヤーの総合ステータスを取得する（BodyStats + EquipmentStats）
+   * @returns BodyStatsインスタンス（装備ステータスが加算された状態）
    */
-  getStats(): Stats {
-    return this.stats;
+  getStats(): BodyStats {
+    // BodyStatsの完全なクローンを作成
+    const bodyStatsData = this.bodyStats.toJSON();
+    const combinedStats = BodyStats.fromJSON(bodyStatsData);
+
+    // 装備ステータスを一時的なブーストとして適用
+    combinedStats.applyTemporaryBoost('attack', this.equipmentStats.getAttack());
+    combinedStats.applyTemporaryBoost('defense', this.equipmentStats.getDefense());
+    combinedStats.applyTemporaryBoost('speed', this.equipmentStats.getSpeed());
+    combinedStats.applyTemporaryBoost('accuracy', this.equipmentStats.getAccuracy());
+    combinedStats.applyTemporaryBoost('fortune', this.equipmentStats.getFortune());
+
+    return combinedStats;
+  }
+
+  /**
+   * プレイヤーの身体ステータスを取得する
+   * @returns BodyStatsインスタンス
+   */
+  getBodyStats(): BodyStats {
+    return this.bodyStats;
+  }
+
+  /**
+   * プレイヤーの装備ステータスを取得する
+   * @returns EquipmentStatsインスタンス
+   */
+  getEquipmentStats(): EquipmentStats {
+    return this.equipmentStats;
+  }
+
+  /**
+   * BodyStats + EquipmentStatsの総合ステータスを取得する
+   * @returns 総合ステータス
+   */
+  getTotalStats(): TotalStatsResult {
+    return {
+      attack: this.bodyStats.getAttack() + this.equipmentStats.getAttack(),
+      defense: this.bodyStats.getDefense() + this.equipmentStats.getDefense(),
+      speed: this.bodyStats.getSpeed() + this.equipmentStats.getSpeed(),
+      accuracy: this.bodyStats.getAccuracy() + this.equipmentStats.getAccuracy(),
+      fortune: this.bodyStats.getFortune() + this.equipmentStats.getFortune(),
+    };
   }
 
   /**
@@ -90,14 +243,14 @@ export class Player {
     this.equippedItems = [...equipments];
     // レベルが変わる可能性があるため、ステータスを更新（HP/MP/一時効果は保持）
     const newLevel = this.getLevel();
-    this.stats.updateLevel(newLevel);
+    this.bodyStats.updateLevel(newLevel);
   }
 
   /**
    * 装備中のアイテムのステータス合計を取得する
    * @returns 装備ステータスの合計
    */
-  getEquippedItemStats(): EquipmentStats {
+  getEquippedItemStats(): ItemEquipmentStats {
     return this.equipmentCalculator.calculateTotalStats(this.equippedItems);
   }
 
@@ -110,13 +263,81 @@ export class Player {
   }
 
   /**
+   * 装備スロットの状態を取得する
+   * @returns 装備スロットの配列
+   */
+  getEquipmentSlots(): (EquipmentItem | null)[] {
+    return [...this.equipmentSlots];
+  }
+
+  /**
+   * 指定スロットにアイテムを装備する
+   * @param slotIndex - スロットのインデックス（0-4）
+   * @param equipment - 装備するアイテム（nullで装備解除）
+   */
+  equipToSlot(slotIndex: number, equipment: EquipmentItem | null): void {
+    if (slotIndex < 0 || slotIndex >= 5) {
+      throw new Error(`Invalid slot index: ${slotIndex}`);
+    }
+
+    // 既存の装備を解除してインベントリに戻す
+    const currentEquipment = this.equipmentSlots[slotIndex];
+    if (currentEquipment) {
+      this.inventory.addItem(currentEquipment);
+    }
+
+    // 新しい装備をセット
+    this.equipmentSlots[slotIndex] = equipment;
+
+    // 装備をインベントリから削除
+    if (equipment) {
+      this.inventory.removeItem(equipment);
+    }
+
+    // equippedItemsを更新
+    this.equippedItems = this.equipmentSlots.filter(item => item !== null) as EquipmentItem[];
+
+    // EquipmentStatsを更新
+    this.updateEquipmentStats();
+
+    // レベル更新
+    const newLevel = this.getLevel();
+    this.bodyStats.updateLevel(newLevel);
+  }
+
+  /**
+   * 装備アイテムからEquipmentStatsを再計算する
+   */
+  private updateEquipmentStats(): void {
+    this.equipmentStats.clear();
+
+    for (const item of this.equippedItems) {
+      const itemStats = item.getStats();
+      this.equipmentStats.addAttack(itemStats.attack);
+      this.equipmentStats.addDefense(itemStats.defense);
+      this.equipmentStats.addSpeed(itemStats.speed);
+      this.equipmentStats.addAccuracy(itemStats.accuracy);
+      this.equipmentStats.addFortune(itemStats.fortune);
+    }
+  }
+
+  /**
+   * 装備中のアイテム名を取得する
+   * @returns 装備中のアイテム名の配列
+   */
+  getEquippedItemNames(): string[] {
+    return this.equipmentSlots.map(item => (item ? item.getName() : ''));
+  }
+
+  /**
    * プレイヤーデータをJSON形式で出力する
    * @returns プレイヤーデータのJSONオブジェクト
    */
   toJSON(): PlayerData {
     return {
       name: this.name,
-      stats: this.stats.toJSON(),
+      bodyStats: this.bodyStats.toJSON(),
+      equipmentStats: this.equipmentStats.toJSON(),
       inventory: this.inventory.toJSON(),
     };
   }
@@ -131,7 +352,8 @@ export class Player {
     Player.validatePlayerData(data);
 
     const player = new Player(data.name);
-    player.stats = Stats.fromJSON(data.stats);
+    player.bodyStats = BodyStats.fromJSON(data.bodyStats);
+    player.equipmentStats = EquipmentStats.fromJSON(data.equipmentStats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
 
@@ -152,7 +374,11 @@ export class Player {
       throw new Error('Invalid player data');
     }
 
-    if (typeof data.stats !== 'object' || data.stats === null) {
+    if (typeof data.bodyStats !== 'object' || data.bodyStats === null) {
+      throw new Error('Invalid player data');
+    }
+
+    if (typeof data.equipmentStats !== 'object' || data.equipmentStats === null) {
       throw new Error('Invalid player data');
     }
 

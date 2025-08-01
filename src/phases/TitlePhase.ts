@@ -7,13 +7,18 @@ import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { bold, cyan, green, red } from '../ui/colors';
 import { World } from '../world/World';
+import { TabCompleter } from '../core/completion';
 
 export class TitlePhase extends Phase {
-  constructor(world?: World) {
-    super(world);
+  constructor(world?: World, tabCompleter?: TabCompleter) {
+    super(world, tabCompleter);
   }
   getType(): PhaseType {
     return 'title';
+  }
+
+  getPrompt(): string {
+    return 'TypEngQuest> ';
   }
 
   async initialize(): Promise<void> {
@@ -22,7 +27,7 @@ export class TitlePhase extends Phase {
   }
 
   async cleanup(): Promise<void> {
-    // No cleanup needed for title phase
+    await super.cleanup();
   }
 
   private registerTitleCommands(): void {

@@ -1,11 +1,9 @@
 import { TemporaryStatus, isTemporaryStatus } from './TemporaryStatus';
 
 /**
- * プレイヤーのステータス管理クラス
- * HP、MP、攻撃力、防御力、速度、精度、幸運を管理し、
- * ダメージ・回復処理、一時ステータス処理、JSONシリアライゼーションを提供する
+ * プレイヤーの本来のステータス（装備による上昇を除く）を管理するクラス
  */
-export class Stats {
+export class BodyStats {
   // ゲームバランスパラメータ定数
   private static readonly BASE_HP = 100;
   private static readonly HP_PER_LEVEL = 20;
@@ -31,16 +29,16 @@ export class Stats {
   private temporaryStatuses: TemporaryStatus[];
 
   /**
-   * Statsクラスのコンストラクタ
+   * BodyStatsクラスのコンストラクタ
    * @param level - プレイヤーレベル（デフォルト: 0）
    */
   constructor(level: number = 0) {
     this.level = Math.max(0, level); // 負の値は0にクランプ
-    this.baseAttack = Stats.BASE_STAT;
-    this.baseDefense = Stats.BASE_STAT;
-    this.baseSpeed = Stats.BASE_STAT;
-    this.baseAccuracy = Stats.BASE_STAT;
-    this.baseFortune = Stats.BASE_STAT;
+    this.baseAttack = BodyStats.BASE_STAT;
+    this.baseDefense = BodyStats.BASE_STAT;
+    this.baseSpeed = BodyStats.BASE_STAT;
+    this.baseAccuracy = BodyStats.BASE_STAT;
+    this.baseFortune = BodyStats.BASE_STAT;
     this.temporaryBoosts = {
       attack: 0,
       defense: 0,
@@ -61,7 +59,7 @@ export class Stats {
    * @returns 最大HP
    */
   private calculateMaxHP(): number {
-    return Stats.BASE_HP + this.level * Stats.HP_PER_LEVEL;
+    return BodyStats.BASE_HP + this.level * BodyStats.HP_PER_LEVEL;
   }
 
   /**
@@ -70,7 +68,15 @@ export class Stats {
    * @returns 最大MP
    */
   private calculateMaxMP(): number {
-    return Stats.BASE_MP + this.level * Stats.MP_PER_LEVEL;
+    return BodyStats.BASE_MP + this.level * BodyStats.MP_PER_LEVEL;
+  }
+
+  /**
+   * レベルを取得する
+   * @returns レベル
+   */
+  getLevel(): number {
+    return this.level;
   }
 
   /**
@@ -103,6 +109,46 @@ export class Stats {
    */
   getMaxMP(): number {
     return this.calculateMaxMP();
+  }
+
+  /**
+   * 基本攻撃力を取得する
+   * @returns 基本攻撃力
+   */
+  getBaseAttack(): number {
+    return this.baseAttack;
+  }
+
+  /**
+   * 基本防御力を取得する
+   * @returns 基本防御力
+   */
+  getBaseDefense(): number {
+    return this.baseDefense;
+  }
+
+  /**
+   * 基本速度を取得する
+   * @returns 基本速度
+   */
+  getBaseSpeed(): number {
+    return this.baseSpeed;
+  }
+
+  /**
+   * 基本精度を取得する
+   * @returns 基本精度
+   */
+  getBaseAccuracy(): number {
+    return this.baseAccuracy;
+  }
+
+  /**
+   * 基本幸運を取得する
+   * @returns 基本幸運
+   */
+  getBaseFortune(): number {
+    return this.baseFortune;
   }
 
   /**
@@ -213,6 +259,35 @@ export class Stats {
    */
   hasEnoughMP(requiredMP: number): boolean {
     return this.currentMP >= requiredMP;
+  }
+
+  /**
+   * レベルを更新する（HP/MPの割合は保持）
+   * @param newLevel - 新しいレベル
+   */
+  updateLevel(newLevel: number): void {
+    const oldLevel = this.level;
+    this.level = Math.max(0, newLevel);
+
+    // レベルが変わらない場合は何もしない
+    if (oldLevel === this.level) {
+      return;
+    }
+
+    // HPの割合を保持
+    const oldMaxHP = BodyStats.BASE_HP + oldLevel * BodyStats.HP_PER_LEVEL;
+    const hpRatio = oldMaxHP > 0 ? this.currentHP / oldMaxHP : 1;
+
+    // MPの割合を保持
+    const oldMaxMP = BodyStats.BASE_MP + oldLevel * BodyStats.MP_PER_LEVEL;
+    const mpRatio = oldMaxMP > 0 ? this.currentMP / oldMaxMP : 1;
+
+    // 新しい最大値に合わせてHP/MPを調整
+    const newMaxHP = this.calculateMaxHP();
+    const newMaxMP = this.calculateMaxMP();
+
+    this.currentHP = Math.min(Math.floor(newMaxHP * hpRatio), newMaxHP);
+    this.currentMP = Math.min(Math.floor(newMaxMP * mpRatio), newMaxMP);
   }
 
   /**
@@ -358,121 +433,10 @@ export class Stats {
   }
 
   /**
-   * 全ての一時ステータス効果を含む総合ステータスを取得する
-   * @returns 総合ステータス
-   */
-  getTotalStats(): TotalStats {
-    const effects = this.aggregateTemporaryEffects();
-
-    return {
-      attack: Math.max(0, this.baseAttack + this.temporaryBoosts.attack + effects.stats.attack),
-      defense: Math.max(0, this.baseDefense + this.temporaryBoosts.defense + effects.stats.defense),
-      speed: Math.max(0, this.baseSpeed + this.temporaryBoosts.speed + effects.stats.speed),
-      accuracy: Math.max(
-        0,
-        this.baseAccuracy + this.temporaryBoosts.accuracy + effects.stats.accuracy
-      ),
-      fortune: Math.max(0, this.baseFortune + this.temporaryBoosts.fortune + effects.stats.fortune),
-      hpPerTurn: effects.turn.hpPerTurn,
-      mpPerTurn: effects.turn.mpPerTurn,
-      cannotAct: effects.flags.cannotAct,
-      cannotRun: effects.flags.cannotRun,
-    };
-  }
-
-  /**
-   * 全ての一時ステータスからの効果を集約する
-   * @returns 集約された効果
-   */
-  private aggregateTemporaryEffects() {
-    const statEffects = { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 0 };
-    const turnEffects = { hpPerTurn: 0, mpPerTurn: 0 };
-    const flagEffects = { cannotAct: false, cannotRun: false };
-
-    for (const status of this.temporaryStatuses) {
-      this.applyStatEffects(status, statEffects);
-      this.applyTurnEffects(status, turnEffects);
-      this.applyFlagEffects(status, flagEffects);
-    }
-
-    return {
-      stats: statEffects,
-      turn: turnEffects,
-      flags: flagEffects,
-    };
-  }
-
-  /**
-   * 一時ステータスからステータス効果を適用する
-   * @param status - 一時ステータス
-   * @param effects - 適用先の効果オブジェクト
-   */
-  private applyStatEffects(status: TemporaryStatus, effects: any) {
-    effects.attack += status.effects.attack || 0;
-    effects.defense += status.effects.defense || 0;
-    effects.speed += status.effects.speed || 0;
-    effects.accuracy += status.effects.accuracy || 0;
-    effects.fortune += status.effects.fortune || 0;
-  }
-
-  /**
-   * 一時ステータスからターン効果を適用する
-   * @param status - 一時ステータス
-   * @param effects - 適用先の効果オブジェクト
-   */
-  private applyTurnEffects(status: TemporaryStatus, effects: any) {
-    effects.hpPerTurn += status.effects.hpPerTurn || 0;
-    effects.mpPerTurn += status.effects.mpPerTurn || 0;
-  }
-
-  /**
-   * 一時ステータスからフラグ効果を適用する
-   * @param status - 一時ステータス
-   * @param effects - 適用先の効果オブジェクト
-   */
-  private applyFlagEffects(status: TemporaryStatus, effects: any) {
-    if (status.effects.cannotAct) {
-      effects.cannotAct = true;
-    }
-    if (status.effects.cannotRun) {
-      effects.cannotRun = true;
-    }
-  }
-
-  /**
-   * レベルを更新する（HP/MP/一時効果は保持）
-   * @param newLevel - 新しいレベル
-   */
-  updateLevel(newLevel: number): void {
-    const oldLevel = this.level;
-    this.level = Math.max(0, newLevel);
-
-    // レベルが変わらない場合は何もしない
-    if (oldLevel === this.level) {
-      return;
-    }
-
-    // HPの割合を保持
-    const oldMaxHP = Stats.BASE_HP + oldLevel * Stats.HP_PER_LEVEL;
-    const hpRatio = oldMaxHP > 0 ? this.currentHP / oldMaxHP : 1;
-
-    // MPの割合を保持
-    const oldMaxMP = Stats.BASE_MP + oldLevel * Stats.MP_PER_LEVEL;
-    const mpRatio = oldMaxMP > 0 ? this.currentMP / oldMaxMP : 1;
-
-    // 新しい最大値に合わせてHP/MPを調整
-    const newMaxHP = this.calculateMaxHP();
-    const newMaxMP = this.calculateMaxMP();
-
-    this.currentHP = Math.min(Math.floor(newMaxHP * hpRatio), newMaxHP);
-    this.currentMP = Math.min(Math.floor(newMaxMP * mpRatio), newMaxMP);
-  }
-
-  /**
-   * StatsオブジェクトをJSONに変換する
+   * BodyStatsオブジェクトをJSONに変換する
    * @returns JSON形式のデータ
    */
-  toJSON(): StatsData {
+  toJSON(): BodyStatsData {
     return {
       level: this.level,
       currentHP: this.currentHP,
@@ -488,38 +452,38 @@ export class Stats {
   }
 
   /**
-   * JSONデータからStatsオブジェクトを作成する
+   * JSONデータからBodyStatsオブジェクトを作成する
    * @param data - JSONデータ
-   * @returns Statsインスタンス
+   * @returns BodyStatsインスタンス
    * @throws {Error} 不正なデータの場合
    */
-  static fromJSON(data: any): Stats {
-    if (!this.validateStatsData(data)) {
-      throw new Error('Invalid stats data format');
+  static fromJSON(data: any): BodyStats {
+    if (!this.validateBodyStatsData(data)) {
+      throw new Error('Invalid body stats data format');
     }
 
-    const stats = new Stats(data.level);
-    stats.currentHP = data.currentHP;
-    stats.currentMP = data.currentMP;
-    stats.baseAttack = data.baseAttack;
-    stats.baseDefense = data.baseDefense;
-    stats.baseSpeed = data.baseSpeed;
-    stats.baseAccuracy = data.baseAccuracy;
-    stats.baseFortune = data.baseFortune;
-    stats.temporaryBoosts = { ...data.temporaryBoosts };
-    stats.temporaryStatuses = data.temporaryStatuses
+    const bodyStats = new BodyStats(data.level);
+    bodyStats.currentHP = data.currentHP;
+    bodyStats.currentMP = data.currentMP;
+    bodyStats.baseAttack = data.baseAttack;
+    bodyStats.baseDefense = data.baseDefense;
+    bodyStats.baseSpeed = data.baseSpeed;
+    bodyStats.baseAccuracy = data.baseAccuracy;
+    bodyStats.baseFortune = data.baseFortune;
+    bodyStats.temporaryBoosts = { ...data.temporaryBoosts };
+    bodyStats.temporaryStatuses = data.temporaryStatuses
       ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
       : [];
 
-    return stats;
+    return bodyStats;
   }
 
   /**
-   * StatsDataの形式を検証する
+   * BodyStatsDataの形式を検証する
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
-  private static validateStatsData(data: any): data is StatsData {
+  private static validateBodyStatsData(data: any): data is BodyStatsData {
     return (
       this.validateBasicStructure(data) &&
       this.validateStatsFields(data) &&
@@ -579,9 +543,9 @@ export class Stats {
 }
 
 /**
- * ステータスデータのインターフェース
+ * BodyStatsデータのインターフェース
  */
-export interface StatsData {
+export interface BodyStatsData {
   level: number;
   currentHP: number;
   currentMP: number;
@@ -598,19 +562,4 @@ export interface StatsData {
     fortune: number;
   };
   temporaryStatuses?: TemporaryStatus[];
-}
-
-/**
- * 一時ステータス効果を含む総合ステータス
- */
-export interface TotalStats {
-  attack: number;
-  defense: number;
-  speed: number;
-  accuracy: number;
-  fortune: number;
-  hpPerTurn: number;
-  mpPerTurn: number;
-  cannotAct: boolean;
-  cannotRun: boolean;
 }

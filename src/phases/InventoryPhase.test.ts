@@ -2,9 +2,10 @@ import { InventoryPhase } from './InventoryPhase';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { ConsumableItem, EffectType } from '../items/ConsumableItem';
+import { EquipmentItem } from '../items/EquipmentItem';
 import { ItemType, ItemRarity } from '../items/Item';
 import { Display } from '../ui/Display';
-import { ScrollableList } from '../ui/ScrollableList';
+// ScrollableList import removed - no longer used in InventoryPhase tests
 import { PhaseTypes } from '../core/types';
 
 // Displayをモック
@@ -89,35 +90,18 @@ describe('InventoryPhase', () => {
     });
 
     describe('consumeコマンド', () => {
-      test('consumeコマンドで消費アイテムを選択して使用する', async () => {
-        // プレイヤーのHPを減らす
-        player.getStats().takeDamage(30);
-        const initialHp = player.getStats().getCurrentHP();
-
+      test('consumeコマンドでItemConsumptionフェーズに遷移する', async () => {
         player.getInventory().addItem(testItem);
-
-        // ScrollableListのモックを設定
-        const mockWaitForSelection = jest.fn().mockResolvedValue(0);
-        jest
-          .spyOn(ScrollableList.prototype, 'waitForSelection')
-          .mockImplementation(mockWaitForSelection);
 
         const result = await phase.processInput('consume');
         expect(result.success).toBe(true);
-        expect(result.message).toBe('consumed Test Potion');
-
-        // HPが回復しているか確認
-        const finalHp = player.getStats().getCurrentHP();
-        expect(finalHp).toBeGreaterThan(initialHp);
-
-        // アイテムがインベントリから削除されているか確認
-        expect(player.getInventory().getItemCount()).toBe(0);
+        expect(result.nextPhase).toBe('itemConsumption');
       });
 
-      test('アイテムがない場合は使用できない', async () => {
+      test('消費アイテムがない場合はItemConsumptionフェーズに遷移する', async () => {
         const result = await phase.processInput('consume');
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('no consumable items available');
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('itemConsumption');
       });
 
       test('useコマンドは存在しない', async () => {
@@ -167,6 +151,38 @@ describe('InventoryPhase', () => {
         expect(result.success).toBe(false);
         expect(result.message).toBe('command not found: invalid');
       });
+    });
+  });
+
+  describe('装備UI機能', () => {
+    describe('装備スロット管理システム', () => {
+      test('equipコマンドでItemEquipmentフェーズに遷移する', async () => {
+        // 装備アイテムをインベントリに追加
+        const equipment = new EquipmentItem({
+          id: 'test-sword',
+          name: 'sword',
+          description: 'A sharp sword',
+          type: ItemType.EQUIPMENT,
+          rarity: ItemRarity.COMMON,
+          stats: { attack: 10, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          grade: 10,
+        });
+        player.getInventory().addItem(equipment);
+
+        const result = await phase.processInput('equip');
+
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('itemEquipment');
+      });
+
+      test('装備アイテムが存在しない場合もItemEquipmentフェーズに遷移', async () => {
+        const result = await phase.processInput('equip');
+
+        expect(result.success).toBe(true);
+        expect(result.nextPhase).toBe('itemEquipment');
+      });
+
+      // 装備関連のテストは削除 - これらの機能はItemEquipmentPhaseに移動
     });
   });
 

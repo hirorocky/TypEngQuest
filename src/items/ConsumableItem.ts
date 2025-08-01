@@ -84,13 +84,13 @@ export class ConsumableItem extends Item {
    * @returns 使用可能な場合true
    */
   private canUseEffect(effect: ItemEffect, player: Player): boolean {
-    const stats = player.getStats();
+    const bodyStats = player.getBodyStats();
 
     switch (effect.type) {
       case EffectType.HEAL_HP:
-        return stats.getCurrentHP() < stats.getMaxHP();
+        return bodyStats.getCurrentHP() < bodyStats.getMaxHP();
       case EffectType.HEAL_MP:
-        return stats.getCurrentMP() < stats.getMaxMP();
+        return bodyStats.getCurrentMP() < bodyStats.getMaxMP();
       default:
         return false;
     }
@@ -127,11 +127,11 @@ export class ConsumableItem extends Item {
    * @param player - プレイヤー
    */
   private applyHealingEffect(effect: ItemEffect, player: Player): void {
-    const stats = player.getStats();
+    const bodyStats = player.getBodyStats();
     if (effect.type === EffectType.HEAL_HP) {
-      stats.healHP(effect.value);
+      bodyStats.healHP(effect.value);
     } else if (effect.type === EffectType.HEAL_MP) {
-      stats.healMP(effect.value);
+      bodyStats.healMP(effect.value);
     }
   }
 

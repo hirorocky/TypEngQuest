@@ -90,7 +90,7 @@ describe('ConsumableItem', () => {
       });
 
       // HPを少し減らす
-      mockPlayer.getStats().takeDamage(10);
+      mockPlayer.getBodyStats().takeDamage(10);
 
       expect(item.canUse(mockPlayer)).toBe(true);
     });
@@ -130,7 +130,7 @@ describe('ConsumableItem', () => {
       });
 
       // MPを少し減らす
-      mockPlayer.getStats().consumeMP(10);
+      mockPlayer.getBodyStats().consumeMP(10);
 
       expect(item.canUse(mockPlayer)).toBe(true);
     });
@@ -174,7 +174,7 @@ describe('ConsumableItem', () => {
       });
 
       // HPは満タンだがMPを減らす
-      mockPlayer.getStats().consumeMP(10);
+      mockPlayer.getBodyStats().consumeMP(10);
 
       expect(item.canUse(mockPlayer)).toBe(true);
     });
@@ -219,13 +219,15 @@ describe('ConsumableItem', () => {
         ],
       });
 
-      const initialHP = mockPlayer.getStats().getCurrentHP();
-      mockPlayer.getStats().takeDamage(30);
-      const damagedHP = mockPlayer.getStats().getCurrentHP();
+      const _initialHP = mockPlayer.getBodyStats().getCurrentHP();
+      mockPlayer.getBodyStats().takeDamage(30);
+      const damagedHP = mockPlayer.getBodyStats().getCurrentHP();
 
       await item.use(mockPlayer);
 
-      expect(mockPlayer.getStats().getCurrentHP()).toBe(Math.min(initialHP, damagedHP + 50));
+      expect(mockPlayer.getBodyStats().getCurrentHP()).toBe(
+        Math.min(mockPlayer.getBodyStats().getMaxHP(), damagedHP + 50)
+      );
     });
 
     it('MP回復効果を正しく適用する', async () => {
@@ -243,13 +245,15 @@ describe('ConsumableItem', () => {
         ],
       });
 
-      const initialMP = mockPlayer.getStats().getCurrentMP();
-      mockPlayer.getStats().consumeMP(20);
-      const consumedMP = mockPlayer.getStats().getCurrentMP();
+      const _initialMP = mockPlayer.getBodyStats().getCurrentMP();
+      mockPlayer.getBodyStats().consumeMP(20);
+      const consumedMP = mockPlayer.getBodyStats().getCurrentMP();
 
       await item.use(mockPlayer);
 
-      expect(mockPlayer.getStats().getCurrentMP()).toBe(Math.min(initialMP, consumedMP + 30));
+      expect(mockPlayer.getBodyStats().getCurrentMP()).toBe(
+        Math.min(mockPlayer.getBodyStats().getMaxMP(), consumedMP + 30)
+      );
     });
 
     it('複数効果を正しく適用する', async () => {
@@ -271,15 +275,19 @@ describe('ConsumableItem', () => {
         ],
       });
 
-      const initialHP = mockPlayer.getStats().getCurrentHP();
-      const initialMP = mockPlayer.getStats().getCurrentMP();
-      mockPlayer.getStats().takeDamage(50);
-      mockPlayer.getStats().consumeMP(30);
+      const _initialHP = mockPlayer.getBodyStats().getCurrentHP();
+      const _initialMP = mockPlayer.getBodyStats().getCurrentMP();
+      mockPlayer.getBodyStats().takeDamage(50);
+      mockPlayer.getBodyStats().consumeMP(30);
 
       await item.use(mockPlayer);
 
-      expect(mockPlayer.getStats().getCurrentHP()).toBe(Math.min(initialHP, initialHP - 50 + 100));
-      expect(mockPlayer.getStats().getCurrentMP()).toBe(Math.min(initialMP, initialMP - 30 + 50));
+      expect(mockPlayer.getBodyStats().getCurrentHP()).toBe(
+        Math.min(mockPlayer.getBodyStats().getMaxHP(), _initialHP - 50 + 100)
+      );
+      expect(mockPlayer.getBodyStats().getCurrentMP()).toBe(
+        Math.min(mockPlayer.getBodyStats().getMaxMP(), _initialMP - 30 + 50)
+      );
     });
 
     it('使用不可能なアイテムを使用するとエラーを投げる', async () => {

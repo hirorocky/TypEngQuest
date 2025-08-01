@@ -11,6 +11,10 @@ class TestPhase extends Phase {
     return 'title';
   }
 
+  getPrompt(): string {
+    return 'test> ';
+  }
+
   async initialize(): Promise<void> {
     // Test implementation
   }

@@ -1,13 +1,13 @@
 import { StatusCommand } from './StatusCommand';
 import { CommandContext } from '../BaseCommand';
 import { Player } from '../../player/Player';
-import { Stats } from '../../player/Stats';
+import { BodyStats } from '../../player/BodyStats';
 
 describe('StatusCommand', () => {
   let command: StatusCommand;
   let mockContext: CommandContext;
   let mockPlayer: Player;
-  let mockStats: Stats;
+  let mockStats: BodyStats;
 
   beforeEach(() => {
     // Statsモックの作成

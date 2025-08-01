@@ -3,6 +3,7 @@ import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
+import { TabCompleter } from '../core/completion';
 import { CdCommand } from '../commands/exploration/CdCommand';
 import { LsCommand } from '../commands/exploration/LsCommand';
 import { PwdCommand } from '../commands/exploration/PwdCommand';
@@ -27,8 +28,8 @@ export class ExplorationPhase extends Phase {
   protected world: World; // worldを必須に
   private player: Player; // playerを必須に
 
-  constructor(world: World, player: Player) {
-    super(world);
+  constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
+    super(world, tabCompleter);
 
     if (!world) {
       throw new Error('World is required for ExplorationPhase');
@@ -370,6 +371,12 @@ export class ExplorationPhase extends Phase {
     return 'exploration';
   }
 
+  getPrompt(): string {
+    const currentPath = this.world.fileSystem.pwd();
+    const promptPath = currentPath === '/' ? '~' : currentPath.replace('/', '~');
+    return `[${promptPath}]$ `;
+  }
+
   /**
    * フェーズの初期化処理
    */
@@ -381,7 +388,7 @@ export class ExplorationPhase extends Phase {
    * フェーズのクリーンアップ処理
    */
   async cleanup(): Promise<void> {
-    // 特に処理なし
+    await super.cleanup();
   }
 
   public exit(): void {
