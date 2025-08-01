@@ -54,19 +54,9 @@ export class TypingChallenge {
     // バックスペース処理
     if (char === '\x7f') {
       if (this.input.length > 0) {
-        // 削除する位置のエラーを削除
         const deleteIndex = this.input.length - 1;
         const wasError = this.errors.has(deleteIndex);
         this.errors.delete(deleteIndex);
-
-        // 削除位置より後ろのエラーインデックスを調整
-        const newErrors = new Set<number>();
-        this.errors.forEach(index => {
-          if (index < deleteIndex) {
-            newErrors.add(index);
-          }
-        });
-        this.errors = newErrors;
 
         this.input = this.input.slice(0, -1);
 
