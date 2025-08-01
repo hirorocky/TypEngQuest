@@ -1,4 +1,10 @@
-import { TypingDifficulty, TypingProgress, TypingResult } from './types';
+import {
+  TypingDifficulty,
+  TypingProgress,
+  TypingResult,
+  SpeedRating,
+  AccuracyRating,
+} from './types';
 
 /**
  * タイピングチャレンジクラス - タイピングチャレンジの実行とデータ管理
@@ -10,6 +16,8 @@ export class TypingChallenge {
   private startTime: number | null = null;
   private endTime: number | null = null;
   private errors: Set<number> = new Set();
+  private totalKeystrokes: number = 0;
+  private incorrectKeystrokes: number = 0;
 
   /**
    * コンストラクタ
@@ -26,16 +34,68 @@ export class TypingChallenge {
    */
   start(): void {
     this.startTime = Date.now();
+    this.endTime = null;
     this.input = '';
     this.errors.clear();
+    this.totalKeystrokes = 0;
+    this.incorrectKeystrokes = 0;
   }
 
   /**
    * 入力を処理
    * @param char - 入力された文字
    */
-  handleInput(_char: string): void {
-    // 実装はPhase 2で行う
+  handleInput(char: string): void {
+    // 既に完了している場合は何もしない
+    if (this.isComplete()) {
+      return;
+    }
+
+    // バックスペース処理
+    if (char === '\x7f') {
+      if (this.input.length > 0) {
+        // 削除する位置のエラーを削除
+        const deleteIndex = this.input.length - 1;
+        const wasError = this.errors.has(deleteIndex);
+        this.errors.delete(deleteIndex);
+
+        // 削除位置より後ろのエラーインデックスを調整
+        const newErrors = new Set<number>();
+        this.errors.forEach(index => {
+          if (index < deleteIndex) {
+            newErrors.add(index);
+          }
+        });
+        this.errors = newErrors;
+
+        this.input = this.input.slice(0, -1);
+
+        // バックスペースによる削除はtotalKeystrokesとincorrectKeystrokesを調整
+        this.totalKeystrokes--;
+        if (wasError) {
+          this.incorrectKeystrokes--;
+        }
+      }
+      return;
+    }
+
+    // 通常の文字入力
+    const currentIndex = this.input.length;
+    const expectedChar = this.text[currentIndex];
+
+    this.totalKeystrokes++;
+
+    if (char !== expectedChar) {
+      this.errors.add(currentIndex);
+      this.incorrectKeystrokes++;
+    }
+
+    this.input += char;
+
+    // 全文字入力完了したら終了時刻を記録
+    if (this.input.length === this.text.length && !this.endTime) {
+      this.endTime = Date.now();
+    }
   }
 
   /**
@@ -43,7 +103,11 @@ export class TypingChallenge {
    * @returns 完了している場合true
    */
   isComplete(): boolean {
-    return false; // 実装はPhase 2で行う
+    // 全文字入力したか、時間切れ
+    return (
+      this.input.length === this.text.length ||
+      (this.startTime !== null && this.getRemainingTime() <= 0)
+    );
   }
 
   /**
@@ -51,14 +115,19 @@ export class TypingChallenge {
    * @returns タイピング結果
    */
   getResult(): TypingResult {
-    // 実装はPhase 2で行う
+    const timeTaken = this.getTimeTaken();
+    const accuracy = this.calculateAccuracy();
+    const speedRating = this.calculateSpeedRating(timeTaken);
+    const accuracyRating = this.calculateAccuracyRating(accuracy);
+    const totalRating = this.calculateTotalRating(speedRating, accuracyRating);
+
     return {
-      speedRating: 'C',
-      accuracyRating: 'Good',
-      totalRating: 100,
-      timeTaken: 0,
-      accuracy: 0,
-      isSuccess: true,
+      speedRating,
+      accuracyRating,
+      totalRating,
+      timeTaken,
+      accuracy,
+      isSuccess: totalRating > 0,
     };
   }
 
@@ -79,8 +148,13 @@ export class TypingChallenge {
    * @returns 残り時間（秒）
    */
   getRemainingTime(): number {
-    // 実装はPhase 2で行う
-    return 10.0;
+    if (!this.startTime) {
+      return this.getTimeLimit();
+    }
+
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    const remaining = this.getTimeLimit() - elapsed;
+    return Math.max(0, remaining);
   }
 
   /**
@@ -89,5 +163,102 @@ export class TypingChallenge {
    */
   getText(): string {
     return this.text;
+  }
+
+  /**
+   * 制限時間を取得
+   * @returns 制限時間（秒）
+   */
+  getTimeLimit(): number {
+    return 10 + this.difficulty * 5;
+  }
+
+  /**
+   * かかった時間を取得
+   * @returns 時間（ミリ秒）
+   */
+  private getTimeTaken(): number {
+    if (!this.startTime) {
+      return 0;
+    }
+
+    const endTime = this.endTime || Date.now();
+    return endTime - this.startTime;
+  }
+
+  /**
+   * 精度を計算
+   * @returns 精度（パーセント）
+   */
+  private calculateAccuracy(): number {
+    if (this.totalKeystrokes === 0) {
+      return 100;
+    }
+
+    const correctKeystrokes = this.totalKeystrokes - this.incorrectKeystrokes;
+    return (correctKeystrokes / this.totalKeystrokes) * 100;
+  }
+
+  /**
+   * 速度評価を計算
+   * @param timeTaken - かかった時間（ミリ秒）
+   * @returns 速度評価
+   */
+  private calculateSpeedRating(timeTaken: number): SpeedRating {
+    const timeLimit = this.getTimeLimit() * 1000; // ミリ秒に変換
+    const percentage = (timeTaken / timeLimit) * 100;
+
+    if (percentage <= 50) return 'S';
+    if (percentage <= 70) return 'A';
+    if (percentage <= 90) return 'B';
+    if (percentage <= 100) return 'C';
+    return 'F';
+  }
+
+  /**
+   * 精度評価を計算
+   * @param accuracy - 精度（パーセント）
+   * @returns 精度評価
+   */
+  private calculateAccuracyRating(accuracy: number): AccuracyRating {
+    if (accuracy === 100) return 'Perfect';
+    if (accuracy >= 95) return 'Great';
+    if (accuracy >= 90) return 'Good';
+    return 'Poor';
+  }
+
+  /**
+   * 総合評価を計算
+   * @param speedRating - 速度評価
+   * @param accuracyRating - 精度評価
+   * @returns 効果倍率
+   */
+  private calculateTotalRating(speedRating: SpeedRating, accuracyRating: AccuracyRating): number {
+    // F or Poorの場合は失敗
+    if (speedRating === 'F' || accuracyRating === 'Poor') {
+      return 0;
+    }
+
+    // S + Perfect
+    if (speedRating === 'S' && accuracyRating === 'Perfect') {
+      return 150;
+    }
+
+    // A + Perfect/Great
+    if (speedRating === 'A' && (accuracyRating === 'Perfect' || accuracyRating === 'Great')) {
+      return 120;
+    }
+
+    // B + Perfect/Great/Good
+    if (speedRating === 'B') {
+      return 100;
+    }
+
+    // C + Any
+    if (speedRating === 'C') {
+      return 80;
+    }
+
+    return 0;
   }
 }
