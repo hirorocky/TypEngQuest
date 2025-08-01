@@ -65,6 +65,10 @@ export function magenta(text: string): string {
   return colorize(text, Colors.MAGENTA);
 }
 
+export function gray(text: string): string {
+  return dim(text);
+}
+
 export function formatCommand(text: string): string {
   return bold(cyan(text));
 }
