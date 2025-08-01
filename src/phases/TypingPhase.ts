@@ -186,8 +186,9 @@ export class TypingPhase {
     let result = '';
 
     // 入力済み部分
+    const errorSet = new Set(errors);
     for (let i = 0; i < input.length; i++) {
-      if (errors.includes(i)) {
+      if (errorSet.has(i)) {
         result += red(input[i]);
       } else {
         result += green(input[i]);
