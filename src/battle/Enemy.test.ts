@@ -222,11 +222,16 @@ describe('Enemy', () => {
       expect(skills[1]).toEqual(mockSkill2);
     });
 
-    it('技リストは不変', () => {
-      const skills = enemy.skills;
-      expect(() => {
-        (skills as any).push({} as Skill);
-      }).toThrow();
+    it('技リストへの変更は元のデータに影響しない', () => {
+      const skills1 = enemy.skills;
+      const skills2 = enemy.skills;
+
+      // 新しい配列が返されることを確認
+      expect(skills1).not.toBe(skills2);
+
+      // 取得した配列を変更しても元のskillsに影響しないことを確認
+      (skills1 as any).push({} as Skill);
+      expect(enemy.skills).toHaveLength(2); // 元のサイズのまま
     });
 
     it('技リストが空の敵も作成できる', () => {

@@ -131,12 +131,12 @@ export class Enemy {
 
   /** 所持技リスト（読み取り専用） */
   get skills(): readonly Skill[] {
-    return Object.freeze([...this._skills]);
+    return [...this._skills];
   }
 
   /** ドロップアイテムリスト（読み取り専用） */
   get drops(): readonly DropItem[] {
-    return Object.freeze([...this._drops]);
+    return [...this._drops];
   }
 
   /**
@@ -228,6 +228,16 @@ export class Enemy {
   }
 
   /**
+   * 現在のHP/MPを設定する（fromJSON専用）
+   * @param currentHp 現在のHP
+   * @param currentMp 現在のMP
+   */
+  private setCurrentStats(currentHp: number, currentMp: number): void {
+    this._currentHp = Math.max(0, Math.min(currentHp, this._stats.maxHp));
+    this._currentMp = Math.max(0, Math.min(currentMp, this._stats.maxMp));
+  }
+
+  /**
    * JSONから復元する
    * @param json EnemyのJSON表現
    * @returns 復元されたEnemyインスタンス
@@ -244,8 +254,7 @@ export class Enemy {
     });
 
     // 現在のHP/MPを復元
-    enemy._currentHp = json.currentHp;
-    enemy._currentMp = json.currentMp;
+    enemy.setCurrentStats(json.currentHp, json.currentMp);
 
     return enemy;
   }

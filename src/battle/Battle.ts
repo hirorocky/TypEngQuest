@@ -46,6 +46,10 @@ export interface BattleResult {
  * Battleクラス - 戦闘フローの制御とターン管理を行う
  */
 export class Battle {
+  // 戦闘で使用する定数
+  private static readonly NORMAL_ATTACK_ACCURACY = 90;
+  private static readonly NORMAL_ATTACK_POWER = 1.0;
+
   private player: Player;
   private enemy: Enemy;
   private _isActive: boolean = false;
@@ -228,7 +232,10 @@ export class Battle {
       const enemyStats = this.enemy.stats;
 
       // 命中判定（通常攻撃は命中率90%）
-      const hitRate = BattleCalculator.calculateHitRate(enemyStats.accuracy, 90);
+      const hitRate = BattleCalculator.calculateHitRate(
+        enemyStats.accuracy,
+        Battle.NORMAL_ATTACK_ACCURACY
+      );
       const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.speed);
 
       if (!BattleCalculator.isHit(hitRate, evadeRate)) {
@@ -240,7 +247,11 @@ export class Battle {
       }
 
       // ダメージ計算（通常攻撃は威力1.0）
-      const damage = BattleCalculator.calculateDamage(enemyStats.attack, playerStats.defense, 1.0);
+      const damage = BattleCalculator.calculateDamage(
+        enemyStats.attack,
+        playerStats.defense,
+        Battle.NORMAL_ATTACK_POWER
+      );
 
       // ダメージを与える
       this.player.getBodyStats().takeDamage(damage);
@@ -314,15 +325,17 @@ export class Battle {
       return droppedItems;
     }
 
+    // 基本ドロップ率の判定（一度だけ）
+    const baseDropRoll = Math.random() * 100;
+    if (baseDropRoll >= dropRate) {
+      return droppedItems; // ドロップしない
+    }
+
+    // 基本ドロップ率を通った場合のみ、各アイテムの個別判定を行う
     for (const drop of this.enemy.drops) {
-      // まず基本ドロップ率の判定
-      const baseDropRoll = Math.random() * 100;
-      if (baseDropRoll < dropRate) {
-        // 次に個別アイテムのドロップ率判定
-        const itemDropRoll = Math.random() * 100;
-        if (itemDropRoll < drop.dropRate) {
-          droppedItems.push(drop.itemId);
-        }
+      const itemDropRoll = Math.random() * 100;
+      if (itemDropRoll < drop.dropRate) {
+        droppedItems.push(drop.itemId);
       }
     }
 
