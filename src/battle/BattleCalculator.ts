@@ -35,21 +35,12 @@ export class BattleCalculator {
 
   /**
    * 命中率計算
-   * @param agility 敏捷性ステータス
    * @param skillAccuracy 技の基本命中率
    * @returns 最終的な命中率（%）
    */
-  static calculateHitRate(agility: number, skillAccuracy: number): number {
-    // 基本命中率 = 90 + (敏捷性 / 10)%
-    let baseHitRate = 90 + agility / 10;
-
-    // 最大99%、最小50%
-    baseHitRate = Math.max(50, Math.min(99, baseHitRate));
-
-    // 技の命中率を掛ける
-    const finalHitRate = baseHitRate * (skillAccuracy / 100);
-
-    return finalHitRate;
+  static calculateHitRate(skillAccuracy: number): number {
+    // 技の命中率をそのまま使用（agilityは参照しない）
+    return skillAccuracy;
   }
 
   /**

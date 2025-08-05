@@ -61,58 +61,48 @@ describe('BattleCalculator', () => {
 
   describe('命中率計算', () => {
     it('基本的な命中率計算ができる', () => {
-      const agility = 100;
       const skillAccuracy = 90;
 
-      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(skillAccuracy);
 
-      // 基本命中率 = 90 + (敏捷性 / 10) = 90 + (100 / 10) = 100
-      // 最大値の制限により99にする
-      // 技命中率を掛ける: 99 × (90 / 100) = 89.1
-      expect(hitRate).toBeCloseTo(89.1, 5);
+      // 技の命中率をそのまま使用（agilityは参照しない）
+      expect(hitRate).toBe(90);
     });
 
-    it('敏捷性が高いと命中率が上がる', () => {
-      const agility = 200;
-      const skillAccuracy = 90;
+    it('異なる技命中率を正しく返す', () => {
+      const skillAccuracy = 85;
 
-      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(skillAccuracy);
 
-      // 90 + (200 / 10) = 110 → 99（最大値）
-      // 99 × (90 / 100) = 89.1
-      expect(hitRate).toBeCloseTo(89.1, 5);
+      // 技の命中率をそのまま使用
+      expect(hitRate).toBe(85);
     });
 
-    it('敏捷性が低いと命中率が下がる', () => {
-      const agility = 0;
-      const skillAccuracy = 90;
-
-      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
-
-      // 90 + (0 / 10) = 90
-      // 90 × (90 / 100) = 81
-      expect(hitRate).toBe(81);
-    });
-
-    it('最大命中率は99%', () => {
-      const agility = 500;
+    it('100%の技命中率を正しく返す', () => {
       const skillAccuracy = 100;
 
-      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(skillAccuracy);
 
-      // 基本命中率が99%を超えても99%に制限
-      expect(hitRate).toBe(99);
+      // 技の命中率をそのまま使用
+      expect(hitRate).toBe(100);
     });
 
-    it('最小命中率は50%', () => {
-      const agility = -1000;
+    it('低い技命中率も正しく返す', () => {
       const skillAccuracy = 50;
 
-      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(skillAccuracy);
 
-      // 基本命中率が50%未満でも50%に制限
-      // 50 × (50 / 100) = 25
-      expect(hitRate).toBe(25);
+      // 技の命中率をそのまま使用
+      expect(hitRate).toBe(50);
+    });
+
+    it('0%の技命中率も正しく返す', () => {
+      const skillAccuracy = 0;
+
+      const hitRate = BattleCalculator.calculateHitRate(skillAccuracy);
+
+      // 技の命中率をそのまま使用
+      expect(hitRate).toBe(0);
     });
   });
 
@@ -302,12 +292,11 @@ describe('BattleCalculator', () => {
       expect(damage).toBe(25);
     });
 
-    it('プレイヤーの命中率を計算できる', () => {
-      const hitRate = BattleCalculator.calculateHitRate(playerStats.agility, 85);
+    it('プレイヤーの技命中率を計算できる', () => {
+      const hitRate = BattleCalculator.calculateHitRate(85);
 
-      // 敏捷性100で基本命中率 = 90 + (100 / 10) = 100 → 99(最大値)
-      // 99 × (85 / 100) = 84.15
-      expect(hitRate).toBeCloseTo(84.15, 2);
+      // 技の命中率をそのまま使用（agilityは参照しない）
+      expect(hitRate).toBe(85);
     });
 
     it('敵の回避率を計算できる', () => {

@@ -186,7 +186,7 @@ export class Battle {
     skill: Skill,
     typingResult?: TypingResult
   ): number {
-    let hitRate = BattleCalculator.calculateHitRate(playerStats.agility, skill.accuracy);
+    let hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
 
     if (typingResult?.isSuccess) {
       hitRate = BattleCalculator.calculateTypingSpeedBonus(
@@ -261,7 +261,7 @@ export class Battle {
       const enemyStats = this.enemy.stats;
 
       // 命中判定
-      const hitRate = BattleCalculator.calculateHitRate(enemyStats.agility, selectedSkill.accuracy);
+      const hitRate = BattleCalculator.calculateHitRate(selectedSkill.accuracy);
       const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
       if (!BattleCalculator.isHit(hitRate, evadeRate)) {
@@ -303,10 +303,7 @@ export class Battle {
       const enemyStats = this.enemy.stats;
 
       // 命中判定（通常攻撃は命中率90%）
-      const hitRate = BattleCalculator.calculateHitRate(
-        enemyStats.agility,
-        Battle.NORMAL_ATTACK_ACCURACY
-      );
+      const hitRate = BattleCalculator.calculateHitRate(Battle.NORMAL_ATTACK_ACCURACY);
       const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
       if (!BattleCalculator.isHit(hitRate, evadeRate)) {
