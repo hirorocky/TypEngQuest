@@ -8,8 +8,7 @@ export interface EnemyStats {
   maxMp: number;
   attack: number;
   defense: number;
-  speed: number;
-  accuracy: number;
+  agility: number;
   fortune: number;
 }
 

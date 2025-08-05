@@ -311,8 +311,7 @@ export class InventoryPhase extends Phase {
 
     if (stats.attack > 0) lines.push(`Attack: +${stats.attack}`);
     if (stats.defense > 0) lines.push(`Defense: +${stats.defense}`);
-    if (stats.speed > 0) lines.push(`Speed: +${stats.speed}`);
-    if (stats.accuracy > 0) lines.push(`Accuracy: +${stats.accuracy}`);
+    if (stats.agility > 0) lines.push(`Agility: +${stats.agility}`);
     if (stats.fortune > 0) lines.push(`Fortune: +${stats.fortune}`);
 
     return lines.join(', ');

@@ -35,13 +35,13 @@ export class BattleCalculator {
 
   /**
    * 命中率計算
-   * @param accuracy 精度ステータス
+   * @param agility 敏捷性ステータス
    * @param skillAccuracy 技の基本命中率
    * @returns 最終的な命中率（%）
    */
-  static calculateHitRate(accuracy: number, skillAccuracy: number): number {
-    // 基本命中率 = 90 + (精度 / 10)%
-    let baseHitRate = 90 + accuracy / 10;
+  static calculateHitRate(agility: number, skillAccuracy: number): number {
+    // 基本命中率 = 90 + (敏捷性 / 10)%
+    let baseHitRate = 90 + agility / 10;
 
     // 最大99%、最小50%
     baseHitRate = Math.max(50, Math.min(99, baseHitRate));
@@ -54,12 +54,12 @@ export class BattleCalculator {
 
   /**
    * 回避率計算
-   * @param speed 速度ステータス
+   * @param agility 敏捷性ステータス
    * @returns 回避率（%）
    */
-  static calculateEvadeRate(speed: number): number {
-    // 基本回避率 = 5 + (速度 / 20)%
-    let evadeRate = 5 + speed / 20;
+  static calculateEvadeRate(agility: number): number {
+    // 基本回避率 = 5 + (敏捷性 / 20)%
+    let evadeRate = 5 + agility / 20;
 
     // 最大30%、最小5%
     evadeRate = Math.max(5, Math.min(30, evadeRate));
@@ -83,23 +83,13 @@ export class BattleCalculator {
   }
 
   /**
-   * 速度ボーナス計算（タイピング用）
-   * @param speed 速度ステータス
-   * @returns 速度ボーナス倍率
+   * 敏捷性ボーナス計算（タイピング用）
+   * @param agility 敏捷性ステータス
+   * @returns 敏捷性ボーナス倍率
    */
-  static calculateSpeedBonus(speed: number): number {
-    // 速度ボーナス = 1.0 + (速度 / 200)
-    return 1.0 + speed / 200;
-  }
-
-  /**
-   * 精度ボーナス計算（タイピング用）
-   * @param accuracy 精度ステータス
-   * @returns 精度ボーナス倍率
-   */
-  static calculateAccuracyBonus(accuracy: number): number {
-    // 精度ボーナス = 1.0 + (精度 / 200)
-    return 1.0 + accuracy / 200;
+  static calculateAgilityBonus(agility: number): number {
+    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
+    return 1.0 + agility / 200;
   }
 
   /**
@@ -160,17 +150,17 @@ export class BattleCalculator {
   /**
    * タイピング速度に基づく命中率ボーナス計算
    * @param baseHitRate 基本命中率
-   * @param playerSpeed プレイヤーの速度ステータス
+   * @param playerAgility プレイヤーの敏捷性ステータス
    * @param speedRating タイピング速度評価
    * @returns ボーナス適用後の命中率
    */
   static calculateTypingSpeedBonus(
     baseHitRate: number,
-    playerSpeed: number,
+    playerAgility: number,
     speedRating: SpeedRating
   ): number {
-    // 速度ボーナス = 1.0 + (速度 / 200)
-    const speedBonus = 1.0 + playerSpeed / 200;
+    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
+    const agilityBonus = 1.0 + playerAgility / 200;
 
     // タイピング速度による倍率
     const speedMultiplier = {
@@ -181,24 +171,24 @@ export class BattleCalculator {
       F: 0.7, // 70%
     }[speedRating];
 
-    const enhancedHitRate = baseHitRate * speedBonus * speedMultiplier;
+    const enhancedHitRate = baseHitRate * agilityBonus * speedMultiplier;
     return Math.min(99, enhancedHitRate); // 最大99%
   }
 
   /**
    * タイピング精度に基づくクリティカル率ボーナス計算
    * @param baseCriticalRate 基本クリティカル率
-   * @param playerAccuracy プレイヤーの精度ステータス
+   * @param playerAgility プレイヤーの敏捷性ステータス
    * @param accuracyRating タイピング精度評価
    * @returns ボーナス適用後のクリティカル率
    */
   static calculateTypingAccuracyBonus(
     baseCriticalRate: number,
-    playerAccuracy: number,
+    playerAgility: number,
     accuracyRating: AccuracyRating
   ): number {
-    // 精度ボーナス = 1.0 + (精度 / 200)
-    const accuracyBonus = 1.0 + playerAccuracy / 200;
+    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
+    const agilityBonus = 1.0 + playerAgility / 200;
 
     // タイピング精度による倍率
     const accuracyMultiplier = {
@@ -208,7 +198,7 @@ export class BattleCalculator {
       Poor: 0.8, // 80%
     }[accuracyRating];
 
-    const enhancedCriticalRate = baseCriticalRate * accuracyBonus * accuracyMultiplier;
+    const enhancedCriticalRate = baseCriticalRate * agilityBonus * accuracyMultiplier;
     return Math.min(50, enhancedCriticalRate); // 最大50%
   }
 

@@ -8,8 +8,7 @@ import { TemporaryStatusEffects } from '../player/TemporaryStatus';
 export interface EquipmentStats {
   attack: number;
   defense: number;
-  speed: number;
-  accuracy: number;
+  agility: number;
   fortune: number;
 }
 
@@ -53,8 +52,7 @@ export class EquipmentItem extends Item {
   private static readonly REQUIRED_STATS: readonly string[] = [
     'attack',
     'defense',
-    'speed',
-    'accuracy',
+    'agility',
     'fortune',
   ] as const;
   private static readonly VALID_EFFECT_TYPES: readonly string[] = [
@@ -85,8 +83,7 @@ export class EquipmentItem extends Item {
     const stats = data.stats || {
       attack: 0,
       defense: 0,
-      speed: 0,
-      accuracy: 0,
+      agility: 0,
       fortune: 0,
     };
 
@@ -110,9 +107,7 @@ export class EquipmentItem extends Item {
 
     const statsSum = this.calculateStatsSum(stats);
     if (grade !== statsSum) {
-      throw new Error(
-        'Grade must equal sum of stats (attack + defense + speed + accuracy + fortune)'
-      );
+      throw new Error('Grade must equal sum of stats (attack + defense + agility + fortune)');
     }
   }
 
@@ -126,7 +121,7 @@ export class EquipmentItem extends Item {
       return 0;
     }
 
-    return stats.attack + stats.defense + stats.speed + stats.accuracy + stats.fortune;
+    return stats.attack + stats.defense + stats.agility + stats.fortune;
   }
 
   /**
@@ -219,8 +214,7 @@ export class EquipmentItem extends Item {
     return (
       this.stats.attack === otherStats.attack &&
       this.stats.defense === otherStats.defense &&
-      this.stats.speed === otherStats.speed &&
-      this.stats.accuracy === otherStats.accuracy &&
+      this.stats.agility === otherStats.agility &&
       this.stats.fortune === otherStats.fortune
     );
   }
@@ -301,8 +295,7 @@ export class EquipmentItem extends Item {
     const numberProps: (keyof TemporaryStatusEffects)[] = [
       'attack',
       'defense',
-      'speed',
-      'accuracy',
+      'agility',
       'fortune',
       'hpPerTurn',
       'mpPerTurn',

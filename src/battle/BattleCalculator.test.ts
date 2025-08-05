@@ -61,33 +61,33 @@ describe('BattleCalculator', () => {
 
   describe('命中率計算', () => {
     it('基本的な命中率計算ができる', () => {
-      const accuracy = 100;
+      const agility = 100;
       const skillAccuracy = 90;
 
-      const hitRate = BattleCalculator.calculateHitRate(accuracy, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
 
-      // 基本命中率 = 90 + (精度 / 10) = 90 + (100 / 10) = 100
+      // 基本命中率 = 90 + (敏捷性 / 10) = 90 + (100 / 10) = 100
       // 最大値の制限により99にする
       // 技命中率を掛ける: 99 × (90 / 100) = 89.1
       expect(hitRate).toBeCloseTo(89.1, 5);
     });
 
-    it('精度が高いと命中率が上がる', () => {
-      const accuracy = 200;
+    it('敏捷性が高いと命中率が上がる', () => {
+      const agility = 200;
       const skillAccuracy = 90;
 
-      const hitRate = BattleCalculator.calculateHitRate(accuracy, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
 
       // 90 + (200 / 10) = 110 → 99（最大値）
       // 99 × (90 / 100) = 89.1
       expect(hitRate).toBeCloseTo(89.1, 5);
     });
 
-    it('精度が低いと命中率が下がる', () => {
-      const accuracy = 0;
+    it('敏捷性が低いと命中率が下がる', () => {
+      const agility = 0;
       const skillAccuracy = 90;
 
-      const hitRate = BattleCalculator.calculateHitRate(accuracy, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
 
       // 90 + (0 / 10) = 90
       // 90 × (90 / 100) = 81
@@ -95,20 +95,20 @@ describe('BattleCalculator', () => {
     });
 
     it('最大命中率は99%', () => {
-      const accuracy = 500;
+      const agility = 500;
       const skillAccuracy = 100;
 
-      const hitRate = BattleCalculator.calculateHitRate(accuracy, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
 
       // 基本命中率が99%を超えても99%に制限
       expect(hitRate).toBe(99);
     });
 
     it('最小命中率は50%', () => {
-      const accuracy = -1000;
+      const agility = -1000;
       const skillAccuracy = 50;
 
-      const hitRate = BattleCalculator.calculateHitRate(accuracy, skillAccuracy);
+      const hitRate = BattleCalculator.calculateHitRate(agility, skillAccuracy);
 
       // 基本命中率が50%未満でも50%に制限
       // 50 × (50 / 100) = 25
@@ -118,45 +118,45 @@ describe('BattleCalculator', () => {
 
   describe('回避率計算', () => {
     it('基本的な回避率計算ができる', () => {
-      const speed = 100;
+      const agility = 100;
 
-      const evadeRate = BattleCalculator.calculateEvadeRate(speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(agility);
 
-      // 基本回避率 = 5 + (速度 / 20) = 5 + (100 / 20) = 10
+      // 基本回避率 = 5 + (敏捷性 / 20) = 5 + (100 / 20) = 10
       expect(evadeRate).toBe(10);
     });
 
-    it('速度が高いと回避率が上がる', () => {
-      const speed = 200;
+    it('敏捷性が高いと回避率が上がる', () => {
+      const agility = 200;
 
-      const evadeRate = BattleCalculator.calculateEvadeRate(speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(agility);
 
       // 5 + (200 / 20) = 5 + 10 = 15
       expect(evadeRate).toBe(15);
     });
 
     it('最大回避率は30%', () => {
-      const speed = 1000;
+      const agility = 1000;
 
-      const evadeRate = BattleCalculator.calculateEvadeRate(speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(agility);
 
       // 5 + (1000 / 20) = 55 → 30（最大値）
       expect(evadeRate).toBe(30);
     });
 
     it('最小回避率は5%', () => {
-      const speed = 0;
+      const agility = 0;
 
-      const evadeRate = BattleCalculator.calculateEvadeRate(speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(agility);
 
       // 5 + (0 / 20) = 5
       expect(evadeRate).toBe(5);
     });
 
-    it('速度が負の値でも最小回避率は5%', () => {
-      const speed = -100;
+    it('敏捷性が負の値でも最小回避率は5%', () => {
+      const agility = -100;
 
-      const evadeRate = BattleCalculator.calculateEvadeRate(speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(agility);
 
       expect(evadeRate).toBe(5);
     });
@@ -208,41 +208,23 @@ describe('BattleCalculator', () => {
     });
   });
 
-  describe('タイピングボーナス計算', () => {
-    it('速度ボーナスを計算できる', () => {
-      const speed = 100;
+  describe('敏捷性ボーナス計算', () => {
+    it('敏捷性ボーナスを計算できる', () => {
+      const agility = 100;
 
-      const speedBonus = BattleCalculator.calculateSpeedBonus(speed);
+      const agilityBonus = BattleCalculator.calculateAgilityBonus(agility);
 
-      // 速度ボーナス = 1.0 + (速度 / 200) = 1.0 + (100 / 200) = 1.5
-      expect(speedBonus).toBe(1.5);
+      // 敏捷性ボーナス = 1.0 + (敏捷性 / 200) = 1.0 + (100 / 200) = 1.5
+      expect(agilityBonus).toBe(1.5);
     });
 
-    it('速度が高いとボーナスが増える', () => {
-      const speed = 200;
+    it('敏捷性が高いとボーナスが増える', () => {
+      const agility = 200;
 
-      const speedBonus = BattleCalculator.calculateSpeedBonus(speed);
+      const agilityBonus = BattleCalculator.calculateAgilityBonus(agility);
 
       // 1.0 + (200 / 200) = 2.0
-      expect(speedBonus).toBe(2.0);
-    });
-
-    it('精度ボーナスを計算できる', () => {
-      const accuracy = 100;
-
-      const accuracyBonus = BattleCalculator.calculateAccuracyBonus(accuracy);
-
-      // 精度ボーナス = 1.0 + (精度 / 200) = 1.0 + (100 / 200) = 1.5
-      expect(accuracyBonus).toBe(1.5);
-    });
-
-    it('精度が高いとボーナスが増える', () => {
-      const accuracy = 200;
-
-      const accuracyBonus = BattleCalculator.calculateAccuracyBonus(accuracy);
-
-      // 1.0 + (200 / 200) = 2.0
-      expect(accuracyBonus).toBe(2.0);
+      expect(agilityBonus).toBe(2.0);
     });
   });
 
@@ -293,16 +275,14 @@ describe('BattleCalculator', () => {
     const playerStats = {
       attack: 50,
       defense: 30,
-      speed: 40,
-      accuracy: 60,
+      agility: 100,
       fortune: 80,
     };
 
     const enemyStats = {
       attack: 40,
       defense: 25,
-      speed: 35,
-      accuracy: 70,
+      agility: 105,
       fortune: 50,
     };
 
@@ -323,51 +303,50 @@ describe('BattleCalculator', () => {
     });
 
     it('プレイヤーの命中率を計算できる', () => {
-      const hitRate = BattleCalculator.calculateHitRate(playerStats.accuracy, 85);
+      const hitRate = BattleCalculator.calculateHitRate(playerStats.agility, 85);
 
-      // 精度60で基本命中率 = 90 + (60 / 10) = 96
-      // 96 × (85 / 100) = 81.6
-      expect(hitRate).toBe(81.6);
+      // 敏捷性100で基本命中率 = 90 + (100 / 10) = 100 → 99(最大値)
+      // 99 × (85 / 100) = 84.15
+      expect(hitRate).toBeCloseTo(84.15, 2);
     });
 
     it('敵の回避率を計算できる', () => {
-      const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
 
-      // 速度35で回避率 = 5 + (35 / 20) = 5 + 1.75 = 6.75
-      expect(evadeRate).toBe(6.75);
+      // 敏捷性105で回避率 = 5 + (105 / 20) = 5 + 5.25 = 10.25
+      expect(evadeRate).toBe(10.25);
     });
   });
 
   describe('タイピングボーナス計算', () => {
     const baseHitRate = 80;
     const baseCriticalRate = 10;
-    const playerSpeed = 50;
-    const playerAccuracy = 60;
+    const playerAgility = 50;
 
     describe('タイピング速度ボーナス', () => {
       it('速度評価Sで最大ボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'S');
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'S');
 
         // 80 × (1.0 + 50/200) × 1.5 = 80 × 1.25 × 1.5 = 150（最大99%）
         expect(result).toBe(99);
       });
 
       it('速度評価Aでボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'A');
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'A');
 
         // 80 × (1.0 + 50/200) × 1.2 = 80 × 1.25 × 1.2 = 120（最大99%で制限）
         expect(result).toBe(99);
       });
 
       it('速度評価Bで標準倍率を適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'B');
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'B');
 
         // 80 × (1.0 + 50/200) × 1.0 = 80 × 1.25 × 1.0 = 100（最大99%で制限）
         expect(result).toBe(99);
       });
 
       it('速度評価Fでペナルティを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'F');
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'F');
 
         // 80 × (1.0 + 50/200) × 0.7 = 80 × 1.25 × 0.7 = 70
         expect(result).toBe(70);
@@ -378,34 +357,34 @@ describe('BattleCalculator', () => {
       it('精度評価Perfectで最大ボーナスを適用', () => {
         const result = BattleCalculator.calculateTypingAccuracyBonus(
           baseCriticalRate,
-          playerAccuracy,
+          playerAgility,
           'Perfect'
         );
 
-        // 10 × (1.0 + 60/200) × 2.0 = 10 × 1.3 × 2.0 = 26
-        expect(result).toBe(26);
+        // 10 × (1.0 + 50/200) × 2.0 = 10 × 1.25 × 2.0 = 25
+        expect(result).toBe(25);
       });
 
       it('精度評価Greatでボーナスを適用', () => {
         const result = BattleCalculator.calculateTypingAccuracyBonus(
           baseCriticalRate,
-          playerAccuracy,
+          playerAgility,
           'Great'
         );
 
-        // 10 × (1.0 + 60/200) × 1.5 = 10 × 1.3 × 1.5 = 19.5 → 19.5
-        expect(result).toBeCloseTo(19.5, 5);
+        // 10 × (1.0 + 50/200) × 1.5 = 10 × 1.25 × 1.5 = 18.75
+        expect(result).toBeCloseTo(18.75, 5);
       });
 
       it('精度評価Poorでペナルティを適用', () => {
         const result = BattleCalculator.calculateTypingAccuracyBonus(
           baseCriticalRate,
-          playerAccuracy,
+          playerAgility,
           'Poor'
         );
 
-        // 10 × (1.0 + 60/200) × 0.8 = 10 × 1.3 × 0.8 = 10.4
-        expect(result).toBeCloseTo(10.4, 5);
+        // 10 × (1.0 + 50/200) × 0.8 = 10 × 1.25 × 0.8 = 10.0
+        expect(result).toBeCloseTo(10.0, 5);
       });
 
       it('クリティカル率の上限50%を超えない', () => {

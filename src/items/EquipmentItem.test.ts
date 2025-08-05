@@ -40,11 +40,10 @@ describe('EquipmentItem', () => {
     stats: {
       attack: 10,
       defense: 0,
-      speed: 5,
-      accuracy: 0,
+      agility: 5,
       fortune: 0,
     },
-    grade: 15, // 10+0+5+0+0=15
+    grade: 15, // 10+0+5+0=15
     skill: sampleSkill,
   };
 
@@ -65,7 +64,7 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           grade: 0,
-          stats: { attack: 0, defense: 0, speed: 0, accuracy: 0, fortune: 0 }, // グレード0と一致
+          stats: { attack: 0, defense: 0, agility: 0, fortune: 0 }, // グレード0と一致
         });
       }).toThrow('Grade must be between 1 and 100');
 
@@ -73,7 +72,7 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           grade: 101,
-          stats: { attack: 101, defense: 0, speed: 0, accuracy: 0, fortune: 0 }, // グレード101と一致
+          stats: { attack: 101, defense: 0, agility: 0, fortune: 0 }, // グレード101と一致
         });
       }).toThrow('Grade must be between 1 and 100');
     });
@@ -85,11 +84,10 @@ describe('EquipmentItem', () => {
           stats: {
             attack: 5,
             defense: 3,
-            speed: 2,
-            accuracy: 4,
+            agility: 6,
             fortune: 1,
           },
-          grade: 15, // 5+3+2+4+1=15
+          grade: 15, // 5+3+6+1=15
         });
       }).not.toThrow();
     });
@@ -101,13 +99,12 @@ describe('EquipmentItem', () => {
           stats: {
             attack: 5,
             defense: 3,
-            speed: 2,
-            accuracy: 4,
+            agility: 6,
             fortune: 1,
           },
-          grade: 10, // 5+3+2+4+1=15だが、gradeは10
+          grade: 10, // 5+3+6+1=15だが、gradeは10
         });
-      }).toThrow('Grade must equal sum of stats (attack + defense + speed + accuracy + fortune)');
+      }).toThrow('Grade must equal sum of stats (attack + defense + agility + fortune)');
     });
 
     it('ステータスがundefinedの場合でも適切なgradeが指定されればエラーを投げない', () => {
@@ -120,11 +117,10 @@ describe('EquipmentItem', () => {
           stats: {
             attack: 1,
             defense: 0,
-            speed: 0,
-            accuracy: 0,
+            agility: 0,
             fortune: 0,
           },
-          grade: 1, // 1+0+0+0+0=1
+          grade: 1, // 1+0+0+0=1
         });
       }).not.toThrow();
     });
@@ -146,8 +142,7 @@ describe('EquipmentItem', () => {
 
       expect(stats.attack).toBe(10);
       expect(stats.defense).toBe(0);
-      expect(stats.speed).toBe(5);
-      expect(stats.accuracy).toBe(0);
+      expect(stats.agility).toBe(5);
       expect(stats.fortune).toBe(0);
     });
   });
@@ -224,8 +219,7 @@ describe('EquipmentItem', () => {
         stats: {
           attack: 8,
           defense: 2,
-          speed: 5,
-          accuracy: 0,
+          agility: 5,
           fortune: 0,
         },
         grade: 15, // 8+2+5+0+0=15
@@ -241,8 +235,7 @@ describe('EquipmentItem', () => {
         stats: {
           attack: 12,
           defense: 1,
-          speed: 2,
-          accuracy: 0,
+          agility: 2,
           fortune: 0,
         },
         grade: 15, // 12+1+2+0+0=15
@@ -290,8 +283,7 @@ describe('EquipmentItem', () => {
         stats: {
           attack: 10,
           defense: 0,
-          speed: 5,
-          accuracy: 0,
+          agility: 5,
           fortune: 0,
         },
         grade: 15,
@@ -311,8 +303,7 @@ describe('EquipmentItem', () => {
         stats: {
           attack: 10,
           defense: 0,
-          speed: 5,
-          accuracy: 0,
+          agility: 5,
           fortune: 0,
         },
         grade: 15,
@@ -378,8 +369,7 @@ describe('EquipmentItem', () => {
       const stats: EquipmentStats = {
         attack: 10,
         defense: 5,
-        speed: 8,
-        accuracy: 3,
+        agility: 8,
         fortune: 2,
       };
 
@@ -390,8 +380,7 @@ describe('EquipmentItem', () => {
       const stats = {
         attack: 10,
         defense: 5,
-        // speed missing
-        accuracy: 3,
+        // agility missing
         fortune: 2,
       } as any;
 
@@ -402,8 +391,7 @@ describe('EquipmentItem', () => {
       const stats = {
         attack: '10',
         defense: 5,
-        speed: 8,
-        accuracy: 3,
+        agility: 8,
         fortune: 2,
       } as any;
 

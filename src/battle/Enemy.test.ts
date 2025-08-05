@@ -14,8 +14,7 @@ describe('Enemy', () => {
           maxMp: 10,
           attack: 10,
           defense: 5,
-          speed: 8,
-          accuracy: 70,
+          agility: 78,
           fortune: 5,
         },
       });
@@ -38,8 +37,7 @@ describe('Enemy', () => {
             maxMp: 10,
             attack: 10,
             defense: 5,
-            speed: 8,
-            accuracy: 70,
+            agility: 78,
             fortune: 5,
           },
         });
@@ -61,8 +59,7 @@ describe('Enemy', () => {
           maxMp: 20,
           attack: 15,
           defense: 8,
-          speed: 12,
-          accuracy: 75,
+          agility: 87,
           fortune: 10,
         },
       });
@@ -78,8 +75,7 @@ describe('Enemy', () => {
     it('各ステータスを取得できる', () => {
       expect(enemy.stats.attack).toBe(15);
       expect(enemy.stats.defense).toBe(8);
-      expect(enemy.stats.speed).toBe(12);
-      expect(enemy.stats.accuracy).toBe(75);
+      expect(enemy.stats.agility).toBe(87);
       expect(enemy.stats.fortune).toBe(10);
     });
 
@@ -105,8 +101,7 @@ describe('Enemy', () => {
           maxMp: 30,
           attack: 20,
           defense: 10,
-          speed: 15,
-          accuracy: 80,
+          agility: 95,
           fortune: 12,
         },
       });
@@ -207,8 +202,7 @@ describe('Enemy', () => {
           maxMp: 50,
           attack: 35,
           defense: 20,
-          speed: 18,
-          accuracy: 85,
+          agility: 103,
           fortune: 15,
         },
         skills: [mockSkill1, mockSkill2],
@@ -245,8 +239,7 @@ describe('Enemy', () => {
           maxMp: 5,
           attack: 5,
           defense: 2,
-          speed: 5,
-          accuracy: 60,
+          agility: 65,
           fortune: 3,
         },
       });
@@ -276,8 +269,7 @@ describe('Enemy', () => {
           maxMp: 0,
           attack: 1,
           defense: 1,
-          speed: 1,
-          accuracy: 50,
+          agility: 51,
           fortune: 1,
         },
       });
@@ -298,8 +290,7 @@ describe('Enemy', () => {
           maxMp: 20,
           attack: 12,
           defense: 8,
-          speed: 20,
-          accuracy: 70,
+          agility: 90,
           fortune: 30,
         },
         drops: [
@@ -324,8 +315,7 @@ describe('Enemy', () => {
           maxMp: 30,
           attack: 8,
           defense: 3,
-          speed: 15,
-          accuracy: 90,
+          agility: 105,
           fortune: 5,
         },
       });
@@ -345,8 +335,7 @@ describe('Enemy', () => {
             maxMp: 5,
             attack: 5,
             defense: 2,
-            speed: 5,
-            accuracy: 60,
+            agility: 65,
             fortune: 3,
           },
           drops: [{ itemId: 'item', dropRate: 101 }],
@@ -364,8 +353,7 @@ describe('Enemy', () => {
             maxMp: 5,
             attack: 5,
             defense: 2,
-            speed: 5,
-            accuracy: 60,
+            agility: 65,
             fortune: 3,
           },
           drops: [{ itemId: 'item', dropRate: -1 }],
@@ -386,8 +374,7 @@ describe('Enemy', () => {
           maxMp: 25,
           attack: 28,
           defense: 15,
-          speed: 10,
-          accuracy: 75,
+          agility: 85,
           fortune: 8,
         },
         skills: [
@@ -420,8 +407,7 @@ describe('Enemy', () => {
           maxMp: 25,
           attack: 28,
           defense: 15,
-          speed: 10,
-          accuracy: 75,
+          agility: 85,
           fortune: 8,
         },
         currentHp: 150,
@@ -454,8 +440,7 @@ describe('Enemy', () => {
           maxMp: 15,
           attack: 18,
           defense: 12,
-          speed: 8,
-          accuracy: 70,
+          agility: 78,
           fortune: 3,
         },
         currentHp: 80,

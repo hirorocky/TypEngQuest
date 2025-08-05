@@ -40,8 +40,7 @@ export class StatusCommand extends BaseCommand {
       // ステータス情報
       const attack = stats.getAttack();
       const defense = stats.getDefense();
-      const speed = stats.getSpeed();
-      const accuracy = stats.getAccuracy();
+      const agility = stats.getAgility();
       const fortune = stats.getFortune();
 
       // HP/MPバーを生成
@@ -58,8 +57,7 @@ export class StatusCommand extends BaseCommand {
         '',
         `Attack: ${attack}`,
         `Defense: ${defense}`,
-        `Speed: ${speed}`,
-        `Accuracy: ${accuracy}`,
+        `Agility: ${agility}`,
         `Fortune: ${fortune}`,
       ].join('\n');
 

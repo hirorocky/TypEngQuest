@@ -33,8 +33,7 @@ describe('Battle', () => {
         maxMp: 30,
         attack: 20,
         defense: 10,
-        speed: 15,
-        accuracy: 75,
+        agility: 90,
         fortune: 10,
       },
       skills: [mockSkill],
@@ -89,8 +88,7 @@ describe('Battle', () => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
         attack: 10,
         defense: 10,
-        speed: 20, // 敵より速い
-        accuracy: 10,
+        agility: 100, // 敵より速い
         fortune: 10,
       });
 
@@ -102,8 +100,7 @@ describe('Battle', () => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
         attack: 10,
         defense: 10,
-        speed: 15, // 敵と同じ速度
-        accuracy: 10,
+        agility: 90, // 敵と同じ速度
         fortune: 10,
       });
 
@@ -140,8 +137,7 @@ describe('Battle', () => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
         attack: 30,
         defense: 10,
-        speed: 20,
-        accuracy: 100,
+        agility: 120,
         fortune: 10,
       });
 
@@ -292,8 +288,7 @@ describe('Battle', () => {
           maxMp: 10,
           attack: 15,
           defense: 8,
-          speed: 10,
-          accuracy: 70,
+          agility: 80,
           fortune: 5,
         },
         drops: [
@@ -310,8 +305,7 @@ describe('Battle', () => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
         attack: 10,
         defense: 10,
-        speed: 10,
-        accuracy: 10,
+        agility: 20,
         fortune: 50,
       });
 
@@ -362,8 +356,7 @@ describe('Battle', () => {
           maxMp: 20,
           attack: 15,
           defense: 10,
-          speed: 20,
-          accuracy: 70,
+          agility: 90,
           fortune: 30,
         },
         skills: [],

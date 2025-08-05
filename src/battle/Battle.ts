@@ -119,14 +119,14 @@ export class Battle {
    */
   getCurrentTurnActor(): 'player' | 'enemy' {
     const playerStats = this.player.getTotalStats();
-    const enemySpeed = this.enemy.stats.speed;
+    const enemyAgility = this.enemy.stats.agility;
 
-    if (playerStats.speed > enemySpeed) {
+    if (playerStats.agility > enemyAgility) {
       return 'player';
-    } else if (playerStats.speed < enemySpeed) {
+    } else if (playerStats.agility < enemyAgility) {
       return 'enemy';
     } else {
-      // 速度が同じ場合はランダム
+      // 敏捷性が同じ場合はランダム
       return Math.random() < 0.5 ? 'player' : 'enemy';
     }
   }
@@ -143,7 +143,7 @@ export class Battle {
 
     // 命中判定
     const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
-    const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.speed);
+    const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
       return {
@@ -186,12 +186,12 @@ export class Battle {
     skill: Skill,
     typingResult?: TypingResult
   ): number {
-    let hitRate = BattleCalculator.calculateHitRate(playerStats.accuracy, skill.accuracy);
+    let hitRate = BattleCalculator.calculateHitRate(playerStats.agility, skill.accuracy);
 
     if (typingResult?.isSuccess) {
       hitRate = BattleCalculator.calculateTypingSpeedBonus(
         hitRate,
-        playerStats.speed,
+        playerStats.agility,
         typingResult.speedRating
       );
     }
@@ -208,7 +208,7 @@ export class Battle {
     if (typingResult?.isSuccess) {
       criticalRate = BattleCalculator.calculateTypingAccuracyBonus(
         criticalRate,
-        playerStats.accuracy,
+        playerStats.agility,
         typingResult.accuracyRating
       );
     }
@@ -261,11 +261,8 @@ export class Battle {
       const enemyStats = this.enemy.stats;
 
       // 命中判定
-      const hitRate = BattleCalculator.calculateHitRate(
-        enemyStats.accuracy,
-        selectedSkill.accuracy
-      );
-      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.speed);
+      const hitRate = BattleCalculator.calculateHitRate(enemyStats.agility, selectedSkill.accuracy);
+      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
       if (!BattleCalculator.isHit(hitRate, evadeRate)) {
         return {
@@ -307,10 +304,10 @@ export class Battle {
 
       // 命中判定（通常攻撃は命中率90%）
       const hitRate = BattleCalculator.calculateHitRate(
-        enemyStats.accuracy,
+        enemyStats.agility,
         Battle.NORMAL_ATTACK_ACCURACY
       );
-      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.speed);
+      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
       if (!BattleCalculator.isHit(hitRate, evadeRate)) {
         return {

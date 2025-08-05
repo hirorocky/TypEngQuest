@@ -462,8 +462,7 @@ export class ItemEquipmentPhase extends Phase {
 
     if (stats.attack > 0) parts.push(`ATK+${stats.attack}`);
     if (stats.defense > 0) parts.push(`DEF+${stats.defense}`);
-    if (stats.speed !== 0) parts.push(`SPD${stats.speed >= 0 ? '+' : ''}${stats.speed}`);
-    if (stats.accuracy > 0) parts.push(`ACC+${stats.accuracy}`);
+    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
     if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
 
     return parts.join(', ') || 'No bonus';
@@ -477,8 +476,7 @@ export class ItemEquipmentPhase extends Phase {
 
     if (stats.attack > 0) parts.push(`ATK+${stats.attack}`);
     if (stats.defense > 0) parts.push(`DEF+${stats.defense}`);
-    if (stats.speed !== 0) parts.push(`SPD${stats.speed >= 0 ? '+' : ''}${stats.speed}`);
-    if (stats.accuracy > 0) parts.push(`ACC+${stats.accuracy}`);
+    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
     if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
 
     return parts.join(', ') || 'No bonus';

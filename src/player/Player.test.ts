@@ -59,22 +59,19 @@ describe('Player', () => {
           currentMP: 50,
           baseAttack: 10,
           baseDefense: 10,
-          baseSpeed: 10,
-          baseAccuracy: 10,
+          baseAgility: 10,
           baseFortune: 10,
           temporaryBoosts: {
             attack: 0,
             defense: 0,
-            speed: 0,
-            accuracy: 0,
+            agility: 0,
             fortune: 0,
           },
         }),
         equipmentStats: expect.objectContaining({
           attack: 0,
           defense: 0,
-          speed: 0,
-          accuracy: 0,
+          agility: 0,
           fortune: 0,
         }),
         inventory: expect.objectContaining({
@@ -94,14 +91,12 @@ describe('Player', () => {
           currentMP: 90,
           baseAttack: 15,
           baseDefense: 12,
-          baseSpeed: 10,
-          baseAccuracy: 10,
+          baseAgility: 10,
           baseFortune: 10,
           temporaryBoosts: {
             attack: 0,
             defense: 0,
-            speed: 0,
-            accuracy: 0,
+            agility: 0,
             fortune: 0,
           },
           temporaryStatuses: [],
@@ -109,8 +104,7 @@ describe('Player', () => {
         equipmentStats: {
           attack: 0,
           defense: 0,
-          speed: 0,
-          accuracy: 0,
+          agility: 0,
           fortune: 0,
         },
         inventory: {
@@ -201,11 +195,10 @@ describe('Player', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
-        grade: 15, // 10+2+3+0+0=15
+        grade: 15, // 10+2+3+0=15
       };
 
       const equipment2Data: EquipmentItemData = {
@@ -217,11 +210,10 @@ describe('Player', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 3,
           fortune: 1,
         },
-        grade: 12, // 0+8+1+2+1=12
+        grade: 12, // 0+8+3+1=12
       };
 
       const equipment1 = new EquipmentItem(equipment1Data);
@@ -242,7 +234,7 @@ describe('Player', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 0, agility: 0, fortune: 0 },
           grade: 1,
         },
         {
@@ -251,7 +243,7 @@ describe('Player', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 1, agility: 0, fortune: 0 },
           grade: 2,
         },
         {
@@ -260,7 +252,7 @@ describe('Player', () => {
           description: 'Item 3',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 1, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 1, agility: 1, fortune: 0 },
           grade: 3,
         },
       ];
@@ -283,8 +275,7 @@ describe('Player', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -305,8 +296,7 @@ describe('Player', () => {
 
       expect(stats.attack).toBe(0);
       expect(stats.defense).toBe(0);
-      expect(stats.speed).toBe(0);
-      expect(stats.accuracy).toBe(0);
+      expect(stats.agility).toBe(0);
       expect(stats.fortune).toBe(0);
     });
 
@@ -322,8 +312,7 @@ describe('Player', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -338,8 +327,7 @@ describe('Player', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 3,
           fortune: 1,
         },
         grade: 12,
@@ -354,8 +342,7 @@ describe('Player', () => {
 
       expect(stats.attack).toBe(10); // 10+0
       expect(stats.defense).toBe(10); // 2+8
-      expect(stats.speed).toBe(4); // 3+1
-      expect(stats.accuracy).toBe(2); // 0+2
+      expect(stats.agility).toBe(6); // 3+3
       expect(stats.fortune).toBe(1); // 0+1
     });
   });
@@ -381,8 +368,7 @@ describe('Player', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -443,7 +429,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -457,10 +443,7 @@ describe('Player', () => {
         // Body(10) + Equipment(15) = Total(25)
         expect(totalStats.attack).toBe(bodyStats.getBaseAttack() + equipmentStats.getAttack());
         expect(totalStats.defense).toBe(bodyStats.getBaseDefense() + equipmentStats.getDefense());
-        expect(totalStats.speed).toBe(bodyStats.getBaseSpeed() + equipmentStats.getSpeed());
-        expect(totalStats.accuracy).toBe(
-          bodyStats.getBaseAccuracy() + equipmentStats.getAccuracy()
-        );
+        expect(totalStats.agility).toBe(bodyStats.getBaseAgility() + equipmentStats.getAgility());
         expect(totalStats.fortune).toBe(bodyStats.getBaseFortune() + equipmentStats.getFortune());
       });
 
@@ -473,7 +456,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -483,7 +466,7 @@ describe('Player', () => {
           description: 'A test shield',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 12, speed: -2, accuracy: 1, fortune: 2 },
+          stats: { attack: 0, defense: 12, agility: -1, fortune: 2 },
           grade: 13, // 0 + 12 + (-2) + 1 + 2 = 13
         });
 
@@ -499,7 +482,7 @@ describe('Player', () => {
         player.equipToSlot(1, shield);
         expect(player.getEquipmentStats().getAttack()).toBe(15); // 剣のまま
         expect(player.getEquipmentStats().getDefense()).toBe(14); // 2 + 12
-        expect(player.getEquipmentStats().getSpeed()).toBe(-1); // 1 + (-2)
+        expect(player.getEquipmentStats().getAgility()).toBe(3); // 4 + (-1)
       });
 
       test('装備解除時にEquipmentStatsが更新される', () => {
@@ -511,7 +494,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -549,7 +532,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -562,8 +545,7 @@ describe('Player', () => {
         // 従来のgetStats()は総合ステータスと同じ値を返すべき
         expect(stats.getAttack()).toBe(totalStats.attack);
         expect(stats.getDefense()).toBe(totalStats.defense);
-        expect(stats.getSpeed()).toBe(totalStats.speed);
-        expect(stats.getAccuracy()).toBe(totalStats.accuracy);
+        expect(stats.getAgility()).toBe(totalStats.agility);
         expect(stats.getFortune()).toBe(totalStats.fortune);
 
         // HP/MPはBodyStatsから取得
@@ -584,7 +566,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -610,7 +592,7 @@ describe('Player', () => {
           description: 'A test sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 15, defense: 2, speed: 1, accuracy: 3, fortune: 0 },
+          stats: { attack: 15, defense: 2, agility: 4, fortune: 0 },
           grade: 21, // 15 + 2 + 1 + 3 + 0 = 21
         });
 
@@ -634,14 +616,12 @@ describe('Player', () => {
             currentMP: 60,
             baseAttack: 12,
             baseDefense: 8,
-            baseSpeed: 10,
-            baseAccuracy: 11,
+            baseAgility: 21,
             baseFortune: 9,
             temporaryBoosts: {
               attack: 0,
               defense: 0,
-              speed: 0,
-              accuracy: 0,
+              agility: 0,
               fortune: 0,
             },
             temporaryStatuses: [],
@@ -649,8 +629,7 @@ describe('Player', () => {
           equipmentStats: {
             attack: 20,
             defense: 5,
-            speed: 3,
-            accuracy: 8,
+            agility: 11,
             fortune: 2,
           },
           inventory: {

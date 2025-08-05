@@ -10,16 +10,14 @@ export type TemporaryStatusName =
   // Buffs
   | 'Attack Up'
   | 'Defense Up'
-  | 'Speed Up'
-  | 'Accuracy Up'
+  | 'Agility Up'
   | 'Fortune Up'
   | 'All Stats Up'
   | 'Regeneration'
   // Debuffs
   | 'Attack Down'
   | 'Defense Down'
-  | 'Speed Down'
-  | 'Accuracy Down'
+  | 'Agility Down'
   | 'Fortune Down'
   | 'All Stats Down'
   // Status Ailments
@@ -38,10 +36,8 @@ export interface TemporaryStatusEffects {
   attack?: number;
   /** 防御力増減値 */
   defense?: number;
-  /** 速度増減値 */
-  speed?: number;
-  /** 命中率増減値 */
-  accuracy?: number;
+  /** 敏捷性増減値 */
+  agility?: number;
   /** 幸運増減値 */
   fortune?: number;
   /** 毎ターンのHP増減（毒などで使用） */
@@ -84,15 +80,7 @@ export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffect
   }
 
   // 数値プロパティのチェック
-  const numberProps = [
-    'attack',
-    'defense',
-    'speed',
-    'accuracy',
-    'fortune',
-    'hpPerTurn',
-    'mpPerTurn',
-  ];
+  const numberProps = ['attack', 'defense', 'agility', 'fortune', 'hpPerTurn', 'mpPerTurn'];
   for (const prop of numberProps) {
     if (obj[prop] !== undefined && typeof obj[prop] !== 'number') {
       return false;
@@ -116,15 +104,13 @@ export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffect
 const VALID_TEMPORARY_STATUS_NAMES: TemporaryStatusName[] = [
   'Attack Up',
   'Defense Up',
-  'Speed Up',
-  'Accuracy Up',
+  'Agility Up',
   'Fortune Up',
   'All Stats Up',
   'Regeneration',
   'Attack Down',
   'Defense Down',
-  'Speed Down',
-  'Accuracy Down',
+  'Agility Down',
   'Fortune Down',
   'All Stats Down',
   'Poison',
