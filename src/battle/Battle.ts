@@ -2,6 +2,7 @@ import { Player } from '../player/Player';
 import { Enemy } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
+import { TypingResult } from '../typing/types';
 
 /**
  * プレイヤーの技使用結果
@@ -133,14 +134,15 @@ export class Battle {
   /**
    * プレイヤーが技を使用する
    * @param skill 使用する技
+   * @param typingResult タイピング結果（オプション）
    * @returns 技の使用結果
    */
-  playerUseSkill(skill: Skill): PlayerSkillResult {
+  playerUseSkill(skill: Skill, typingResult?: TypingResult): PlayerSkillResult {
     const playerStats = this.player.getTotalStats();
     const enemyStats = this.enemy.stats;
 
     // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(playerStats.accuracy, skill.accuracy);
+    const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
     const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.speed);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
@@ -151,17 +153,19 @@ export class Battle {
       };
     }
 
-    // クリティカル判定
-    const criticalRate = BattleCalculator.calculateCriticalRate(playerStats.fortune);
+    // クリティカル判定とダメージ計算
+    const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
-    // ダメージ計算
-    const damage = BattleCalculator.calculateDamage(
+    let damage = BattleCalculator.calculateDamage(
       playerStats.attack,
       enemyStats.defense,
       skill.power,
       isCritical
     );
+
+    // タイピング効果倍率適用
+    damage = this.applyTypingEffectMultiplier(damage, typingResult);
 
     // ダメージを与える
     this.enemy.takeDamage(damage);
@@ -169,9 +173,79 @@ export class Battle {
     return {
       success: true,
       damage,
-      message: `${skill.name} dealt ${damage} damage!${isCritical ? ' Critical hit!' : ''}`,
+      message: this.generateSkillMessage(skill.name, damage, isCritical, typingResult),
       critical: isCritical,
     };
+  }
+
+  /**
+   * タイピング結果を考慮した命中率を計算する
+   */
+  private calculateEnhancedHitRate(
+    playerStats: any,
+    skill: Skill,
+    typingResult?: TypingResult
+  ): number {
+    let hitRate = BattleCalculator.calculateHitRate(playerStats.accuracy, skill.accuracy);
+
+    if (typingResult?.isSuccess) {
+      hitRate = BattleCalculator.calculateTypingSpeedBonus(
+        hitRate,
+        playerStats.speed,
+        typingResult.speedRating
+      );
+    }
+
+    return hitRate;
+  }
+
+  /**
+   * タイピング結果を考慮したクリティカル率を計算する
+   */
+  private calculateEnhancedCriticalRate(playerStats: any, typingResult?: TypingResult): number {
+    let criticalRate = BattleCalculator.calculateCriticalRate(playerStats.fortune);
+
+    if (typingResult?.isSuccess) {
+      criticalRate = BattleCalculator.calculateTypingAccuracyBonus(
+        criticalRate,
+        playerStats.accuracy,
+        typingResult.accuracyRating
+      );
+    }
+
+    return criticalRate;
+  }
+
+  /**
+   * タイピング効果倍率をダメージに適用する
+   */
+  private applyTypingEffectMultiplier(damage: number, typingResult?: TypingResult): number {
+    if (typingResult?.isSuccess) {
+      const effectMultiplier = BattleCalculator.calculateTypingEffectMultiplier(
+        typingResult.totalRating
+      );
+      return Math.floor(damage * effectMultiplier);
+    }
+    return damage;
+  }
+
+  /**
+   * スキル使用メッセージを生成する
+   */
+  private generateSkillMessage(
+    skillName: string,
+    damage: number,
+    isCritical: boolean,
+    typingResult?: TypingResult
+  ): string {
+    let message = `${skillName} dealt ${damage} damage!`;
+    if (isCritical) {
+      message += ' Critical hit!';
+    }
+    if (typingResult?.isSuccess && typingResult.totalRating > 100) {
+      message += ' Great typing!';
+    }
+    return message;
   }
 
   /**

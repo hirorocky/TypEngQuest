@@ -337,4 +337,110 @@ describe('BattleCalculator', () => {
       expect(evadeRate).toBe(6.75);
     });
   });
+
+  describe('タイピングボーナス計算', () => {
+    const baseHitRate = 80;
+    const baseCriticalRate = 10;
+    const playerSpeed = 50;
+    const playerAccuracy = 60;
+
+    describe('タイピング速度ボーナス', () => {
+      it('速度評価Sで最大ボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'S');
+
+        // 80 × (1.0 + 50/200) × 1.5 = 80 × 1.25 × 1.5 = 150（最大99%）
+        expect(result).toBe(99);
+      });
+
+      it('速度評価Aでボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'A');
+
+        // 80 × (1.0 + 50/200) × 1.2 = 80 × 1.25 × 1.2 = 120（最大99%で制限）
+        expect(result).toBe(99);
+      });
+
+      it('速度評価Bで標準倍率を適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'B');
+
+        // 80 × (1.0 + 50/200) × 1.0 = 80 × 1.25 × 1.0 = 100（最大99%で制限）
+        expect(result).toBe(99);
+      });
+
+      it('速度評価Fでペナルティを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerSpeed, 'F');
+
+        // 80 × (1.0 + 50/200) × 0.7 = 80 × 1.25 × 0.7 = 70
+        expect(result).toBe(70);
+      });
+    });
+
+    describe('タイピング精度ボーナス', () => {
+      it('精度評価Perfectで最大ボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingAccuracyBonus(
+          baseCriticalRate,
+          playerAccuracy,
+          'Perfect'
+        );
+
+        // 10 × (1.0 + 60/200) × 2.0 = 10 × 1.3 × 2.0 = 26
+        expect(result).toBe(26);
+      });
+
+      it('精度評価Greatでボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingAccuracyBonus(
+          baseCriticalRate,
+          playerAccuracy,
+          'Great'
+        );
+
+        // 10 × (1.0 + 60/200) × 1.5 = 10 × 1.3 × 1.5 = 19.5 → 19.5
+        expect(result).toBeCloseTo(19.5, 5);
+      });
+
+      it('精度評価Poorでペナルティを適用', () => {
+        const result = BattleCalculator.calculateTypingAccuracyBonus(
+          baseCriticalRate,
+          playerAccuracy,
+          'Poor'
+        );
+
+        // 10 × (1.0 + 60/200) × 0.8 = 10 × 1.3 × 0.8 = 10.4
+        expect(result).toBeCloseTo(10.4, 5);
+      });
+
+      it('クリティカル率の上限50%を超えない', () => {
+        const highBaseCriticalRate = 40;
+        const result = BattleCalculator.calculateTypingAccuracyBonus(
+          highBaseCriticalRate,
+          100, // 高い精度ステータス
+          'Perfect'
+        );
+
+        // 40 × (1.0 + 100/200) × 2.0 = 40 × 1.5 × 2.0 = 120 → 最大50%
+        expect(result).toBe(50);
+      });
+    });
+
+    describe('タイピング効果倍率', () => {
+      it('総合評価150%で1.5倍を返す', () => {
+        const result = BattleCalculator.calculateTypingEffectMultiplier(150);
+        expect(result).toBe(1.5);
+      });
+
+      it('総合評価120%で1.2倍を返す', () => {
+        const result = BattleCalculator.calculateTypingEffectMultiplier(120);
+        expect(result).toBe(1.2);
+      });
+
+      it('総合評価100%で1.0倍を返す', () => {
+        const result = BattleCalculator.calculateTypingEffectMultiplier(100);
+        expect(result).toBe(1.0);
+      });
+
+      it('総合評価80%で0.8倍を返す', () => {
+        const result = BattleCalculator.calculateTypingEffectMultiplier(80);
+        expect(result).toBe(0.8);
+      });
+    });
+  });
 });

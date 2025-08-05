@@ -1,3 +1,5 @@
+import { SpeedRating, AccuracyRating } from '../typing/types';
+
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
  */
@@ -153,5 +155,69 @@ export class BattleCalculator {
 
     const random = Math.random() * 100;
     return random < successRate;
+  }
+
+  /**
+   * タイピング速度に基づく命中率ボーナス計算
+   * @param baseHitRate 基本命中率
+   * @param playerSpeed プレイヤーの速度ステータス
+   * @param speedRating タイピング速度評価
+   * @returns ボーナス適用後の命中率
+   */
+  static calculateTypingSpeedBonus(
+    baseHitRate: number,
+    playerSpeed: number,
+    speedRating: SpeedRating
+  ): number {
+    // 速度ボーナス = 1.0 + (速度 / 200)
+    const speedBonus = 1.0 + playerSpeed / 200;
+
+    // タイピング速度による倍率
+    const speedMultiplier = {
+      S: 1.5, // 150%
+      A: 1.2, // 120%
+      B: 1.0, // 100%
+      C: 0.9, // 90%
+      F: 0.7, // 70%
+    }[speedRating];
+
+    const enhancedHitRate = baseHitRate * speedBonus * speedMultiplier;
+    return Math.min(99, enhancedHitRate); // 最大99%
+  }
+
+  /**
+   * タイピング精度に基づくクリティカル率ボーナス計算
+   * @param baseCriticalRate 基本クリティカル率
+   * @param playerAccuracy プレイヤーの精度ステータス
+   * @param accuracyRating タイピング精度評価
+   * @returns ボーナス適用後のクリティカル率
+   */
+  static calculateTypingAccuracyBonus(
+    baseCriticalRate: number,
+    playerAccuracy: number,
+    accuracyRating: AccuracyRating
+  ): number {
+    // 精度ボーナス = 1.0 + (精度 / 200)
+    const accuracyBonus = 1.0 + playerAccuracy / 200;
+
+    // タイピング精度による倍率
+    const accuracyMultiplier = {
+      Perfect: 2.0, // 200%
+      Great: 1.5, // 150%
+      Good: 1.2, // 120%
+      Poor: 0.8, // 80%
+    }[accuracyRating];
+
+    const enhancedCriticalRate = baseCriticalRate * accuracyBonus * accuracyMultiplier;
+    return Math.min(50, enhancedCriticalRate); // 最大50%
+  }
+
+  /**
+   * タイピング総合評価に基づく効果倍率計算
+   * @param totalRating タイピング総合評価（80, 100, 120, 150）
+   * @returns 効果倍率（0.8〜1.5）
+   */
+  static calculateTypingEffectMultiplier(totalRating: number): number {
+    return totalRating / 100;
   }
 }

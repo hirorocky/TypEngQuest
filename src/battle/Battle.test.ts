@@ -343,4 +343,128 @@ describe('Battle', () => {
       expect(drops).toHaveLength(0);
     });
   });
+
+  describe('タイピングボーナス機能', () => {
+    let battle: Battle;
+    let player: Player;
+    let enemy: Enemy;
+    let skill: Skill;
+
+    beforeEach(() => {
+      player = new Player('test');
+      enemy = new Enemy({
+        id: 'goblin',
+        name: 'Goblin',
+        description: 'A small goblin',
+        level: 1,
+        stats: {
+          maxHp: 50,
+          maxMp: 20,
+          attack: 15,
+          defense: 10,
+          speed: 20,
+          accuracy: 70,
+          fortune: 30,
+        },
+        skills: [],
+        drops: [],
+      });
+
+      skill = {
+        id: 'fireball',
+        name: 'Fireball',
+        description: 'A basic fire spell',
+        mpCost: 5,
+        power: 1.5,
+        accuracy: 90,
+        target: 'enemy',
+        element: 'fire',
+        typingDifficulty: 2,
+      };
+
+      battle = new Battle(player, enemy);
+    });
+
+    it('タイピング結果なしの場合は通常の計算', () => {
+      const result = battle.playerUseSkill(skill);
+      expect(result.success).toBe(true);
+    });
+
+    it('タイピング成功時に速度・精度・効果倍率ボーナスを適用', () => {
+      const typingResult = {
+        speedRating: 'S' as const,
+        accuracyRating: 'Perfect' as const,
+        totalRating: 150,
+        timeTaken: 1000,
+        accuracy: 100,
+        isSuccess: true,
+      };
+
+      // BattleCalculatorのメソッドをモック
+      const mockSpeedBonus = jest.spyOn(BattleCalculator, 'calculateTypingSpeedBonus');
+      const mockAccuracyBonus = jest.spyOn(BattleCalculator, 'calculateTypingAccuracyBonus');
+      const mockEffectMultiplier = jest.spyOn(BattleCalculator, 'calculateTypingEffectMultiplier');
+
+      mockSpeedBonus.mockReturnValue(95); // 高い命中率
+      mockAccuracyBonus.mockReturnValue(30); // 高いクリティカル率
+      mockEffectMultiplier.mockReturnValue(1.5); // 150%効果
+
+      const result = battle.playerUseSkill(skill, typingResult);
+
+      expect(mockSpeedBonus).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), 'S');
+      expect(mockAccuracyBonus).toHaveBeenCalledWith(
+        expect.any(Number),
+        expect.any(Number),
+        'Perfect'
+      );
+      expect(mockEffectMultiplier).toHaveBeenCalledWith(150);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Great typing!');
+
+      mockSpeedBonus.mockRestore();
+      mockAccuracyBonus.mockRestore();
+      mockEffectMultiplier.mockRestore();
+    });
+
+    it('タイピング失敗時はボーナスを適用しない', () => {
+      const typingResult = {
+        speedRating: 'F' as const,
+        accuracyRating: 'Poor' as const,
+        totalRating: 0,
+        timeTaken: 5000,
+        accuracy: 50,
+        isSuccess: false,
+      };
+
+      const mockSpeedBonus = jest.spyOn(BattleCalculator, 'calculateTypingSpeedBonus');
+      const mockAccuracyBonus = jest.spyOn(BattleCalculator, 'calculateTypingAccuracyBonus');
+      const mockEffectMultiplier = jest.spyOn(BattleCalculator, 'calculateTypingEffectMultiplier');
+
+      battle.playerUseSkill(skill, typingResult);
+
+      // タイピング失敗時はボーナスメソッドが呼ばれない
+      expect(mockSpeedBonus).not.toHaveBeenCalled();
+      expect(mockAccuracyBonus).not.toHaveBeenCalled();
+      expect(mockEffectMultiplier).not.toHaveBeenCalled();
+
+      mockSpeedBonus.mockRestore();
+      mockAccuracyBonus.mockRestore();
+      mockEffectMultiplier.mockRestore();
+    });
+
+    it('タイピング成功だが標準評価の場合はGreat typingメッセージを表示しない', () => {
+      const typingResult = {
+        speedRating: 'B' as const,
+        accuracyRating: 'Good' as const,
+        totalRating: 100, // 標準評価
+        timeTaken: 3000,
+        accuracy: 95,
+        isSuccess: true,
+      };
+
+      const result = battle.playerUseSkill(skill, typingResult);
+      expect(result.message).not.toContain('Great typing!');
+    });
+  });
 });
