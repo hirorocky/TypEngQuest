@@ -188,7 +188,6 @@ describe('Battle', () => {
       jest.spyOn(playerBodyStats, 'takeDamage');
 
       const result = battle.enemyAction();
-      expect(result.action).toBe('skill');
       expect(result.skillUsed).toBe(mockSkill);
       expect(result.damage).toBe(15);
       expect(result.message).toContain('Test Attack');
@@ -206,9 +205,9 @@ describe('Battle', () => {
       jest.spyOn(playerBodyStats, 'takeDamage');
 
       const result = battle.enemyAction();
-      expect(result.action).toBe('attack');
+      expect(result.skillUsed?.name).toBe('Attack');
       expect(result.damage).toBe(10);
-      expect(result.message).toContain('attacks');
+      expect(result.message).toContain('Attack');
     });
   });
 

@@ -18,8 +18,7 @@ export interface PlayerSkillResult {
  * 敵の行動結果
  */
 export interface EnemyActionResult {
-  action: 'skill' | 'attack';
-  skillUsed?: Skill;
+  skillUsed: Skill;
   damage: number;
   message: string;
   critical?: boolean;
@@ -50,6 +49,19 @@ export class Battle {
   // 戦闘で使用する定数
   private static readonly NORMAL_ATTACK_ACCURACY = 90;
   private static readonly NORMAL_ATTACK_POWER = 1.0;
+
+  // 通常攻撃用のデフォルトSkill
+  private static readonly NORMAL_ATTACK_SKILL: Skill = {
+    id: 'normal_attack',
+    name: 'Attack',
+    description: 'A basic attack',
+    mpCost: 0,
+    power: Battle.NORMAL_ATTACK_POWER,
+    accuracy: Battle.NORMAL_ATTACK_ACCURACY,
+    target: 'enemy',
+    element: 'physical',
+    typingDifficulty: 1,
+  };
 
   private player: Player;
   private enemy: Enemy;
@@ -253,83 +265,47 @@ export class Battle {
    * @returns 敵の行動結果
    */
   enemyAction(): EnemyActionResult {
-    const selectedSkill = this.enemy.selectSkill();
+    // 技を選択（なければ通常攻撃）
+    const selectedSkill = this.enemy.selectSkill() || Battle.NORMAL_ATTACK_SKILL;
 
-    if (selectedSkill) {
-      // 技を使用
-      const playerStats = this.player.getTotalStats();
-      const enemyStats = this.enemy.stats;
+    const playerStats = this.player.getTotalStats();
+    const enemyStats = this.enemy.stats;
 
-      // 命中判定
-      const hitRate = BattleCalculator.calculateHitRate(selectedSkill.accuracy);
-      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
+    // 命中判定
+    const hitRate = BattleCalculator.calculateHitRate(selectedSkill.accuracy);
+    const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
-      if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-        return {
-          action: 'skill',
-          skillUsed: selectedSkill,
-          damage: 0,
-          message: `${this.enemy.name} used ${selectedSkill.name} but missed!`,
-        };
-      }
-
-      // クリティカル判定
-      const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
-      const isCritical = BattleCalculator.isCritical(criticalRate);
-
-      // ダメージ計算
-      const damage = BattleCalculator.calculateDamage(
-        enemyStats.attack,
-        playerStats.defense,
-        selectedSkill.power,
-        isCritical
-      );
-
-      // ダメージを与える
-      this.player.getBodyStats().takeDamage(damage);
-
+    if (!BattleCalculator.isHit(hitRate, evadeRate)) {
       return {
-        action: 'skill',
         skillUsed: selectedSkill,
-        damage,
-        message: `${this.enemy.name} used ${selectedSkill.name} and dealt ${damage} damage!${
-          isCritical ? ' Critical hit!' : ''
-        }`,
-        critical: isCritical,
-      };
-    } else {
-      // 通常攻撃
-      const playerStats = this.player.getTotalStats();
-      const enemyStats = this.enemy.stats;
-
-      // 命中判定（通常攻撃は命中率90%）
-      const hitRate = BattleCalculator.calculateHitRate(Battle.NORMAL_ATTACK_ACCURACY);
-      const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
-
-      if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-        return {
-          action: 'attack',
-          damage: 0,
-          message: `${this.enemy.name} attacks but missed!`,
-        };
-      }
-
-      // ダメージ計算（通常攻撃は威力1.0）
-      const damage = BattleCalculator.calculateDamage(
-        enemyStats.attack,
-        playerStats.defense,
-        Battle.NORMAL_ATTACK_POWER
-      );
-
-      // ダメージを与える
-      this.player.getBodyStats().takeDamage(damage);
-
-      return {
-        action: 'attack',
-        damage,
-        message: `${this.enemy.name} attacks and deals ${damage} damage!`,
+        damage: 0,
+        message: `${this.enemy.name} used ${selectedSkill.name} but missed!`,
       };
     }
+
+    // クリティカル判定
+    const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
+    const isCritical = BattleCalculator.isCritical(criticalRate);
+
+    // ダメージ計算
+    const damage = BattleCalculator.calculateDamage(
+      enemyStats.attack,
+      playerStats.defense,
+      selectedSkill.power,
+      isCritical
+    );
+
+    // ダメージを与える
+    this.player.getBodyStats().takeDamage(damage);
+
+    return {
+      skillUsed: selectedSkill,
+      damage,
+      message: `${this.enemy.name} used ${selectedSkill.name} and dealt ${damage} damage!${
+        isCritical ? ' Critical hit!' : ''
+      }`,
+      critical: isCritical,
+    };
   }
 
   /**
