@@ -5,19 +5,19 @@ describe('TemporaryStatus', () => {
     test('TemporaryStatusオブジェクトの基本プロパティが正しく設定される', () => {
       const status: TemporaryStatus = {
         id: 'buff-attack-001',
-        name: 'Attack Up',
+        name: 'Strength Up',
         type: 'buff',
         effects: {
-          attack: 10,
+          strength: 10,
         },
         duration: 3,
         stackable: false,
       };
 
       expect(status.id).toBe('buff-attack-001');
-      expect(status.name).toBe('Attack Up');
+      expect(status.name).toBe('Strength Up');
       expect(status.type).toBe('buff');
-      expect(status.effects.attack).toBe(10);
+      expect(status.effects.strength).toBe(10);
       expect(status.duration).toBe(3);
       expect(status.stackable).toBe(false);
     });
@@ -28,8 +28,8 @@ describe('TemporaryStatus', () => {
         name: 'All Stats Up',
         type: 'buff',
         effects: {
-          attack: 5,
-          defense: 5,
+          strength: 5,
+          willpower: 5,
           agility: 6,
           fortune: 2,
         },
@@ -37,8 +37,8 @@ describe('TemporaryStatus', () => {
         stackable: true,
       };
 
-      expect(status.effects.attack).toBe(5);
-      expect(status.effects.defense).toBe(5);
+      expect(status.effects.strength).toBe(5);
+      expect(status.effects.willpower).toBe(5);
       expect(status.effects.agility).toBe(6);
       expect(status.effects.fortune).toBe(2);
       expect(status.stackable).toBe(true);
@@ -47,17 +47,17 @@ describe('TemporaryStatus', () => {
     test('デバフ効果が正しく定義される', () => {
       const status: TemporaryStatus = {
         id: 'debuff-attack-001',
-        name: 'Attack Down',
+        name: 'Strength Down',
         type: 'debuff',
         effects: {
-          attack: -5,
+          strength: -5,
         },
         duration: 2,
         stackable: false,
       };
 
       expect(status.type).toBe('debuff');
-      expect(status.effects.attack).toBe(-5);
+      expect(status.effects.strength).toBe(-5);
     });
 
     test('状態異常が正しく定義される', () => {
@@ -81,10 +81,10 @@ describe('TemporaryStatus', () => {
     test('永続効果（duration: -1）が正しく設定される', () => {
       const status: TemporaryStatus = {
         id: 'permanent-001',
-        name: 'Attack Up',
+        name: 'Strength Up',
         type: 'buff',
         effects: {
-          attack: 1,
+          strength: 1,
         },
         duration: -1,
         stackable: true,
@@ -101,8 +101,8 @@ describe('TemporaryStatus', () => {
         name: 'All Stats Up',
         type: 'buff',
         effects: {
-          attack: 1,
-          defense: 2,
+          strength: 1,
+          willpower: 2,
           agility: 7,
           fortune: 5,
           hpPerTurn: 1,
@@ -114,8 +114,8 @@ describe('TemporaryStatus', () => {
         stackable: false,
       };
 
-      expect(typeof status.effects.attack).toBe('number');
-      expect(typeof status.effects.defense).toBe('number');
+      expect(typeof status.effects.strength).toBe('number');
+      expect(typeof status.effects.willpower).toBe('number');
       expect(typeof status.effects.agility).toBe('number');
       expect(typeof status.effects.fortune).toBe('number');
       expect(typeof status.effects.hpPerTurn).toBe('number');
@@ -137,11 +137,11 @@ describe('TemporaryStatus', () => {
     test('TemporaryStatusがJSONに正しく変換される', () => {
       const status: TemporaryStatus = {
         id: 'test-serialize',
-        name: 'Attack Up',
+        name: 'Strength Up',
         type: 'buff',
         effects: {
-          attack: 10,
-          defense: 5,
+          strength: 10,
+          willpower: 5,
         },
         duration: 3,
         stackable: true,
@@ -151,10 +151,10 @@ describe('TemporaryStatus', () => {
       const parsed = JSON.parse(json);
 
       expect(parsed.id).toBe('test-serialize');
-      expect(parsed.name).toBe('Attack Up');
+      expect(parsed.name).toBe('Strength Up');
       expect(parsed.type).toBe('buff');
-      expect(parsed.effects.attack).toBe(10);
-      expect(parsed.effects.defense).toBe(5);
+      expect(parsed.effects.strength).toBe(10);
+      expect(parsed.effects.willpower).toBe(5);
       expect(parsed.duration).toBe(3);
       expect(parsed.stackable).toBe(true);
     });
@@ -200,8 +200,8 @@ describe('TemporaryStatus', () => {
       const parsed: TemporaryStatus = JSON.parse(json);
 
       expect(parsed.effects.hpPerTurn).toBe(-1);
-      expect(parsed.effects.attack).toBeUndefined();
-      expect(parsed.effects.defense).toBeUndefined();
+      expect(parsed.effects.strength).toBeUndefined();
+      expect(parsed.effects.willpower).toBeUndefined();
       expect(parsed.effects.cannotAct).toBeUndefined();
     });
   });

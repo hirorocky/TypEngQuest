@@ -12,8 +12,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 50,
           maxMp: 10,
-          attack: 10,
-          defense: 5,
+          strength: 10,
+          willpower: 5,
           agility: 78,
           fortune: 5,
         },
@@ -35,8 +35,8 @@ describe('Enemy', () => {
           stats: {
             maxHp: 50,
             maxMp: 10,
-            attack: 10,
-            defense: 5,
+            strength: 10,
+            willpower: 5,
             agility: 78,
             fortune: 5,
           },
@@ -57,8 +57,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 100,
           maxMp: 20,
-          attack: 15,
-          defense: 8,
+          strength: 15,
+          willpower: 8,
           agility: 87,
           fortune: 10,
         },
@@ -73,8 +73,8 @@ describe('Enemy', () => {
     });
 
     it('各ステータスを取得できる', () => {
-      expect(enemy.stats.attack).toBe(15);
-      expect(enemy.stats.defense).toBe(8);
+      expect(enemy.stats.strength).toBe(15);
+      expect(enemy.stats.willpower).toBe(8);
       expect(enemy.stats.agility).toBe(87);
       expect(enemy.stats.fortune).toBe(10);
     });
@@ -82,7 +82,7 @@ describe('Enemy', () => {
     it('ステータスは不変', () => {
       const stats = enemy.stats;
       expect(() => {
-        (stats as any).attack = 999;
+        (stats as any).strength = 999;
       }).toThrow();
     });
   });
@@ -99,8 +99,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 150,
           maxMp: 30,
-          attack: 20,
-          defense: 10,
+          strength: 20,
+          willpower: 10,
           agility: 95,
           fortune: 12,
         },
@@ -200,8 +200,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 300,
           maxMp: 50,
-          attack: 35,
-          defense: 20,
+          strength: 35,
+          willpower: 20,
           agility: 103,
           fortune: 15,
         },
@@ -237,8 +237,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 30,
           maxMp: 5,
-          attack: 5,
-          defense: 2,
+          strength: 5,
+          willpower: 2,
           agility: 65,
           fortune: 3,
         },
@@ -267,8 +267,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 10,
           maxMp: 0,
-          attack: 1,
-          defense: 1,
+          strength: 1,
+          willpower: 1,
           agility: 51,
           fortune: 1,
         },
@@ -288,8 +288,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 80,
           maxMp: 20,
-          attack: 12,
-          defense: 8,
+          strength: 12,
+          willpower: 8,
           agility: 90,
           fortune: 30,
         },
@@ -313,8 +313,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 60,
           maxMp: 30,
-          attack: 8,
-          defense: 3,
+          strength: 8,
+          willpower: 3,
           agility: 105,
           fortune: 5,
         },
@@ -333,8 +333,8 @@ describe('Enemy', () => {
           stats: {
             maxHp: 10,
             maxMp: 5,
-            attack: 5,
-            defense: 2,
+            strength: 5,
+            willpower: 2,
             agility: 65,
             fortune: 3,
           },
@@ -351,8 +351,8 @@ describe('Enemy', () => {
           stats: {
             maxHp: 10,
             maxMp: 5,
-            attack: 5,
-            defense: 2,
+            strength: 5,
+            willpower: 2,
             agility: 65,
             fortune: 3,
           },
@@ -372,8 +372,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 200,
           maxMp: 25,
-          attack: 28,
-          defense: 15,
+          strength: 28,
+          willpower: 15,
           agility: 85,
           fortune: 8,
         },
@@ -405,8 +405,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 200,
           maxMp: 25,
-          attack: 28,
-          defense: 15,
+          strength: 28,
+          willpower: 15,
           agility: 85,
           fortune: 8,
         },
@@ -438,8 +438,8 @@ describe('Enemy', () => {
         stats: {
           maxHp: 120,
           maxMp: 15,
-          attack: 18,
-          defense: 12,
+          strength: 18,
+          willpower: 12,
           agility: 78,
           fortune: 3,
         },

@@ -1,10 +1,10 @@
 /**
  * 装備による上昇ステータスを管理するクラス
- * 攻撃力、防御力、敏捷性、幸運の値を保持し、演算を提供する
+ * 攻撃力、意志力、敏捷性、幸運の値を保持し、演算を提供する
  */
 export class EquipmentStats {
-  private attack: number;
-  private defense: number;
+  private strength: number;
+  private willpower: number;
   private agility: number;
   private fortune: number;
 
@@ -13,8 +13,8 @@ export class EquipmentStats {
    * @param stats - 初期ステータス値（デフォルト: 全て0）
    */
   constructor(stats: Partial<EquipmentStatsData> = {}) {
-    this.attack = stats.attack || 0;
-    this.defense = stats.defense || 0;
+    this.strength = stats.strength || 0;
+    this.willpower = stats.willpower || 0;
     this.agility = stats.agility || 0;
     this.fortune = stats.fortune || 0;
   }
@@ -23,16 +23,16 @@ export class EquipmentStats {
    * 攻撃力を取得する
    * @returns 攻撃力
    */
-  getAttack(): number {
-    return this.attack;
+  getStrength(): number {
+    return this.strength;
   }
 
   /**
-   * 防御力を取得する
-   * @returns 防御力
+   * 意志力を取得する
+   * @returns 意志力
    */
-  getDefense(): number {
-    return this.defense;
+  getWillpower(): number {
+    return this.willpower;
   }
 
   /**
@@ -55,16 +55,16 @@ export class EquipmentStats {
    * 攻撃力を設定する
    * @param value - 攻撃力
    */
-  setAttack(value: number): void {
-    this.attack = value;
+  setStrength(value: number): void {
+    this.strength = value;
   }
 
   /**
-   * 防御力を設定する
-   * @param value - 防御力
+   * 意志力を設定する
+   * @param value - 意志力
    */
-  setDefense(value: number): void {
-    this.defense = value;
+  setWillpower(value: number): void {
+    this.willpower = value;
   }
 
   /**
@@ -87,16 +87,16 @@ export class EquipmentStats {
    * 攻撃力を加算する
    * @param value - 加算値
    */
-  addAttack(value: number): void {
-    this.attack += value;
+  addStrength(value: number): void {
+    this.strength += value;
   }
 
   /**
-   * 防御力を加算する
+   * 意志力を加算する
    * @param value - 加算値
    */
-  addDefense(value: number): void {
-    this.defense += value;
+  addWillpower(value: number): void {
+    this.willpower += value;
   }
 
   /**
@@ -120,8 +120,8 @@ export class EquipmentStats {
    * @param other - 加算するEquipmentStats
    */
   add(other: EquipmentStats): void {
-    this.attack += other.attack;
-    this.defense += other.defense;
+    this.strength += other.strength;
+    this.willpower += other.willpower;
     this.agility += other.agility;
     this.fortune += other.fortune;
   }
@@ -130,8 +130,8 @@ export class EquipmentStats {
    * 全てのステータスをクリアする（0にリセット）
    */
   clear(): void {
-    this.attack = 0;
-    this.defense = 0;
+    this.strength = 0;
+    this.willpower = 0;
     this.agility = 0;
     this.fortune = 0;
   }
@@ -143,10 +143,10 @@ export class EquipmentStats {
    */
   getStat(statType: keyof EquipmentStatsData): number {
     switch (statType) {
-      case 'attack':
-        return this.attack;
-      case 'defense':
-        return this.defense;
+      case 'strength':
+        return this.strength;
+      case 'willpower':
+        return this.willpower;
       case 'agility':
         return this.agility;
       case 'fortune':
@@ -163,11 +163,11 @@ export class EquipmentStats {
    */
   setStat(statType: keyof EquipmentStatsData, value: number): void {
     switch (statType) {
-      case 'attack':
-        this.attack = value;
+      case 'strength':
+        this.strength = value;
         break;
-      case 'defense':
-        this.defense = value;
+      case 'willpower':
+        this.willpower = value;
         break;
       case 'agility':
         this.agility = value;
@@ -183,7 +183,7 @@ export class EquipmentStats {
    * @returns 合計値
    */
   getTotal(): number {
-    return this.attack + this.defense + this.agility + this.fortune;
+    return this.strength + this.willpower + this.agility + this.fortune;
   }
 
   /**
@@ -191,7 +191,7 @@ export class EquipmentStats {
    * @returns 全て0の場合true
    */
   isEmpty(): boolean {
-    return this.attack === 0 && this.defense === 0 && this.agility === 0 && this.fortune === 0;
+    return this.strength === 0 && this.willpower === 0 && this.agility === 0 && this.fortune === 0;
   }
 
   /**
@@ -200,8 +200,8 @@ export class EquipmentStats {
    */
   toJSON(): EquipmentStatsData {
     return {
-      attack: this.attack,
-      defense: this.defense,
+      strength: this.strength,
+      willpower: this.willpower,
       agility: this.agility,
       fortune: this.fortune,
     };
@@ -229,8 +229,8 @@ export class EquipmentStats {
    */
   static add(stats1: EquipmentStats, stats2: EquipmentStats): EquipmentStats {
     return new EquipmentStats({
-      attack: stats1.attack + stats2.attack,
-      defense: stats1.defense + stats2.defense,
+      strength: stats1.strength + stats2.strength,
+      willpower: stats1.willpower + stats2.willpower,
       agility: stats1.agility + stats2.agility,
       fortune: stats1.fortune + stats2.fortune,
     });
@@ -245,8 +245,8 @@ export class EquipmentStats {
     return (
       typeof data === 'object' &&
       data !== null &&
-      typeof data.attack === 'number' &&
-      typeof data.defense === 'number' &&
+      typeof data.strength === 'number' &&
+      typeof data.willpower === 'number' &&
       typeof data.agility === 'number' &&
       typeof data.fortune === 'number'
     );
@@ -257,8 +257,8 @@ export class EquipmentStats {
  * EquipmentStatsデータのインターフェース
  */
 export interface EquipmentStatsData {
-  attack: number;
-  defense: number;
+  strength: number;
+  willpower: number;
   agility: number;
   fortune: number;
 }

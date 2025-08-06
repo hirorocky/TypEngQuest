@@ -18,8 +18,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -29,8 +29,8 @@ describe('EquipmentEffectCalculator', () => {
 
       const totalStats = calculator.calculateTotalStats([equipment]);
 
-      expect(totalStats.attack).toBe(10);
-      expect(totalStats.defense).toBe(2);
+      expect(totalStats.strength).toBe(10);
+      expect(totalStats.willpower).toBe(2);
       expect(totalStats.agility).toBe(3);
       expect(totalStats.fortune).toBe(0);
     });
@@ -43,8 +43,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -58,8 +58,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 0,
-          defense: 8,
+          strength: 0,
+          willpower: 8,
           agility: 3,
           fortune: 1,
         },
@@ -71,8 +71,8 @@ describe('EquipmentEffectCalculator', () => {
 
       const totalStats = calculator.calculateTotalStats([equipment1, equipment2]);
 
-      expect(totalStats.attack).toBe(10); // 10+0
-      expect(totalStats.defense).toBe(10); // 2+8
+      expect(totalStats.strength).toBe(10); // 10+0
+      expect(totalStats.willpower).toBe(10); // 2+8
       expect(totalStats.agility).toBe(6); // 3+3
       expect(totalStats.fortune).toBe(1); // 0+1
     });
@@ -80,8 +80,8 @@ describe('EquipmentEffectCalculator', () => {
     it('空の配列の場合、全てのステータスが0を返す', () => {
       const totalStats = calculator.calculateTotalStats([]);
 
-      expect(totalStats.attack).toBe(0);
-      expect(totalStats.defense).toBe(0);
+      expect(totalStats.strength).toBe(0);
+      expect(totalStats.willpower).toBe(0);
       expect(totalStats.agility).toBe(0);
       expect(totalStats.fortune).toBe(0);
     });
@@ -94,7 +94,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 2, defense: 1, agility: 0, fortune: 0 },
+          stats: { strength: 2, willpower: 1, agility: 0, fortune: 0 },
           grade: 3,
         },
         {
@@ -103,7 +103,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 2, agility: 1, fortune: 0 },
+          stats: { strength: 1, willpower: 2, agility: 1, fortune: 0 },
           grade: 4,
         },
         {
@@ -112,7 +112,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 3',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 0, agility: 3, fortune: 0 },
+          stats: { strength: 0, willpower: 0, agility: 3, fortune: 0 },
           grade: 3,
         },
         {
@@ -121,7 +121,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 4',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 0, agility: 2, fortune: 1 },
+          stats: { strength: 0, willpower: 0, agility: 2, fortune: 1 },
           grade: 3,
         },
         {
@@ -130,7 +130,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 5',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, agility: 2, fortune: 1 },
+          stats: { strength: 1, willpower: 1, agility: 2, fortune: 1 },
           grade: 5,
         },
       ];
@@ -138,8 +138,8 @@ describe('EquipmentEffectCalculator', () => {
       const equipments = equipmentDataList.map(data => new EquipmentItem(data));
       const totalStats = calculator.calculateTotalStats(equipments);
 
-      expect(totalStats.attack).toBe(4); // 2+1+0+0+1
-      expect(totalStats.defense).toBe(4); // 1+2+0+0+1
+      expect(totalStats.strength).toBe(4); // 2+1+0+0+1
+      expect(totalStats.willpower).toBe(4); // 1+2+0+0+1
       expect(totalStats.agility).toBe(8); // 0+1+3+2+2
       expect(totalStats.fortune).toBe(2); // 0+0+0+1+1
     });
@@ -154,8 +154,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -176,8 +176,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -191,8 +191,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 0,
-          defense: 8,
+          strength: 0,
+          willpower: 8,
           agility: 1,
           fortune: 1,
         },
@@ -221,7 +221,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 0, agility: 0, fortune: 0 },
+          stats: { strength: 1, willpower: 0, agility: 0, fortune: 0 },
           grade: 1,
         },
         {
@@ -230,7 +230,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, agility: 0, fortune: 0 },
+          stats: { strength: 1, willpower: 1, agility: 0, fortune: 0 },
           grade: 2,
         },
         {
@@ -239,7 +239,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 3',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, agility: 1, fortune: 0 },
+          stats: { strength: 1, willpower: 1, agility: 1, fortune: 0 },
           grade: 3,
         },
       ];
@@ -258,7 +258,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 0, agility: 0, fortune: 0 },
+          stats: { strength: 1, willpower: 0, agility: 0, fortune: 0 },
           grade: 1,
         },
         {
@@ -267,7 +267,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, agility: 0, fortune: 0 },
+          stats: { strength: 1, willpower: 1, agility: 0, fortune: 0 },
           grade: 2,
         },
       ];
@@ -288,8 +288,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -311,8 +311,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -347,8 +347,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -374,8 +374,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 0,
-          defense: 8,
+          strength: 0,
+          willpower: 8,
           agility: 1,
           fortune: 1,
         },
@@ -412,8 +412,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 2,
+          strength: 10,
+          willpower: 2,
           agility: 3,
           fortune: 0,
         },
@@ -439,8 +439,8 @@ describe('EquipmentEffectCalculator', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 0,
-          defense: 8,
+          strength: 0,
+          willpower: 8,
           agility: 1,
           fortune: 1,
         },

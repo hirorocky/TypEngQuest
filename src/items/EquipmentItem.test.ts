@@ -38,8 +38,8 @@ describe('EquipmentItem', () => {
     type: ItemType.EQUIPMENT,
     rarity: ItemRarity.COMMON,
     stats: {
-      attack: 10,
-      defense: 0,
+      strength: 10,
+      willpower: 0,
       agility: 5,
       fortune: 0,
     },
@@ -64,7 +64,7 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           grade: 0,
-          stats: { attack: 0, defense: 0, agility: 0, fortune: 0 }, // グレード0と一致
+          stats: { strength: 0, willpower: 0, agility: 0, fortune: 0 }, // グレード0と一致
         });
       }).toThrow('Grade must be between 1 and 100');
 
@@ -72,7 +72,7 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           grade: 101,
-          stats: { attack: 101, defense: 0, agility: 0, fortune: 0 }, // グレード101と一致
+          stats: { strength: 101, willpower: 0, agility: 0, fortune: 0 }, // グレード101と一致
         });
       }).toThrow('Grade must be between 1 and 100');
     });
@@ -82,8 +82,8 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           stats: {
-            attack: 5,
-            defense: 3,
+            strength: 5,
+            willpower: 3,
             agility: 6,
             fortune: 1,
           },
@@ -97,14 +97,14 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           stats: {
-            attack: 5,
-            defense: 3,
+            strength: 5,
+            willpower: 3,
             agility: 6,
             fortune: 1,
           },
           grade: 10, // 5+3+6+1=15だが、gradeは10
         });
-      }).toThrow('Grade must equal sum of stats (attack + defense + agility + fortune)');
+      }).toThrow('Grade must equal sum of stats (strength + willpower + agility + fortune)');
     });
 
     it('ステータスがundefinedの場合でも適切なgradeが指定されればエラーを投げない', () => {
@@ -115,8 +115,8 @@ describe('EquipmentItem', () => {
         new EquipmentItem({
           ...sampleEquipmentData,
           stats: {
-            attack: 1,
-            defense: 0,
+            strength: 1,
+            willpower: 0,
             agility: 0,
             fortune: 0,
           },
@@ -140,8 +140,8 @@ describe('EquipmentItem', () => {
       const equipment = new EquipmentItem(sampleEquipmentData);
       const stats = equipment.getStats();
 
-      expect(stats.attack).toBe(10);
-      expect(stats.defense).toBe(0);
+      expect(stats.strength).toBe(10);
+      expect(stats.willpower).toBe(0);
       expect(stats.agility).toBe(5);
       expect(stats.fortune).toBe(0);
     });
@@ -217,8 +217,8 @@ describe('EquipmentItem', () => {
       const equipment2 = new EquipmentItem({
         ...sampleEquipmentData,
         stats: {
-          attack: 8,
-          defense: 2,
+          strength: 8,
+          willpower: 2,
           agility: 5,
           fortune: 0,
         },
@@ -233,8 +233,8 @@ describe('EquipmentItem', () => {
       const equipment2 = new EquipmentItem({
         ...sampleEquipmentData,
         stats: {
-          attack: 12,
-          defense: 1,
+          strength: 12,
+          willpower: 1,
           agility: 2,
           fortune: 0,
         },
@@ -281,8 +281,8 @@ describe('EquipmentItem', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 0,
+          strength: 10,
+          willpower: 0,
           agility: 5,
           fortune: 0,
         },
@@ -301,8 +301,8 @@ describe('EquipmentItem', () => {
         type: ItemType.EQUIPMENT,
         rarity: ItemRarity.COMMON,
         stats: {
-          attack: 10,
-          defense: 0,
+          strength: 10,
+          willpower: 0,
           agility: 5,
           fortune: 0,
         },
@@ -315,7 +315,7 @@ describe('EquipmentItem', () => {
       expect(equipment.getId()).toBe('iron_sword');
       expect(equipment.getName()).toBe('Iron Sword');
       expect(equipment.getGrade()).toBe(15);
-      expect(equipment.getStats().attack).toBe(10);
+      expect(equipment.getStats().strength).toBe(10);
       expect(equipment.hasSkill()).toBe(true);
     });
 
@@ -367,8 +367,8 @@ describe('EquipmentItem', () => {
   describe('validateStats', () => {
     it('正しいステータスオブジェクトを検証できる', () => {
       const stats: EquipmentStats = {
-        attack: 10,
-        defense: 5,
+        strength: 10,
+        willpower: 5,
         agility: 8,
         fortune: 2,
       };
@@ -378,8 +378,8 @@ describe('EquipmentItem', () => {
 
     it('ステータスが欠けている場合falseを返す', () => {
       const stats = {
-        attack: 10,
-        defense: 5,
+        strength: 10,
+        willpower: 5,
         // agility missing
         fortune: 2,
       } as any;
@@ -389,8 +389,8 @@ describe('EquipmentItem', () => {
 
     it('ステータスが数値でない場合falseを返す', () => {
       const stats = {
-        attack: '10',
-        defense: 5,
+        strength: '10',
+        willpower: 5,
         agility: 8,
         fortune: 2,
       } as any;

@@ -15,15 +15,15 @@ export class EquipmentEffectCalculator {
       (totalStats, equipment) => {
         const stats = equipment.getStats();
         return {
-          attack: totalStats.attack + stats.attack,
-          defense: totalStats.defense + stats.defense,
+          strength: totalStats.strength + stats.strength,
+          willpower: totalStats.willpower + stats.willpower,
           agility: totalStats.agility + stats.agility,
           fortune: totalStats.fortune + stats.fortune,
         };
       },
       {
-        attack: 0,
-        defense: 0,
+        strength: 0,
+        willpower: 0,
         agility: 0,
         fortune: 0,
       }
