@@ -57,7 +57,7 @@ export class StatusAilmentFactory {
       type: 'status_ailment',
       effects: {
         cannotAct: true, // 行動不能
-        defense: -3, // 防御力低下（無防備）
+        willpower: -3, // 意志力低下（無防備）
       },
       duration,
       stackable: false, // 睡眠は重複しない
@@ -65,18 +65,18 @@ export class StatusAilmentFactory {
   }
 
   /**
-   * 攻撃力アップバフを生成する
+   * strengthアップバフを生成する
    * @param duration - 継続期間（ターン数）
-   * @param boost - 攻撃力の増加量
-   * @returns 攻撃力アップの一時ステータス
+   * @param boost - strengthの増加量
+   * @returns strengthアップの一時ステータス
    */
-  static createAttackBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
+  static createStrengthBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
-      id: `attack-boost-${randomUUID()}`,
-      name: 'Attack Up' as TemporaryStatusName,
+      id: `strength-boost-${randomUUID()}`,
+      name: 'Strength Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
-        attack: Math.abs(boost), // 正の値にする
+        strength: Math.abs(boost), // 正の値にする
       },
       duration,
       stackable: true, // バフは重複可能
@@ -84,18 +84,18 @@ export class StatusAilmentFactory {
   }
 
   /**
-   * 防御力アップバフを生成する
+   * willpowerアップバフを生成する
    * @param duration - 継続期間（ターン数）
-   * @param boost - 防御力の増加量
-   * @returns 防御力アップの一時ステータス
+   * @param boost - willpowerの増加量
+   * @returns willpowerアップの一時ステータス
    */
-  static createDefenseBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
+  static createWillpowerBoost(duration: number = 3, boost: number = 5): TemporaryStatus {
     return {
-      id: `defense-boost-${randomUUID()}`,
-      name: 'Defense Up' as TemporaryStatusName,
+      id: `willpower-boost-${randomUUID()}`,
+      name: 'Willpower Up' as TemporaryStatusName,
       type: 'buff',
       effects: {
-        defense: Math.abs(boost), // 正の値にする
+        willpower: Math.abs(boost), // 正の値にする
       },
       duration,
       stackable: true, // バフは重複可能
@@ -115,8 +115,8 @@ export class StatusAilmentFactory {
       name: 'All Stats Down' as TemporaryStatusName,
       type: 'debuff',
       effects: {
-        attack: -abspenalty,
-        defense: -abspenalty,
+        strength: -abspenalty,
+        willpower: -abspenalty,
         agility: -abspenalty,
         fortune: -abspenalty,
       },

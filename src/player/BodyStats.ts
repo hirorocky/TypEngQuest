@@ -14,13 +14,19 @@ export class BodyStats {
   private level: number;
   private currentHP: number;
   private currentMP: number;
-  private baseAttack: number;
-  private baseDefense: number;
+  private baseStrength: number;
+  private baseWillpower: number;
   private baseAgility: number;
   private baseFortune: number;
   private temporaryBoosts: {
-    attack: number;
-    defense: number;
+    strength: number;
+    willpower: number;
+    agility: number;
+    fortune: number;
+  };
+  private worldBoosts: {
+    strength: number;
+    willpower: number;
     agility: number;
     fortune: number;
   };
@@ -32,13 +38,19 @@ export class BodyStats {
    */
   constructor(level: number = 0) {
     this.level = Math.max(0, level); // 負の値は0にクランプ
-    this.baseAttack = BodyStats.BASE_STAT;
-    this.baseDefense = BodyStats.BASE_STAT;
+    this.baseStrength = BodyStats.BASE_STAT;
+    this.baseWillpower = BodyStats.BASE_STAT;
     this.baseAgility = BodyStats.BASE_STAT;
     this.baseFortune = BodyStats.BASE_STAT;
     this.temporaryBoosts = {
-      attack: 0,
-      defense: 0,
+      strength: 0,
+      willpower: 0,
+      agility: 0,
+      fortune: 0,
+    };
+    this.worldBoosts = {
+      strength: 0,
+      willpower: 0,
       agility: 0,
       fortune: 0,
     };
@@ -108,19 +120,19 @@ export class BodyStats {
   }
 
   /**
-   * 基本攻撃力を取得する
-   * @returns 基本攻撃力
+   * 基本strength（攻撃力）を取得する
+   * @returns 基本strength
    */
-  getBaseAttack(): number {
-    return this.baseAttack;
+  getBaseStrength(): number {
+    return this.baseStrength;
   }
 
   /**
-   * 基本防御力を取得する
-   * @returns 基本防御力
+   * 基本willpower（意志力）を取得する
+   * @returns 基本willpower
    */
-  getBaseDefense(): number {
-    return this.baseDefense;
+  getBaseWillpower(): number {
+    return this.baseWillpower;
   }
 
   /**
@@ -140,39 +152,39 @@ export class BodyStats {
   }
 
   /**
-   * 攻撃力を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 攻撃力
+   * strength（攻撃力）を取得する（基本値 + ワールドブースト + 一時的なブースト + 一時ステータス効果）
+   * @returns strength
    */
-  getAttack(): number {
-    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('attack');
-    return Math.max(0, this.baseAttack + this.temporaryBoosts.attack + temporaryStatusBonus);
+  getStrength(): number {
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('strength');
+    return Math.max(0, this.baseStrength + this.worldBoosts.strength + this.temporaryBoosts.strength + temporaryStatusBonus);
   }
 
   /**
-   * 防御力を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 防御力
+   * willpower（意志力）を取得する（基本値 + ワールドブースト + 一時的なブースト + 一時ステータス効果）
+   * @returns willpower
    */
-  getDefense(): number {
-    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('defense');
-    return Math.max(0, this.baseDefense + this.temporaryBoosts.defense + temporaryStatusBonus);
+  getWillpower(): number {
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('willpower');
+    return Math.max(0, this.baseWillpower + this.worldBoosts.willpower + this.temporaryBoosts.willpower + temporaryStatusBonus);
   }
 
   /**
-   * 敏捷性を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 敏捷性
+   * agility（敏捷性）を取得する（基本値 + ワールドブースト + 一時的なブースト + 一時ステータス効果）
+   * @returns agility
    */
   getAgility(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('agility');
-    return Math.max(0, this.baseAgility + this.temporaryBoosts.agility + temporaryStatusBonus);
+    return Math.max(0, this.baseAgility + this.worldBoosts.agility + this.temporaryBoosts.agility + temporaryStatusBonus);
   }
 
   /**
-   * 幸運を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 幸運
+   * fortune（幸運）を取得する（基本値 + ワールドブースト + 一時的なブースト + 一時ステータス効果）
+   * @returns fortune
    */
   getFortune(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('fortune');
-    return Math.max(0, this.baseFortune + this.temporaryBoosts.fortune + temporaryStatusBonus);
+    return Math.max(0, this.baseFortune + this.worldBoosts.fortune + this.temporaryBoosts.fortune + temporaryStatusBonus);
   }
 
   /**
@@ -275,10 +287,22 @@ export class BodyStats {
    * @param amount - ブースト量（負の値でデバフ）
    */
   applyTemporaryBoost(
-    statType: 'attack' | 'defense' | 'agility' | 'fortune',
+    statType: 'strength' | 'willpower' | 'agility' | 'fortune',
     amount: number
   ): void {
     this.temporaryBoosts[statType] += amount;
+  }
+
+  /**
+   * ワールドステータスブーストを適用する
+   * @param statType - ステータスタイプ
+   * @param amount - ブースト量（負の値でデバフ）
+   */
+  applyWorldBoost(
+    statType: 'strength' | 'willpower' | 'agility' | 'fortune',
+    amount: number
+  ): void {
+    this.worldBoosts[statType] += amount;
   }
 
   /**
@@ -286,11 +310,36 @@ export class BodyStats {
    */
   clearTemporaryBoosts(): void {
     this.temporaryBoosts = {
-      attack: 0,
-      defense: 0,
+      strength: 0,
+      willpower: 0,
       agility: 0,
       fortune: 0,
     };
+  }
+
+  /**
+   * 全てのワールドステータスブーストをクリアする（ワールド移動時）
+   */
+  clearWorldBoosts(): void {
+    this.worldBoosts = {
+      strength: 0,
+      willpower: 0,
+      agility: 0,
+      fortune: 0,
+    };
+  }
+
+  /**
+   * バトル終了時の処理
+   * - HPを最大まで回復
+   * - MPを0にリセット
+   * - 一時ステータスをクリア
+   */
+  onBattleEnd(): void {
+    this.fullHealHP();
+    this.currentMP = 0;
+    this.clearTemporaryBoosts();
+    this.temporaryStatuses = [];
   }
 
   /**
@@ -402,7 +451,7 @@ export class BodyStats {
    * @returns 効果の総和
    */
   private calculateTemporaryStatusEffect(
-    statType: 'attack' | 'defense' | 'agility' | 'fortune'
+    statType: 'strength' | 'willpower' | 'agility' | 'fortune'
   ): number {
     return this.temporaryStatuses.reduce((total, status) => {
       const effect = status.effects[statType];
@@ -419,11 +468,12 @@ export class BodyStats {
       level: this.level,
       currentHP: this.currentHP,
       currentMP: this.currentMP,
-      baseAttack: this.baseAttack,
-      baseDefense: this.baseDefense,
+      baseStrength: this.baseStrength,
+      baseWillpower: this.baseWillpower,
       baseAgility: this.baseAgility,
       baseFortune: this.baseFortune,
       temporaryBoosts: { ...this.temporaryBoosts },
+      worldBoosts: { ...this.worldBoosts },
       temporaryStatuses: this.temporaryStatuses.map(status => ({ ...status })),
     };
   }
@@ -442,11 +492,28 @@ export class BodyStats {
     const bodyStats = new BodyStats(data.level);
     bodyStats.currentHP = data.currentHP;
     bodyStats.currentMP = data.currentMP;
-    bodyStats.baseAttack = data.baseAttack;
-    bodyStats.baseDefense = data.baseDefense;
-    bodyStats.baseAgility = data.baseAgility;
-    bodyStats.baseFortune = data.baseFortune;
-    bodyStats.temporaryBoosts = { ...data.temporaryBoosts };
+    
+    // 旧形式との互換性を保つ
+    bodyStats.baseStrength = data.baseStrength ?? data.baseAttack ?? BodyStats.BASE_STAT;
+    bodyStats.baseWillpower = data.baseWillpower ?? data.baseDefense ?? BodyStats.BASE_STAT;
+    bodyStats.baseAgility = data.baseAgility ?? BodyStats.BASE_STAT;
+    bodyStats.baseFortune = data.baseFortune ?? BodyStats.BASE_STAT;
+    
+    // temporaryBoostsの互換性処理
+    if (data.temporaryBoosts) {
+      bodyStats.temporaryBoosts = {
+        strength: data.temporaryBoosts.strength ?? data.temporaryBoosts.attack ?? 0,
+        willpower: data.temporaryBoosts.willpower ?? data.temporaryBoosts.defense ?? 0,
+        agility: data.temporaryBoosts.agility ?? 0,
+        fortune: data.temporaryBoosts.fortune ?? 0,
+      };
+    }
+    
+    // worldBoostsの処理
+    if (data.worldBoosts) {
+      bodyStats.worldBoosts = { ...data.worldBoosts };
+    }
+    
     bodyStats.temporaryStatuses = data.temporaryStatuses
       ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
       : [];
@@ -491,12 +558,23 @@ export class BodyStats {
    * @returns 有効な場合true
    */
   private static validateStatsFields(data: any): boolean {
-    return (
+    // 新形式のチェック
+    const hasNewFormat = (
+      typeof data.baseStrength === 'number' &&
+      typeof data.baseWillpower === 'number' &&
+      typeof data.baseAgility === 'number' &&
+      typeof data.baseFortune === 'number'
+    );
+    
+    // 旧形式のチェック（互換性のため）
+    const hasOldFormat = (
       typeof data.baseAttack === 'number' &&
       typeof data.baseDefense === 'number' &&
       typeof data.baseAgility === 'number' &&
       typeof data.baseFortune === 'number'
     );
+    
+    return hasNewFormat || hasOldFormat;
   }
 
   /**
@@ -505,14 +583,27 @@ export class BodyStats {
    * @returns 有効な場合true
    */
   private static validateTemporaryBoosts(data: any): boolean {
-    return (
-      typeof data.temporaryBoosts === 'object' &&
-      data.temporaryBoosts !== null &&
+    if (typeof data.temporaryBoosts !== 'object' || data.temporaryBoosts === null) {
+      return false;
+    }
+    
+    // 新形式のチェック
+    const hasNewFormat = (
+      typeof data.temporaryBoosts.strength === 'number' &&
+      typeof data.temporaryBoosts.willpower === 'number' &&
+      typeof data.temporaryBoosts.agility === 'number' &&
+      typeof data.temporaryBoosts.fortune === 'number'
+    );
+    
+    // 旧形式のチェック（互換性のため）
+    const hasOldFormat = (
       typeof data.temporaryBoosts.attack === 'number' &&
       typeof data.temporaryBoosts.defense === 'number' &&
       typeof data.temporaryBoosts.agility === 'number' &&
       typeof data.temporaryBoosts.fortune === 'number'
     );
+    
+    return hasNewFormat || hasOldFormat;
   }
 }
 
@@ -523,15 +614,24 @@ export interface BodyStatsData {
   level: number;
   currentHP: number;
   currentMP: number;
-  baseAttack: number;
-  baseDefense: number;
+  baseStrength: number;
+  baseWillpower: number;
   baseAgility: number;
   baseFortune: number;
   temporaryBoosts: {
-    attack: number;
-    defense: number;
+    strength: number;
+    willpower: number;
+    agility: number;
+    fortune: number;
+  };
+  worldBoosts?: {
+    strength: number;
+    willpower: number;
     agility: number;
     fortune: number;
   };
   temporaryStatuses?: TemporaryStatus[];
+  // 旧形式との互換性のため（読み込み時のみ使用）
+  baseAttack?: number;
+  baseDefense?: number;
 }

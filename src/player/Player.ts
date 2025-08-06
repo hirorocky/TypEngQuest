@@ -19,8 +19,8 @@ export interface PlayerData {
  * 総合ステータス結果の型
  */
 export interface TotalStatsResult {
-  attack: number;
-  defense: number;
+  strength: number;
+  willpower: number;
   agility: number;
   fortune: number;
 }
@@ -187,8 +187,8 @@ export class Player {
     const combinedStats = BodyStats.fromJSON(bodyStatsData);
 
     // 装備ステータスを一時的なブーストとして適用
-    combinedStats.applyTemporaryBoost('attack', this.equipmentStats.getAttack());
-    combinedStats.applyTemporaryBoost('defense', this.equipmentStats.getDefense());
+    combinedStats.applyTemporaryBoost('strength', this.equipmentStats.getAttack());
+    combinedStats.applyTemporaryBoost('willpower', this.equipmentStats.getDefense());
     combinedStats.applyTemporaryBoost('agility', this.equipmentStats.getAgility());
     combinedStats.applyTemporaryBoost('fortune', this.equipmentStats.getFortune());
 
@@ -217,8 +217,8 @@ export class Player {
    */
   getTotalStats(): TotalStatsResult {
     return {
-      attack: this.bodyStats.getAttack() + this.equipmentStats.getAttack(),
-      defense: this.bodyStats.getDefense() + this.equipmentStats.getDefense(),
+      strength: this.bodyStats.getStrength() + this.equipmentStats.getAttack(),
+      willpower: this.bodyStats.getWillpower() + this.equipmentStats.getDefense(),
       agility: this.bodyStats.getAgility() + this.equipmentStats.getAgility(),
       fortune: this.bodyStats.getFortune() + this.equipmentStats.getFortune(),
     };
