@@ -405,8 +405,8 @@ describe('Player', () => {
 
         expect(bodyStats).toBeInstanceOf(BodyStats);
         expect(bodyStats.getLevel()).toBe(0);
-        expect(bodyStats.getBaseAttack()).toBe(10);
-        expect(bodyStats.getBaseDefense()).toBe(10);
+        expect(bodyStats.getBaseStrength()).toBe(10);
+        expect(bodyStats.getBaseWillpower()).toBe(10);
       });
 
       test('Playerは装備ステータス（EquipmentStats）を持つ', () => {
@@ -441,8 +441,10 @@ describe('Player', () => {
         const equipmentStats = player.getEquipmentStats();
 
         // Body(10) + Equipment(15) = Total(25)
-        expect(totalStats.attack).toBe(bodyStats.getBaseAttack() + equipmentStats.getAttack());
-        expect(totalStats.defense).toBe(bodyStats.getBaseDefense() + equipmentStats.getDefense());
+        expect(totalStats.strength).toBe(bodyStats.getBaseStrength() + equipmentStats.getAttack());
+        expect(totalStats.willpower).toBe(
+          bodyStats.getBaseWillpower() + equipmentStats.getDefense()
+        );
         expect(totalStats.agility).toBe(bodyStats.getBaseAgility() + equipmentStats.getAgility());
         expect(totalStats.fortune).toBe(bodyStats.getBaseFortune() + equipmentStats.getFortune());
       });
@@ -543,8 +545,8 @@ describe('Player', () => {
         const totalStats = player.getTotalStats();
 
         // 従来のgetStats()は総合ステータスと同じ値を返すべき
-        expect(stats.getAttack()).toBe(totalStats.attack);
-        expect(stats.getDefense()).toBe(totalStats.defense);
+        expect(stats.getStrength()).toBe(totalStats.strength);
+        expect(stats.getWillpower()).toBe(totalStats.willpower);
         expect(stats.getAgility()).toBe(totalStats.agility);
         expect(stats.getFortune()).toBe(totalStats.fortune);
 
@@ -574,11 +576,11 @@ describe('Player', () => {
         player.equipToSlot(0, sword);
 
         // 一時ブーストを適用
-        player.getBodyStats().applyTemporaryBoost('attack', 5);
+        player.getBodyStats().applyTemporaryBoost('strength', 5);
 
         const stats = player.getStats();
         // BodyStats(10) + EquipmentStats(15) + TemporaryBoost(5) = 30
-        expect(stats.getAttack()).toBe(30);
+        expect(stats.getStrength()).toBe(30);
       });
     });
 
@@ -641,14 +643,14 @@ describe('Player', () => {
         const player = Player.fromJSON(playerData);
 
         expect(player.getBodyStats().getLevel()).toBe(2);
-        expect(player.getBodyStats().getBaseAttack()).toBe(12);
+        expect(player.getBodyStats().getBaseStrength()).toBe(12);
         expect(player.getEquipmentStats().getAttack()).toBe(20);
         expect(player.getEquipmentStats().getDefense()).toBe(5);
 
         // 総合ステータス確認
         const totalStats = player.getTotalStats();
-        expect(totalStats.attack).toBe(32); // 12 + 20
-        expect(totalStats.defense).toBe(13); // 8 + 5
+        expect(totalStats.strength).toBe(32); // 12 + 20
+        expect(totalStats.willpower).toBe(13); // 8 + 5
       });
     });
   });
