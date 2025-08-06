@@ -171,7 +171,7 @@ export class Battle {
 
     let damage = BattleCalculator.calculateDamage(
       playerStats.strength,
-      enemyStats.defense,
+      enemyStats.willpower,
       skill.power,
       isCritical
     );
@@ -289,8 +289,8 @@ export class Battle {
 
     // ダメージ計算
     const damage = BattleCalculator.calculateDamage(
-      enemyStats.attack,
-      playerStats.willpower,
+      enemyStats.strength,
+      0, // プレイヤーへの攻撃では防御力を考慮しない
       selectedSkill.power,
       isCritical
     );

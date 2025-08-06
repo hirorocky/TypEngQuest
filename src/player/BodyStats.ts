@@ -375,26 +375,20 @@ export class BodyStats {
    * @param status - 追加するワールドステータス
    */
   addWorldStatus(status: WorldStatus): void {
-    // 同じIDが存在する場合は上書き
-    const existingIndex = this.worldStatuses.findIndex(s => s.id === status.id);
-    if (existingIndex !== -1) {
-      this.worldStatuses[existingIndex] = { ...status };
-      this.updateWorldBoostsFromStatuses();
-      return;
+    let targetIndex = this.worldStatuses.findIndex(s => s.id === status.id);
+
+    if (targetIndex === -1 && !status.stackable) {
+      targetIndex = this.worldStatuses.findIndex(s => s.name === status.name);
     }
 
-    // stackable=falseの場合、同じ名前の効果は上書き
-    if (!status.stackable) {
-      const sameNameIndex = this.worldStatuses.findIndex(s => s.name === status.name);
-      if (sameNameIndex !== -1) {
-        this.worldStatuses[sameNameIndex] = { ...status };
-        this.updateWorldBoostsFromStatuses();
-        return;
-      }
+    if (targetIndex !== -1) {
+      // 上書き
+      this.worldStatuses[targetIndex] = { ...status };
+    } else {
+      // 新規追加
+      this.worldStatuses.push({ ...status });
     }
 
-    // 新しいステータスを追加
-    this.worldStatuses.push({ ...status });
     this.updateWorldBoostsFromStatuses();
   }
 
@@ -428,20 +422,12 @@ export class BodyStats {
     };
 
     // 全てのワールドステータスの効果を集計
-    this.worldStatuses.forEach(status => {
-      if (status.effects.strength) {
-        this.worldBoosts.strength += status.effects.strength;
-      }
-      if (status.effects.willpower) {
-        this.worldBoosts.willpower += status.effects.willpower;
-      }
-      if (status.effects.agility) {
-        this.worldBoosts.agility += status.effects.agility;
-      }
-      if (status.effects.fortune) {
-        this.worldBoosts.fortune += status.effects.fortune;
-      }
-    });
+    for (const status of this.worldStatuses) {
+      this.worldBoosts.strength += status.effects.strength ?? 0;
+      this.worldBoosts.willpower += status.effects.willpower ?? 0;
+      this.worldBoosts.agility += status.effects.agility ?? 0;
+      this.worldBoosts.fortune += status.effects.fortune ?? 0;
+    }
   }
 
   /**

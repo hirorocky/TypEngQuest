@@ -6,8 +6,8 @@ import { Skill } from './Skill';
 export interface EnemyStats {
   maxHp: number;
   maxMp: number;
-  attack: number;
-  defense: number;
+  strength: number;
+  willpower: number;
   agility: number;
   fortune: number;
 }

@@ -31,8 +31,8 @@ describe('Battle', () => {
       stats: {
         maxHp: 100,
         maxMp: 30,
-        attack: 20,
-        defense: 10,
+        strength: 20,
+        willpower: 10,
         agility: 90,
         fortune: 10,
       },
@@ -285,8 +285,8 @@ describe('Battle', () => {
         stats: {
           maxHp: 50,
           maxMp: 10,
-          attack: 15,
-          defense: 8,
+          strength: 15,
+          willpower: 8,
           agility: 80,
           fortune: 5,
         },
@@ -353,8 +353,8 @@ describe('Battle', () => {
         stats: {
           maxHp: 50,
           maxMp: 20,
-          attack: 15,
-          defense: 10,
+          strength: 15,
+          willpower: 10,
           agility: 90,
           fortune: 30,
         },
