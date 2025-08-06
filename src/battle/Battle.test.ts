@@ -14,10 +14,11 @@ describe('Battle', () => {
     name: 'Test Attack',
     description: 'A test attack',
     mpCost: 5,
+    mpCharge: 0,
+    actionCost: 1,
     power: 1.2,
     accuracy: 90,
     target: 'enemy',
-    element: 'physical',
     typingDifficulty: 2,
   };
 
@@ -127,10 +128,11 @@ describe('Battle', () => {
         name: 'Player Attack',
         description: 'Player attack',
         mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.0,
         accuracy: 100,
         target: 'enemy',
-        element: 'physical',
         typingDifficulty: 1,
       };
 
@@ -160,10 +162,11 @@ describe('Battle', () => {
         name: 'Player Attack',
         description: 'Player attack',
         mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.0,
         accuracy: 50,
         target: 'enemy',
-        element: 'physical',
         typingDifficulty: 1,
       };
 
@@ -367,10 +370,11 @@ describe('Battle', () => {
         name: 'Fireball',
         description: 'A basic fire spell',
         mpCost: 5,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.5,
         accuracy: 90,
         target: 'enemy',
-        element: 'fire',
         typingDifficulty: 2,
       };
 

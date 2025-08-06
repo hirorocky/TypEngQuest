@@ -56,10 +56,11 @@ export class Battle {
     name: 'Attack',
     description: 'A basic attack',
     mpCost: 0,
+    mpCharge: 0,
+    actionCost: 1,
     power: Battle.NORMAL_ATTACK_POWER,
     accuracy: Battle.NORMAL_ATTACK_ACCURACY,
     target: 'enemy',
-    element: 'physical',
     typingDifficulty: 1,
   };
 
