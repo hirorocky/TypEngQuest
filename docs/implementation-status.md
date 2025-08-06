@@ -627,5 +627,44 @@
 **チェック済み**: Enemy、BattleCalculator、Battleクラスが正常に動作し、基本的な戦闘処理が完了すること ✅
 **最終確認**: 2025-08-03 - プロジェクト9A完了
 
+### ✅ Issue #39: パラメータシステム再定義
+**目標**: 既存のパラメータシステムを再設計し、ワールドステータスシステムを実装する
+
+**完了タスク**:
+- [x] 基本ステータスのリネーム実装
+  - [x] attack → strength に変更
+  - [x] defense → willpower に変更
+  - [x] プレイヤーステータス表示の更新
+  - [x] ダメージ計算式の更新（strength使用）
+- [x] ワールドステータスシステム実装
+  - [x] WorldStatus インターフェース定義
+  - [x] WorldStatusFactory クラス実装
+  - [x] WorldStatusName, WorldStatusType 列挙型定義
+  - [x] ワールド内で持続するバフ/デバフシステム
+- [x] HP/MP新仕様実装
+  - [x] バトル終了時のHP最大値まで自動回復
+  - [x] バトル終了時のMP 0リセット
+  - [x] BodyStats.onBattleEnd()メソッド実装
+- [x] テスト修正・更新
+  - [x] Battle.test.ts の TotalStatsResult vs EnemyStats 区別修正
+  - [x] Player.test.ts のJSON互換性テスト更新
+  - [x] TemporaryStatus.test.ts の新プロパティ名対応
+  - [x] StatusCommand の新メソッド名対応
+  - [x] 全53テストスイート通過確認
+- [x] ドキュメント更新
+  - [x] docs/game-systems.md のプレイヤーシステム仕様更新
+  - [x] 新しいステータス名とHP/MP仕様の反映
+  - [x] ダメージ計算式と装備ステータス説明更新
+
+**成果物**:
+- プレイヤーステータス名の明確化（strength/willpower）
+- ワールド内で持続するステータス効果システム
+- バトル後のHP/MP自動管理システム
+- 装備アイテムとプレイヤーステータスの明確な区別
+- 更新されたゲームシステム仕様書
+
+**チェック済み**: パラメータシステムの再定義が完了し、すべてのテストが通過すること ✅
+**最終確認**: 2025-08-06 - Issue #39完了
+
 ## アジャイル開発計画
 詳細は@docs/agile-development-plan.mdを参照

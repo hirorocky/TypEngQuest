@@ -40,16 +40,21 @@ TypEngQuest/
 │   │   ├── domains.ts              # ドメイン定義
 │   │   └── domains.test.ts         # domainsのテスト
 │   │
-│   ├── player/                     # プレイヤーシステム [部分実装 3/4]
+│   ├── player/                     # プレイヤーシステム [完全実装 4/4]
 │   │   ├── Player.ts               # プレイヤークラス
 │   │   ├── Player.test.ts          # Playerのテスト
-│   │   ├── Stats.ts                # ステータス管理
+│   │   ├── BodyStats.ts            # 本体ステータス管理（HP/MP、基本ステータス、一時効果）
+│   │   ├── BodyStats.test.ts       # BodyStatsのテスト
+│   │   ├── EquipmentStats.ts       # 装備ステータス管理（装備効果の合計値）
+│   │   ├── EquipmentStats.test.ts  # EquipmentStatsのテスト
+│   │   ├── Stats.ts                # 総合ステータス管理（互換性維持）
 │   │   ├── Stats.test.ts           # Statsのテスト
 │   │   ├── Inventory.ts            # インベントリ管理
-│   │   └── Inventory.test.ts       # Inventoryのテスト
-│   │   # 以下未実装:
-│   │   # ├── Equipment.ts           # 装備管理
-│   │   # └── Equipment.test.ts      # Equipmentのテスト
+│   │   ├── Inventory.test.ts       # Inventoryのテスト
+│   │   ├── TemporaryStatus.ts      # 一時ステータス（バトル限定効果）
+│   │   ├── TemporaryStatus.test.ts # TemporaryStatusのテスト
+│   │   ├── WorldStatus.ts          # ワールドステータス（ワールド内持続効果）
+│   │   └── WorldStatusFactory.ts   # ワールドステータス生成
 │   │
 │   ├── items/                      # アイテムシステム [部分実装 3/4]
 │   │   ├── Item.ts                 # アイテム基底クラス
@@ -178,20 +183,19 @@ TypEngQuest/
 
 ## 実装状況サマリー
 
-### ✅ 実装済み (45%)
+### ✅ 実装済み (55%)
 - **Core**: Game、Phase、CommandParser、types（完全実装）
 - **UI**: Display、colors、ScrollableList（部分実装）
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase、InventoryPhase（部分実装）
-- **Player**: Player、Stats、Inventory（完全実装）
+- **Player**: Player、BodyStats、EquipmentStats、Stats、Inventory、TemporaryStatus、WorldStatus（完全実装）
 - **Items**: Item、ConsumableItem、EquipmentItem（部分実装）
+- **Battle**: Battle、Enemy、BattleCalculator、Skill（完全実装）
 - **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（2つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
 - **Data**: skills.json（部分実装）
 
-### ❌ 未実装 (55%)
-- **Player系**: Equipment（0%）
-- **Battle系**: Battle、Enemy、Skill、BattleCalculator（0%）
+### ❌ 未実装 (45%)
 - **Typing系**: TypingChallenge、TypingEvaluator、WordDatabase（0%）
 - **Items系**: KeyItem（0%）
 - **Events系**: RandomEvent、GoodEvents、BadEvents（0%）
@@ -483,16 +487,28 @@ TypingPhase
 
 #### Player.ts
 - プレイヤー基本情報の統合管理（名前、レベル）
-- Statsインスタンスの管理
+- BodyStats、EquipmentStats、Inventoryインスタンスの管理
+- 総合ステータス計算（BodyStats + EquipmentStats）
 - JSON シリアライゼーション対応
-- 拡張性を考慮した設計基盤
+- 装備システムとの統合
 
-#### Stats.ts
+#### BodyStats.ts
+- プレイヤー本体のステータス管理
 - HP/MP自動計算（HP=100+レベル×20、MP=50+レベル×10）
 - 現在HP/MP管理（ダメージ・回復処理）
-- 基本ステータスの管理（攻撃力・防御力・速度・命中率・運）
+- 基本ステータス（strength・willpower・agility・fortune）
 - 一時的能力値変化システム（バフ/デバフ）
-- JSON シリアライゼーション対応
+- ワールドステータス管理（ワールド内持続効果）
+- バトル終了時のHP/MP自動管理
+
+#### EquipmentStats.ts
+- 装備アイテムから得られるステータス効果の合計
+- 装備変更時の自動再計算
+- 装備による追加ステータス管理
+
+#### Stats.ts（互換性維持）
+- BodyStats + EquipmentStats の総合ステータス表示
+- 既存コードとの互換性を維持する統合インターフェース
 
 #### Equipment.ts
 - 装備スロット管理（最大5個）
