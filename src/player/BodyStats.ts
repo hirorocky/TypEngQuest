@@ -1,4 +1,5 @@
 import { TemporaryStatus, isTemporaryStatus } from './TemporaryStatus';
+import { WorldStatus, isWorldStatus } from './WorldStatus';
 
 /**
  * プレイヤーの本来のステータス（装備による上昇を除く）を管理するクラス
@@ -31,6 +32,7 @@ export class BodyStats {
     fortune: number;
   };
   private temporaryStatuses: TemporaryStatus[];
+  private worldStatuses: WorldStatus[];
 
   /**
    * BodyStatsクラスのコンストラクタ
@@ -55,6 +57,7 @@ export class BodyStats {
       fortune: 0,
     };
     this.temporaryStatuses = [];
+    this.worldStatuses = [];
 
     // HP/MPを最大値で初期化
     this.currentHP = this.calculateMaxHP();
@@ -343,6 +346,91 @@ export class BodyStats {
   }
 
   /**
+   * ワールドステータスを追加する
+   * 同じIDまたは非スタック可能な同名ステータスは上書きされる
+   * @param status - 追加するワールドステータス
+   */
+  addWorldStatus(status: WorldStatus): void {
+    // 同じIDが存在する場合は上書き
+    const existingIndex = this.worldStatuses.findIndex(s => s.id === status.id);
+    if (existingIndex !== -1) {
+      this.worldStatuses[existingIndex] = { ...status };
+      this.updateWorldBoostsFromStatuses();
+      return;
+    }
+
+    // stackable=falseの場合、同じ名前の効果は上書き
+    if (!status.stackable) {
+      const sameNameIndex = this.worldStatuses.findIndex(s => s.name === status.name);
+      if (sameNameIndex !== -1) {
+        this.worldStatuses[sameNameIndex] = { ...status };
+        this.updateWorldBoostsFromStatuses();
+        return;
+      }
+    }
+
+    // 新しいステータスを追加
+    this.worldStatuses.push({ ...status });
+    this.updateWorldBoostsFromStatuses();
+  }
+
+  /**
+   * 指定されたIDのワールドステータスを削除する
+   * @param id - 削除するワールドステータスのID
+   */
+  removeWorldStatus(id: string): void {
+    this.worldStatuses = this.worldStatuses.filter(status => status.id !== id);
+    this.updateWorldBoostsFromStatuses();
+  }
+
+  /**
+   * 全てのワールドステータスを取得する
+   * @returns ワールドステータスの配列
+   */
+  getWorldStatuses(): WorldStatus[] {
+    return [...this.worldStatuses];
+  }
+
+  /**
+   * ワールドステータスからworldBoostsを更新する
+   */
+  private updateWorldBoostsFromStatuses(): void {
+    // リセット
+    this.worldBoosts = {
+      strength: 0,
+      willpower: 0,
+      agility: 0,
+      fortune: 0,
+    };
+
+    // 全てのワールドステータスの効果を集計
+    this.worldStatuses.forEach(status => {
+      if (status.effects.strength) {
+        this.worldBoosts.strength += status.effects.strength;
+      }
+      if (status.effects.willpower) {
+        this.worldBoosts.willpower += status.effects.willpower;
+      }
+      if (status.effects.agility) {
+        this.worldBoosts.agility += status.effects.agility;
+      }
+      if (status.effects.fortune) {
+        this.worldBoosts.fortune += status.effects.fortune;
+      }
+    });
+  }
+
+  /**
+   * ワールド移動時の処理
+   * - ワールドステータスをクリア
+   * - ワールドブーストをリセット
+   */
+  onWorldChange(): void {
+    this.worldStatuses = [];
+    this.clearWorldBoosts();
+  }
+
+  /**
    * 一時ステータスを追加する
    * 同じIDまたは非スタック可能な同名ステータスは上書きされる
    * @param status - 追加する一時ステータス
@@ -475,6 +563,7 @@ export class BodyStats {
       temporaryBoosts: { ...this.temporaryBoosts },
       worldBoosts: { ...this.worldBoosts },
       temporaryStatuses: this.temporaryStatuses.map(status => ({ ...status })),
+      worldStatuses: this.worldStatuses.map(status => ({ ...status })),
     };
   }
 
@@ -516,6 +605,10 @@ export class BodyStats {
     
     bodyStats.temporaryStatuses = data.temporaryStatuses
       ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
+      : [];
+    
+    bodyStats.worldStatuses = data.worldStatuses
+      ? data.worldStatuses.filter((status: any) => isWorldStatus(status))
       : [];
 
     return bodyStats;
@@ -631,6 +724,7 @@ export interface BodyStatsData {
     fortune: number;
   };
   temporaryStatuses?: TemporaryStatus[];
+  worldStatuses?: WorldStatus[];
   // 旧形式との互換性のため（読み込み時のみ使用）
   baseAttack?: number;
   baseDefense?: number;
