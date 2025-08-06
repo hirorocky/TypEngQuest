@@ -30,8 +30,7 @@ describe('TemporaryStatus', () => {
         effects: {
           attack: 5,
           defense: 5,
-          speed: 3,
-          accuracy: 3,
+          agility: 6,
           fortune: 2,
         },
         duration: 5,
@@ -40,8 +39,7 @@ describe('TemporaryStatus', () => {
 
       expect(status.effects.attack).toBe(5);
       expect(status.effects.defense).toBe(5);
-      expect(status.effects.speed).toBe(3);
-      expect(status.effects.accuracy).toBe(3);
+      expect(status.effects.agility).toBe(6);
       expect(status.effects.fortune).toBe(2);
       expect(status.stackable).toBe(true);
     });
@@ -105,8 +103,7 @@ describe('TemporaryStatus', () => {
         effects: {
           attack: 1,
           defense: 2,
-          speed: 3,
-          accuracy: 4,
+          agility: 7,
           fortune: 5,
           hpPerTurn: 1,
           mpPerTurn: 2,
@@ -119,8 +116,7 @@ describe('TemporaryStatus', () => {
 
       expect(typeof status.effects.attack).toBe('number');
       expect(typeof status.effects.defense).toBe('number');
-      expect(typeof status.effects.speed).toBe('number');
-      expect(typeof status.effects.accuracy).toBe('number');
+      expect(typeof status.effects.agility).toBe('number');
       expect(typeof status.effects.fortune).toBe('number');
       expect(typeof status.effects.hpPerTurn).toBe('number');
       expect(typeof status.effects.mpPerTurn).toBe('number');
@@ -166,10 +162,10 @@ describe('TemporaryStatus', () => {
     test('JSONからTemporaryStatusが正しく復元される', () => {
       const data: TemporaryStatus = {
         id: 'test-deserialize',
-        name: 'Speed Down',
+        name: 'Agility Down',
         type: 'debuff',
         effects: {
-          speed: -3,
+          agility: -3,
           cannotAct: true,
         },
         duration: 2,
@@ -180,9 +176,9 @@ describe('TemporaryStatus', () => {
       const parsed: TemporaryStatus = JSON.parse(json);
 
       expect(parsed.id).toBe('test-deserialize');
-      expect(parsed.name).toBe('Speed Down');
+      expect(parsed.name).toBe('Agility Down');
       expect(parsed.type).toBe('debuff');
-      expect(parsed.effects.speed).toBe(-3);
+      expect(parsed.effects.agility).toBe(-3);
       expect(parsed.effects.cannotAct).toBe(true);
       expect(parsed.duration).toBe(2);
       expect(parsed.stackable).toBe(false);

@@ -18,8 +18,7 @@ describe('StatusCommand', () => {
       getMaxMP: jest.fn(() => 60),
       getAttack: jest.fn(() => 25),
       getDefense: jest.fn(() => 18),
-      getSpeed: jest.fn(() => 22),
-      getAccuracy: jest.fn(() => 20),
+      getAgility: jest.fn(() => 42),
       getFortune: jest.fn(() => 15),
     } as any;
 
@@ -52,8 +51,7 @@ describe('StatusCommand', () => {
       expect(result.message).toContain('MP: 45/60');
       expect(result.message).toContain('Attack: 25');
       expect(result.message).toContain('Defense: 18');
-      expect(result.message).toContain('Speed: 22');
-      expect(result.message).toContain('Accuracy: 20');
+      expect(result.message).toContain('Agility: 42');
       expect(result.message).toContain('Fortune: 15');
     });
 

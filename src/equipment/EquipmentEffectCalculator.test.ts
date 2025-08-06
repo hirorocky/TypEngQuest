@@ -20,11 +20,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
-        grade: 15, // 10+2+3+0+0=15
+        grade: 15, // 10+2+3+0=15
       };
       const equipment = new EquipmentItem(equipmentData);
 
@@ -32,8 +31,7 @@ describe('EquipmentEffectCalculator', () => {
 
       expect(totalStats.attack).toBe(10);
       expect(totalStats.defense).toBe(2);
-      expect(totalStats.speed).toBe(3);
-      expect(totalStats.accuracy).toBe(0);
+      expect(totalStats.agility).toBe(3);
       expect(totalStats.fortune).toBe(0);
     });
 
@@ -47,11 +45,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
-        grade: 15, // 10+2+3+0+0=15
+        grade: 15, // 10+2+3+0=15
       };
 
       const equipment2Data: EquipmentItemData = {
@@ -63,11 +60,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 3,
           fortune: 1,
         },
-        grade: 12, // 0+8+1+2+1=12
+        grade: 12, // 0+8+3+1=12
       };
 
       const equipment1 = new EquipmentItem(equipment1Data);
@@ -77,8 +73,7 @@ describe('EquipmentEffectCalculator', () => {
 
       expect(totalStats.attack).toBe(10); // 10+0
       expect(totalStats.defense).toBe(10); // 2+8
-      expect(totalStats.speed).toBe(4); // 3+1
-      expect(totalStats.accuracy).toBe(2); // 0+2
+      expect(totalStats.agility).toBe(6); // 3+3
       expect(totalStats.fortune).toBe(1); // 0+1
     });
 
@@ -87,8 +82,7 @@ describe('EquipmentEffectCalculator', () => {
 
       expect(totalStats.attack).toBe(0);
       expect(totalStats.defense).toBe(0);
-      expect(totalStats.speed).toBe(0);
-      expect(totalStats.accuracy).toBe(0);
+      expect(totalStats.agility).toBe(0);
       expect(totalStats.fortune).toBe(0);
     });
 
@@ -100,7 +94,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 2, defense: 1, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 2, defense: 1, agility: 0, fortune: 0 },
           grade: 3,
         },
         {
@@ -109,7 +103,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 2, speed: 1, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 2, agility: 1, fortune: 0 },
           grade: 4,
         },
         {
@@ -118,7 +112,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 3',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 0, speed: 2, accuracy: 1, fortune: 0 },
+          stats: { attack: 0, defense: 0, agility: 3, fortune: 0 },
           grade: 3,
         },
         {
@@ -127,7 +121,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 4',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 0, speed: 0, accuracy: 2, fortune: 1 },
+          stats: { attack: 0, defense: 0, agility: 2, fortune: 1 },
           grade: 3,
         },
         {
@@ -136,7 +130,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 5',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 1, accuracy: 1, fortune: 1 },
+          stats: { attack: 1, defense: 1, agility: 2, fortune: 1 },
           grade: 5,
         },
       ];
@@ -146,8 +140,7 @@ describe('EquipmentEffectCalculator', () => {
 
       expect(totalStats.attack).toBe(4); // 2+1+0+0+1
       expect(totalStats.defense).toBe(4); // 1+2+0+0+1
-      expect(totalStats.speed).toBe(4); // 0+1+2+0+1
-      expect(totalStats.accuracy).toBe(4); // 0+0+1+2+1
+      expect(totalStats.agility).toBe(8); // 0+1+3+2+2
       expect(totalStats.fortune).toBe(2); // 0+0+0+1+1
     });
   });
@@ -163,8 +156,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -186,8 +178,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -202,11 +193,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 1,
           fortune: 1,
         },
-        grade: 12,
+        grade: 10,
       };
 
       const equipment1 = new EquipmentItem(equipment1Data);
@@ -214,7 +204,7 @@ describe('EquipmentEffectCalculator', () => {
 
       const averageGrade = calculator.calculateAverageGrade([equipment1, equipment2]);
 
-      expect(averageGrade).toBe(5); // (15+12)/5 = 27/5 = 5.4 → 5（小数点切り捨て）
+      expect(averageGrade).toBe(5); // (15+10)/5 = 25/5 = 5
     });
 
     it('空の配列の場合、0を返す', () => {
@@ -231,7 +221,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 0, agility: 0, fortune: 0 },
           grade: 1,
         },
         {
@@ -240,7 +230,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 1, agility: 0, fortune: 0 },
           grade: 2,
         },
         {
@@ -249,7 +239,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 3',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 1, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 1, agility: 1, fortune: 0 },
           grade: 3,
         },
       ];
@@ -268,7 +258,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 1',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 0, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 0, agility: 0, fortune: 0 },
           grade: 1,
         },
         {
@@ -277,7 +267,7 @@ describe('EquipmentEffectCalculator', () => {
           description: 'Item 2',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 1, defense: 1, speed: 0, accuracy: 0, fortune: 0 },
+          stats: { attack: 1, defense: 1, agility: 0, fortune: 0 },
           grade: 2,
         },
       ];
@@ -300,8 +290,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -324,8 +313,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -361,8 +349,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -389,11 +376,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 1,
           fortune: 1,
         },
-        grade: 12,
+        grade: 10,
         skill: {
           id: 'heal',
           name: 'Heal',
@@ -428,8 +414,7 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 10,
           defense: 2,
-          speed: 3,
-          accuracy: 0,
+          agility: 3,
           fortune: 0,
         },
         grade: 15,
@@ -456,11 +441,10 @@ describe('EquipmentEffectCalculator', () => {
         stats: {
           attack: 0,
           defense: 8,
-          speed: 1,
-          accuracy: 2,
+          agility: 1,
           fortune: 1,
         },
-        grade: 12,
+        grade: 10,
         skill: undefined,
       };
 

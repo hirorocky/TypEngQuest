@@ -17,16 +17,14 @@ export class EquipmentEffectCalculator {
         return {
           attack: totalStats.attack + stats.attack,
           defense: totalStats.defense + stats.defense,
-          speed: totalStats.speed + stats.speed,
-          accuracy: totalStats.accuracy + stats.accuracy,
+          agility: totalStats.agility + stats.agility,
           fortune: totalStats.fortune + stats.fortune,
         };
       },
       {
         attack: 0,
         defense: 0,
-        speed: 0,
-        accuracy: 0,
+        agility: 0,
         fortune: 0,
       }
     );

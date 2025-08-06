@@ -37,7 +37,7 @@ describe('StatusAilmentFactory', () => {
         expect(paralysis.name).toBe('Paralysis');
         expect(paralysis.type).toBe('status_ailment');
         expect(paralysis.effects.cannotAct).toBe(true);
-        expect(paralysis.effects.speed).toBe(-5);
+        expect(paralysis.effects.agility).toBe(-5);
         expect(paralysis.duration).toBe(2); // デフォルト継続期間
         expect(paralysis.stackable).toBe(false);
         expect(paralysis.id).toContain('paralysis-');
@@ -147,8 +147,7 @@ describe('StatusAilmentFactory', () => {
         expect(debuff.type).toBe('debuff');
         expect(debuff.effects.attack).toBe(-2);
         expect(debuff.effects.defense).toBe(-2);
-        expect(debuff.effects.speed).toBe(-2);
-        expect(debuff.effects.accuracy).toBe(-2);
+        expect(debuff.effects.agility).toBe(-2);
         expect(debuff.effects.fortune).toBe(-2);
         expect(debuff.duration).toBe(2);
         expect(debuff.stackable).toBe(false);

@@ -38,7 +38,7 @@ export class StatusAilmentFactory {
       type: 'status_ailment',
       effects: {
         cannotAct: true, // 行動不能
-        speed: -5, // 速度低下
+        agility: -5, // 敏捷性低下
       },
       duration,
       stackable: false, // 麻痺は重複しない
@@ -117,8 +117,7 @@ export class StatusAilmentFactory {
       effects: {
         attack: -abspenalty,
         defense: -abspenalty,
-        speed: -abspenalty,
-        accuracy: -abspenalty,
+        agility: -abspenalty,
         fortune: -abspenalty,
       },
       duration,

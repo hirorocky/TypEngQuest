@@ -16,14 +16,12 @@ export class BodyStats {
   private currentMP: number;
   private baseAttack: number;
   private baseDefense: number;
-  private baseSpeed: number;
-  private baseAccuracy: number;
+  private baseAgility: number;
   private baseFortune: number;
   private temporaryBoosts: {
     attack: number;
     defense: number;
-    speed: number;
-    accuracy: number;
+    agility: number;
     fortune: number;
   };
   private temporaryStatuses: TemporaryStatus[];
@@ -36,14 +34,12 @@ export class BodyStats {
     this.level = Math.max(0, level); // 負の値は0にクランプ
     this.baseAttack = BodyStats.BASE_STAT;
     this.baseDefense = BodyStats.BASE_STAT;
-    this.baseSpeed = BodyStats.BASE_STAT;
-    this.baseAccuracy = BodyStats.BASE_STAT;
+    this.baseAgility = BodyStats.BASE_STAT;
     this.baseFortune = BodyStats.BASE_STAT;
     this.temporaryBoosts = {
       attack: 0,
       defense: 0,
-      speed: 0,
-      accuracy: 0,
+      agility: 0,
       fortune: 0,
     };
     this.temporaryStatuses = [];
@@ -128,19 +124,11 @@ export class BodyStats {
   }
 
   /**
-   * 基本速度を取得する
-   * @returns 基本速度
+   * 基本敏捷性を取得する
+   * @returns 基本敏捷性
    */
-  getBaseSpeed(): number {
-    return this.baseSpeed;
-  }
-
-  /**
-   * 基本精度を取得する
-   * @returns 基本精度
-   */
-  getBaseAccuracy(): number {
-    return this.baseAccuracy;
+  getBaseAgility(): number {
+    return this.baseAgility;
   }
 
   /**
@@ -170,21 +158,12 @@ export class BodyStats {
   }
 
   /**
-   * 速度を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 速度
+   * 敏捷性を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
+   * @returns 敏捷性
    */
-  getSpeed(): number {
-    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('speed');
-    return Math.max(0, this.baseSpeed + this.temporaryBoosts.speed + temporaryStatusBonus);
-  }
-
-  /**
-   * 精度を取得する（基本値 + 一時的なブースト + 一時ステータス効果）
-   * @returns 精度
-   */
-  getAccuracy(): number {
-    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('accuracy');
-    return Math.max(0, this.baseAccuracy + this.temporaryBoosts.accuracy + temporaryStatusBonus);
+  getAgility(): number {
+    const temporaryStatusBonus = this.calculateTemporaryStatusEffect('agility');
+    return Math.max(0, this.baseAgility + this.temporaryBoosts.agility + temporaryStatusBonus);
   }
 
   /**
@@ -296,7 +275,7 @@ export class BodyStats {
    * @param amount - ブースト量（負の値でデバフ）
    */
   applyTemporaryBoost(
-    statType: 'attack' | 'defense' | 'speed' | 'accuracy' | 'fortune',
+    statType: 'attack' | 'defense' | 'agility' | 'fortune',
     amount: number
   ): void {
     this.temporaryBoosts[statType] += amount;
@@ -309,8 +288,7 @@ export class BodyStats {
     this.temporaryBoosts = {
       attack: 0,
       defense: 0,
-      speed: 0,
-      accuracy: 0,
+      agility: 0,
       fortune: 0,
     };
   }
@@ -424,7 +402,7 @@ export class BodyStats {
    * @returns 効果の総和
    */
   private calculateTemporaryStatusEffect(
-    statType: 'attack' | 'defense' | 'speed' | 'accuracy' | 'fortune'
+    statType: 'attack' | 'defense' | 'agility' | 'fortune'
   ): number {
     return this.temporaryStatuses.reduce((total, status) => {
       const effect = status.effects[statType];
@@ -443,8 +421,7 @@ export class BodyStats {
       currentMP: this.currentMP,
       baseAttack: this.baseAttack,
       baseDefense: this.baseDefense,
-      baseSpeed: this.baseSpeed,
-      baseAccuracy: this.baseAccuracy,
+      baseAgility: this.baseAgility,
       baseFortune: this.baseFortune,
       temporaryBoosts: { ...this.temporaryBoosts },
       temporaryStatuses: this.temporaryStatuses.map(status => ({ ...status })),
@@ -467,8 +444,7 @@ export class BodyStats {
     bodyStats.currentMP = data.currentMP;
     bodyStats.baseAttack = data.baseAttack;
     bodyStats.baseDefense = data.baseDefense;
-    bodyStats.baseSpeed = data.baseSpeed;
-    bodyStats.baseAccuracy = data.baseAccuracy;
+    bodyStats.baseAgility = data.baseAgility;
     bodyStats.baseFortune = data.baseFortune;
     bodyStats.temporaryBoosts = { ...data.temporaryBoosts };
     bodyStats.temporaryStatuses = data.temporaryStatuses
@@ -518,8 +494,7 @@ export class BodyStats {
     return (
       typeof data.baseAttack === 'number' &&
       typeof data.baseDefense === 'number' &&
-      typeof data.baseSpeed === 'number' &&
-      typeof data.baseAccuracy === 'number' &&
+      typeof data.baseAgility === 'number' &&
       typeof data.baseFortune === 'number'
     );
   }
@@ -535,8 +510,7 @@ export class BodyStats {
       data.temporaryBoosts !== null &&
       typeof data.temporaryBoosts.attack === 'number' &&
       typeof data.temporaryBoosts.defense === 'number' &&
-      typeof data.temporaryBoosts.speed === 'number' &&
-      typeof data.temporaryBoosts.accuracy === 'number' &&
+      typeof data.temporaryBoosts.agility === 'number' &&
       typeof data.temporaryBoosts.fortune === 'number'
     );
   }
@@ -551,14 +525,12 @@ export interface BodyStatsData {
   currentMP: number;
   baseAttack: number;
   baseDefense: number;
-  baseSpeed: number;
-  baseAccuracy: number;
+  baseAgility: number;
   baseFortune: number;
   temporaryBoosts: {
     attack: number;
     defense: number;
-    speed: number;
-    accuracy: number;
+    agility: number;
     fortune: number;
   };
   temporaryStatuses?: TemporaryStatus[];

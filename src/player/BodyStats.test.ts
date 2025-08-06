@@ -12,8 +12,7 @@ describe('BodyStats', () => {
       expect(bodyStats.getMaxMP()).toBe(50);
       expect(bodyStats.getBaseAttack()).toBe(10);
       expect(bodyStats.getBaseDefense()).toBe(10);
-      expect(bodyStats.getBaseSpeed()).toBe(10);
-      expect(bodyStats.getBaseAccuracy()).toBe(10);
+      expect(bodyStats.getBaseAgility()).toBe(10);
       expect(bodyStats.getBaseFortune()).toBe(10);
     });
 
@@ -154,14 +153,12 @@ describe('BodyStats', () => {
         currentMP: 70, // 80 - 10
         baseAttack: 10,
         baseDefense: 10,
-        baseSpeed: 10,
-        baseAccuracy: 10,
+        baseAgility: 10,
         baseFortune: 10,
         temporaryBoosts: {
           attack: 0,
           defense: 0,
-          speed: 0,
-          accuracy: 0,
+          agility: 0,
           fortune: 0,
         },
         temporaryStatuses: [],
@@ -175,14 +172,12 @@ describe('BodyStats', () => {
         currentMP: 40,
         baseAttack: 15,
         baseDefense: 12,
-        baseSpeed: 8,
-        baseAccuracy: 11,
+        baseAgility: 19,
         baseFortune: 9,
         temporaryBoosts: {
           attack: 0,
           defense: 0,
-          speed: 0,
-          accuracy: 0,
+          agility: 0,
           fortune: 0,
         },
         temporaryStatuses: [],
@@ -195,8 +190,7 @@ describe('BodyStats', () => {
       expect(bodyStats.getCurrentMP()).toBe(40);
       expect(bodyStats.getBaseAttack()).toBe(15);
       expect(bodyStats.getBaseDefense()).toBe(12);
-      expect(bodyStats.getBaseSpeed()).toBe(8);
-      expect(bodyStats.getBaseAccuracy()).toBe(11);
+      expect(bodyStats.getBaseAgility()).toBe(19);
       expect(bodyStats.getBaseFortune()).toBe(9);
     });
 

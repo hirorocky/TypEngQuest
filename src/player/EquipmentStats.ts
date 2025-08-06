@@ -1,12 +1,11 @@
 /**
  * 装備による上昇ステータスを管理するクラス
- * 攻撃力、防御力、速度、精度、幸運の値を保持し、演算を提供する
+ * 攻撃力、防御力、敏捷性、幸運の値を保持し、演算を提供する
  */
 export class EquipmentStats {
   private attack: number;
   private defense: number;
-  private speed: number;
-  private accuracy: number;
+  private agility: number;
   private fortune: number;
 
   /**
@@ -16,8 +15,7 @@ export class EquipmentStats {
   constructor(stats: Partial<EquipmentStatsData> = {}) {
     this.attack = stats.attack || 0;
     this.defense = stats.defense || 0;
-    this.speed = stats.speed || 0;
-    this.accuracy = stats.accuracy || 0;
+    this.agility = stats.agility || 0;
     this.fortune = stats.fortune || 0;
   }
 
@@ -38,19 +36,11 @@ export class EquipmentStats {
   }
 
   /**
-   * 速度を取得する
-   * @returns 速度
+   * 敏捷性を取得する
+   * @returns 敏捷性
    */
-  getSpeed(): number {
-    return this.speed;
-  }
-
-  /**
-   * 精度を取得する
-   * @returns 精度
-   */
-  getAccuracy(): number {
-    return this.accuracy;
+  getAgility(): number {
+    return this.agility;
   }
 
   /**
@@ -78,19 +68,11 @@ export class EquipmentStats {
   }
 
   /**
-   * 速度を設定する
-   * @param value - 速度
+   * 敏捷性を設定する
+   * @param value - 敏捷性
    */
-  setSpeed(value: number): void {
-    this.speed = value;
-  }
-
-  /**
-   * 精度を設定する
-   * @param value - 精度
-   */
-  setAccuracy(value: number): void {
-    this.accuracy = value;
+  setAgility(value: number): void {
+    this.agility = value;
   }
 
   /**
@@ -118,19 +100,11 @@ export class EquipmentStats {
   }
 
   /**
-   * 速度を加算する
+   * 敏捷性を加算する
    * @param value - 加算値
    */
-  addSpeed(value: number): void {
-    this.speed += value;
-  }
-
-  /**
-   * 精度を加算する
-   * @param value - 加算値
-   */
-  addAccuracy(value: number): void {
-    this.accuracy += value;
+  addAgility(value: number): void {
+    this.agility += value;
   }
 
   /**
@@ -148,8 +122,7 @@ export class EquipmentStats {
   add(other: EquipmentStats): void {
     this.attack += other.attack;
     this.defense += other.defense;
-    this.speed += other.speed;
-    this.accuracy += other.accuracy;
+    this.agility += other.agility;
     this.fortune += other.fortune;
   }
 
@@ -159,8 +132,7 @@ export class EquipmentStats {
   clear(): void {
     this.attack = 0;
     this.defense = 0;
-    this.speed = 0;
-    this.accuracy = 0;
+    this.agility = 0;
     this.fortune = 0;
   }
 
@@ -175,10 +147,8 @@ export class EquipmentStats {
         return this.attack;
       case 'defense':
         return this.defense;
-      case 'speed':
-        return this.speed;
-      case 'accuracy':
-        return this.accuracy;
+      case 'agility':
+        return this.agility;
       case 'fortune':
         return this.fortune;
       default:
@@ -199,11 +169,8 @@ export class EquipmentStats {
       case 'defense':
         this.defense = value;
         break;
-      case 'speed':
-        this.speed = value;
-        break;
-      case 'accuracy':
-        this.accuracy = value;
+      case 'agility':
+        this.agility = value;
         break;
       case 'fortune':
         this.fortune = value;
@@ -216,7 +183,7 @@ export class EquipmentStats {
    * @returns 合計値
    */
   getTotal(): number {
-    return this.attack + this.defense + this.speed + this.accuracy + this.fortune;
+    return this.attack + this.defense + this.agility + this.fortune;
   }
 
   /**
@@ -224,13 +191,7 @@ export class EquipmentStats {
    * @returns 全て0の場合true
    */
   isEmpty(): boolean {
-    return (
-      this.attack === 0 &&
-      this.defense === 0 &&
-      this.speed === 0 &&
-      this.accuracy === 0 &&
-      this.fortune === 0
-    );
+    return this.attack === 0 && this.defense === 0 && this.agility === 0 && this.fortune === 0;
   }
 
   /**
@@ -241,8 +202,7 @@ export class EquipmentStats {
     return {
       attack: this.attack,
       defense: this.defense,
-      speed: this.speed,
-      accuracy: this.accuracy,
+      agility: this.agility,
       fortune: this.fortune,
     };
   }
@@ -271,8 +231,7 @@ export class EquipmentStats {
     return new EquipmentStats({
       attack: stats1.attack + stats2.attack,
       defense: stats1.defense + stats2.defense,
-      speed: stats1.speed + stats2.speed,
-      accuracy: stats1.accuracy + stats2.accuracy,
+      agility: stats1.agility + stats2.agility,
       fortune: stats1.fortune + stats2.fortune,
     });
   }
@@ -288,8 +247,7 @@ export class EquipmentStats {
       data !== null &&
       typeof data.attack === 'number' &&
       typeof data.defense === 'number' &&
-      typeof data.speed === 'number' &&
-      typeof data.accuracy === 'number' &&
+      typeof data.agility === 'number' &&
       typeof data.fortune === 'number'
     );
   }
@@ -301,7 +259,6 @@ export class EquipmentStats {
 export interface EquipmentStatsData {
   attack: number;
   defense: number;
-  speed: number;
-  accuracy: number;
+  agility: number;
   fortune: number;
 }
