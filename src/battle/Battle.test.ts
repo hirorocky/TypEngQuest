@@ -31,8 +31,8 @@ describe('Battle', () => {
       stats: {
         maxHp: 100,
         maxMp: 30,
-        attack: 20,
-        defense: 10,
+        strength: 20,
+        willpower: 10,
         agility: 90,
         fortune: 10,
       },
@@ -86,8 +86,8 @@ describe('Battle', () => {
     it('現在のターンが誰のターンか判定できる', () => {
       // プレイヤーの速度を設定
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        attack: 10,
-        defense: 10,
+        strength: 10,
+        willpower: 10,
         agility: 100, // 敵より速い
         fortune: 10,
       });
@@ -98,8 +98,8 @@ describe('Battle', () => {
 
     it('速度が同じ場合はランダムに決定される', () => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        attack: 10,
-        defense: 10,
+        strength: 10,
+        willpower: 10,
         agility: 90, // 敵と同じ速度
         fortune: 10,
       });
@@ -135,8 +135,8 @@ describe('Battle', () => {
       };
 
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        attack: 30,
-        defense: 10,
+        strength: 30,
+        willpower: 10,
         agility: 120,
         fortune: 10,
       });
@@ -285,8 +285,8 @@ describe('Battle', () => {
         stats: {
           maxHp: 50,
           maxMp: 10,
-          attack: 15,
-          defense: 8,
+          strength: 15,
+          willpower: 8,
           agility: 80,
           fortune: 5,
         },
@@ -302,8 +302,8 @@ describe('Battle', () => {
       dropBattle.checkBattleEnd();
 
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        attack: 10,
-        defense: 10,
+        strength: 10,
+        willpower: 10,
         agility: 20,
         fortune: 50,
       });
@@ -353,8 +353,8 @@ describe('Battle', () => {
         stats: {
           maxHp: 50,
           maxMp: 20,
-          attack: 15,
-          defense: 10,
+          strength: 15,
+          willpower: 10,
           agility: 90,
           fortune: 30,
         },

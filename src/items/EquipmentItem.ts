@@ -293,8 +293,8 @@ export class EquipmentItem extends Item {
 
     // 数値プロパティの比較
     const numberProps: (keyof TemporaryStatusEffects)[] = [
-      'attack',
-      'defense',
+      'strength',
+      'willpower',
       'agility',
       'fortune',
       'hpPerTurn',
