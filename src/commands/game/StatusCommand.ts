@@ -38,8 +38,8 @@ export class StatusCommand extends BaseCommand {
       const maxMP = stats.getMaxMP();
 
       // ステータス情報
-      const attack = stats.getAttack();
-      const defense = stats.getDefense();
+      const strength = stats.getStrength();
+      const willpower = stats.getWillpower();
       const agility = stats.getAgility();
       const fortune = stats.getFortune();
 
@@ -55,8 +55,8 @@ export class StatusCommand extends BaseCommand {
         `HP: ${currentHP}/${maxHP} ${hpBar}`,
         `MP: ${currentMP}/${maxMP} ${mpBar}`,
         '',
-        `Attack: ${attack}`,
-        `Defense: ${defense}`,
+        `Strength: ${strength}`,
+        `Willpower: ${willpower}`,
         `Agility: ${agility}`,
         `Fortune: ${fortune}`,
       ].join('\n');
