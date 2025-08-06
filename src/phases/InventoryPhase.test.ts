@@ -164,7 +164,7 @@ describe('InventoryPhase', () => {
           description: 'A sharp sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 10, defense: 0, agility: 0, fortune: 0 },
+          stats: { strength: 10, willpower: 0, agility: 0, fortune: 0 },
           grade: 10,
         });
         player.getInventory().addItem(equipment);

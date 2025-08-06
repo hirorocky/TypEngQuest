@@ -71,7 +71,7 @@ export class Player {
           description: 'An ancient blade with mysterious power',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.LEGENDARY,
-          stats: { attack: 5, defense: 5, agility: 0, fortune: 5 },
+          stats: { strength: 5, willpower: 5, agility: 0, fortune: 5 },
           grade: 15,
         }),
         new EquipmentItem({
@@ -80,7 +80,7 @@ export class Player {
           description: 'A shield imbued with protective magic',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.EPIC,
-          stats: { attack: 0, defense: 20, agility: -5, fortune: 0 },
+          stats: { strength: 0, willpower: 20, agility: -5, fortune: 0 },
           grade: 15,
         }),
         new EquipmentItem({
@@ -89,7 +89,7 @@ export class Player {
           description: 'Boots that enhance movement speed',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.RARE,
-          stats: { attack: 0, defense: 0, agility: 20, fortune: 0 },
+          stats: { strength: 0, willpower: 0, agility: 20, fortune: 0 },
           grade: 20,
         }),
         new EquipmentItem({
@@ -98,7 +98,7 @@ export class Player {
           description: 'A well-crafted steel sword',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 12, defense: 0, agility: 3, fortune: 0 },
+          stats: { strength: 12, willpower: 0, agility: 3, fortune: 0 },
           grade: 15,
         }),
         new EquipmentItem({
@@ -107,7 +107,7 @@ export class Player {
           description: 'A basic wooden shield for protection',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 8, agility: 0, fortune: 0 },
+          stats: { strength: 0, willpower: 8, agility: 0, fortune: 0 },
           grade: 8,
         }),
         new EquipmentItem({
@@ -116,7 +116,7 @@ export class Player {
           description: 'Gauntlets that boost physical strength',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.RARE,
-          stats: { attack: 18, defense: 3, agility: 0, fortune: 0 },
+          stats: { strength: 18, willpower: 3, agility: 0, fortune: 0 },
           grade: 21,
         }),
         new EquipmentItem({
@@ -125,7 +125,7 @@ export class Player {
           description: 'An amulet blessed by divine power',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.EPIC,
-          stats: { attack: 0, defense: 0, agility: 0, fortune: 20 },
+          stats: { strength: 0, willpower: 0, agility: 0, fortune: 20 },
           grade: 20,
         }),
         new EquipmentItem({
@@ -134,7 +134,7 @@ export class Player {
           description: 'A mystical crystal orb',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.LEGENDARY,
-          stats: { attack: 30, defense: 0, agility: 20, fortune: 10 },
+          stats: { strength: 30, willpower: 0, agility: 20, fortune: 10 },
           grade: 60,
         }),
         new EquipmentItem({
@@ -143,7 +143,7 @@ export class Player {
           description: 'A polished silver ring',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.COMMON,
-          stats: { attack: 0, defense: 0, agility: 7, fortune: 3 },
+          stats: { strength: 0, willpower: 0, agility: 7, fortune: 3 },
           grade: 10,
         }),
         new EquipmentItem({
@@ -152,7 +152,7 @@ export class Player {
           description: 'A bow enhanced with magical properties',
           type: ItemType.EQUIPMENT,
           rarity: ItemRarity.EPIC,
-          stats: { attack: 22, defense: 0, agility: 28, fortune: 0 },
+          stats: { strength: 22, willpower: 0, agility: 28, fortune: 0 },
           grade: 50,
         }),
       ];
@@ -187,8 +187,8 @@ export class Player {
     const combinedStats = BodyStats.fromJSON(bodyStatsData);
 
     // 装備ステータスを一時的なブーストとして適用
-    combinedStats.applyTemporaryBoost('strength', this.equipmentStats.getAttack());
-    combinedStats.applyTemporaryBoost('willpower', this.equipmentStats.getDefense());
+    combinedStats.applyTemporaryBoost('strength', this.equipmentStats.getStrength());
+    combinedStats.applyTemporaryBoost('willpower', this.equipmentStats.getWillpower());
     combinedStats.applyTemporaryBoost('agility', this.equipmentStats.getAgility());
     combinedStats.applyTemporaryBoost('fortune', this.equipmentStats.getFortune());
 
@@ -217,8 +217,8 @@ export class Player {
    */
   getTotalStats(): TotalStatsResult {
     return {
-      strength: this.bodyStats.getStrength() + this.equipmentStats.getAttack(),
-      willpower: this.bodyStats.getWillpower() + this.equipmentStats.getDefense(),
+      strength: this.bodyStats.getStrength() + this.equipmentStats.getStrength(),
+      willpower: this.bodyStats.getWillpower() + this.equipmentStats.getWillpower(),
       agility: this.bodyStats.getAgility() + this.equipmentStats.getAgility(),
       fortune: this.bodyStats.getFortune() + this.equipmentStats.getFortune(),
     };
@@ -310,8 +310,8 @@ export class Player {
 
     for (const item of this.equippedItems) {
       const itemStats = item.getStats();
-      this.equipmentStats.addAttack(itemStats.attack);
-      this.equipmentStats.addDefense(itemStats.defense);
+      this.equipmentStats.addStrength(itemStats.strength);
+      this.equipmentStats.addWillpower(itemStats.willpower);
       this.equipmentStats.addAgility(itemStats.agility);
       this.equipmentStats.addFortune(itemStats.fortune);
     }

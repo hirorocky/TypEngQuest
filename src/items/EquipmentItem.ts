@@ -6,8 +6,8 @@ import { TemporaryStatusEffects } from '../player/TemporaryStatus';
  * 装備アイテムのステータス
  */
 export interface EquipmentStats {
-  attack: number;
-  defense: number;
+  strength: number;
+  willpower: number;
   agility: number;
   fortune: number;
 }
@@ -50,8 +50,8 @@ export interface EquipmentItemData extends ItemData {
  */
 export class EquipmentItem extends Item {
   private static readonly REQUIRED_STATS: readonly string[] = [
-    'attack',
-    'defense',
+    'strength',
+    'willpower',
     'agility',
     'fortune',
   ] as const;
@@ -81,8 +81,8 @@ export class EquipmentItem extends Item {
 
     // statsがundefinedの場合、デフォルト値を設定
     const stats = data.stats || {
-      attack: 0,
-      defense: 0,
+      strength: 0,
+      willpower: 0,
       agility: 0,
       fortune: 0,
     };
@@ -107,7 +107,7 @@ export class EquipmentItem extends Item {
 
     const statsSum = this.calculateStatsSum(stats);
     if (grade !== statsSum) {
-      throw new Error('Grade must equal sum of stats (attack + defense + agility + fortune)');
+      throw new Error('Grade must equal sum of stats (strength + willpower + agility + fortune)');
     }
   }
 
@@ -121,7 +121,7 @@ export class EquipmentItem extends Item {
       return 0;
     }
 
-    return stats.attack + stats.defense + stats.agility + stats.fortune;
+    return stats.strength + stats.willpower + stats.agility + stats.fortune;
   }
 
   /**
@@ -212,8 +212,8 @@ export class EquipmentItem extends Item {
    */
   private compareStats(otherStats: EquipmentStats): boolean {
     return (
-      this.stats.attack === otherStats.attack &&
-      this.stats.defense === otherStats.defense &&
+      this.stats.strength === otherStats.strength &&
+      this.stats.willpower === otherStats.willpower &&
       this.stats.agility === otherStats.agility &&
       this.stats.fortune === otherStats.fortune
     );

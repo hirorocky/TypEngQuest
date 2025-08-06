@@ -460,8 +460,8 @@ export class ItemEquipmentPhase extends Phase {
     const stats = item.getStats();
     const parts: string[] = [];
 
-    if (stats.attack > 0) parts.push(`ATK+${stats.attack}`);
-    if (stats.defense > 0) parts.push(`DEF+${stats.defense}`);
+    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
+    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
     if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
     if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
 
@@ -474,8 +474,8 @@ export class ItemEquipmentPhase extends Phase {
   private formatEquipmentStats(stats: any): string {
     const parts: string[] = [];
 
-    if (stats.attack > 0) parts.push(`ATK+${stats.attack}`);
-    if (stats.defense > 0) parts.push(`DEF+${stats.defense}`);
+    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
+    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
     if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
     if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
 

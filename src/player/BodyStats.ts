@@ -7,9 +7,9 @@ import { WorldStatus, isWorldStatus } from './WorldStatus';
 export class BodyStats {
   // ゲームバランスパラメータ定数
   private static readonly BASE_HP = 100;
-  private static readonly HP_PER_LEVEL = 20;
-  private static readonly BASE_MP = 50;
-  private static readonly MP_PER_LEVEL = 10;
+  private static readonly HP_PER_LEVEL = 10;
+  private static readonly BASE_MP = 100;
+  private static readonly MP_PER_LEVEL = 2;
   private static readonly BASE_STAT = 10;
 
   private level: number;

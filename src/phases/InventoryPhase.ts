@@ -309,8 +309,8 @@ export class InventoryPhase extends Phase {
     const stats = this.effectCalculator.calculateTotalStats(equipments);
     const lines: string[] = [];
 
-    if (stats.attack > 0) lines.push(`Attack: +${stats.attack}`);
-    if (stats.defense > 0) lines.push(`Defense: +${stats.defense}`);
+    if (stats.strength > 0) lines.push(`Strength: +${stats.strength}`);
+    if (stats.willpower > 0) lines.push(`Willpower: +${stats.willpower}`);
     if (stats.agility > 0) lines.push(`Agility: +${stats.agility}`);
     if (stats.fortune > 0) lines.push(`Fortune: +${stats.fortune}`);
 
