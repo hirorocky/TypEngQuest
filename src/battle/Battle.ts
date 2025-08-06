@@ -151,6 +151,20 @@ export class Battle {
    * @returns 技の使用結果
    */
   playerUseSkill(skill: Skill, typingResult?: TypingResult): PlayerSkillResult {
+    const playerBodyStats = this.player.getBodyStats();
+
+    // MP消費チェック
+    if (playerBodyStats.getCurrentMP() < skill.mpCost) {
+      return {
+        success: false,
+        damage: 0,
+        message: `Not enough MP! Need ${skill.mpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`,
+      };
+    }
+
+    // MP消費処理
+    playerBodyStats.consumeMP(skill.mpCost);
+
     const playerStats = this.player.getTotalStats();
     const enemyStats = this.enemy.stats;
 
@@ -159,10 +173,15 @@ export class Battle {
     const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
+      // MP回復処理（命中しなくてもMP回復は発生する）
+      if (skill.mpCharge > 0) {
+        playerBodyStats.healMP(skill.mpCharge);
+      }
+
       return {
         success: false,
         damage: 0,
-        message: `${skill.name} missed!`,
+        message: `${skill.name} missed!${skill.mpCharge > 0 ? ` Recovered ${skill.mpCharge} MP.` : ''}`,
       };
     }
 
@@ -183,10 +202,17 @@ export class Battle {
     // ダメージを与える
     this.enemy.takeDamage(damage);
 
+    // MP回復処理
+    if (skill.mpCharge > 0) {
+      playerBodyStats.healMP(skill.mpCharge);
+    }
+
     return {
       success: true,
       damage,
-      message: this.generateSkillMessage(skill.name, damage, isCritical, typingResult),
+      message:
+        this.generateSkillMessage(skill.name, damage, isCritical, typingResult) +
+        (skill.mpCharge > 0 ? ` Recovered ${skill.mpCharge} MP.` : ''),
       critical: isCritical,
     };
   }
@@ -269,18 +295,44 @@ export class Battle {
     // 技を選択（なければ通常攻撃）
     const selectedSkill = this.enemy.selectSkill() || Battle.NORMAL_ATTACK_SKILL;
 
+    // MP消費チェック
+    if (this.enemy.currentMp < selectedSkill.mpCost) {
+      // MPが足りない場合は通常攻撃
+      const normalAttackSkill = Battle.NORMAL_ATTACK_SKILL;
+      return this.performEnemyAttack(normalAttackSkill);
+    }
+
+    // MP消費処理
+    this.enemy.consumeMp(selectedSkill.mpCost);
+
+    const result = this.performEnemyAttack(selectedSkill);
+
+    // MP回復処理
+    if (selectedSkill.mpCharge > 0) {
+      this.enemy.recoverMp(selectedSkill.mpCharge);
+    }
+
+    return result;
+  }
+
+  /**
+   * 敵の攻撃を実行する
+   * @param skill 使用する技
+   * @returns 攻撃結果
+   */
+  private performEnemyAttack(skill: Skill): EnemyActionResult {
     const playerStats = this.player.getTotalStats();
     const enemyStats = this.enemy.stats;
 
     // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(selectedSkill.accuracy);
+    const hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
     const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
       return {
-        skillUsed: selectedSkill,
+        skillUsed: skill,
         damage: 0,
-        message: `${this.enemy.name} used ${selectedSkill.name} but missed!`,
+        message: `${this.enemy.name} used ${skill.name} but missed!`,
       };
     }
 
@@ -292,7 +344,7 @@ export class Battle {
     const damage = BattleCalculator.calculateDamage(
       enemyStats.strength,
       0, // プレイヤーへの攻撃では防御力を考慮しない
-      selectedSkill.power,
+      skill.power,
       isCritical
     );
 
@@ -300,9 +352,9 @@ export class Battle {
     this.player.getBodyStats().takeDamage(damage);
 
     return {
-      skillUsed: selectedSkill,
+      skillUsed: skill,
       damage,
-      message: `${this.enemy.name} used ${selectedSkill.name} and dealt ${damage} damage!${
+      message: `${this.enemy.name} used ${skill.name} and dealt ${damage} damage!${
         isCritical ? ' Critical hit!' : ''
       }`,
       critical: isCritical,
