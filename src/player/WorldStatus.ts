@@ -94,7 +94,7 @@ export function isWorldStatusEffects(obj: any): obj is WorldStatusEffects {
     'skillPowerMultiplier',
     'mpCostMultiplier',
   ];
-  
+
   for (const prop of numberProps) {
     if (obj[prop] !== undefined && typeof obj[prop] !== 'number') {
       return false;

@@ -160,7 +160,13 @@ export class BodyStats {
    */
   getStrength(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('strength');
-    return Math.max(0, this.baseStrength + this.worldBoosts.strength + this.temporaryBoosts.strength + temporaryStatusBonus);
+    return Math.max(
+      0,
+      this.baseStrength +
+        this.worldBoosts.strength +
+        this.temporaryBoosts.strength +
+        temporaryStatusBonus
+    );
   }
 
   /**
@@ -169,7 +175,13 @@ export class BodyStats {
    */
   getWillpower(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('willpower');
-    return Math.max(0, this.baseWillpower + this.worldBoosts.willpower + this.temporaryBoosts.willpower + temporaryStatusBonus);
+    return Math.max(
+      0,
+      this.baseWillpower +
+        this.worldBoosts.willpower +
+        this.temporaryBoosts.willpower +
+        temporaryStatusBonus
+    );
   }
 
   /**
@@ -178,7 +190,13 @@ export class BodyStats {
    */
   getAgility(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('agility');
-    return Math.max(0, this.baseAgility + this.worldBoosts.agility + this.temporaryBoosts.agility + temporaryStatusBonus);
+    return Math.max(
+      0,
+      this.baseAgility +
+        this.worldBoosts.agility +
+        this.temporaryBoosts.agility +
+        temporaryStatusBonus
+    );
   }
 
   /**
@@ -187,7 +205,13 @@ export class BodyStats {
    */
   getFortune(): number {
     const temporaryStatusBonus = this.calculateTemporaryStatusEffect('fortune');
-    return Math.max(0, this.baseFortune + this.worldBoosts.fortune + this.temporaryBoosts.fortune + temporaryStatusBonus);
+    return Math.max(
+      0,
+      this.baseFortune +
+        this.worldBoosts.fortune +
+        this.temporaryBoosts.fortune +
+        temporaryStatusBonus
+    );
   }
 
   /**
@@ -579,15 +603,36 @@ export class BodyStats {
     }
 
     const bodyStats = new BodyStats(data.level);
+    this.restoreHPMP(bodyStats, data);
+    this.restoreBaseStats(bodyStats, data);
+    this.restoreBoosts(bodyStats, data);
+    this.restoreStatuses(bodyStats, data);
+
+    return bodyStats;
+  }
+
+  /**
+   * HP/MPを復元する
+   */
+  private static restoreHPMP(bodyStats: BodyStats, data: any): void {
     bodyStats.currentHP = data.currentHP;
     bodyStats.currentMP = data.currentMP;
-    
-    // 旧形式との互換性を保つ
+  }
+
+  /**
+   * 基本ステータスを復元する（旧形式との互換性を保つ）
+   */
+  private static restoreBaseStats(bodyStats: BodyStats, data: any): void {
     bodyStats.baseStrength = data.baseStrength ?? data.baseAttack ?? BodyStats.BASE_STAT;
     bodyStats.baseWillpower = data.baseWillpower ?? data.baseDefense ?? BodyStats.BASE_STAT;
     bodyStats.baseAgility = data.baseAgility ?? BodyStats.BASE_STAT;
     bodyStats.baseFortune = data.baseFortune ?? BodyStats.BASE_STAT;
-    
+  }
+
+  /**
+   * ブーストを復元する
+   */
+  private static restoreBoosts(bodyStats: BodyStats, data: any): void {
     // temporaryBoostsの互換性処理
     if (data.temporaryBoosts) {
       bodyStats.temporaryBoosts = {
@@ -597,21 +642,24 @@ export class BodyStats {
         fortune: data.temporaryBoosts.fortune ?? 0,
       };
     }
-    
+
     // worldBoostsの処理
     if (data.worldBoosts) {
       bodyStats.worldBoosts = { ...data.worldBoosts };
     }
-    
+  }
+
+  /**
+   * ステータスを復元する
+   */
+  private static restoreStatuses(bodyStats: BodyStats, data: any): void {
     bodyStats.temporaryStatuses = data.temporaryStatuses
       ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
       : [];
-    
+
     bodyStats.worldStatuses = data.worldStatuses
       ? data.worldStatuses.filter((status: any) => isWorldStatus(status))
       : [];
-
-    return bodyStats;
   }
 
   /**
@@ -652,21 +700,19 @@ export class BodyStats {
    */
   private static validateStatsFields(data: any): boolean {
     // 新形式のチェック
-    const hasNewFormat = (
+    const hasNewFormat =
       typeof data.baseStrength === 'number' &&
       typeof data.baseWillpower === 'number' &&
       typeof data.baseAgility === 'number' &&
-      typeof data.baseFortune === 'number'
-    );
-    
+      typeof data.baseFortune === 'number';
+
     // 旧形式のチェック（互換性のため）
-    const hasOldFormat = (
+    const hasOldFormat =
       typeof data.baseAttack === 'number' &&
       typeof data.baseDefense === 'number' &&
       typeof data.baseAgility === 'number' &&
-      typeof data.baseFortune === 'number'
-    );
-    
+      typeof data.baseFortune === 'number';
+
     return hasNewFormat || hasOldFormat;
   }
 
@@ -679,23 +725,21 @@ export class BodyStats {
     if (typeof data.temporaryBoosts !== 'object' || data.temporaryBoosts === null) {
       return false;
     }
-    
+
     // 新形式のチェック
-    const hasNewFormat = (
+    const hasNewFormat =
       typeof data.temporaryBoosts.strength === 'number' &&
       typeof data.temporaryBoosts.willpower === 'number' &&
       typeof data.temporaryBoosts.agility === 'number' &&
-      typeof data.temporaryBoosts.fortune === 'number'
-    );
-    
+      typeof data.temporaryBoosts.fortune === 'number';
+
     // 旧形式のチェック（互換性のため）
-    const hasOldFormat = (
+    const hasOldFormat =
       typeof data.temporaryBoosts.attack === 'number' &&
       typeof data.temporaryBoosts.defense === 'number' &&
       typeof data.temporaryBoosts.agility === 'number' &&
-      typeof data.temporaryBoosts.fortune === 'number'
-    );
-    
+      typeof data.temporaryBoosts.fortune === 'number';
+
     return hasNewFormat || hasOldFormat;
   }
 }

@@ -10,8 +10,8 @@ describe('BodyStats', () => {
       expect(bodyStats.getCurrentMP()).toBe(50); // BASE_MP
       expect(bodyStats.getMaxHP()).toBe(100);
       expect(bodyStats.getMaxMP()).toBe(50);
-      expect(bodyStats.getBaseAttack()).toBe(10);
-      expect(bodyStats.getBaseDefense()).toBe(10);
+      expect(bodyStats.getBaseStrength()).toBe(10);
+      expect(bodyStats.getBaseWillpower()).toBe(10);
       expect(bodyStats.getBaseAgility()).toBe(10);
       expect(bodyStats.getBaseFortune()).toBe(10);
     });
@@ -151,17 +151,24 @@ describe('BodyStats', () => {
         level: 3,
         currentHP: 140, // 160 - 20
         currentMP: 70, // 80 - 10
-        baseAttack: 10,
-        baseDefense: 10,
+        baseStrength: 10,
+        baseWillpower: 10,
         baseAgility: 10,
         baseFortune: 10,
         temporaryBoosts: {
-          attack: 0,
-          defense: 0,
+          strength: 0,
+          willpower: 0,
+          agility: 0,
+          fortune: 0,
+        },
+        worldBoosts: {
+          strength: 0,
+          willpower: 0,
           agility: 0,
           fortune: 0,
         },
         temporaryStatuses: [],
+        worldStatuses: [],
       });
     });
 
@@ -170,13 +177,13 @@ describe('BodyStats', () => {
         level: 2,
         currentHP: 100,
         currentMP: 40,
-        baseAttack: 15,
-        baseDefense: 12,
+        baseStrength: 15,
+        baseWillpower: 12,
         baseAgility: 19,
         baseFortune: 9,
         temporaryBoosts: {
-          attack: 0,
-          defense: 0,
+          strength: 0,
+          willpower: 0,
           agility: 0,
           fortune: 0,
         },
@@ -188,8 +195,8 @@ describe('BodyStats', () => {
       expect(bodyStats.getLevel()).toBe(2);
       expect(bodyStats.getCurrentHP()).toBe(100);
       expect(bodyStats.getCurrentMP()).toBe(40);
-      expect(bodyStats.getBaseAttack()).toBe(15);
-      expect(bodyStats.getBaseDefense()).toBe(12);
+      expect(bodyStats.getBaseStrength()).toBe(15);
+      expect(bodyStats.getBaseWillpower()).toBe(12);
       expect(bodyStats.getBaseAgility()).toBe(19);
       expect(bodyStats.getBaseFortune()).toBe(9);
     });

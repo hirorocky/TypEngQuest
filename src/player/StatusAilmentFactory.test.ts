@@ -57,7 +57,7 @@ describe('StatusAilmentFactory', () => {
         expect(sleep.name).toBe('Sleep');
         expect(sleep.type).toBe('status_ailment');
         expect(sleep.effects.cannotAct).toBe(true);
-        expect(sleep.effects.defense).toBe(-3);
+        expect(sleep.effects.willpower).toBe(-3);
         expect(sleep.duration).toBe(2); // デフォルト継続期間
         expect(sleep.stackable).toBe(false);
         expect(sleep.id).toContain('sleep-');
@@ -72,42 +72,42 @@ describe('StatusAilmentFactory', () => {
   });
 
   describe('バフの生成', () => {
-    describe('createAttackBoost', () => {
-      test('デフォルト値で攻撃力アップバフを生成する', () => {
-        const buff = StatusAilmentFactory.createAttackBoost();
+    describe('createStrengthBoost', () => {
+      test('デフォルト値でstrengthアップバフを生成する', () => {
+        const buff = StatusAilmentFactory.createStrengthBoost();
 
-        expect(buff.name).toBe('Attack Up');
+        expect(buff.name).toBe('Strength Up');
         expect(buff.type).toBe('buff');
-        expect(buff.effects.attack).toBe(5); // デフォルトブースト
+        expect(buff.effects.strength).toBe(5); // デフォルトブースト
         expect(buff.duration).toBe(3); // デフォルト継続期間
         expect(buff.stackable).toBe(true);
-        expect(buff.id).toContain('attack-boost-');
+        expect(buff.id).toContain('strength-boost-');
       });
 
-      test('カスタム値で攻撃力アップバフを生成する', () => {
-        const buff = StatusAilmentFactory.createAttackBoost(4, 8);
+      test('カスタム値でstrengthアップバフを生成する', () => {
+        const buff = StatusAilmentFactory.createStrengthBoost(4, 8);
 
-        expect(buff.effects.attack).toBe(8);
+        expect(buff.effects.strength).toBe(8);
         expect(buff.duration).toBe(4);
       });
 
       test('負の値を渡しても効果は正の値になる', () => {
-        const buff = StatusAilmentFactory.createAttackBoost(3, -10);
+        const buff = StatusAilmentFactory.createStrengthBoost(3, -10);
 
-        expect(buff.effects.attack).toBe(10); // 負の値を渡しても正になる
+        expect(buff.effects.strength).toBe(10); // 負の値を渡しても正になる
       });
     });
 
-    describe('createDefenseBoost', () => {
-      test('デフォルト値で防御力アップバフを生成する', () => {
-        const buff = StatusAilmentFactory.createDefenseBoost();
+    describe('createWillpowerBoost', () => {
+      test('デフォルト値でwillpowerアップバフを生成する', () => {
+        const buff = StatusAilmentFactory.createWillpowerBoost();
 
-        expect(buff.name).toBe('Defense Up');
+        expect(buff.name).toBe('Willpower Up');
         expect(buff.type).toBe('buff');
-        expect(buff.effects.defense).toBe(5);
+        expect(buff.effects.willpower).toBe(5);
         expect(buff.duration).toBe(3);
         expect(buff.stackable).toBe(true);
-        expect(buff.id).toContain('defense-boost-');
+        expect(buff.id).toContain('willpower-boost-');
       });
     });
 
@@ -145,8 +145,8 @@ describe('StatusAilmentFactory', () => {
 
         expect(debuff.name).toBe('All Stats Down');
         expect(debuff.type).toBe('debuff');
-        expect(debuff.effects.attack).toBe(-2);
-        expect(debuff.effects.defense).toBe(-2);
+        expect(debuff.effects.strength).toBe(-2);
+        expect(debuff.effects.willpower).toBe(-2);
         expect(debuff.effects.agility).toBe(-2);
         expect(debuff.effects.fortune).toBe(-2);
         expect(debuff.duration).toBe(2);
@@ -157,14 +157,14 @@ describe('StatusAilmentFactory', () => {
       test('カスタム値で全ステータスダウンデバフを生成する', () => {
         const debuff = StatusAilmentFactory.createAllStatsDown(3, 4);
 
-        expect(debuff.effects.attack).toBe(-4);
+        expect(debuff.effects.strength).toBe(-4);
         expect(debuff.duration).toBe(3);
       });
 
       test('負の値を渡してもペナルティは負の値になる', () => {
         const debuff = StatusAilmentFactory.createAllStatsDown(2, -3);
 
-        expect(debuff.effects.attack).toBe(-3); // 絶対値を取って負にする
+        expect(debuff.effects.strength).toBe(-3); // 絶対値を取って負にする
       });
     });
   });
@@ -180,11 +180,11 @@ describe('StatusAilmentFactory', () => {
     test('異なるファクトリーメソッドで異なるIDプレフィックスが使用される', () => {
       const poison = StatusAilmentFactory.createPoison();
       const paralysis = StatusAilmentFactory.createParalysis();
-      const buff = StatusAilmentFactory.createAttackBoost();
+      const buff = StatusAilmentFactory.createStrengthBoost();
 
       expect(poison.id).toContain('poison-');
       expect(paralysis.id).toContain('paralysis-');
-      expect(buff.id).toContain('attack-boost-');
+      expect(buff.id).toContain('strength-boost-');
     });
   });
 
@@ -194,8 +194,8 @@ describe('StatusAilmentFactory', () => {
         StatusAilmentFactory.createPoison(),
         StatusAilmentFactory.createParalysis(),
         StatusAilmentFactory.createSleep(),
-        StatusAilmentFactory.createAttackBoost(),
-        StatusAilmentFactory.createDefenseBoost(),
+        StatusAilmentFactory.createStrengthBoost(),
+        StatusAilmentFactory.createWillpowerBoost(),
         StatusAilmentFactory.createAllStatsDown(),
         StatusAilmentFactory.createRegeneration(),
       ];
