@@ -169,96 +169,80 @@ export class BattlePhase extends Phase {
    * スキルを選択
    */
   private selectSkill(skillName: string): PhaseResult {
-    try {
-      this.getBattle(); // Nullチェックのみ
-      const equipment = this.game.player.getEquipment();
-      const skills = equipment.getAllSkills();
-      const skill = skills.find(s => s.name.toLowerCase() === skillName);
+    const equipment = this.game.player.getEquipment();
+    const skills = equipment.getAllSkills();
+    const skill = skills.find(s => s.name.toLowerCase() === skillName);
 
-      if (!skill) {
-        return this.error(`skill not found: ${skillName}`);
-      }
-
-      // 行動ポイントチェック
-      const totalCost =
-        this.selectedSkills.reduce((sum, s) => sum + s.skill.actionCost, 0) + skill.actionCost;
-      if (totalCost > this.actionPoints) {
-        return this.error(
-          `not enough action points (need ${totalCost}, have ${this.actionPoints})`
-        );
-      }
-
-      this.selectedSkills.push({ skill });
-      this.output(`${skill.name} selected (Total AP: ${totalCost}/${this.actionPoints})`);
-
-      return this.success();
-    } catch (_error) {
-      return this.error('battle not initialized');
+    if (!skill) {
+      return this.error(`skill not found: ${skillName}`);
     }
+
+    // 行動ポイントチェック
+    const totalCost =
+      this.selectedSkills.reduce((sum, s) => sum + s.skill.actionCost, 0) + skill.actionCost;
+    if (totalCost > this.actionPoints) {
+      return this.error(`not enough action points (need ${totalCost}, have ${this.actionPoints})`);
+    }
+
+    this.selectedSkills.push({ skill });
+    this.output(`${skill.name} selected (Total AP: ${totalCost}/${this.actionPoints})`);
+
+    return this.success();
   }
 
   /**
    * 選択したスキルを確定して実行
    */
   private async confirmAndExecuteSkills(): Promise<PhaseResult> {
-    try {
-      const battle = this.getBattle();
+    const battle = this.getBattle();
 
-      if (this.selectedSkills.length === 0) {
-        return this.error('no skills selected');
-      }
-
-      // スキルの検証
-      const skills = this.selectedSkills.map(s => s.skill);
-      const validationError = battle.validateSelectedSkills(skills);
-      if (validationError) {
-        return this.error(validationError);
-      }
-
-      // タイピングチャレンジ（実際の実装では各スキルごとに行う）
-      this.output('Executing skills...');
-
-      // スキル実行
-      const turnResult = battle.playerUseMultipleSkills(this.selectedSkills);
-
-      // 結果表示
-      turnResult.skillResults.forEach(result => {
-        this.output(result.message);
-      });
-
-      if (turnResult.totalDamage > 0) {
-        this.output(`Total damage: ${turnResult.totalDamage}`);
-      }
-
-      // 戦闘終了チェック
-      const battleEnd = battle.checkBattleEnd();
-      if (battleEnd) {
-        return this.endBattle(battleEnd.winner === 'player');
-      }
-
-      // 次のターンへ
-      battle.nextTurn();
-      return this.startTurn();
-    } catch (_error) {
-      return this.error('battle not initialized');
+    if (this.selectedSkills.length === 0) {
+      return this.error('no skills selected');
     }
+
+    // スキルの検証
+    const skills = this.selectedSkills.map(s => s.skill);
+    const validationError = battle.validateSelectedSkills(skills);
+    if (validationError) {
+      return this.error(validationError);
+    }
+
+    // タイピングチャレンジ（実際の実装では各スキルごとに行う）
+    this.output('Executing skills...');
+
+    // スキル実行
+    const turnResult = battle.playerUseMultipleSkills(this.selectedSkills);
+
+    // 結果表示
+    turnResult.skillResults.forEach(result => {
+      this.output(result.message);
+    });
+
+    if (turnResult.totalDamage > 0) {
+      this.output(`Total damage: ${turnResult.totalDamage}`);
+    }
+
+    // 戦闘終了チェック
+    const battleEnd = battle.checkBattleEnd();
+    if (battleEnd) {
+      return this.endBattle(battleEnd.winner === 'player');
+    }
+
+    // 次のターンへ
+    battle.nextTurn();
+    return this.startTurn();
   }
 
   /**
    * 戦闘ステータスを表示
    */
   private showBattleStatus(): PhaseResult {
-    try {
-      this.getBattle(); // Nullチェックのみ
-      const playerStats = this.game.player.getBodyStats();
-      this.output(`Player HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`);
-      this.output(`Player MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`);
-      // Enemy status would be shown here
+    const playerStats = this.game.player.getBodyStats();
+    this.output(`Player HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`);
+    this.output(`Player MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`);
+    // Enemy status would be shown here
 
-      return this.success();
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
+    return this.success();
   }
 
   /**

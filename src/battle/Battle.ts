@@ -296,7 +296,13 @@ export class Battle {
     // 命中判定
     const playerStats = this.player.getTotalStats();
     const enemyStats = this.enemy.stats;
-    const hitResult = this.checkHit(playerStats, enemyStats, skill, typingResult);
+    const hitResult = this.checkHit({
+      playerBodyStats,
+      playerStats,
+      enemyStats,
+      skill,
+      typingResult,
+    });
     if (hitResult) {
       return hitResult;
     }
@@ -341,18 +347,24 @@ export class Battle {
   /**
    * 命中判定を行う
    */
-  private checkHit(
-    playerStats: TotalStatsResult,
-    enemyStats: EnemyStats,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): PlayerSkillResult | null {
+  private checkHit({
+    playerBodyStats,
+    playerStats,
+    enemyStats,
+    skill,
+    typingResult,
+  }: {
+    playerBodyStats: BodyStats;
+    playerStats: TotalStatsResult;
+    enemyStats: EnemyStats;
+    skill: Skill;
+    typingResult?: TypingResult;
+  }): PlayerSkillResult | null {
     const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
     const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
       // ミス時もMP回復量を計算
-      const playerBodyStats = this.player.getBodyStats();
       const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
       return {
         success: false,
