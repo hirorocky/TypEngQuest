@@ -1,6 +1,6 @@
 import { Item, ItemType, ItemRarity, ItemData } from './Item';
 import { Player } from '../player/Player';
-import { TemporaryStatusEffects } from '../player/TemporaryStatus';
+import { Skill } from '../battle/Skill';
 
 /**
  * 装備アイテムのステータス
@@ -10,29 +10,6 @@ export interface EquipmentStats {
   willpower: number;
   agility: number;
   fortune: number;
-}
-
-/**
- * スキル効果のインターフェース
- */
-export interface SkillEffect {
-  type: 'damage' | 'heal' | 'temporary_status';
-  power: number;
-  target: 'self' | 'enemy' | 'all';
-  duration?: number;
-  temporaryStatus?: TemporaryStatusEffects;
-}
-
-/**
- * スキルのインターフェース
- */
-export interface Skill {
-  id: string;
-  name: string;
-  mpCost: number;
-  successRate: number;
-  typingDifficulty: number;
-  effect: SkillEffect;
 }
 
 /**
@@ -54,11 +31,6 @@ export class EquipmentItem extends Item {
     'willpower',
     'agility',
     'fortune',
-  ] as const;
-  private static readonly VALID_EFFECT_TYPES: readonly string[] = [
-    'damage',
-    'heal',
-    'temporary_status',
   ] as const;
 
   private readonly stats: EquipmentStats;
@@ -224,6 +196,7 @@ export class EquipmentItem extends Item {
    * @param otherSkill - 比較対象のスキル
    * @returns 等しい場合true
    */
+  // eslint-disable-next-line complexity
   private compareSkill(otherSkill?: Skill): boolean {
     if (this.skill === undefined && otherSkill === undefined) {
       return true;
@@ -231,84 +204,24 @@ export class EquipmentItem extends Item {
     if (this.skill === undefined || otherSkill === undefined) {
       return false;
     }
-    return (
+
+    // 基本プロパティの比較
+    const basicPropsEqual =
       this.skill.id === otherSkill.id &&
       this.skill.name === otherSkill.name &&
       this.skill.mpCost === otherSkill.mpCost &&
-      this.skill.successRate === otherSkill.successRate &&
-      this.skill.typingDifficulty === otherSkill.typingDifficulty &&
-      this.compareSkillEffect(this.skill.effect, otherSkill.effect)
-    );
-  }
+      this.skill.mpCharge === otherSkill.mpCharge &&
+      this.skill.actionCost === otherSkill.actionCost;
 
-  /**
-   * スキル効果を比較する
-   * @param effect1 - 比較対象1
-   * @param effect2 - 比較対象2
-   * @returns 等しい場合true
-   */
-  private compareSkillEffect(effect1: SkillEffect, effect2: SkillEffect): boolean {
-    // 基本プロパティの比較
-    if (!this.compareSkillEffectBasic(effect1, effect2)) {
-      return false;
-    }
+    if (!basicPropsEqual) return false;
 
-    // temporaryStatusの比較
-    return this.compareTemporaryStatus(effect1.temporaryStatus, effect2.temporaryStatus);
-  }
-
-  /**
-   * スキル効果の基本プロパティを比較する
-   * @param effect1 - 比較対象1
-   * @param effect2 - 比較対象2
-   * @returns 等しい場合true
-   */
-  private compareSkillEffectBasic(effect1: SkillEffect, effect2: SkillEffect): boolean {
+    // 残りのプロパティの比較
     return (
-      effect1.type === effect2.type &&
-      effect1.power === effect2.power &&
-      effect1.target === effect2.target &&
-      effect1.duration === effect2.duration
+      this.skill.successRate === otherSkill.successRate &&
+      this.skill.target === otherSkill.target &&
+      this.skill.typingDifficulty === otherSkill.typingDifficulty &&
+      JSON.stringify(this.skill.effects) === JSON.stringify(otherSkill.effects)
     );
-  }
-
-  /**
-   * 一時ステータスを比較する
-   * @param ts1 - 比較対象1
-   * @param ts2 - 比較対象2
-   * @returns 等しい場合true
-   */
-  private compareTemporaryStatus(
-    ts1?: TemporaryStatusEffects,
-    ts2?: TemporaryStatusEffects
-  ): boolean {
-    // 両方undefinedの場合
-    if (ts1 === undefined && ts2 === undefined) {
-      return true;
-    }
-    // 片方だけundefinedの場合
-    if (ts1 === undefined || ts2 === undefined) {
-      return false;
-    }
-
-    // 数値プロパティの比較
-    const numberProps: (keyof TemporaryStatusEffects)[] = [
-      'strength',
-      'willpower',
-      'agility',
-      'fortune',
-      'hpPerTurn',
-      'mpPerTurn',
-    ];
-
-    for (const prop of numberProps) {
-      if (ts1[prop] !== ts2[prop]) {
-        return false;
-      }
-    }
-
-    // 真偽値プロパティの比較
-    return ts1.cannotAct === ts2.cannotAct && ts1.cannotRun === ts2.cannotRun;
   }
 
   /**
@@ -419,58 +332,29 @@ export class EquipmentItem extends Item {
    * @param skill - 検証するスキル
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line complexity
   static validateSkill(skill: any): skill is Skill {
-    if (!EquipmentItem.validateSkillBasic(skill)) {
-      return false;
-    }
-
-    if (!EquipmentItem.validateSkillEffect(skill.effect)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * スキルの基本プロパティを検証する
-   * @param skill - 検証するスキル
-   * @returns 有効な場合true
-   */
-  private static validateSkillBasic(skill: any): boolean {
     if (typeof skill !== 'object' || skill === null) {
       return false;
     }
 
-    return (
+    // 文字列プロパティの検証
+    const stringPropsValid =
       typeof skill.id === 'string' &&
       typeof skill.name === 'string' &&
+      typeof skill.description === 'string' &&
+      typeof skill.target === 'string';
+
+    if (!stringPropsValid) return false;
+
+    // 数値プロパティの検証
+    const numberPropsValid =
       typeof skill.mpCost === 'number' &&
+      typeof skill.mpCharge === 'number' &&
+      typeof skill.actionCost === 'number' &&
       typeof skill.successRate === 'number' &&
-      typeof skill.typingDifficulty === 'number'
-    );
-  }
+      typeof skill.typingDifficulty === 'number';
 
-  /**
-   * スキル効果を検証する
-   * @param effect - 検証する効果
-   * @returns 有効な場合true
-   */
-  private static validateSkillEffect(effect: any): boolean {
-    if (typeof effect !== 'object' || effect === null) {
-      return false;
-    }
-
-    if (!EquipmentItem.VALID_EFFECT_TYPES.includes(effect.type)) return false;
-    if (typeof effect.power !== 'number') return false;
-    if (!['self', 'enemy', 'all'].includes(effect.target)) return false;
-
-    // temporary_status型の場合、temporaryStatusプロパティが必須
-    if (effect.type === 'temporary_status') {
-      if (!effect.temporaryStatus || typeof effect.temporaryStatus !== 'object') {
-        return false;
-      }
-    }
-
-    return true;
+    return numberPropsValid && Array.isArray(skill.effects);
   }
 }

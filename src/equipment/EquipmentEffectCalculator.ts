@@ -1,4 +1,5 @@
-import { EquipmentItem, EquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentItem, EquipmentStats } from '../items/EquipmentItem';
+import { Skill } from '../battle/Skill';
 
 /**
  * 装備効果計算クラス

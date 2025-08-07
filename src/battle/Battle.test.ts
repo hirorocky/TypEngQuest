@@ -16,10 +16,16 @@ describe('Battle', () => {
     mpCost: 5,
     mpCharge: 0,
     actionCost: 1,
-    power: 1.2,
-    accuracy: 90,
+    successRate: 90,
     target: 'enemy',
     typingDifficulty: 2,
+    effects: [
+      {
+        type: 'damage',
+        power: 1.2,
+        target: 'enemy',
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -294,10 +300,16 @@ describe('Battle', () => {
         mpCost: 0,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.0,
-        accuracy: 100,
+        successRate: 100,
         target: 'enemy',
         typingDifficulty: 1,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.0,
+            target: 'enemy',
+          },
+        ],
       };
 
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
@@ -328,10 +340,16 @@ describe('Battle', () => {
         mpCost: 0,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.0,
-        accuracy: 50,
+        successRate: 50,
         target: 'enemy',
         typingDifficulty: 1,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.0,
+            target: 'enemy',
+          },
+        ],
       };
 
       jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(false);
@@ -536,10 +554,16 @@ describe('Battle', () => {
         mpCost: 5,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.5,
-        accuracy: 90,
+        successRate: 90,
         target: 'enemy',
         typingDifficulty: 2,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.5,
+            target: 'enemy',
+          },
+        ],
       };
 
       battle = new Battle(player, enemy);
@@ -636,10 +660,16 @@ describe('Battle', () => {
       mpCost: 10,
       mpCharge: 0,
       actionCost: 1,
-      power: 1.5,
-      accuracy: 90,
+      successRate: 90,
       target: 'enemy',
       typingDifficulty: 2,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.5,
+          target: 'enemy',
+        },
+      ],
     };
 
     const skillWithMPCharge: Skill = {
@@ -649,10 +679,16 @@ describe('Battle', () => {
       mpCost: 5,
       mpCharge: 8,
       actionCost: 1,
-      power: 1.2,
-      accuracy: 90,
+      successRate: 90,
       target: 'enemy',
       typingDifficulty: 2,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.2,
+          target: 'enemy',
+        },
+      ],
     };
 
     beforeEach(() => {

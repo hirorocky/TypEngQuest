@@ -174,10 +174,16 @@ describe('Enemy', () => {
       mpCost: 0,
       mpCharge: 0,
       actionCost: 1,
-      power: 1.2,
-      accuracy: 90,
+      successRate: 90,
       target: 'enemy',
       typingDifficulty: 1,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.2,
+          target: 'enemy',
+        },
+      ],
     };
 
     const mockSkill2: Skill = {
@@ -187,10 +193,16 @@ describe('Enemy', () => {
       mpCost: 5,
       mpCharge: 0,
       actionCost: 1,
-      power: 1.8,
-      accuracy: 85,
+      successRate: 85,
       target: 'enemy',
       typingDifficulty: 3,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.8,
+          target: 'enemy',
+        },
+      ],
     };
 
     beforeEach(() => {
@@ -387,10 +399,16 @@ describe('Enemy', () => {
             mpCost: 3,
             mpCharge: 0,
             actionCost: 1,
-            power: 1.5,
-            accuracy: 80,
+            successRate: 80,
             target: 'enemy',
             typingDifficulty: 2,
+            effects: [
+              {
+                type: 'damage',
+                power: 1.5,
+                target: 'enemy',
+              },
+            ],
           },
         ],
         drops: [{ itemId: 'orc_fang', dropRate: 30 }],
@@ -423,10 +441,16 @@ describe('Enemy', () => {
             mpCost: 3,
             mpCharge: 0,
             actionCost: 1,
-            power: 1.5,
-            accuracy: 80,
+            successRate: 80,
             target: 'enemy',
             typingDifficulty: 2,
+            effects: [
+              {
+                type: 'damage',
+                power: 1.5,
+                target: 'enemy',
+              },
+            ],
           },
         ],
         drops: [{ itemId: 'orc_fang', dropRate: 30 }],

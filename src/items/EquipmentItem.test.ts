@@ -1,4 +1,5 @@
-import { EquipmentItem, EquipmentItemData, EquipmentStats, Skill } from './EquipmentItem';
+import { EquipmentItem, EquipmentItemData, EquipmentStats } from './EquipmentItem';
+import { Skill } from '../battle/Skill';
 import { ItemType, ItemRarity } from './Item';
 import { Player } from '../player/Player';
 
@@ -7,27 +8,39 @@ describe('EquipmentItem', () => {
   const sampleSkill: Skill = {
     id: 'slash',
     name: 'Slash',
+    description: 'A basic slash attack',
     mpCost: 5,
+    mpCharge: 0,
+    actionCost: 1,
     successRate: 90,
+    target: 'enemy',
     typingDifficulty: 2,
-    effect: {
-      type: 'damage',
-      power: 50,
-      target: 'enemy',
-    },
+    effects: [
+      {
+        type: 'damage',
+        power: 50,
+        target: 'enemy',
+      },
+    ],
   };
 
   const sampleSkill2: Skill = {
     id: 'heal',
     name: 'Heal',
+    description: 'A basic heal spell',
     mpCost: 10,
+    mpCharge: 0,
+    actionCost: 1,
     successRate: 100,
+    target: 'self',
     typingDifficulty: 1,
-    effect: {
-      type: 'heal',
-      power: 30,
-      target: 'self',
-    },
+    effects: [
+      {
+        type: 'hp_heal',
+        power: 30,
+        target: 'self',
+      },
+    ],
   };
 
   // テスト用の装備データ
@@ -423,19 +436,19 @@ describe('EquipmentItem', () => {
     it('効果が不正な場合falseを返す', () => {
       const invalidSkill = {
         ...sampleSkill,
-        effect: 'invalid' as any,
+        effects: 'invalid' as any,
       };
 
       expect(EquipmentItem.validateSkill(invalidSkill)).toBe(false);
     });
 
-    it('効果タイプが不正な場合falseを返す', () => {
+    it('効果が配列でない場合falseを返す', () => {
       const invalidSkill = {
         ...sampleSkill,
-        effect: {
-          type: 'invalid',
+        effects: {
+          type: 'damage',
           power: 50,
-        },
+        } as any,
       };
 
       expect(EquipmentItem.validateSkill(invalidSkill)).toBe(false);

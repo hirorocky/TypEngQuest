@@ -2,7 +2,8 @@ import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats, EquipmentStatsData } from './EquipmentStats';
 import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
-import { EquipmentItem, EquipmentStats as ItemEquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentItem, EquipmentStats as ItemEquipmentStats } from '../items/EquipmentItem';
+import { Skill } from '../battle/Skill';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
@@ -257,6 +258,16 @@ export class Player {
    */
   getEquippedItemSkills(): Skill[] {
     return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
+  }
+
+  /**
+   * プレイヤーが使用可能なすべての技を取得する
+   * @returns 使用可能なすべての技のリスト
+   */
+  getAllAvailableSkills(): Skill[] {
+    // 現在は装備から取得できる技のみ
+    // 後で基本技やレベルに応じた技を追加する予定
+    return this.getEquippedItemSkills();
   }
 
   /**

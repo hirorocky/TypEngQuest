@@ -85,10 +85,16 @@ export class Battle {
     mpCost: 0,
     mpCharge: 0,
     actionCost: 1,
-    power: Battle.NORMAL_ATTACK_POWER,
-    accuracy: Battle.NORMAL_ATTACK_ACCURACY,
+    successRate: Battle.NORMAL_ATTACK_ACCURACY,
     target: 'enemy',
     typingDifficulty: 1,
+    effects: [
+      {
+        type: 'damage',
+        power: Battle.NORMAL_ATTACK_POWER,
+        target: 'enemy',
+      },
+    ],
   };
 
   private player: Player;
@@ -373,10 +379,16 @@ export class Battle {
     const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
+    // ダメージ効果を検索
+    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
+      | { power: number }
+      | undefined;
+    const power = damageEffect?.power || 1.0;
+
     let damage = BattleCalculator.calculateDamage(
       playerStats.strength,
       enemyStats.willpower,
-      skill.power,
+      power,
       isCritical
     );
 
@@ -414,7 +426,7 @@ export class Battle {
     skill: Skill,
     typingResult?: TypingResult
   ): number {
-    let hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
+    let hitRate = BattleCalculator.calculateHitRate(skill.successRate);
 
     if (typingResult?.isSuccess) {
       hitRate = BattleCalculator.calculateTypingSpeedBonus(
@@ -517,7 +529,7 @@ export class Battle {
     const enemyStats = this.enemy.stats;
 
     // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
+    const hitRate = BattleCalculator.calculateHitRate(skill.successRate);
     const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
@@ -532,11 +544,17 @@ export class Battle {
     const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
+    // ダメージ効果を検索
+    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
+      | { power: number }
+      | undefined;
+    const power = damageEffect?.power || 1.0;
+
     // ダメージ計算
     const damage = BattleCalculator.calculateDamage(
       enemyStats.strength,
       0, // プレイヤーへの攻撃では防御力を考慮しない
-      skill.power,
+      power,
       isCritical
     );
 

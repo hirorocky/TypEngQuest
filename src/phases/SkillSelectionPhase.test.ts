@@ -8,27 +8,30 @@ describe('SkillSelectionPhase', () => {
   let mockOnBack: jest.Mock;
 
   beforeEach(() => {
+    const mockSkills = [
+      {
+        name: 'attack',
+        mpCost: 0,
+        difficulty: 1,
+        effects: [{ type: 'damage', value: 10 }],
+      },
+      {
+        name: 'fireball',
+        mpCost: 10,
+        difficulty: 2,
+        effects: [{ type: 'damage', value: 30 }],
+      },
+      {
+        name: 'heal',
+        mpCost: 5,
+        difficulty: 1,
+        effects: [{ type: 'heal', value: 20 }],
+      },
+    ];
+
     mockPlayer = {
-      getEquippedItemSkills: jest.fn().mockReturnValue([
-        {
-          name: 'attack',
-          mpCost: 0,
-          difficulty: 1,
-          effects: [{ type: 'damage', value: 10 }],
-        },
-        {
-          name: 'fireball',
-          mpCost: 10,
-          difficulty: 2,
-          effects: [{ type: 'damage', value: 30 }],
-        },
-        {
-          name: 'heal',
-          mpCost: 5,
-          difficulty: 1,
-          effects: [{ type: 'heal', value: 20 }],
-        },
-      ]),
+      getEquippedItemSkills: jest.fn().mockReturnValue(mockSkills),
+      getAllAvailableSkills: jest.fn().mockReturnValue(mockSkills),
       getBodyStats: jest.fn().mockReturnValue({
         getCurrentMP: jest.fn().mockReturnValue(15),
         getMaxMP: jest.fn().mockReturnValue(50),
@@ -146,6 +149,7 @@ describe('SkillSelectionPhase', () => {
   describe('エラーハンドリング', () => {
     it('スキルが存在しない場合の処理', async () => {
       mockPlayer.getEquippedItemSkills.mockReturnValue([]);
+      mockPlayer.getAllAvailableSkills.mockReturnValue([]);
       const emptySkillPhase = new SkillSelectionPhase({
         player: mockPlayer,
         onSkillSelected: mockOnSkillSelected,
