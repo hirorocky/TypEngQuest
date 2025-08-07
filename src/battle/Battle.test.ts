@@ -390,9 +390,9 @@ describe('Battle', () => {
       jest.spyOn(playerBodyStats, 'takeDamage');
 
       const result = battle.enemyAction();
-      expect(result.skillUsed?.name).toBe('Attack');
+      expect(result.skillUsed?.name).toBe('Basic Attack');
       expect(result.damage).toBe(10);
-      expect(result.message).toContain('Attack');
+      expect(result.message).toContain('Basic Attack');
     });
   });
 
@@ -769,7 +769,7 @@ describe('Battle', () => {
       const result = battle.enemyAction();
 
       // 通常攻撃が使用される
-      expect(result.skillUsed.id).toBe('normal_attack');
+      expect(result.skillUsed.id).toBe('basic_attack');
       expect(result.skillUsed.mpCost).toBe(0);
     });
   });
