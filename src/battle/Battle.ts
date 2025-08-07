@@ -1,24 +1,9 @@
-import { Player } from '../player/Player';
+import { Player, TotalStatsResult } from '../player/Player';
 import { BodyStats } from '../player/BodyStats';
-import { Enemy } from './Enemy';
+import { Enemy, EnemyStats } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
-
-// Player.getTotalStats()の戻り値の型
-interface TotalStatsResult {
-  strength: number;
-  willpower: number;
-  agility: number;
-  fortune: number;
-}
-
-// Enemy.statsの型
-interface EnemyStats {
-  agility: number;
-  willpower: number;
-  [key: string]: number;
-}
 
 /**
  * プレイヤーの技使用結果
@@ -243,10 +228,14 @@ export class Battle {
     }
 
     const playerBodyStats = this.player.getBodyStats();
-    const totalMpCost = skills.reduce((total, skill) => total + skill.mpCost, 0);
+    let simulatedMp = playerBodyStats.getCurrentMP();
 
-    if (playerBodyStats.getCurrentMP() < totalMpCost) {
-      return `Not enough MP! Need ${totalMpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`;
+    for (const skill of skills) {
+      if (simulatedMp < skill.mpCost) {
+        return `Not enough MP to use skills in sequence. Current MP: ${playerBodyStats.getCurrentMP()}.`;
+      }
+      // Simulate MP change for one skill. This doesn't account for typing-based MP recovery bonuses, which is acceptable for pre-validation.
+      simulatedMp = simulatedMp - skill.mpCost + skill.mpCharge;
     }
 
     return null;

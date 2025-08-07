@@ -34,6 +34,23 @@ export class BattlePhase extends Phase {
   }
 
   /**
+   * ターン終了時の共通処理（戦闘終了チェック＋ターン進行）
+   */
+  private endTurn(): PhaseResult {
+    return this.withBattle(battle => {
+      // 戦闘終了チェック
+      const battleEnd = battle.checkBattleEnd();
+      if (battleEnd) {
+        return this.endBattle(battleEnd.winner === 'player');
+      }
+
+      // 次のターンへ
+      battle.nextTurn();
+      return this.startTurn();
+    }) as PhaseResult;
+  }
+
+  /**
    * フェーズを開始する
    */
   async start(context?: CommandContext): Promise<PhaseResult> {
@@ -41,7 +58,10 @@ export class BattlePhase extends Phase {
       return this.error('no enemy specified for battle');
     }
 
-    const enemy = context.enemy as Enemy;
+    if (!(context.enemy instanceof Enemy)) {
+      return this.error('Invalid enemy provided for battle');
+    }
+    const enemy = context.enemy;
     this.battle = new Battle(this.game.player, enemy);
     const message = this.battle.start();
 
@@ -100,15 +120,7 @@ export class BattlePhase extends Phase {
       const result = battle.enemyAction();
       this.output(result.message);
 
-      // 戦闘終了チェック
-      const battleEnd = battle.checkBattleEnd();
-      if (battleEnd) {
-        return this.endBattle(battleEnd.winner === 'player');
-      }
-
-      // 次のターンへ
-      battle.nextTurn();
-      return this.startTurn();
+      return this.endTurn();
     } catch (_error) {
       return this.error('battle not initialized');
     }
@@ -200,10 +212,6 @@ export class BattlePhase extends Phase {
   private async confirmAndExecuteSkills(): Promise<PhaseResult> {
     const battle = this.getBattle();
 
-    if (this.selectedSkills.length === 0) {
-      return this.error('no skills selected');
-    }
-
     // スキルの検証
     const skills = this.selectedSkills.map(s => s.skill);
     const validationError = battle.validateSelectedSkills(skills);
@@ -226,15 +234,7 @@ export class BattlePhase extends Phase {
       this.output(`Total damage: ${turnResult.totalDamage}`);
     }
 
-    // 戦闘終了チェック
-    const battleEnd = battle.checkBattleEnd();
-    if (battleEnd) {
-      return this.endBattle(battleEnd.winner === 'player');
-    }
-
-    // 次のターンへ
-    battle.nextTurn();
-    return this.startTurn();
+    return this.endTurn();
   }
 
   /**
