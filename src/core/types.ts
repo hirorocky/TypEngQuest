@@ -10,6 +10,9 @@ export type PhaseType =
   | 'itemConsumption'
   | 'itemEquipment'
   | 'battle'
+  | 'battleTyping'
+  | 'skillSelection'
+  | 'battleItemConsumption'
   | 'typing'
   | 'continue';
 
@@ -21,6 +24,9 @@ export const PhaseTypes = {
   ITEM_CONSUMPTION: 'itemConsumption' as const,
   ITEM_EQUIPMENT: 'itemEquipment' as const,
   BATTLE: 'battle' as const,
+  BATTLE_TYPING: 'battleTyping' as const,
+  SKILL_SELECTION: 'skillSelection' as const,
+  BATTLE_ITEM_CONSUMPTION: 'battleItemConsumption' as const,
   TYPING: 'typing' as const,
   CONTINUE: 'continue' as const,
 } as const satisfies Record<string, PhaseType>;

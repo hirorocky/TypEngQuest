@@ -1,6 +1,8 @@
 import { Phase } from '../core/Phase';
-import { PhaseResult, PhaseTypes, CommandContext } from '../core/types';
-import { Battle, SelectedSkill } from '../battle/Battle';
+import { World } from '../world/World';
+
+import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
+import { Battle } from '../battle/Battle';
 import { Enemy } from '../battle/Enemy';
 
 /**
@@ -8,297 +10,187 @@ import { Enemy } from '../battle/Enemy';
  */
 export class BattlePhase extends Phase {
   private battle: Battle | null = null;
-  private selectedSkills: SelectedSkill[] = [];
-  private actionPoints: number = 0;
+  private player?: any; // プレイヤーインスタンスを保持
 
-  /**
-   * Battleインスタンスを取得（nullチェック付き）
-   */
-  private getBattle(): Battle {
-    if (!this.battle) {
-      throw new Error('battle not initialized');
-    }
-    return this.battle;
+  constructor(world?: World, tabCompleter?: any, player?: any) {
+    super(world, tabCompleter);
+    this.player = player;
   }
 
   /**
-   * battle初期化チェック付きでメソッドを実行する
+   * フェーズタイプを取得
    */
-  private withBattle<T>(fn: (battle: Battle) => T): T | PhaseResult {
-    try {
-      const battle = this.getBattle();
-      return fn(battle);
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
+  getType(): PhaseType {
+    return PhaseTypes.BATTLE;
   }
 
   /**
-   * ターン終了時の共通処理（戦闘終了チェック＋ターン進行）
+   * プロンプトを取得
    */
-  private endTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      // 戦闘終了チェック
-      const battleEnd = battle.checkBattleEnd();
-      if (battleEnd) {
-        return this.endBattle(battleEnd.winner === 'player');
-      }
-
-      // 次のターンへ
-      battle.nextTurn();
-      return this.startTurn();
-    }) as PhaseResult;
+  getPrompt(): string {
+    return 'battle> ';
   }
 
   /**
-   * フェーズを開始する
+   * 初期化処理
    */
-  async start(context?: CommandContext): Promise<PhaseResult> {
-    if (!context?.enemy) {
-      return this.error('no enemy specified for battle');
-    }
-
-    if (!(context.enemy instanceof Enemy)) {
-      return this.error('Invalid enemy provided for battle');
-    }
-    const enemy = context.enemy;
-    this.battle = new Battle(this.game.player, enemy);
-    const message = this.battle.start();
-
-    // 戦闘開始メッセージを表示
-    this.output(message);
-    this.output('');
-
-    // 最初のターンを開始
-    return this.startTurn();
+  async initialize(): Promise<void> {
+    this.registerBattleCommands();
   }
 
   /**
-   * ターンを開始する
+   * 戦闘用コマンドを登録
    */
-  private startTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      const actor = battle.getCurrentTurnActor();
-
-      if (actor === 'player') {
-        return this.startPlayerTurn();
-      } else {
-        return this.executeEnemyTurn();
-      }
-    }) as PhaseResult;
-  }
-
-  /**
-   * プレイヤーターンを開始する
-   */
-  private startPlayerTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      this.selectedSkills = [];
-      this.actionPoints = battle.calculatePlayerActionPoints();
-
-      this.output(`===== Turn ${battle.currentTurn} - Your turn =====`);
-      this.output(`Action Points: ${this.actionPoints}`);
-      this.output('');
-      this.output('Select skills to use (up to action point limit):');
-      this.output('Type "skills" to see available skills');
-      this.output('Type "select <skill_name>" to add a skill');
-      this.output('Type "confirm" to execute selected skills');
-      this.output('Type "clear" to clear selections');
-
-      return this.success();
-    }) as PhaseResult;
-  }
-
-  /**
-   * 敵ターンを実行する
-   */
-  private executeEnemyTurn(): PhaseResult {
-    try {
-      const battle = this.getBattle();
-      this.output(`===== Turn ${battle.currentTurn} - Enemy turn =====`);
-
-      const result = battle.enemyAction();
-      this.output(result.message);
-
-      return this.endTurn();
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
-  }
-
-  /**
-   * コマンドを処理する
-   */
-  async processCommand(input: string): Promise<PhaseResult> {
-    try {
-      this.getBattle(); // Nullチェックのみ
-      const [command, ...args] = input.trim().toLowerCase().split(/\s+/);
-
-      switch (command) {
-        case 'skills':
-          return this.showAvailableSkills();
-
-        case 'select':
-          return this.selectSkill(args.join(' '));
-
-        case 'confirm':
-          return this.confirmAndExecuteSkills();
-
-        case 'clear':
-          this.selectedSkills = [];
-          this.output('skill selection cleared');
-          return this.success();
-
-        case 'status':
-          return this.showBattleStatus();
-
-        case 'run':
-          return this.attemptEscape();
-
-        default:
-          return this.error(`unknown command: ${command}`);
-      }
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
-  }
-
-  /**
-   * 利用可能なスキルを表示
-   */
-  private showAvailableSkills(): PhaseResult {
-    const skills = this.game.player.getEquippedItemSkills();
-
-    if (skills.length === 0) {
-      this.output('No skills available');
-      return this.success();
-    }
-
-    this.output('Available skills:');
-    skills.forEach(skill => {
-      this.output(`  ${skill.name} - Cost: ${skill.actionCost} AP, ${skill.mpCost} MP`);
+  private registerBattleCommands(): void {
+    this.registerCommand({
+      name: 'help',
+      aliases: ['h', '?'],
+      description: 'Show battle commands',
+      execute: async () => this.showHelp(),
     });
 
-    return this.success();
-  }
-
-  /**
-   * スキルを選択
-   */
-  private selectSkill(skillName: string): PhaseResult {
-    const skills = this.game.player.getEquippedItemSkills();
-    const skill = skills.find(s => s.name.toLowerCase() === skillName);
-
-    if (!skill) {
-      return this.error(`skill not found: ${skillName}`);
-    }
-
-    // 行動ポイントチェック
-    const totalCost =
-      this.selectedSkills.reduce((sum, s) => sum + s.skill.actionCost, 0) + skill.actionCost;
-    if (totalCost > this.actionPoints) {
-      return this.error(`not enough action points (need ${totalCost}, have ${this.actionPoints})`);
-    }
-
-    this.selectedSkills.push({ skill });
-    this.output(`${skill.name} selected (Total AP: ${totalCost}/${this.actionPoints})`);
-
-    return this.success();
-  }
-
-  /**
-   * 選択したスキルを確定して実行
-   */
-  private async confirmAndExecuteSkills(): Promise<PhaseResult> {
-    const battle = this.getBattle();
-
-    // スキルの検証
-    const skills = this.selectedSkills.map(s => s.skill);
-    const validationError = battle.validateSelectedSkills(skills);
-    if (validationError) {
-      return this.error(validationError);
-    }
-
-    // タイピングチャレンジ（実際の実装では各スキルごとに行う）
-    this.output('Executing skills...');
-
-    // スキル実行
-    const turnResult = battle.playerUseMultipleSkills(this.selectedSkills);
-
-    // 結果表示
-    turnResult.skillResults.forEach(result => {
-      this.output(result.message);
+    this.registerCommand({
+      name: 'status',
+      description: 'Show battle status',
+      execute: async () => this.showBattleStatus(),
     });
 
-    if (turnResult.totalDamage > 0) {
-      this.output(`Total damage: ${turnResult.totalDamage}`);
-    }
+    this.registerCommand({
+      name: 'skill',
+      aliases: ['skills'],
+      description: 'Select and use a skill',
+      execute: async () => this.enterSkillSelection(),
+    });
 
-    return this.endTurn();
+    this.registerCommand({
+      name: 'item',
+      aliases: ['items'],
+      description: 'Use an item',
+      execute: async () => this.enterItemSelection(),
+    });
+
+    this.registerCommand({
+      name: 'run',
+      aliases: ['escape', 'flee'],
+      description: 'Attempt to escape from battle',
+      execute: async () => this.attemptEscape(),
+    });
+  }
+
+  /**
+   * ヘルプを表示
+   */
+  private async showHelp(): Promise<CommandResult> {
+    return {
+      success: true,
+      message: 'Available battle commands:',
+      output: [
+        '  help - Show this help',
+        '  status - Show battle status',
+        '  skill - Select and use a skill',
+        '  item - Use an item',
+        '  run - Attempt to escape',
+      ],
+    };
   }
 
   /**
    * 戦闘ステータスを表示
    */
-  private showBattleStatus(): PhaseResult {
-    const playerStats = this.game.player.getBodyStats();
-    this.output(`Player HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`);
-    this.output(`Player MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`);
-    // Enemy status would be shown here
+  private async showBattleStatus(): Promise<CommandResult> {
+    if (!this.player) {
+      return {
+        success: false,
+        message: 'player not available',
+      };
+    }
 
-    return this.success();
+    const playerStats = this.player.getBodyStats();
+    return {
+      success: true,
+      message: 'Battle Status',
+      output: [
+        `Player HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`,
+        `Player MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`,
+      ],
+    };
+  }
+
+  /**
+   * 利用可能なスキルを表示
+   */
+  /**
+   * 利用可能なスキルを表示（廃止予定 - skillコマンドでフェーズ遷移を使用）
+   */
+  private async showAvailableSkills(): Promise<CommandResult> {
+    return {
+      success: true,
+      message: 'Use "skill" command to select and use skills',
+      output: ['Skill selection has been moved to a dedicated phase'],
+    };
   }
 
   /**
    * 逃走を試みる
    */
-  private attemptEscape(): PhaseResult {
-    // 逃走処理（簡略化）
-    this.output('You cannot escape from this battle!');
-    return this.success();
+  private async attemptEscape(): Promise<CommandResult> {
+    return {
+      success: true,
+      message: 'You cannot escape from this battle!',
+    };
   }
 
   /**
-   * 戦闘を終了する
+   * スキル選択フェーズに移行
    */
-  private endBattle(victory: boolean): PhaseResult {
-    return this.withBattle(battle => {
-      if (victory) {
-        this.output('Victory!');
-
-        // ドロップアイテム処理
-        const drops = battle.calculateDrops();
-        if (drops.length > 0) {
-          this.output('Items dropped:');
-          drops.forEach(item => {
-            this.output(`  - ${item}`);
-          });
-        }
-
-        // HP/MP回復
-        const playerStats = this.game.player.getBodyStats();
-        playerStats.healHP(playerStats.getMaxHP());
-        playerStats.resetMP();
-      } else {
-        this.output('Defeat...');
-      }
-
-      // 探索フェーズに戻る
-      return this.successWithPhase(PhaseTypes.EXPLORATION);
-    }) as PhaseResult;
+  private async enterSkillSelection(): Promise<CommandResult> {
+    return {
+      success: true,
+      message: 'Entering skill selection...',
+      nextPhase: 'skillSelection' as any,
+    };
   }
 
   /**
-   * ヘルプメッセージを表示
+   * アイテム選択フェーズに移行
    */
-  help(): PhaseResult {
-    this.output('Battle Phase Commands:');
-    this.output('  skills         - Show available skills');
-    this.output('  select <skill> - Select a skill to use');
-    this.output('  confirm        - Execute selected skills');
-    this.output('  clear          - Clear skill selection');
-    this.output('  status         - Show battle status');
-    this.output('  run            - Attempt to escape');
-    return this.success();
+  private async enterItemSelection(): Promise<CommandResult> {
+    return {
+      success: true,
+      message: 'Entering item selection...',
+      nextPhase: 'battleItemConsumption' as any,
+    };
+  }
+
+  /**
+   * 戦闘を開始
+   * @param enemy 戦う敵
+   */
+  async startBattle(enemy: Enemy): Promise<CommandResult> {
+    if (!this.player) {
+      return {
+        success: false,
+        message: 'player not available',
+      };
+    }
+
+    this.battle = new Battle(this.player, enemy);
+    const message = this.battle.start();
+
+    return {
+      success: true,
+      message: message,
+      output: ['', 'Battle started! Use "help" to see available commands.'],
+    };
+  }
+
+  /**
+   * 戦闘状態を確認
+   */
+  private getBattle(): Battle {
+    if (!this.battle) {
+      throw new Error('Battle not initialized');
+    }
+    return this.battle;
   }
 }
