@@ -9,6 +9,10 @@ import { InventoryPhase } from '../phases/InventoryPhase';
 import { ItemConsumptionPhase } from '../phases/ItemConsumptionPhase';
 import { ItemEquipmentPhase } from '../phases/ItemEquipmentPhase';
 import { TypingPhase } from '../phases/TypingPhase';
+import { BattlePhase } from '../phases/BattlePhase';
+import { BattleTypingPhase } from '../phases/BattleTypingPhase';
+import { SkillSelectionPhase } from '../phases/SkillSelectionPhase';
+import { BattleItemConsumptionPhase } from '../phases/BattleItemConsumptionPhase';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
@@ -130,9 +134,28 @@ export class Game {
       dialog: () => {
         throw new Error('Dialog phase not implemented');
       },
-      battle: () => {
-        throw new Error('Battle phase not implemented');
+      battle: () => new BattlePhase(this.currentWorld!, this.tabCompleter, this.currentPlayer!),
+      battleTyping: () => {
+        const skill = data?.skill;
+        const onComplete = data?.onComplete;
+        return new BattleTypingPhase(skill, onComplete, this.currentWorld!, this.tabCompleter);
       },
+      skillSelection: () =>
+        new SkillSelectionPhase({
+          player: this.currentPlayer!,
+          onSkillSelected: data?.onSkillSelected || (() => {}),
+          onBack: data?.onBack || (() => {}),
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        }),
+      battleItemConsumption: () =>
+        new BattleItemConsumptionPhase({
+          player: this.currentPlayer!,
+          onItemUsed: data?.onItemUsed || (() => {}),
+          onBack: data?.onBack || (() => {}),
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        }),
       typing: () => {
         const difficulty = data?.difficulty;
         return new TypingPhase(difficulty) as any; // TODO: Refactor TypingPhase to extend Phase
