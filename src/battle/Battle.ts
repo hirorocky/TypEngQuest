@@ -228,14 +228,10 @@ export class Battle {
     }
 
     const playerBodyStats = this.player.getBodyStats();
-    let simulatedMp = playerBodyStats.getCurrentMP();
+    const totalMpCost = skills.reduce((total, skill) => total + skill.mpCost, 0);
 
-    for (const skill of skills) {
-      if (simulatedMp < skill.mpCost) {
-        return `Not enough MP to use skills in sequence. Current MP: ${playerBodyStats.getCurrentMP()}.`;
-      }
-      // Simulate MP change for one skill. This doesn't account for typing-based MP recovery bonuses, which is acceptable for pre-validation.
-      simulatedMp = simulatedMp - skill.mpCost + skill.mpCharge;
+    if (playerBodyStats.getCurrentMP() < totalMpCost) {
+      return `Not enough MP! Need ${totalMpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`;
     }
 
     return null;
