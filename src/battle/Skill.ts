@@ -22,7 +22,7 @@ export type HealSkillEffect = {
 
 export type StatusSkillEffect = {
   type: 'add_status' | 'remove_status';
-  statusId: number; // 一時ステータスID
+  statusId: string; // 一時ステータスID
 };
 
 /**

@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 /**
  * ワールドステータスの種別
  */
@@ -105,30 +108,33 @@ export function isWorldStatusEffects(obj: any): obj is WorldStatusEffects {
 }
 
 /**
- * 有効なWorldStatusNameの定数配列
+ * JSONファイルからWorldStatusを読み込む
  */
-const VALID_WORLD_STATUS_NAMES: WorldStatusName[] = [
-  'Strength Blessing',
-  'Willpower Blessing',
-  'Agility Blessing',
-  'Fortune Blessing',
-  'Experience Boost',
-  'Item Drop Boost',
-  'Strength Curse',
-  'Willpower Curse',
-  'Agility Curse',
-  'Fortune Curse',
-  'Experience Penalty',
-  'Critical Master',
-  'Dodge Master',
-  'Skill Power Boost',
-  'MP Efficiency',
-];
+let worldStatusData: any = null;
+
+function loadWorldStatusData() {
+  if (!worldStatusData) {
+    const dataPath = path.join(__dirname, '../../data/world-status.json');
+    worldStatusData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+  }
+  return worldStatusData;
+}
 
 /**
- * 有効なWorldStatusTypeの定数配列
+ * 有効なWorldStatusNameの配列を取得
  */
-const VALID_WORLD_STATUS_TYPES: WorldStatusType[] = ['buff', 'debuff', 'special'];
+function getValidWorldStatusNames(): WorldStatusName[] {
+  const data = loadWorldStatusData();
+  return data.worldStatuses.map((status: any) => status.name);
+}
+
+/**
+ * 有効なWorldStatusTypeの配列を取得
+ */
+function getValidWorldStatusTypes(): WorldStatusType[] {
+  const data = loadWorldStatusData();
+  return Array.from(new Set(data.worldStatuses.map((status: any) => status.type)));
+}
 
 /**
  * オブジェクトがWorldStatusの有効な構造かどうかを検証する
@@ -148,10 +154,10 @@ export function isWorldStatus(obj: any): obj is WorldStatus {
   if (typeof obj.stackable !== 'boolean') return false;
 
   // 名前が有効なWorldStatusNameかチェック
-  if (!VALID_WORLD_STATUS_NAMES.includes(obj.name as WorldStatusName)) return false;
+  if (!getValidWorldStatusNames().includes(obj.name as WorldStatusName)) return false;
 
   // 種別が有効なWorldStatusTypeかチェック
-  if (!VALID_WORLD_STATUS_TYPES.includes(obj.type as WorldStatusType)) return false;
+  if (!getValidWorldStatusTypes().includes(obj.type as WorldStatusType)) return false;
 
   // 効果が有効な構造かチェック
   return isWorldStatusEffects(obj.effects);
