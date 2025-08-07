@@ -42,6 +42,7 @@ export const FILE_EXTENSIONS = {
     '.pl',
     '.r',
     '.m',
+    '.html',
     '.vue',
     '.jsx',
     '.tsx',

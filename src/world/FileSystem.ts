@@ -348,6 +348,11 @@ export class FileSystem {
   public static createSampleStructure(): FileSystem {
     const root = new FileNode('projects', NodeType.DIRECTORY);
 
+    // 階層の一番上にバトル可能なファイルを配置
+    root.addChild(new FileNode('main.js', NodeType.FILE));
+    root.addChild(new FileNode('server.py', NodeType.FILE));
+    root.addChild(new FileNode('index.html', NodeType.FILE));
+
     // レベル1: プロジェクトディレクトリ
     const webApp = new FileNode('web-app', NodeType.DIRECTORY);
     const gameEngine = new FileNode('game-engine', NodeType.DIRECTORY);

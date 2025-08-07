@@ -45,7 +45,7 @@ export class SkillSelectionPhase extends Phase {
    */
   async initialize(): Promise<void> {
     if (this.player) {
-      this.availableSkills = this.player.getEquippedItemSkills();
+      this.availableSkills = this.player.getAllAvailableSkills();
     }
     this.registerSkillSelectionCommands();
   }

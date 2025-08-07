@@ -88,16 +88,12 @@ describe('BattleCommand', () => {
     test('モンスターファイルの場合は成功する', () => {
       const result = command.execute(['monster.js'], context);
       expect(result.success).toBe(true);
-      expect(result.output).toEqual([
-        'Starting battle with monster.js...',
-        '',
-        '⚔️  Monster encountered!',
-        'Type: JavaScript Monster',
-        'Level: ???',
-        '',
-        '[Battle system not yet implemented]',
-        'The monster runs away...',
-      ]);
+      expect(result.message).toBe('Starting battle with monster.js...');
+      expect(result.nextPhase).toBe('battle');
+      expect(result.data?.enemy).toBeDefined();
+      const enemy = result.data?.enemy as any;
+      expect(enemy.name).toBe('JavaScript Beast');
+      expect(enemy.level).toBe(1);
     });
   });
 

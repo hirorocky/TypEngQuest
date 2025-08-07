@@ -13,11 +13,17 @@ import { BattlePhase } from '../phases/BattlePhase';
 import { BattleTypingPhase } from '../phases/BattleTypingPhase';
 import { SkillSelectionPhase } from '../phases/SkillSelectionPhase';
 import { BattleItemConsumptionPhase } from '../phases/BattleItemConsumptionPhase';
+import { Enemy } from '../battle/Enemy';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { CommandParser } from './CommandParser';
-import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } from './completion';
+import {
+  TabCompleter,
+  CommandCompletionProvider,
+  DirectoryCompletionProvider,
+  BattleCompletionProvider,
+} from './completion';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 export class Game {
@@ -44,6 +50,7 @@ export class Game {
     // 補完プロバイダーを追加
     this.tabCompleter.addProvider(new CommandCompletionProvider());
     this.tabCompleter.addProvider(new DirectoryCompletionProvider());
+    this.tabCompleter.addProvider(new BattleCompletionProvider());
 
     this.isTestMode = isTestMode;
     this.setupSignalHandlers();
@@ -134,7 +141,23 @@ export class Game {
       dialog: () => {
         throw new Error('Dialog phase not implemented');
       },
-      battle: () => new BattlePhase(this.currentWorld!, this.tabCompleter, this.currentPlayer!),
+      battle: () => {
+        const battlePhase = new BattlePhase(
+          this.currentWorld!,
+          this.tabCompleter,
+          this.currentPlayer!
+        );
+        // enemyデータがある場合は戦闘を開始
+        if (data?.enemy) {
+          // Enemy クラスのインスタンスを作成
+          const enemy = new Enemy(data.enemy);
+          // 戦闘開始は非同期で行う（initialization後に）
+          Promise.resolve().then(async () => {
+            await battlePhase.startBattle(enemy);
+          });
+        }
+        return battlePhase;
+      },
       battleTyping: () => {
         const skill = data?.skill;
         const onComplete = data?.onComplete;
