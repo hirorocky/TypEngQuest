@@ -5,6 +5,21 @@
       "args": [
         "typescript-mcp"
       ]
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/rokio/dev/hobby/TypEngQuest"
+      ],
+      "env": {}
     }
   }
 }
