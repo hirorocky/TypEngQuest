@@ -93,6 +93,9 @@ describe('Battle', () => {
         fortune: 10,
       });
 
+      // 戦闘を再開始してターンアクターを再計算
+      battle.end();
+      battle.start();
       const turn = battle.getCurrentTurnActor();
       expect(turn).toBe('player');
     });
@@ -108,12 +111,173 @@ describe('Battle', () => {
       // Math.randomをモック
       const mockRandom = jest.spyOn(Math, 'random');
       mockRandom.mockReturnValue(0.4); // 50%未満なのでプレイヤー
+      battle.end();
+      battle.start();
       expect(battle.getCurrentTurnActor()).toBe('player');
 
       mockRandom.mockReturnValue(0.6); // 50%以上なので敵
+      battle.end();
+      battle.start();
       expect(battle.getCurrentTurnActor()).toBe('enemy');
 
       mockRandom.mockRestore();
+    });
+
+    it('ターンを進めるとアクターが交代する', () => {
+      jest.spyOn(player, 'getTotalStats').mockReturnValue({
+        strength: 10,
+        willpower: 10,
+        agility: 100, // 敵より速い
+        fortune: 10,
+      });
+
+      battle.end();
+      battle.start();
+      expect(battle.getCurrentTurnActor()).toBe('player');
+
+      battle.nextTurn();
+      expect(battle.currentTurn).toBe(2);
+      expect(battle.getCurrentTurnActor()).toBe('enemy');
+
+      battle.nextTurn();
+      expect(battle.currentTurn).toBe(3);
+      expect(battle.getCurrentTurnActor()).toBe('player');
+    });
+  });
+
+  describe('行動ポイントシステム', () => {
+    beforeEach(() => {
+      battle.start();
+    });
+
+    it.each([
+      { agility: 50, expectedAP: 4 },
+      { agility: 100, expectedAP: 5 },
+      { agility: 25, expectedAP: 3 },
+    ])('プレイヤーの行動ポイントを計算できる (agility: $agility)', ({ agility, expectedAP }) => {
+      jest.spyOn(player, 'getTotalStats').mockReturnValue({
+        strength: 10,
+        willpower: 10,
+        agility,
+        fortune: 10,
+      });
+      expect(battle.calculatePlayerActionPoints()).toBe(expectedAP);
+    });
+
+    it('スキルの合計コストを計算できる', () => {
+      const skills: Skill[] = [
+        { ...mockSkill, actionCost: 2 },
+        { ...mockSkill, actionCost: 1 },
+        { ...mockSkill, actionCost: 3 },
+      ];
+      expect(battle.calculateTotalActionCost(skills)).toBe(6);
+    });
+
+    it('選択したスキルが使用可能かチェックできる', () => {
+      jest.spyOn(player, 'getTotalStats').mockReturnValue({
+        strength: 10,
+        willpower: 10,
+        agility: 50, // AP = 4
+        fortune: 10,
+      });
+
+      const bodyStats = player.getBodyStats();
+      jest.spyOn(bodyStats, 'getCurrentMP').mockReturnValue(20);
+
+      // 正常ケース
+      const validSkills = [
+        { ...mockSkill, actionCost: 2, mpCost: 5 },
+        { ...mockSkill, actionCost: 2, mpCost: 10 },
+      ];
+      expect(battle.validateSelectedSkills(validSkills)).toBeNull();
+
+      // アクションコスト超過
+      const costlySkills = [
+        { ...mockSkill, actionCost: 3, mpCost: 5 },
+        { ...mockSkill, actionCost: 3, mpCost: 5 },
+      ];
+      const result1 = battle.validateSelectedSkills(costlySkills);
+      expect(result1).toContain('Action cost (6) exceeds action points (4)');
+
+      // MP不足
+      const mpHeavySkills = [
+        { ...mockSkill, actionCost: 2, mpCost: 15 },
+        { ...mockSkill, actionCost: 2, mpCost: 10 },
+      ];
+      const result2 = battle.validateSelectedSkills(mpHeavySkills);
+      expect(result2).toContain('Not enough MP');
+
+      // スキル未選択
+      expect(battle.validateSelectedSkills([])).toBe('No skills selected');
+    });
+  });
+
+  describe('複数スキル使用', () => {
+    beforeEach(() => {
+      battle.start();
+      jest.spyOn(player, 'getTotalStats').mockReturnValue({
+        strength: 30,
+        willpower: 10,
+        agility: 120,
+        fortune: 20,
+      });
+      jest.spyOn(BattleCalculator, 'calculateHitRate').mockReturnValue(100);
+      jest.spyOn(BattleCalculator, 'calculateEvadeRate').mockReturnValue(0);
+      jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(true);
+      jest.spyOn(BattleCalculator, 'calculateDamage').mockReturnValue(25);
+      jest.spyOn(BattleCalculator, 'calculateCriticalRate').mockReturnValue(10);
+      jest.spyOn(BattleCalculator, 'isCritical').mockReturnValue(false);
+    });
+
+    it('複数スキルを連続で使用できる', () => {
+      const selectedSkills = [
+        { skill: { ...mockSkill, name: 'Attack1' }, typingResult: undefined },
+        { skill: { ...mockSkill, name: 'Attack2' }, typingResult: undefined },
+      ];
+
+      const result = battle.playerUseMultipleSkills(selectedSkills);
+
+      expect(result.skillResults).toHaveLength(2);
+      expect(result.skillResults[0].success).toBe(true);
+      expect(result.skillResults[1].success).toBe(true);
+      expect(result.totalDamage).toBe(50); // 25 * 2
+    });
+
+    it('タイピング結果がスキルごとに反映される', () => {
+      const typingResult1 = {
+        speedRating: 'S' as const,
+        accuracyRating: 'Perfect' as const,
+        totalRating: 150,
+        timeTaken: 1000,
+        accuracy: 100,
+        isSuccess: true,
+      };
+
+      const typingResult2 = {
+        speedRating: 'C' as const,
+        accuracyRating: 'Good' as const,
+        totalRating: 80,
+        timeTaken: 5000,
+        accuracy: 90,
+        isSuccess: true,
+      };
+
+      const selectedSkills = [
+        { skill: { ...mockSkill, name: 'Attack1', mpCharge: 10 }, typingResult: typingResult1 },
+        { skill: { ...mockSkill, name: 'Attack2', mpCharge: 0 }, typingResult: typingResult2 },
+      ];
+
+      jest
+        .spyOn(BattleCalculator, 'calculateTypingEffectMultiplier')
+        .mockReturnValueOnce(1.5) // S/Perfect
+        .mockReturnValueOnce(0.8); // C/Good
+
+      const result = battle.playerUseMultipleSkills(selectedSkills);
+
+      expect(result.skillResults[0].damage).toBe(37); // floor(25 * 1.5)
+      expect(result.skillResults[1].damage).toBe(20); // floor(25 * 0.8)
+      expect(result.totalDamage).toBe(57);
+      expect(result.totalMpRecovered).toBe(15); // 10 * 1.5 (Perfect bonus)
     });
   });
 
