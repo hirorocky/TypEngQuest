@@ -1,8 +1,24 @@
 import { Player } from '../player/Player';
+import { BodyStats } from '../player/BodyStats';
 import { Enemy } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
+
+// Player.getTotalStats()の戻り値の型
+interface TotalStatsResult {
+  strength: number;
+  willpower: number;
+  agility: number;
+  fortune: number;
+}
+
+// Enemy.statsの型
+interface EnemyStats {
+  agility: number;
+  willpower: number;
+  [key: string]: number;
+}
 
 /**
  * プレイヤーの技使用結果
@@ -67,6 +83,14 @@ export class Battle {
   // 戦闘で使用する定数
   private static readonly NORMAL_ATTACK_ACCURACY = 90;
   private static readonly NORMAL_ATTACK_POWER = 1.0;
+
+  // 行動ポイント関連の定数
+  private static readonly BASE_ACTION_POINTS = 3;
+  private static readonly AGILITY_TO_AP_DIVISOR = 50;
+
+  // MP回復倍率の定数
+  private static readonly MP_RECOVERY_PERFECT_MULTIPLIER = 1.5;
+  private static readonly MP_RECOVERY_GREAT_MULTIPLIER = 1.2;
 
   // 通常攻撃用のデフォルトSkill
   private static readonly NORMAL_ATTACK_SKILL: Skill = {
@@ -187,8 +211,8 @@ export class Battle {
     const playerStats = this.player.getTotalStats();
     // 基本行動ポイント: 3
     // agilityボーナス: agility / 50（端数切り捨て）
-    const basePoints = 3;
-    const agilityBonus = Math.floor(playerStats.agility / 50);
+    const basePoints = Battle.BASE_ACTION_POINTS;
+    const agilityBonus = Math.floor(playerStats.agility / Battle.AGILITY_TO_AP_DIVISOR);
     return Math.max(1, basePoints + agilityBonus);
   }
 
@@ -302,7 +326,7 @@ export class Battle {
   /**
    * MPチェックと消費を行う
    */
-  private checkAndConsumeMp(playerBodyStats: any, skill: Skill): PlayerSkillResult | null {
+  private checkAndConsumeMp(playerBodyStats: BodyStats, skill: Skill): PlayerSkillResult | null {
     if (playerBodyStats.getCurrentMP() < skill.mpCost) {
       return {
         success: false,
@@ -318,8 +342,8 @@ export class Battle {
    * 命中判定を行う
    */
   private checkHit(
-    playerStats: any,
-    enemyStats: any,
+    playerStats: TotalStatsResult,
+    enemyStats: EnemyStats,
     skill: Skill,
     typingResult?: TypingResult
   ): PlayerSkillResult | null {
@@ -344,8 +368,8 @@ export class Battle {
    * ダメージ計算と適用を行う
    */
   private calculateAndApplyDamage(
-    playerStats: any,
-    enemyStats: any,
+    playerStats: TotalStatsResult,
+    enemyStats: EnemyStats,
     skill: Skill,
     typingResult?: TypingResult
   ): { damage: number; isCritical: boolean } {
@@ -369,16 +393,16 @@ export class Battle {
    * MP回復処理を行う
    */
   private processMpRecovery(
-    playerBodyStats: any,
+    playerBodyStats: BodyStats,
     skill: Skill,
     typingResult?: TypingResult
   ): number {
     let mpRecovered = skill.mpCharge;
     if (mpRecovered > 0) {
       if (typingResult?.accuracyRating === 'Perfect') {
-        mpRecovered = Math.floor(mpRecovered * 1.5);
+        mpRecovered = Math.floor(mpRecovered * Battle.MP_RECOVERY_PERFECT_MULTIPLIER);
       } else if (typingResult?.accuracyRating === 'Great') {
-        mpRecovered = Math.floor(mpRecovered * 1.2);
+        mpRecovered = Math.floor(mpRecovered * Battle.MP_RECOVERY_GREAT_MULTIPLIER);
       }
       playerBodyStats.healMP(mpRecovered);
     }
@@ -389,7 +413,7 @@ export class Battle {
    * タイピング結果を考慮した命中率を計算する
    */
   private calculateEnhancedHitRate(
-    playerStats: any,
+    playerStats: TotalStatsResult,
     skill: Skill,
     typingResult?: TypingResult
   ): number {
@@ -409,7 +433,10 @@ export class Battle {
   /**
    * タイピング結果を考慮したクリティカル率を計算する
    */
-  private calculateEnhancedCriticalRate(playerStats: any, typingResult?: TypingResult): number {
+  private calculateEnhancedCriticalRate(
+    playerStats: TotalStatsResult,
+    typingResult?: TypingResult
+  ): number {
     let criticalRate = BattleCalculator.calculateCriticalRate(playerStats.fortune);
 
     if (typingResult?.isSuccess) {
