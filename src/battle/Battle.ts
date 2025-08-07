@@ -12,6 +12,7 @@ export interface PlayerSkillResult {
   damage: number;
   message: string;
   critical?: boolean;
+  mpRecovered?: number;
 }
 
 /**
@@ -30,6 +31,23 @@ export interface EnemyActionResult {
 export interface BattleEndResult {
   winner: 'player' | 'enemy';
   message: string;
+}
+
+/**
+ * 選択されたスキル
+ */
+export interface SelectedSkill {
+  skill: Skill;
+  typingResult?: TypingResult;
+}
+
+/**
+ * プレイヤーターン結果
+ */
+export interface PlayerTurnResult {
+  skillResults: PlayerSkillResult[];
+  totalDamage: number;
+  totalMpRecovered: number;
 }
 
 /**
@@ -68,6 +86,7 @@ export class Battle {
   private enemy: Enemy;
   private _isActive: boolean = false;
   private _currentTurn: number = 0;
+  private _currentTurnActor: 'player' | 'enemy' | null = null;
   private battleResult: BattleResult | null = null;
 
   /**
@@ -104,6 +123,9 @@ export class Battle {
     this._currentTurn = 1;
     this.battleResult = null;
 
+    // 最初のターンアクターを決定
+    this._currentTurnActor = this.decideFirstTurnActor();
+
     return `${this.enemy.name} appeared!`;
   }
 
@@ -124,6 +146,8 @@ export class Battle {
    */
   nextTurn(): void {
     this._currentTurn++;
+    // ターンアクターを交代
+    this._currentTurnActor = this._currentTurnActor === 'player' ? 'enemy' : 'player';
   }
 
   /**
@@ -131,6 +155,17 @@ export class Battle {
    * @returns 'player' または 'enemy'
    */
   getCurrentTurnActor(): 'player' | 'enemy' {
+    if (!this._currentTurnActor) {
+      throw new Error('Battle not started');
+    }
+    return this._currentTurnActor;
+  }
+
+  /**
+   * 最初のターンアクターを決定する
+   * @returns 'player' または 'enemy'
+   */
+  private decideFirstTurnActor(): 'player' | 'enemy' {
     const playerStats = this.player.getTotalStats();
     const enemyAgility = this.enemy.stats.agility;
 
@@ -145,6 +180,81 @@ export class Battle {
   }
 
   /**
+   * プレイヤーの行動ポイントを計算する
+   * @returns 行動ポイント
+   */
+  calculatePlayerActionPoints(): number {
+    const playerStats = this.player.getTotalStats();
+    // 基本行動ポイント: 3
+    // agilityボーナス: agility / 50（端数切り捨て）
+    const basePoints = 3;
+    const agilityBonus = Math.floor(playerStats.agility / 50);
+    return Math.max(1, basePoints + agilityBonus);
+  }
+
+  /**
+   * 選択されたスキルの合計行動コストを計算する
+   * @param skills 選択されたスキル
+   * @returns 合計行動コスト
+   */
+  calculateTotalActionCost(skills: Skill[]): number {
+    return skills.reduce((total, skill) => total + skill.actionCost, 0);
+  }
+
+  /**
+   * プレイヤーが選択したスキルを使用可能かチェックする
+   * @param skills 選択されたスキル
+   * @returns エラーメッセージ（使用可能な場合はnull）
+   */
+  validateSelectedSkills(skills: Skill[]): string | null {
+    if (skills.length === 0) {
+      return 'No skills selected';
+    }
+
+    const actionPoints = this.calculatePlayerActionPoints();
+    const totalCost = this.calculateTotalActionCost(skills);
+
+    if (totalCost > actionPoints) {
+      return `Action cost (${totalCost}) exceeds action points (${actionPoints})`;
+    }
+
+    const playerBodyStats = this.player.getBodyStats();
+    const totalMpCost = skills.reduce((total, skill) => total + skill.mpCost, 0);
+
+    if (playerBodyStats.getCurrentMP() < totalMpCost) {
+      return `Not enough MP! Need ${totalMpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`;
+    }
+
+    return null;
+  }
+
+  /**
+   * プレイヤーの複数スキルを使用する
+   * @param selectedSkills 選択されたスキル
+   * @returns プレイヤーターン結果
+   */
+  playerUseMultipleSkills(selectedSkills: SelectedSkill[]): PlayerTurnResult {
+    const skillResults: PlayerSkillResult[] = [];
+    let totalDamage = 0;
+    let totalMpRecovered = 0;
+
+    for (const { skill, typingResult } of selectedSkills) {
+      const result = this.playerUseSkill(skill, typingResult);
+      skillResults.push(result);
+      totalDamage += result.damage;
+      if (result.mpRecovered) {
+        totalMpRecovered += result.mpRecovered;
+      }
+    }
+
+    return {
+      skillResults,
+      totalDamage,
+      totalMpRecovered,
+    };
+  }
+
+  /**
    * プレイヤーが技を使用する
    * @param skill 使用する技
    * @param typingResult タイピング結果（オプション）
@@ -153,7 +263,46 @@ export class Battle {
   playerUseSkill(skill: Skill, typingResult?: TypingResult): PlayerSkillResult {
     const playerBodyStats = this.player.getBodyStats();
 
-    // MP消費チェック
+    // MPチェックと消費
+    const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, skill);
+    if (mpCheckResult) {
+      return mpCheckResult;
+    }
+
+    // 命中判定
+    const playerStats = this.player.getTotalStats();
+    const enemyStats = this.enemy.stats;
+    const hitResult = this.checkHit(playerStats, enemyStats, skill, typingResult);
+    if (hitResult) {
+      return hitResult;
+    }
+
+    // ダメージ計算と適用
+    const { damage, isCritical } = this.calculateAndApplyDamage(
+      playerStats,
+      enemyStats,
+      skill,
+      typingResult
+    );
+
+    // MP回復処理
+    const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
+
+    return {
+      success: true,
+      damage,
+      message:
+        this.generateSkillMessage(skill.name, damage, isCritical, typingResult) +
+        (mpRecovered > 0 ? ` Recovered ${mpRecovered} MP.` : ''),
+      critical: isCritical,
+      mpRecovered,
+    };
+  }
+
+  /**
+   * MPチェックと消費を行う
+   */
+  private checkAndConsumeMp(playerBodyStats: any, skill: Skill): PlayerSkillResult | null {
     if (playerBodyStats.getCurrentMP() < skill.mpCost) {
       return {
         success: false,
@@ -161,31 +310,45 @@ export class Battle {
         message: `Not enough MP! Need ${skill.mpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`,
       };
     }
-
-    // MP消費処理
     playerBodyStats.consumeMP(skill.mpCost);
+    return null;
+  }
 
-    const playerStats = this.player.getTotalStats();
-    const enemyStats = this.enemy.stats;
-
-    // 命中判定
+  /**
+   * 命中判定を行う
+   */
+  private checkHit(
+    playerStats: any,
+    enemyStats: any,
+    skill: Skill,
+    typingResult?: TypingResult
+  ): PlayerSkillResult | null {
     const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
     const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      // MP回復処理（命中しなくてもMP回復は発生する）
-      if (skill.mpCharge > 0) {
-        playerBodyStats.healMP(skill.mpCharge);
-      }
-
+      // ミス時もMP回復量を計算
+      const playerBodyStats = this.player.getBodyStats();
+      const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
       return {
         success: false,
         damage: 0,
-        message: `${skill.name} missed!${skill.mpCharge > 0 ? ` Recovered ${skill.mpCharge} MP.` : ''}`,
+        message: `${skill.name} missed!${mpRecovered > 0 ? ` Recovered ${mpRecovered} MP.` : ''}`,
+        mpRecovered,
       };
     }
+    return null;
+  }
 
-    // クリティカル判定とダメージ計算
+  /**
+   * ダメージ計算と適用を行う
+   */
+  private calculateAndApplyDamage(
+    playerStats: any,
+    enemyStats: any,
+    skill: Skill,
+    typingResult?: TypingResult
+  ): { damage: number; isCritical: boolean } {
     const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
@@ -196,25 +359,30 @@ export class Battle {
       isCritical
     );
 
-    // タイピング効果倍率適用
     damage = this.applyTypingEffectMultiplier(damage, typingResult);
-
-    // ダメージを与える
     this.enemy.takeDamage(damage);
 
-    // MP回復処理
-    if (skill.mpCharge > 0) {
-      playerBodyStats.healMP(skill.mpCharge);
-    }
+    return { damage, isCritical };
+  }
 
-    return {
-      success: true,
-      damage,
-      message:
-        this.generateSkillMessage(skill.name, damage, isCritical, typingResult) +
-        (skill.mpCharge > 0 ? ` Recovered ${skill.mpCharge} MP.` : ''),
-      critical: isCritical,
-    };
+  /**
+   * MP回復処理を行う
+   */
+  private processMpRecovery(
+    playerBodyStats: any,
+    skill: Skill,
+    typingResult?: TypingResult
+  ): number {
+    let mpRecovered = skill.mpCharge;
+    if (mpRecovered > 0) {
+      if (typingResult?.accuracyRating === 'Perfect') {
+        mpRecovered = Math.floor(mpRecovered * 1.5);
+      } else if (typingResult?.accuracyRating === 'Great') {
+        mpRecovered = Math.floor(mpRecovered * 1.2);
+      }
+      playerBodyStats.healMP(mpRecovered);
+    }
+    return mpRecovered;
   }
 
   /**
