@@ -14,10 +14,11 @@ describe('Battle', () => {
     name: 'Test Attack',
     description: 'A test attack',
     mpCost: 5,
+    mpCharge: 0,
+    actionCost: 1,
     power: 1.2,
     accuracy: 90,
     target: 'enemy',
-    element: 'physical',
     typingDifficulty: 2,
   };
 
@@ -127,10 +128,11 @@ describe('Battle', () => {
         name: 'Player Attack',
         description: 'Player attack',
         mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.0,
         accuracy: 100,
         target: 'enemy',
-        element: 'physical',
         typingDifficulty: 1,
       };
 
@@ -160,10 +162,11 @@ describe('Battle', () => {
         name: 'Player Attack',
         description: 'Player attack',
         mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.0,
         accuracy: 50,
         target: 'enemy',
-        element: 'physical',
         typingDifficulty: 1,
       };
 
@@ -367,10 +370,11 @@ describe('Battle', () => {
         name: 'Fireball',
         description: 'A basic fire spell',
         mpCost: 5,
+        mpCharge: 0,
+        actionCost: 1,
         power: 1.5,
         accuracy: 90,
         target: 'enemy',
-        element: 'fire',
         typingDifficulty: 2,
       };
 
@@ -457,6 +461,116 @@ describe('Battle', () => {
 
       const result = battle.playerUseSkill(skill, typingResult);
       expect(result.message).not.toContain('Great typing!');
+    });
+  });
+
+  describe('MP管理システム', () => {
+    const skillWithMPCost: Skill = {
+      id: 'power_strike',
+      name: 'Power Strike',
+      description: 'A powerful strike',
+      mpCost: 10,
+      mpCharge: 0,
+      actionCost: 1,
+      power: 1.5,
+      accuracy: 90,
+      target: 'enemy',
+      typingDifficulty: 2,
+    };
+
+    const skillWithMPCharge: Skill = {
+      id: 'healing_strike',
+      name: 'Healing Strike',
+      description: 'A strike that recovers MP',
+      mpCost: 5,
+      mpCharge: 8,
+      actionCost: 1,
+      power: 1.2,
+      accuracy: 90,
+      target: 'enemy',
+      typingDifficulty: 2,
+    };
+
+    beforeEach(() => {
+      battle.start();
+    });
+
+    it('MP不足時は技を使用できない', () => {
+      const playerBodyStats = player.getBodyStats();
+      // MPを消費して残りを9にする
+      playerBodyStats.consumeMP(playerBodyStats.getCurrentMP() - 9);
+
+      const result = battle.playerUseSkill(skillWithMPCost);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Not enough MP!');
+      expect(result.message).toContain('Need 10 MP but only have 9 MP');
+    });
+
+    it('MP消費が正常に動作する', () => {
+      const playerBodyStats = player.getBodyStats();
+      const initialMP = playerBodyStats.getCurrentMP();
+
+      jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(true);
+      jest.spyOn(BattleCalculator, 'calculateDamage').mockReturnValue(25);
+
+      battle.playerUseSkill(skillWithMPCost);
+
+      expect(playerBodyStats.getCurrentMP()).toBe(initialMP - 10);
+    });
+
+    it('MP回復が正常に動作する', () => {
+      const playerBodyStats = player.getBodyStats();
+      // MPを一部消費
+      playerBodyStats.consumeMP(20);
+      const mpAfterConsumption = playerBodyStats.getCurrentMP();
+
+      jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(true);
+      jest.spyOn(BattleCalculator, 'calculateDamage').mockReturnValue(25);
+
+      const result = battle.playerUseSkill(skillWithMPCharge);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Recovered 8 MP');
+      // MP消費5 + MP回復8 = +3
+      expect(playerBodyStats.getCurrentMP()).toBe(mpAfterConsumption - 5 + 8);
+    });
+
+    it('攻撃ミス時もMP回復は発生する', () => {
+      const playerBodyStats = player.getBodyStats();
+      // MPを一部消費
+      playerBodyStats.consumeMP(20);
+      const mpAfterConsumption = playerBodyStats.getCurrentMP();
+
+      jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(false);
+
+      const result = battle.playerUseSkill(skillWithMPCharge);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('missed!');
+      expect(result.message).toContain('Recovered 8 MP');
+      // MP消費5 + MP回復8 = +3
+      expect(playerBodyStats.getCurrentMP()).toBe(mpAfterConsumption - 5 + 8);
+    });
+
+    it('敵のMP不足時は通常攻撃に変更される', () => {
+      // 敵のMPを消費して足りなくする
+      enemy.consumeMp(enemy.currentMp);
+
+      const skillWithHighMPCost: Skill = {
+        ...mockSkill,
+        mpCost: 50,
+      };
+
+      jest.spyOn(enemy, 'selectSkill').mockReturnValue(skillWithHighMPCost);
+      jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(true);
+      jest.spyOn(BattleCalculator, 'calculateDamage').mockReturnValue(15);
+
+      const result = battle.enemyAction();
+
+      // 通常攻撃が使用される
+      expect(result.skillUsed.id).toBe('normal_attack');
+      expect(result.skillUsed.mpCost).toBe(0);
     });
   });
 });
