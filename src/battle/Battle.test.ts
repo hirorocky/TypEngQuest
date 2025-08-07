@@ -150,33 +150,18 @@ describe('Battle', () => {
       battle.start();
     });
 
-    it('プレイヤーの行動ポイントを計算できる', () => {
-      // agility = 50 の場合
+    it.each([
+      { agility: 50, expectedAP: 4 },
+      { agility: 100, expectedAP: 5 },
+      { agility: 25, expectedAP: 3 },
+    ])('プレイヤーの行動ポイントを計算できる (agility: $agility)', ({ agility, expectedAP }) => {
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
         strength: 10,
         willpower: 10,
-        agility: 50,
+        agility,
         fortune: 10,
       });
-      expect(battle.calculatePlayerActionPoints()).toBe(4); // 3 + floor(50/50) = 4
-
-      // agility = 100 の場合
-      jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        strength: 10,
-        willpower: 10,
-        agility: 100,
-        fortune: 10,
-      });
-      expect(battle.calculatePlayerActionPoints()).toBe(5); // 3 + floor(100/50) = 5
-
-      // agility = 25 の場合
-      jest.spyOn(player, 'getTotalStats').mockReturnValue({
-        strength: 10,
-        willpower: 10,
-        agility: 25,
-        fortune: 10,
-      });
-      expect(battle.calculatePlayerActionPoints()).toBe(3); // 3 + floor(25/50) = 3
+      expect(battle.calculatePlayerActionPoints()).toBe(expectedAP);
     });
 
     it('スキルの合計コストを計算できる', () => {

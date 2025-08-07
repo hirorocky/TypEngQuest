@@ -22,6 +22,18 @@ export class BattlePhase extends Phase {
   }
 
   /**
+   * battle初期化チェック付きでメソッドを実行する
+   */
+  private withBattle<T>(fn: (battle: Battle) => T): T | PhaseResult {
+    try {
+      const battle = this.getBattle();
+      return fn(battle);
+    } catch (_error) {
+      return this.error('battle not initialized');
+    }
+  }
+
+  /**
    * フェーズを開始する
    */
   async start(context?: CommandContext): Promise<PhaseResult> {
@@ -45,8 +57,7 @@ export class BattlePhase extends Phase {
    * ターンを開始する
    */
   private startTurn(): PhaseResult {
-    try {
-      const battle = this.getBattle();
+    return this.withBattle(battle => {
       const actor = battle.getCurrentTurnActor();
 
       if (actor === 'player') {
@@ -54,17 +65,14 @@ export class BattlePhase extends Phase {
       } else {
         return this.executeEnemyTurn();
       }
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
+    }) as PhaseResult;
   }
 
   /**
    * プレイヤーターンを開始する
    */
   private startPlayerTurn(): PhaseResult {
-    try {
-      const battle = this.getBattle();
+    return this.withBattle(battle => {
       this.selectedSkills = [];
       this.actionPoints = battle.calculatePlayerActionPoints();
 
@@ -78,9 +86,7 @@ export class BattlePhase extends Phase {
       this.output('Type "clear" to clear selections');
 
       return this.success();
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
+    }) as PhaseResult;
   }
 
   /**
@@ -149,8 +155,7 @@ export class BattlePhase extends Phase {
    * 利用可能なスキルを表示
    */
   private showAvailableSkills(): PhaseResult {
-    const equipment = this.game.player.getEquipment();
-    const skills = equipment.getAllSkills();
+    const skills = this.game.player.getEquippedItemSkills();
 
     if (skills.length === 0) {
       this.output('No skills available');
@@ -169,8 +174,7 @@ export class BattlePhase extends Phase {
    * スキルを選択
    */
   private selectSkill(skillName: string): PhaseResult {
-    const equipment = this.game.player.getEquipment();
-    const skills = equipment.getAllSkills();
+    const skills = this.game.player.getEquippedItemSkills();
     const skill = skills.find(s => s.name.toLowerCase() === skillName);
 
     if (!skill) {
@@ -258,9 +262,7 @@ export class BattlePhase extends Phase {
    * 戦闘を終了する
    */
   private endBattle(victory: boolean): PhaseResult {
-    try {
-      const battle = this.getBattle();
-
+    return this.withBattle(battle => {
       if (victory) {
         this.output('Victory!');
 
@@ -283,9 +285,7 @@ export class BattlePhase extends Phase {
 
       // 探索フェーズに戻る
       return this.successWithPhase(PhaseTypes.EXPLORATION);
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
+    }) as PhaseResult;
   }
 
   /**
