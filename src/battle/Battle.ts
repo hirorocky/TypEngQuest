@@ -82,7 +82,8 @@ export class Battle {
 
   private static loadSkillsData() {
     if (!Battle.skillsData) {
-      const dataPath = path.join(__dirname, '../../data/skills/skills.json');
+      // プロジェクトルートからの相対パスを使用
+      const dataPath = path.resolve(process.cwd(), 'data/skills/skills.json');
       Battle.skillsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
     }
     return Battle.skillsData;
@@ -91,7 +92,7 @@ export class Battle {
   /**
    * 通常攻撃用のスキルを取得
    */
-  private static getNormalAttackSkill(): Skill {
+  public static getNormalAttackSkill(): Skill {
     const data = Battle.loadSkillsData();
     if (!data) {
       throw new Error('Failed to load skills data');
