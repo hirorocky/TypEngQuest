@@ -8,9 +8,15 @@ describe('BattleTypingPhase', () => {
 
   beforeEach(() => {
     mockSkill = {
+      id: 'fireball',
       name: 'fireball',
+      description: 'A powerful fireball spell',
       mpCost: 10,
-      difficulty: 2,
+      mpCharge: 15,
+      actionCost: 1,
+      successRate: 90,
+      target: 'enemy',
+      typingDifficulty: 2,
       effects: [{ type: 'damage', value: 30 }],
     };
 
@@ -60,7 +66,8 @@ describe('BattleTypingPhase', () => {
       const result = await battleTypingPhase.evaluateTypingResult('perfect', 'fast');
 
       expect(result.success).toBe(true);
-      expect(result.skillEffect).toBeGreaterThan(30); // 150%効果期待
+      // mpCharge=15, perfect(1.5倍)なので15 * 1.5 = 22.5, floor(22.5) = 22
+      expect(result.skillEffect).toBe(22);
     });
   });
 
@@ -72,7 +79,11 @@ describe('BattleTypingPhase', () => {
     it('文字入力でタイピング進行をチェック', async () => {
       await battleTypingPhase.startTypingChallenge();
 
-      const result = await battleTypingPhase.processInput('f');
+      // typingDifficulty=2なので'fireball'が選択されるはず
+      const targetWord = battleTypingPhase.getCurrentTargetWord();
+      const firstChar = targetWord[0];
+
+      const result = await battleTypingPhase.processInput(firstChar);
 
       expect(result.success).toBe(true);
     });

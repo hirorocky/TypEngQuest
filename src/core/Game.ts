@@ -3,6 +3,7 @@
  */
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
+import { Skill } from '../battle/Skill';
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { InventoryPhase } from '../phases/InventoryPhase';
@@ -17,6 +18,7 @@ import { Enemy } from '../battle/Enemy';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
+import { ConsumableItem } from '../items/ConsumableItem';
 import { CommandParser } from './CommandParser';
 import {
   TabCompleter,
@@ -25,6 +27,31 @@ import {
   BattleCompletionProvider,
 } from './completion';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
+
+/**
+ * Phase遷移時のデータ型定義
+ */
+interface PhaseTransitionData {
+  // Battle phase
+  enemy?: Enemy;
+
+  // BattleTyping phase
+  skill?: Skill;
+  onComplete?: (result: { success: boolean; skill?: Skill }) => void;
+
+  // SkillSelection phase
+  onSkillSelected?: (skill: Skill) => void;
+  onBack?: () => void;
+
+  // BattleItemConsumption phase
+  onItemUsed?: (item: ConsumableItem) => void;
+
+  // Typing phase
+  difficulty?: number;
+
+  // General
+  exit?: boolean;
+}
 
 export class Game {
   private state: GameState;
@@ -114,7 +141,7 @@ export class Game {
     }
   }
 
-  private async transitionToPhase(phaseType: PhaseType, data?: any): Promise<void> {
+  private async transitionToPhase(phaseType: PhaseType, data?: PhaseTransitionData): Promise<void> {
     // Cleanup current phase
     if (this.currentPhase) {
       await this.currentPhase.cleanup();
@@ -127,7 +154,7 @@ export class Game {
     await this.currentPhase.initialize();
   }
 
-  private createPhase(phaseType: PhaseType, data?: any): Phase {
+  private createPhase(phaseType: PhaseType, data?: PhaseTransitionData): Phase {
     const phaseFactories: Record<PhaseType, () => Phase> = {
       title: () => new TitlePhase(undefined, this.tabCompleter),
       exploration: () =>
@@ -149,8 +176,8 @@ export class Game {
         );
         // enemyデータがある場合は戦闘を開始
         if (data?.enemy) {
-          // Enemy クラスのインスタンスを作成
-          const enemy = new Enemy(data.enemy);
+          // data.enemyはすでにEnemyインスタンス
+          const enemy = data.enemy;
           // 戦闘開始は非同期で行う（initialization後に）
           Promise.resolve().then(async () => {
             await battlePhase.startBattle(enemy);
@@ -160,7 +187,11 @@ export class Game {
       },
       battleTyping: () => {
         const skill = data?.skill;
-        const onComplete = data?.onComplete;
+        if (!skill) {
+          throw new Error('Skill is required for BattleTypingPhase');
+        }
+        const onComplete =
+          data?.onComplete || ((_result: { success: boolean; skill?: Skill }) => {});
         return new BattleTypingPhase(skill, onComplete, this.currentWorld!, this.tabCompleter);
       },
       skillSelection: () =>
@@ -181,7 +212,9 @@ export class Game {
         }),
       typing: () => {
         const difficulty = data?.difficulty;
-        return new TypingPhase(difficulty) as any; // TODO: Refactor TypingPhase to extend Phase
+        // TODO: Refactor TypingPhase to properly extend Phase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new TypingPhase(difficulty as 1 | 2 | 3 | 4 | 5 | undefined) as any;
       },
       continue: () => {
         throw new Error('Continue phase not implemented');

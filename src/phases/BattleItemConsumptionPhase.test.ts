@@ -1,5 +1,6 @@
 import { BattleItemConsumptionPhase } from './BattleItemConsumptionPhase';
 import { PhaseTypes } from '../core/types';
+import { ItemType } from '../items/Item';
 
 describe('BattleItemConsumptionPhase', () => {
   let battleItemPhase: BattleItemConsumptionPhase;
@@ -16,17 +17,26 @@ describe('BattleItemConsumptionPhase', () => {
             type: 'consumable',
             effects: [{ type: 'heal', value: 50 }],
             use: jest.fn().mockResolvedValue({ success: true }),
+            getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+            getName: jest.fn().mockReturnValue('Health Potion'),
+            getEffects: jest.fn().mockReturnValue([{ type: 'heal', value: 50 }]),
           },
           {
             name: 'Mana Potion',
             type: 'consumable',
             effects: [{ type: 'restore_mp', value: 30 }],
             use: jest.fn().mockResolvedValue({ success: true }),
+            getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+            getName: jest.fn().mockReturnValue('Mana Potion'),
+            getEffects: jest.fn().mockReturnValue([{ type: 'restore_mp', value: 30 }]),
           },
           {
             name: 'Sword',
             type: 'equipment',
             effects: [{ type: 'damage', value: 10 }],
+            getType: jest.fn().mockReturnValue(ItemType.EQUIPMENT),
+            getName: jest.fn().mockReturnValue('Sword'),
+            getEffects: jest.fn().mockReturnValue([{ type: 'damage', value: 10 }]),
           },
         ]),
         removeItem: jest.fn(),
@@ -156,6 +166,9 @@ describe('BattleItemConsumptionPhase', () => {
           name: 'Sword',
           type: 'equipment',
           effects: [{ type: 'damage', value: 10 }],
+          getType: jest.fn().mockReturnValue(ItemType.EQUIPMENT),
+          getName: jest.fn().mockReturnValue('Sword'),
+          getEffects: jest.fn().mockReturnValue([{ type: 'damage', value: 10 }]),
         },
       ]);
       const emptyItemPhase = new BattleItemConsumptionPhase({
@@ -173,7 +186,7 @@ describe('BattleItemConsumptionPhase', () => {
 
     it('プレイヤーが存在しない場合の処理', async () => {
       const phaseWithoutPlayer = new BattleItemConsumptionPhase({
-        player: null,
+        player: null as any,
         onItemUsed: mockOnItemUsed,
         onBack: mockOnBack,
       });
@@ -191,6 +204,9 @@ describe('BattleItemConsumptionPhase', () => {
         type: 'consumable',
         effects: [{ type: 'heal', value: 50 }],
         use: jest.fn().mockRejectedValue(new Error('Item is broken')),
+        getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+        getName: jest.fn().mockReturnValue('Broken Potion'),
+        getEffects: jest.fn().mockReturnValue([{ type: 'heal', value: 50 }]),
       };
       mockPlayer.getInventory().getItems.mockReturnValue([failingItem]);
 

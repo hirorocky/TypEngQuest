@@ -78,7 +78,7 @@ export class Battle {
   /**
    * スキルデータを読み込む
    */
-  private static skillsData: any = null;
+  private static skillsData: { skills: Skill[] } | null = null;
 
   private static loadSkillsData() {
     if (!Battle.skillsData) {
@@ -93,7 +93,10 @@ export class Battle {
    */
   private static getNormalAttackSkill(): Skill {
     const data = Battle.loadSkillsData();
-    const basicAttack = data.skills.find((skill: any) => skill.id === 'basic_attack');
+    if (!data) {
+      throw new Error('Failed to load skills data');
+    }
+    const basicAttack = data.skills.find((skill: Skill) => skill.id === 'basic_attack');
 
     if (!basicAttack) {
       throw new Error('basic_attack skill not found in skills data');

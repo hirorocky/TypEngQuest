@@ -583,6 +583,7 @@ export class BodyStats {
    * @returns BodyStatsインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): BodyStats {
     if (!this.validateBodyStatsData(data)) {
       throw new Error('Invalid body stats data format');
@@ -600,6 +601,7 @@ export class BodyStats {
   /**
    * HP/MPを復元する
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static restoreHPMP(bodyStats: BodyStats, data: any): void {
     bodyStats.currentHP = data.currentHP;
     bodyStats.currentMP = data.currentMP;
@@ -608,6 +610,7 @@ export class BodyStats {
   /**
    * 基本ステータスを復元する（旧形式との互換性を保つ）
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static restoreBaseStats(bodyStats: BodyStats, data: any): void {
     bodyStats.baseStrength = data.baseStrength ?? data.baseAttack ?? BodyStats.BASE_STAT;
     bodyStats.baseWillpower = data.baseWillpower ?? data.baseDefense ?? BodyStats.BASE_STAT;
@@ -618,6 +621,7 @@ export class BodyStats {
   /**
    * ブーストを復元する
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static restoreBoosts(bodyStats: BodyStats, data: any): void {
     // temporaryBoostsの互換性処理
     if (data.temporaryBoosts) {
@@ -638,13 +642,16 @@ export class BodyStats {
   /**
    * ステータスを復元する
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static restoreStatuses(bodyStats: BodyStats, data: any): void {
     bodyStats.temporaryStatuses = data.temporaryStatuses
-      ? data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.temporaryStatuses.filter((status: any) => isTemporaryStatus(status))
       : [];
 
     bodyStats.worldStatuses = data.worldStatuses
-      ? data.worldStatuses.filter((status: any) => isWorldStatus(status))
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.worldStatuses.filter((status: any) => isWorldStatus(status))
       : [];
   }
 
@@ -653,6 +660,7 @@ export class BodyStats {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateBodyStatsData(data: any): data is BodyStatsData {
     return (
       this.validateBasicStructure(data) &&
@@ -666,6 +674,7 @@ export class BodyStats {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateBasicStructure(data: any): boolean {
     return (
       typeof data === 'object' &&
@@ -684,6 +693,7 @@ export class BodyStats {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateStatsFields(data: any): boolean {
     // 新形式のチェック
     const hasNewFormat =
@@ -707,6 +717,7 @@ export class BodyStats {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateTemporaryBoosts(data: any): boolean {
     if (typeof data.temporaryBoosts !== 'object' || data.temporaryBoosts === null) {
       return false;

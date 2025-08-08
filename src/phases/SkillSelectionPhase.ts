@@ -1,23 +1,26 @@
 import { Phase } from '../core/Phase';
 import { World } from '../world/World';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
+import { Player } from '../player/Player';
+import { Skill } from '../battle/Skill';
+import { TabCompleter } from '../core/completion';
 
 interface SkillSelectionOptions {
-  player: any;
-  onSkillSelected: (skill: any) => void;
+  player: Player;
+  onSkillSelected: (skill: Skill) => void;
   onBack: () => void;
   world?: World;
-  tabCompleter?: any;
+  tabCompleter?: TabCompleter;
 }
 
 /**
  * SkillSelectionPhaseクラス - 戦闘時のスキル選択フェーズ
  */
 export class SkillSelectionPhase extends Phase {
-  private player: any;
-  private onSkillSelected: (skill: any) => void;
+  private player: Player;
+  private onSkillSelected: (skill: Skill) => void;
   private onBack: () => void;
-  private availableSkills: any[] = [];
+  private availableSkills: Skill[] = [];
 
   constructor(options: SkillSelectionOptions) {
     super(options.world, options.tabCompleter);
@@ -202,7 +205,7 @@ export class SkillSelectionPhase extends Phase {
   /**
    * スキルを選択
    */
-  private async selectSkill(skill: any): Promise<CommandResult> {
+  private async selectSkill(skill: Skill): Promise<CommandResult> {
     if (!this.player) {
       return {
         success: false,

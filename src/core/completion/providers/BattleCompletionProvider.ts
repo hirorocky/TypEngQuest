@@ -32,20 +32,20 @@ export class BattleCompletionProvider implements CompletionProvider {
       
       // 現在のディレクトリにあるすべてのファイルを取得
       const currentNode = fileSystem.currentNode;
-      const allFiles = currentNode.children.filter((child: any) => child.isFile());
+      const allFiles = currentNode.children.filter(child => child.isFile());
       
       // モンスターファイル（バトル可能なファイル）のみをフィルタ
-      const monsterFiles = allFiles.filter((file: any) => file.fileType === FileType.MONSTER);
+      const monsterFiles = allFiles.filter(file => file.fileType === FileType.MONSTER);
       
       // 現在の入力にマッチするファイルをフィルタ
       const prefix = context.currentArg.toLowerCase();
       const matchingFiles = monsterFiles
-        .map((file: any) => file.name)
+        .map(file => file.name)
         .filter((name: string) => name.toLowerCase().startsWith(prefix));
       
       // マッチするものがない場合は全モンスターファイルを表示
       if (matchingFiles.length === 0) {
-        return monsterFiles.map((file: any) => file.name);
+        return monsterFiles.map(file => file.name);
       }
       
       return matchingFiles;

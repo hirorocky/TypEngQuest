@@ -1,6 +1,8 @@
 import { BaseCommand, CommandContext, ValidationResult } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
-import { FileType } from '../../world/FileNode';
+import { FileType, FileNode } from '../../world/FileNode';
+import { Enemy, EnemyStats, DropItem } from '../../battle/Enemy';
+import { Skill, DamageSkillEffect } from '../../battle/Skill';
 
 /**
  * battleコマンド - モンスターファイルとバトルする
@@ -72,7 +74,7 @@ export class BattleCommand extends BaseCommand {
    * @param fileNode ファイルノード
    * @returns 敵オブジェクト
    */
-  private createEnemyFromFile(fileName: string, _fileNode: any): any {
+  private createEnemyFromFile(fileName: string, _fileNode: FileNode): Enemy {
     const extension = this.getExtension(fileName);
     const monsterType = this.getMonsterType(fileName);
     
@@ -80,7 +82,7 @@ export class BattleCommand extends BaseCommand {
     const baseLevel = 1; // 後でファイルサイズや階層から決定可能
     const stats = this.generateEnemyStats(extension, baseLevel);
     
-    return {
+    return new Enemy({
       id: `file_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`,
       name: `${monsterType.replace(' Monster', '')} Beast`,
       description: `A ${monsterType.toLowerCase()} lurking in ${fileName}`,
@@ -88,13 +90,13 @@ export class BattleCommand extends BaseCommand {
       stats: stats,
       skills: this.generateEnemySkills(extension),
       drops: this.generateEnemyDrops(extension),
-    };
+    });
   }
 
   /**
    * 拡張子に基づいて敵のステータスを生成
    */
-  private generateEnemyStats(extension: string, level: number): any {
+  private generateEnemyStats(extension: string, level: number): EnemyStats {
     const baseStats = {
       maxHp: 30 + (level * 10),
       maxMp: 10 + (level * 5),
@@ -121,39 +123,59 @@ export class BattleCommand extends BaseCommand {
   /**
    * 拡張子に基づいて敵のスキルを生成
    */
-  private generateEnemySkills(extension: string): any[] {
-    const baseSkills = [
+  private generateEnemySkills(extension: string): Skill[] {
+    const baseSkills: Skill[] = [
       {
-        name: 'syntax_error',
+        id: 'syntax_error',
+        name: 'Syntax Error',
+        description: 'A confusing syntax error attack',
         actionCost: 1,
         mpCost: 3,
-        difficulty: 2,
-        effects: [{ type: 'damage', value: 8 }],
+        mpCharge: 0,
+        successRate: 90,
+        target: 'enemy',
+        typingDifficulty: 2,
+        effects: [{ type: 'damage', power: 8, target: 'enemy' } as DamageSkillEffect],
       },
     ];
 
     // 拡張子による特殊スキル
-    const specialSkills: { [key: string]: any } = {
+    const specialSkills: { [key: string]: Skill } = {
       '.js': {
-        name: 'callback_hell',
+        id: 'callback_hell',
+        name: 'Callback Hell',
+        description: 'Unleash a cascade of asynchronous nightmares',
         actionCost: 2,
         mpCost: 5,
-        difficulty: 3,
-        effects: [{ type: 'damage', value: 12 }],
+        mpCharge: 0,
+        successRate: 85,
+        target: 'enemy',
+        typingDifficulty: 3,
+        effects: [{ type: 'damage', power: 12, target: 'enemy' } as DamageSkillEffect],
       },
       '.py': {
-        name: 'indentation_error',
+        id: 'indentation_error',
+        name: 'Indentation Error',
+        description: 'Strike with misaligned whitespace',
         actionCost: 1,
         mpCost: 4,
-        difficulty: 2,
-        effects: [{ type: 'damage', value: 10 }],
+        mpCharge: 0,
+        successRate: 90,
+        target: 'enemy',
+        typingDifficulty: 2,
+        effects: [{ type: 'damage', power: 10, target: 'enemy' } as DamageSkillEffect],
       },
       '.html': {
-        name: 'tag_mismatch',
+        id: 'tag_mismatch',
+        name: 'Tag Mismatch',
+        description: 'Confuse with unclosed tags',
         actionCost: 1,
         mpCost: 3,
-        difficulty: 1,
-        effects: [{ type: 'damage', value: 6 }],
+        mpCharge: 0,
+        successRate: 95,
+        target: 'enemy',
+        typingDifficulty: 1,
+        effects: [{ type: 'damage', power: 6, target: 'enemy' } as DamageSkillEffect],
       },
     };
 
@@ -167,17 +189,15 @@ export class BattleCommand extends BaseCommand {
   /**
    * 拡張子に基づいて敵のドロップアイテムを生成
    */
-  private generateEnemyDrops(_extension: string): any[] {
+  private generateEnemyDrops(_extension: string): DropItem[] {
     return [
       {
-        item: 'Code Fragment',
-        probability: 0.7,
-        quantity: 1,
+        itemId: 'code_fragment',
+        dropRate: 0.7,
       },
       {
-        item: 'Debug Token',
-        probability: 0.3,
-        quantity: 1,
+        itemId: 'debug_token',
+        dropRate: 0.3,
       },
     ];
   }

@@ -1,5 +1,21 @@
 import nlp from 'compromise';
 
+// compromiseドキュメントタイプのインターフェース定義
+interface CompromiseDocument {
+  verbs(): { length: number };
+  nouns(): { length: number };
+  adjectives(): { length: number };
+  adverbs(): { length: number };
+}
+
+// 品詞情報のインターフェース
+interface PartOfSpeechInfo {
+  hasVerb: boolean;
+  hasNoun: boolean;
+  hasAdjective: boolean;
+  hasAdverb: boolean;
+}
+
 /**
  * 装備アイテムの英文法チェッククラス
  * 英単語で構成される英文の妥当性を検証する（compromiseライブラリ使用）
@@ -77,7 +93,7 @@ export class EquipmentGrammarChecker {
    * @param doc - compromiseで解析されたドキュメント
    * @returns 品詞の存在フラグ
    */
-  private getPartOfSpeech(doc: any) {
+  private getPartOfSpeech(doc: CompromiseDocument): PartOfSpeechInfo {
     return {
       hasVerb: doc.verbs().length > 0,
       hasNoun: doc.nouns().length > 0,
@@ -92,7 +108,7 @@ export class EquipmentGrammarChecker {
    * @param wordCount - 単語数
    * @returns 有効な文法パターンの場合true
    */
-  private isValidGrammarPattern(partOfSpeech: any, wordCount: number): boolean {
+  private isValidGrammarPattern(partOfSpeech: PartOfSpeechInfo, wordCount: number): boolean {
     return (
       this.hasValidCombination(partOfSpeech) ||
       this.isValidSingleWord(partOfSpeech, wordCount) ||
@@ -105,7 +121,7 @@ export class EquipmentGrammarChecker {
    * @param partOfSpeech - 品詞情報
    * @returns 有効な組み合わせの場合true
    */
-  private hasValidCombination(partOfSpeech: any): boolean {
+  private hasValidCombination(partOfSpeech: PartOfSpeechInfo): boolean {
     const { hasVerb, hasNoun, hasAdjective, hasAdverb } = partOfSpeech;
 
     return (hasVerb && hasNoun) || (hasAdjective && hasNoun) || (hasAdverb && hasAdjective);
@@ -117,7 +133,7 @@ export class EquipmentGrammarChecker {
    * @param wordCount - 単語数
    * @returns 単一単語として有効な場合true
    */
-  private isValidSingleWord(partOfSpeech: any, wordCount: number): boolean {
+  private isValidSingleWord(partOfSpeech: PartOfSpeechInfo, wordCount: number): boolean {
     const { hasNoun, hasAdjective } = partOfSpeech;
     return wordCount === 1 && (hasNoun || hasAdjective);
   }
@@ -128,7 +144,7 @@ export class EquipmentGrammarChecker {
    * @param wordCount - 単語数
    * @returns 短い表現として有効な場合true
    */
-  private isValidShortExpression(partOfSpeech: any, wordCount: number): boolean {
+  private isValidShortExpression(partOfSpeech: PartOfSpeechInfo, wordCount: number): boolean {
     const { hasNoun, hasVerb, hasAdjective } = partOfSpeech;
     return wordCount < 5 && (hasNoun || hasVerb || hasAdjective);
   }

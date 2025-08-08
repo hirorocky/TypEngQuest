@@ -2,17 +2,36 @@ import { Phase } from '../core/Phase';
 import { World } from '../world/World';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { TypingChallenge } from '../typing/TypingChallenge';
+import { TypingDifficulty } from '../typing/types';
+import { Skill } from '../battle/Skill';
+import { TabCompleter } from '../core/completion';
+
+interface TypingResult {
+  success: boolean;
+  skill?: Skill;
+}
+
+interface SkillEffectResult {
+  success: boolean;
+  skillEffect: number;
+  multiplier: number;
+}
 
 /**
  * BattleTypingPhaseクラス - 戦闘時のタイピングチャレンジフェーズ
  */
 export class BattleTypingPhase extends Phase {
-  private skill: any;
-  private onComplete: (result: any) => void;
+  private skill: Skill;
+  private onComplete: (result: TypingResult) => void;
   private typingChallenge: TypingChallenge | null = null;
   private isActive: boolean = false;
 
-  constructor(skill: any, onComplete: (result: any) => void, world?: World, tabCompleter?: any) {
+  constructor(
+    skill: Skill,
+    onComplete: (result: TypingResult) => void,
+    world?: World,
+    tabCompleter?: TabCompleter
+  ) {
     super(world, tabCompleter);
     this.skill = skill;
     this.onComplete = onComplete;
@@ -44,7 +63,10 @@ export class BattleTypingPhase extends Phase {
    */
   async startTypingChallenge(): Promise<CommandResult> {
     const targetWord = this.getCurrentTargetWord();
-    this.typingChallenge = new TypingChallenge(targetWord, this.skill.difficulty);
+    this.typingChallenge = new TypingChallenge(
+      targetWord,
+      this.skill.typingDifficulty as TypingDifficulty
+    );
     this.typingChallenge.start();
     this.isActive = true;
 
@@ -68,7 +90,7 @@ export class BattleTypingPhase extends Phase {
   /**
    * タイピング結果を評価
    */
-  async evaluateTypingResult(accuracy: string, speed: string): Promise<any> {
+  async evaluateTypingResult(accuracy: string, speed: string): Promise<SkillEffectResult> {
     let multiplier = 1.0;
 
     if (accuracy === 'perfect' && speed === 'fast') {
@@ -77,7 +99,8 @@ export class BattleTypingPhase extends Phase {
       multiplier = 1.2; // 120%効果
     }
 
-    const baseEffect = this.skill.effects[0]?.value || 0;
+    // Skillインターフェースの構造に合わせて修正
+    const baseEffect = this.skill.mpCharge || this.skill.mpCost || 0;
     const enhancedEffect = Math.floor(baseEffect * multiplier);
 
     return {
@@ -134,7 +157,7 @@ export class BattleTypingPhase extends Phase {
   getCurrentTargetWord(): string {
     // スキル難易度に基づいて単語を生成
     const words = ['attack', 'fireball', 'lightning', 'heal', 'shield'];
-    return words[Math.min(this.skill.difficulty - 1, words.length - 1)] || 'attack';
+    return words[Math.min(this.skill.typingDifficulty - 1, words.length - 1)] || 'attack';
   }
 
   /**

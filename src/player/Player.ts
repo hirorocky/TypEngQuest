@@ -355,6 +355,7 @@ export class Player {
    * @returns 復元されたプレイヤーインスタンス
    * @throws {Error} データが不正な場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): Player {
     Player.validatePlayerData(data);
 
@@ -372,6 +373,7 @@ export class Player {
    * @param data - 検証するデータ
    * @throws {Error} データが不正な場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validatePlayerData(data: any): asserts data is PlayerData {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid player data');

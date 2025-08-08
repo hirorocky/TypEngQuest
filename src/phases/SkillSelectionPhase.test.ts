@@ -165,7 +165,7 @@ describe('SkillSelectionPhase', () => {
 
     it('プレイヤーが存在しない場合の処理', async () => {
       const phaseWithoutPlayer = new SkillSelectionPhase({
-        player: null,
+        player: null as any,
         onSkillSelected: mockOnSkillSelected,
         onBack: mockOnBack,
       });

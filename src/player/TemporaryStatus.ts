@@ -77,6 +77,7 @@ export interface TemporaryStatus {
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffects {
   if (typeof obj !== 'object' || obj === null) {
     return false;
@@ -105,7 +106,11 @@ export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffect
  * JSONファイルからTemporaryStatusを読み込む
  */
 
-let temporaryStatusData: any = null;
+interface TemporaryStatusData {
+  temporaryStatuses: TemporaryStatus[];
+}
+
+let temporaryStatusData: TemporaryStatusData | null = null;
 
 function loadTemporaryStatusData() {
   if (!temporaryStatusData) {
@@ -120,7 +125,10 @@ function loadTemporaryStatusData() {
  */
 function getValidTemporaryStatusNames(): TemporaryStatusName[] {
   const data = loadTemporaryStatusData();
-  return data.temporaryStatuses.map((status: any) => status.name);
+  if (!data) {
+    return [];
+  }
+  return data.temporaryStatuses.map((status: TemporaryStatus) => status.name);
 }
 
 /**
@@ -128,7 +136,10 @@ function getValidTemporaryStatusNames(): TemporaryStatusName[] {
  */
 function getValidTemporaryStatusTypes(): TemporaryStatusType[] {
   const data = loadTemporaryStatusData();
-  return Array.from(new Set(data.temporaryStatuses.map((status: any) => status.type)));
+  if (!data) {
+    return [];
+  }
+  return Array.from(new Set(data.temporaryStatuses.map((status: TemporaryStatus) => status.type)));
 }
 
 /**
@@ -136,6 +147,7 @@ function getValidTemporaryStatusTypes(): TemporaryStatusType[] {
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isTemporaryStatus(obj: any): obj is TemporaryStatus {
   if (typeof obj !== 'object' || obj === null) {
     return false;

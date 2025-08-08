@@ -1,18 +1,19 @@
 import { Phase } from '../core/Phase';
 import { World } from '../world/World';
-
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { Battle } from '../battle/Battle';
 import { Enemy } from '../battle/Enemy';
+import { Player } from '../player/Player';
+import { TabCompleter } from '../core/completion';
 
 /**
  * BattlePhaseクラス - 戦闘フェーズの制御を行う
  */
 export class BattlePhase extends Phase {
   private battle: Battle | null = null;
-  private player?: any; // プレイヤーインスタンスを保持
+  private player?: Player; // プレイヤーインスタンスを保持
 
-  constructor(world?: World, tabCompleter?: any, player?: any) {
+  constructor(world?: World, tabCompleter?: TabCompleter, player?: Player) {
     super(world, tabCompleter);
     this.player = player;
   }
@@ -147,7 +148,7 @@ export class BattlePhase extends Phase {
     return {
       success: true,
       message: 'Entering skill selection...',
-      nextPhase: 'skillSelection' as any,
+      nextPhase: 'skillSelection',
     };
   }
 
@@ -158,7 +159,7 @@ export class BattlePhase extends Phase {
     return {
       success: true,
       message: 'Entering item selection...',
-      nextPhase: 'battleItemConsumption' as any,
+      nextPhase: 'battleItemConsumption',
     };
   }
 

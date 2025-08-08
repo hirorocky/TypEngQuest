@@ -79,6 +79,7 @@ export interface WorldStatus {
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isWorldStatusEffects(obj: any): obj is WorldStatusEffects {
   if (typeof obj !== 'object' || obj === null) {
     return false;
@@ -110,7 +111,11 @@ export function isWorldStatusEffects(obj: any): obj is WorldStatusEffects {
 /**
  * JSONファイルからWorldStatusを読み込む
  */
-let worldStatusData: any = null;
+interface WorldStatusData {
+  worldStatuses: WorldStatus[];
+}
+
+let worldStatusData: WorldStatusData | null = null;
 
 function loadWorldStatusData() {
   if (!worldStatusData) {
@@ -125,7 +130,10 @@ function loadWorldStatusData() {
  */
 function getValidWorldStatusNames(): WorldStatusName[] {
   const data = loadWorldStatusData();
-  return data.worldStatuses.map((status: any) => status.name);
+  if (!data) {
+    return [];
+  }
+  return data.worldStatuses.map((status: WorldStatus) => status.name);
 }
 
 /**
@@ -133,7 +141,10 @@ function getValidWorldStatusNames(): WorldStatusName[] {
  */
 function getValidWorldStatusTypes(): WorldStatusType[] {
   const data = loadWorldStatusData();
-  return Array.from(new Set(data.worldStatuses.map((status: any) => status.type)));
+  if (!data) {
+    return [];
+  }
+  return Array.from(new Set(data.worldStatuses.map((status: WorldStatus) => status.type)));
 }
 
 /**
@@ -141,6 +152,7 @@ function getValidWorldStatusTypes(): WorldStatusType[] {
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isWorldStatus(obj: any): obj is WorldStatus {
   if (typeof obj !== 'object' || obj === null) {
     return false;

@@ -90,7 +90,7 @@ export class ItemConsumptionPhase extends Phase {
       pageSize: 8,
       loop: false,
       onSelectionChange: item => {
-        const selectedItem = this.consumableItems[item.value];
+        const selectedItem = this.consumableItems[item.value as number];
         this.displaySelectedItemDetails(selectedItem);
       },
     });
@@ -110,7 +110,7 @@ export class ItemConsumptionPhase extends Phase {
       };
     }
 
-    const selectedItem = this.consumableItems[selectedIndex];
+    const selectedItem = this.consumableItems[selectedIndex as number];
 
     // アイテムを使用
     try {

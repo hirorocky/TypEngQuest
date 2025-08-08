@@ -1,23 +1,27 @@
 import { Phase } from '../core/Phase';
 import { World } from '../world/World';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
+import { Player } from '../player/Player';
+import { ConsumableItem, ItemEffect } from '../items/ConsumableItem';
+import { ItemType } from '../items/Item';
+import { TabCompleter } from '../core/completion';
 
 interface BattleItemConsumptionOptions {
-  player: any;
-  onItemUsed: (item: any) => void;
+  player: Player;
+  onItemUsed: (item: ConsumableItem) => void;
   onBack: () => void;
   world?: World;
-  tabCompleter?: any;
+  tabCompleter?: TabCompleter;
 }
 
 /**
  * BattleItemConsumptionPhaseクラス - 戦闘時のアイテム使用フェーズ
  */
 export class BattleItemConsumptionPhase extends Phase {
-  private player: any;
-  private onItemUsed: (item: any) => void;
+  private player: Player;
+  private onItemUsed: (item: ConsumableItem) => void;
   private onBack: () => void;
-  private availableItems: any[] = [];
+  private availableItems: ConsumableItem[] = [];
 
   constructor(options: BattleItemConsumptionOptions) {
     super(options.world, options.tabCompleter);
@@ -47,7 +51,9 @@ export class BattleItemConsumptionPhase extends Phase {
     if (this.player) {
       const allItems = this.player.getInventory().getItems();
       // 消費アイテムのみをフィルタ
-      this.availableItems = allItems.filter((item: any) => item.type === 'consumable');
+      this.availableItems = allItems.filter(
+        item => item.getType() === ItemType.CONSUMABLE
+      ) as ConsumableItem[];
     }
     this.registerItemCommands();
   }
@@ -98,7 +104,9 @@ export class BattleItemConsumptionPhase extends Phase {
 
     // アイテム名として処理を試行
     const item = this.availableItems.find(
-      i => i.name.toLowerCase().replace(/\s+/g, ' ') === trimmed.toLowerCase().replace(/\s+/g, ' ')
+      i =>
+        i.getName().toLowerCase().replace(/\s+/g, ' ') ===
+        trimmed.toLowerCase().replace(/\s+/g, ' ')
     );
     if (item) {
       return this.useItem(item);
@@ -146,8 +154,11 @@ export class BattleItemConsumptionPhase extends Phase {
 
     const itemList = this.availableItems.map((item, index) => {
       const effects =
-        item.effects?.map((effect: any) => `${effect.type}: ${effect.value}`).join(', ') || '';
-      return `  ${index + 1}. ${item.name} (${effects})`;
+        item
+          .getEffects()
+          .map((effect: ItemEffect) => `${effect.type}: ${effect.value}`)
+          .join(', ') || 'No effects';
+      return `  ${index + 1}. ${item.getName()} (${effects})`;
     });
 
     return {
@@ -209,7 +220,7 @@ export class BattleItemConsumptionPhase extends Phase {
   /**
    * アイテムを使用
    */
-  private async useItem(item: any): Promise<CommandResult> {
+  private async useItem(item: ConsumableItem): Promise<CommandResult> {
     if (!this.player) {
       return {
         success: false,
@@ -231,7 +242,7 @@ export class BattleItemConsumptionPhase extends Phase {
 
       return {
         success: true,
-        message: `Used ${item.name}`,
+        message: `Used ${item.getName()}`,
       };
     } catch (error) {
       return {

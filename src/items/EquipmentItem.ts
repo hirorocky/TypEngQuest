@@ -230,6 +230,7 @@ export class EquipmentItem extends Item {
    * @returns 装備アイテムインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): EquipmentItem {
     if (!EquipmentItem.validateEquipmentData(data)) {
       throw new Error('Invalid equipment item data');
@@ -256,6 +257,7 @@ export class EquipmentItem extends Item {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateEquipmentData(data: any): data is EquipmentItemData {
     if (!EquipmentItem.validateBasicData(data)) {
       return false;
@@ -273,6 +275,7 @@ export class EquipmentItem extends Item {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateBasicData(data: any): boolean {
     if (typeof data !== 'object' || data === null) {
       return false;
@@ -292,6 +295,7 @@ export class EquipmentItem extends Item {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateEquipmentSpecificData(data: any): boolean {
     if (typeof data.grade !== 'number') {
       return false;
@@ -313,6 +317,7 @@ export class EquipmentItem extends Item {
    * @param stats - 検証するステータス
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static validateStats(stats: any): stats is EquipmentStats {
     if (typeof stats !== 'object' || stats === null) {
       return false;
@@ -332,29 +337,47 @@ export class EquipmentItem extends Item {
    * @param skill - 検証するスキル
    * @returns 有効な場合true
    */
-  // eslint-disable-next-line complexity
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static validateSkill(skill: any): skill is Skill {
     if (typeof skill !== 'object' || skill === null) {
       return false;
     }
 
-    // 文字列プロパティの検証
-    const stringPropsValid =
+    return (
+      EquipmentItem.validateSkillStringProps(skill) &&
+      EquipmentItem.validateSkillNumberProps(skill) &&
+      Array.isArray(skill.effects)
+    );
+  }
+
+  /**
+   * スキルの文字列プロパティを検証する
+   * @param skill - 検証するスキル
+   * @returns 有効な場合true
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateSkillStringProps(skill: any): boolean {
+    return (
       typeof skill.id === 'string' &&
       typeof skill.name === 'string' &&
       typeof skill.description === 'string' &&
-      typeof skill.target === 'string';
+      typeof skill.target === 'string'
+    );
+  }
 
-    if (!stringPropsValid) return false;
-
-    // 数値プロパティの検証
-    const numberPropsValid =
+  /**
+   * スキルの数値プロパティを検証する
+   * @param skill - 検証するスキル
+   * @returns 有効な場合true
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateSkillNumberProps(skill: any): boolean {
+    return (
       typeof skill.mpCost === 'number' &&
       typeof skill.mpCharge === 'number' &&
       typeof skill.actionCost === 'number' &&
       typeof skill.successRate === 'number' &&
-      typeof skill.typingDifficulty === 'number';
-
-    return numberPropsValid && Array.isArray(skill.effects);
+      typeof skill.typingDifficulty === 'number'
+    );
   }
 }

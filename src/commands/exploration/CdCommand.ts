@@ -1,5 +1,6 @@
 import { BaseCommand, CommandContext } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
+import { FileSystem } from '../../world/FileSystem';
 
 /**
  * cd コマンド - ワーキングディレクトリを変更
@@ -9,7 +10,7 @@ export class CdCommand extends BaseCommand {
   public description = 'change working directory';
 
   protected executeInternal(args: string[], context: CommandContext): CommandResult {
-    const fileSystem = this.getFileSystem(context) as any;
+    const fileSystem = this.getFileSystem(context) as FileSystem;
     const targetPath = args[0];
 
     // ディレクトリの変更を実行
