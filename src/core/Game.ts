@@ -40,7 +40,8 @@ interface PhaseTransitionData {
   onComplete?: (result: { success: boolean; skill?: Skill }) => void;
 
   // SkillSelection phase
-  onSkillSelected?: (skill: Skill) => void;
+  battle?: any; // Battleインスタンス
+  onSkillsSelected?: (skills: Skill[]) => void;
   onBack?: () => void;
 
   // BattleItemConsumption phase
@@ -194,14 +195,20 @@ export class Game {
           data?.onComplete || ((_result: { success: boolean; skill?: Skill }) => {});
         return new BattleTypingPhase(skill, onComplete, this.currentWorld!, this.tabCompleter);
       },
-      skillSelection: () =>
-        new SkillSelectionPhase({
+      skillSelection: () => {
+        const battle = data?.battle;
+        if (!battle) {
+          throw new Error('Battle instance is required for SkillSelectionPhase');
+        }
+        return new SkillSelectionPhase({
           player: this.currentPlayer!,
-          onSkillSelected: data?.onSkillSelected || (() => {}),
+          battle: battle,
+          onSkillsSelected: data?.onSkillsSelected || (() => {}),
           onBack: data?.onBack || (() => {}),
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
-        }),
+        });
+      },
       battleItemConsumption: () =>
         new BattleItemConsumptionPhase({
           player: this.currentPlayer!,

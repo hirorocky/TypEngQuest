@@ -38,11 +38,16 @@ describe('SkillSelectionPhase', () => {
       }),
     };
 
+    const mockBattle = {
+      calculatePlayerActionPoints: jest.fn().mockReturnValue(3),
+    };
+
     mockOnSkillSelected = jest.fn();
     mockOnBack = jest.fn();
     skillSelectionPhase = new SkillSelectionPhase({
       player: mockPlayer,
-      onSkillSelected: mockOnSkillSelected,
+      battle: mockBattle,
+      onSkillsSelected: jest.fn(),
       onBack: mockOnBack,
     });
   });
@@ -152,7 +157,8 @@ describe('SkillSelectionPhase', () => {
       mockPlayer.getAllAvailableSkills.mockReturnValue([]);
       const emptySkillPhase = new SkillSelectionPhase({
         player: mockPlayer,
-        onSkillSelected: mockOnSkillSelected,
+        battle: { calculatePlayerActionPoints: jest.fn().mockReturnValue(3) },
+        onSkillsSelected: jest.fn(),
         onBack: mockOnBack,
       });
       await emptySkillPhase.initialize();
@@ -166,7 +172,8 @@ describe('SkillSelectionPhase', () => {
     it('プレイヤーが存在しない場合の処理', async () => {
       const phaseWithoutPlayer = new SkillSelectionPhase({
         player: null as any,
-        onSkillSelected: mockOnSkillSelected,
+        battle: { calculatePlayerActionPoints: jest.fn().mockReturnValue(3) },
+        onSkillsSelected: jest.fn(),
         onBack: mockOnBack,
       });
       await phaseWithoutPlayer.initialize();

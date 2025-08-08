@@ -4,6 +4,7 @@ import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { Battle } from '../battle/Battle';
 import { Enemy } from '../battle/Enemy';
 import { Player } from '../player/Player';
+import { Skill } from '../battle/Skill';
 import { TabCompleter } from '../core/completion';
 
 /**
@@ -149,6 +150,17 @@ export class BattlePhase extends Phase {
       success: true,
       message: 'Entering skill selection...',
       nextPhase: 'skillSelection',
+      data: {
+        battle: this.getBattle(),
+        onSkillsSelected: (skills: Skill[]) => {
+          console.log(`Selected ${skills.length} skills for battle!`);
+          // TODO: スキル選択後の処理を実装
+        },
+        onBack: () => {
+          console.log('Returned from skill selection');
+          // TODO: 戻る処理を実装
+        },
+      },
     };
   }
 
