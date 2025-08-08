@@ -4,6 +4,7 @@ import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
 import { EquipmentItem, EquipmentStats as ItemEquipmentStats } from '../items/EquipmentItem';
 import { Skill } from '../battle/Skill';
+import { Battle } from '../battle/Battle';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 
 /**
@@ -265,9 +266,12 @@ export class Player {
    * @returns 使用可能なすべての技のリスト
    */
   getAllAvailableSkills(): Skill[] {
-    // 現在は装備から取得できる技のみ
-    // 後で基本技やレベルに応じた技を追加する予定
-    return this.getEquippedItemSkills();
+    // 基本攻撃スキルを追加
+    const basicAttackSkill = Battle.getNormalAttackSkill();
+    
+    // 現在は装備から取得できる技のみと基本攻撃
+    // 後でレベルに応じた技を追加する予定
+    return [basicAttackSkill, ...this.getEquippedItemSkills()];
   }
 
   /**
