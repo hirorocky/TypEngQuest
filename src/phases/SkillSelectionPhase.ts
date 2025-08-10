@@ -3,11 +3,12 @@ import { World } from '../world/World';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { Player } from '../player/Player';
 import { Skill } from '../battle/Skill';
+import { Battle } from '../battle/Battle';
 import { TabCompleter } from '../core/completion';
 
 interface SkillSelectionOptions {
   player: Player;
-  battle: any; // Battleインスタンス（循環依存を避けるためany）
+  battle: Battle;
   onSkillsSelected: (skills: Skill[]) => void;
   onBack: () => void;
   world?: World;
@@ -19,7 +20,7 @@ interface SkillSelectionOptions {
  */
 export class SkillSelectionPhase extends Phase {
   private player: Player;
-  private battle: any;
+  private battle: Battle;
   private onSkillsSelected: (skills: Skill[]) => void;
   private onBack: () => void;
   private availableSkills: Skill[] = [];
@@ -46,21 +47,35 @@ export class SkillSelectionPhase extends Phase {
    * プロンプトを取得（リッチUIでは使用しない）
    */
   getPrompt(): string {
-    return '';
+    return 'skill> ';
   }
 
+  /**
+   * テスト用のコマンド入力処理
+   */
+  async processInput(input: string): Promise<CommandResult> {
+    if (!this.player) {
+      return {
+        success: false,
+        message: 'Player not available',
+      };
+    }
+
+    const command = input.trim().toLowerCase();
+    return this.handleCommand(command);
+  }
   /**
    * 初期化処理
    */
   async initialize(): Promise<void> {
     if (this.player) {
       this.availableSkills = this.player.getAllAvailableSkills();
+
+      // Raw modeを有効にしてキーボードイベントを取得
+      this.enableRawMode();
+      this.renderUI();
+      this.setupKeyboardHandlers();
     }
-    
-    // Raw modeを有効にしてキーボードイベントを取得
-    this.enableRawMode();
-    this.renderUI();
-    this.setupKeyboardHandlers();
   }
 
   /**
@@ -154,16 +169,17 @@ export class SkillSelectionPhase extends Phase {
     // MP足りているかチェック
     const totalMpCost = this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0) + skill.mpCost;
     const currentMP = this.player.getBodyStats().getCurrentMP();
-    
+
     if (totalMpCost > currentMP) {
       this.renderUI('Insufficient MP!');
       return;
     }
 
     // 行動ポイント足りているかチェック
-    const totalActionCost = this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0) + skill.actionCost;
+    const totalActionCost =
+      this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0) + skill.actionCost;
     const actionPoints = this.battle.calculatePlayerActionPoints();
-    
+
     if (totalActionCost > actionPoints) {
       this.renderUI('Insufficient Action Points!');
       return;
@@ -193,6 +209,9 @@ export class SkillSelectionPhase extends Phase {
     }
 
     this.disableRawMode();
+
+    // BattlePhaseに戻って選択されたスキルでバトル処理を実行
+    // 一時的にコールバックを呼び出し（後でフェーズ遷移システムに統合予定）
     this.onSkillsSelected(this.selectedSkills);
   }
 
@@ -218,24 +237,24 @@ export class SkillSelectionPhase extends Phase {
   private renderUI(errorMessage?: string): void {
     // 画面をクリア
     console.clear();
-    
+
     // タイトル
     console.log('\n🗡️  SKILL SELECTION 🗡️\n');
-    
+
     // プレイヤーステータス表示
     this.renderPlayerStatus();
-    
+
     // エラーメッセージ表示
     if (errorMessage) {
       console.log(`\n❌ ${errorMessage}\n`);
     }
-    
+
     // スキルリスト表示
     this.renderSkillList();
-    
+
     // 選択されたスキル表示
     this.renderSelectedSkills();
-    
+
     // ヘルプ表示
     this.renderHelp();
   }
@@ -248,8 +267,10 @@ export class SkillSelectionPhase extends Phase {
     const actionPoints = this.battle.calculatePlayerActionPoints();
     const usedActionPoints = this.selectedSkills.reduce((sum, skill) => sum + skill.actionCost, 0);
     const usedMP = this.selectedSkills.reduce((sum, skill) => sum + skill.mpCost, 0);
-    
-    console.log(`📊 Status: MP ${stats.getCurrentMP() - usedMP}/${stats.getMaxMP()} | Action Points ${actionPoints - usedActionPoints}/${actionPoints}\n`);
+
+    console.log(
+      `📊 Status: MP ${stats.getCurrentMP() - usedMP}/${stats.getMaxMP()} | Action Points ${actionPoints - usedActionPoints}/${actionPoints}\n`
+    );
   }
 
   /**
@@ -257,7 +278,7 @@ export class SkillSelectionPhase extends Phase {
    */
   private renderSkillList(): void {
     console.log('Available Skills:');
-    
+
     this.availableSkills.forEach((skill, index) => {
       const isSelected = index === this.currentIndex;
       const cursor = isSelected ? '► ' : '  ';
@@ -265,19 +286,21 @@ export class SkillSelectionPhase extends Phase {
       const usedMP = this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0);
       const availableMP = currentMP - usedMP;
       const canUseMP = skill.mpCost <= availableMP;
-      
+
       const actionPoints = this.battle.calculatePlayerActionPoints();
       const usedActionPoints = this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0);
       const availableActionPoints = actionPoints - usedActionPoints;
       const canUseAP = skill.actionCost <= availableActionPoints;
-      
+
       const canUse = canUseMP && canUseAP;
       const statusIcon = canUse ? '✅' : '❌';
-      
+
       console.log(`${cursor}${statusIcon} ${skill.name}`);
-      console.log(`     MP: ${skill.mpCost} | Action Cost: ${skill.actionCost} | ${skill.description}`);
+      console.log(
+        `     MP: ${skill.mpCost} | Action Cost: ${skill.actionCost} | ${skill.description}`
+      );
     });
-    
+
     console.log('');
   }
 
@@ -289,7 +312,7 @@ export class SkillSelectionPhase extends Phase {
       console.log('Selected Skills: None\n');
       return;
     }
-    
+
     console.log('Selected Skills:');
     this.selectedSkills.forEach((skill, index) => {
       console.log(`  ${index + 1}. ${skill.name} (MP: ${skill.mpCost}, AC: ${skill.actionCost})`);
@@ -307,16 +330,6 @@ export class SkillSelectionPhase extends Phase {
     console.log('  ←    Remove last selected skill');
     console.log('  Q    Go back');
     console.log('  Enter Confirm selection and start battle');
-  }
-
-  /**
-   * 入力処理（リッチUIでは使用しない）
-   */
-  async processInput(input: string): Promise<CommandResult> {
-    return {
-      success: true,
-      message: 'Rich UI mode active',
-    };
   }
 
   /**

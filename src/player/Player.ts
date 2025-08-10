@@ -268,7 +268,7 @@ export class Player {
   getAllAvailableSkills(): Skill[] {
     // 基本攻撃スキルを追加
     const basicAttackSkill = Battle.getNormalAttackSkill();
-    
+
     // 現在は装備から取得できる技のみと基本攻撃
     // 後でレベルに応じた技を追加する予定
     return [basicAttackSkill, ...this.getEquippedItemSkills()];

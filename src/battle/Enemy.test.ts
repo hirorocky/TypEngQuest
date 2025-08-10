@@ -225,9 +225,10 @@ describe('Enemy', () => {
 
     it('技リストを取得できる', () => {
       const skills = enemy.skills;
-      expect(skills).toHaveLength(2);
-      expect(skills[0]).toEqual(mockSkill1);
-      expect(skills[1]).toEqual(mockSkill2);
+      expect(skills).toHaveLength(3); // 基本攻撃スキル + 2つの追加スキル
+      expect(skills[0].id).toBe('basic_attack'); // 基本攻撃スキルが最初
+      expect(skills[1]).toEqual(mockSkill1);
+      expect(skills[2]).toEqual(mockSkill2);
     });
 
     it('技リストへの変更は元のデータに影響しない', () => {
@@ -239,7 +240,7 @@ describe('Enemy', () => {
 
       // 取得した配列を変更しても元のskillsに影響しないことを確認
       (skills1 as any).push({} as Skill);
-      expect(enemy.skills).toHaveLength(2); // 元のサイズのまま
+      expect(enemy.skills).toHaveLength(3); // 元のサイズのまま（基本攻撃スキル + 2つの追加スキル）
     });
 
     it('技リストが空の敵も作成できる', () => {
@@ -258,7 +259,7 @@ describe('Enemy', () => {
         },
       });
 
-      expect(weakEnemy.skills).toHaveLength(0);
+      expect(weakEnemy.skills).toHaveLength(1); // 基本攻撃スキルのみ
     });
 
     it('使用可能な技を選択できる（AI）', () => {

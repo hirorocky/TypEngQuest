@@ -1,0 +1,15 @@
+# バトルフェーズ間のインターフェース設計
+battleインスタンスをPhase間で共有し、現状のonCompleteなどのコールバックは渡さない。
+コールバックで実現しようとしていたことは、各Phaseでbattleインスタンスのメソッドを直接呼び出すことで実現する。
+
+# BattlePhase
+- skillコマンドを入力するとSkillSelectionPhaseに遷移する。
+- enterSkillSelectionで定義しているdataからonSkillsSelected、onBackを削除
+
+# SkillSelectionPhase
+- onBackプロパティはなくし、その代わりにgoBackメソッドでは、BattlePhaseへの遷移を行う。battleインスタンスを共有。
+- onSkillsSelectedプロパティはなくし、その代わり、confirmSelectionメソッドでは、BattleTypingPhaseへの遷移を行う。battle・Skill[]インスタンスを共有。
+
+# BattleTypingPhase
+- onCompleteプロパティはなくし、completeAllChallengesメソッドではその代わりにBattlePhaseへの遷移を行う。battle・BattleTypingResultインスタンスを共有。
+- タイピングの仕様はTypingPhaseの仕様に従って再実装する。TypingPhaseの継承はやめる。

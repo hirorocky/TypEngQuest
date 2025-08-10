@@ -73,6 +73,21 @@ afterEach(() => {
   
   // 全てのモックをクリア
   jest.clearAllMocks();
+  
+  // process.stdinのリスナーをクリーンアップ
+  if (process.stdin && typeof process.stdin.removeAllListeners === 'function') {
+    process.stdin.removeAllListeners('data');
+    process.stdin.removeAllListeners('keypress');
+  }
+  
+  // raw modeを無効化
+  if (process.stdin && typeof process.stdin.setRawMode === 'function') {
+    try {
+      process.stdin.setRawMode(false);
+    } catch (_error) {
+      // テスト環境では失敗する可能性があるため、エラーを無視
+    }
+  }
 });
 
 // プロセスリスナーの警告を抑制

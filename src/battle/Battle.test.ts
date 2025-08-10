@@ -74,8 +74,9 @@ describe('Battle', () => {
       expect(() => battle.start()).toThrow('Battle already started');
     });
 
-    it('戦闘が開始されていない状態で終了しようとするとエラーになる', () => {
-      expect(() => battle.end()).toThrow('Battle not started');
+    it('戦闘が開始されていない状態で終了しても何も起こらない', () => {
+      expect(() => battle.end()).not.toThrow();
+      expect(battle.isActive).toBe(false);
     });
   });
 

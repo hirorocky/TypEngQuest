@@ -32,15 +32,21 @@ import {
  * Phase遷移時のデータ型定義
  */
 interface PhaseTransitionData {
+  // バトル関連のインスタンス
+  battle?: import('../battle/Battle').Battle; // 既存のBattleクラスをそのまま使用
+
   // Battle phase
   enemy?: Enemy;
 
   // BattleTyping phase
   skill?: Skill;
-  onComplete?: (result: { success: boolean; skill?: Skill }) => void;
+  selectedSkills?: Skill[]; // 追加
+  onComplete?: (result: import('../phases/types').BattleTypingResult) => void; // 型を修正
 
-  // SkillSelection phase
-  battle?: any; // Battleインスタンス
+  // SkillSelection phase - 削除（battleで代用）
+  // battle?: {
+  //   calculatePlayerActionPoints: () => number;
+  // };
   onSkillsSelected?: (skills: Skill[]) => void;
   onBack?: () => void;
 
@@ -187,13 +193,20 @@ export class Game {
         return battlePhase;
       },
       battleTyping: () => {
-        const skill = data?.skill;
-        if (!skill) {
-          throw new Error('Skill is required for BattleTypingPhase');
+        const skills = data?.selectedSkills;
+        const battle = data?.battle;
+        if (!skills || !battle) {
+          throw new Error('Skills and Battle instance are required for BattleTypingPhase');
         }
         const onComplete =
-          data?.onComplete || ((_result: { success: boolean; skill?: Skill }) => {});
-        return new BattleTypingPhase(skill, onComplete, this.currentWorld!, this.tabCompleter);
+          data?.onComplete || ((_result: import('../phases/types').BattleTypingResult) => {});
+        return new BattleTypingPhase({
+          skills,
+          battle,
+          onComplete,
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        });
       },
       skillSelection: () => {
         const battle = data?.battle;
@@ -202,7 +215,7 @@ export class Game {
         }
         return new SkillSelectionPhase({
           player: this.currentPlayer!,
-          battle: battle,
+          battle: battle, // Battleインスタンスを直接渡す
           onSkillsSelected: data?.onSkillsSelected || (() => {}),
           onBack: data?.onBack || (() => {}),
           world: this.currentWorld!,

@@ -3,6 +3,7 @@ export default {
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   silent: true,
+  forceExit: true,
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: true

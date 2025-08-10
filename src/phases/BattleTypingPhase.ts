@@ -1,173 +1,329 @@
 import { Phase } from '../core/Phase';
-import { World } from '../world/World';
-import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
-import { TypingChallenge } from '../typing/TypingChallenge';
-import { TypingDifficulty } from '../typing/types';
 import { Skill } from '../battle/Skill';
-import { TabCompleter } from '../core/completion';
-
-interface TypingResult {
-  success: boolean;
-  skill?: Skill;
-}
-
-interface SkillEffectResult {
-  success: boolean;
-  skillEffect: number;
-  multiplier: number;
-}
+import { Battle } from '../battle/Battle';
+import { World } from '../world/World';
+import { TabCompleter } from '../core/completion/TabCompleter';
+import { PhaseType, PhaseTypes } from '../core/types';
+import { TypingResult } from '../typing/types';
+import { BattleTypingResult } from './types';
 
 /**
  * BattleTypingPhaseクラス - 戦闘時のタイピングチャレンジフェーズ
+ * - TypingPhaseを継承
+ * - 複数スキルの連続実行をサポート
+ * - リアルタイムで戦闘状態を更新
  */
 export class BattleTypingPhase extends Phase {
-  private skill: Skill;
-  private onComplete: (result: TypingResult) => void;
-  private typingChallenge: TypingChallenge | null = null;
-  private isActive: boolean = false;
+  private skills: Skill[];
+  private battle: Battle;
+  private currentSkillIndex: number = 0;
+  private onComplete: (result: BattleTypingResult) => void;
 
-  constructor(
-    skill: Skill,
-    onComplete: (result: TypingResult) => void,
-    world?: World,
-    tabCompleter?: TabCompleter
-  ) {
-    super(world, tabCompleter);
-    this.skill = skill;
-    this.onComplete = onComplete;
+  // 結果サマリー
+  private summary: {
+    totalDamageDealt: number;
+    totalHealing: number;
+    totalMpRestored: number;
+    statusEffectsApplied: string[];
+    criticalHits: number;
+    misses: number;
+  };
+
+  constructor(options: {
+    skills: Skill[];
+    battle: Battle;
+    onComplete: (result: BattleTypingResult) => void;
+    world?: World;
+    tabCompleter?: TabCompleter;
+  }) {
+    super(options.world, options.tabCompleter);
+
+    this.skills = options.skills;
+    this.battle = options.battle;
+    this.onComplete = options.onComplete;
+
+    // サマリーを初期化
+    this.summary = {
+      totalDamageDealt: 0,
+      totalHealing: 0,
+      totalMpRestored: 0,
+      statusEffectsApplied: [],
+      criticalHits: 0,
+      misses: 0,
+    };
   }
 
-  /**
-   * フェーズタイプを取得
-   */
   getType(): PhaseType {
     return PhaseTypes.BATTLE_TYPING;
   }
 
-  /**
-   * プロンプトを取得
-   */
   getPrompt(): string {
     return 'typing> ';
   }
 
-  /**
-   * 初期化処理
-   */
   async initialize(): Promise<void> {
-    // タイピングチャレンジ初期化は startTypingChallenge で行う
+    // Phase基底クラスの初期化は不要（abstractメソッドではない）
+    this.startNextSkillChallenge();
   }
 
   /**
-   * タイピングチャレンジを開始
+   * 次のスキルのタイピングチャレンジを開始
    */
-  async startTypingChallenge(): Promise<CommandResult> {
-    const targetWord = this.getCurrentTargetWord();
-    this.typingChallenge = new TypingChallenge(
-      targetWord,
-      this.skill.typingDifficulty as TypingDifficulty
+  private startNextSkillChallenge(): void {
+    if (this.currentSkillIndex >= this.skills.length) {
+      this.completeAllChallenges();
+      return;
+    }
+
+    const skill = this.skills[this.currentSkillIndex];
+    console.log(
+      `\n=== SKILL ${this.currentSkillIndex + 1}/${this.skills.length}: ${skill.name} ===`
     );
-    this.typingChallenge.start();
-    this.isActive = true;
+    console.log(`Description: ${skill.description}`);
+    console.log(`MP Cost: ${skill.mpCost} | Difficulty: ${'★'.repeat(skill.typingDifficulty)}`);
 
-    return {
-      success: true,
-      message: `Type the following word to cast ${this.skill.name}:`,
-      output: [targetWord],
+    // タイピングチャレンジのテキストを生成
+    const challengeText = this.generateChallengeText(skill);
+    console.log(`\nType the following text:`);
+    console.log(`"${challengeText}"`);
+
+    // タイピングチャレンジを開始（TypingPhaseの機能を利用）
+    this.startTypingChallenge(challengeText, skill);
+  }
+
+  /**
+   * スキルに応じたタイピングテキストを生成
+   */
+  private generateChallengeText(skill: Skill): string {
+    const difficultyTexts: { [key: number]: string[] } = {
+      1: ['attack', 'strike', 'slash', 'hit'],
+      2: ['powerful strike', 'critical hit', 'swift attack'],
+      3: ['elemental magic', 'arcane power', 'mystical force'],
+      4: ['thunderous lightning bolt', 'raging inferno blast'],
+      5: ['catastrophic meteor storm', 'dimensional rift attack'],
     };
+
+    const texts = difficultyTexts[skill.typingDifficulty] || difficultyTexts[1];
+    return texts[Math.floor(Math.random() * texts.length)];
   }
 
   /**
-   * タイピング完了処理
+   * タイピングチャレンジを開始（内部実装）
    */
-  async completeTyping(): Promise<void> {
-    if (this.onComplete) {
-      this.onComplete({ success: true, skill: this.skill });
-    }
-    this.isActive = false;
-  }
+  private startTypingChallenge(text: string, skill: Skill): void {
+    const startTime = Date.now();
+    let userInput = '';
 
-  /**
-   * タイピング結果を評価
-   */
-  async evaluateTypingResult(accuracy: string, speed: string): Promise<SkillEffectResult> {
-    let multiplier = 1.0;
+    console.log('\n⏰ START TYPING NOW!');
 
-    if (accuracy === 'perfect' && speed === 'fast') {
-      multiplier = 1.5; // 150%効果
-    } else if (accuracy === 'perfect' || accuracy === 'great') {
-      multiplier = 1.2; // 120%効果
-    }
+    // キーボード入力の処理
+    const stdin = process.stdin;
+    stdin.setRawMode(true);
+    stdin.resume();
 
-    // Skillインターフェースの構造に合わせて修正
-    const baseEffect = this.skill.mpCharge || this.skill.mpCost || 0;
-    const enhancedEffect = Math.floor(baseEffect * multiplier);
+    const onKeyPress = (key: Buffer) => {
+      const char = key.toString();
 
-    return {
-      success: true,
-      skillEffect: enhancedEffect,
-      multiplier,
+      // Ctrl+C で終了
+      if (key[0] === 3) {
+        process.exit(0);
+      }
+
+      // Enter で完了
+      if (key[0] === 13) {
+        stdin.removeListener('data', onKeyPress);
+        stdin.setRawMode(false);
+
+        const endTime = Date.now();
+        const timeTaken = endTime - startTime;
+
+        this.evaluateTyping(skill, text, userInput, timeTaken);
+        return;
+      }
+
+      // Backspace
+      if (key[0] === 127 || key[0] === 8) {
+        if (userInput.length > 0) {
+          userInput = userInput.slice(0, -1);
+          process.stdout.write('\b \b');
+        }
+        return;
+      }
+
+      // 通常の文字入力
+      if (char.length === 1 && char.charCodeAt(0) >= 32) {
+        userInput += char;
+        process.stdout.write(char);
+      }
     };
+
+    stdin.on('data', onKeyPress);
+
+    // タイムアウト処理（10秒）は現在無効化されています
+    // TODO: タイムアウト処理を実装する場合はsetTimeoutを復活させる
   }
 
   /**
-   * 入力処理
+   * タイピング結果を評価してスキル効果を適用
    */
-  async processInput(input: string): Promise<CommandResult> {
-    if (!this.isActive) {
-      return {
-        success: false,
-        message: 'Typing challenge not started',
-      };
-    }
+  private evaluateTyping(
+    skill: Skill,
+    targetText: string,
+    userInput: string,
+    timeTaken: number
+  ): void {
+    const accuracy = this.calculateAccuracy(targetText, userInput);
+    const speed = this.calculateSpeed(targetText.length, timeTaken);
 
-    if (!this.typingChallenge) {
-      return {
-        success: false,
-        message: 'Typing challenge not initialized',
-      };
-    }
+    console.log(`\n\n=== TYPING RESULT ===`);
+    console.log(`Target:   "${targetText}"`);
+    console.log(`Typed:    "${userInput}"`);
+    console.log(`Time:     ${(timeTaken / 1000).toFixed(1)}s`);
+    console.log(`Accuracy: ${(accuracy * 100).toFixed(1)}%`);
 
-    // TypingChallengeクラスを使って入力を処理
-    this.typingChallenge.handleInput(input);
-    const progress = this.typingChallenge.getProgress();
-
-    if (this.typingChallenge.isComplete()) {
-      // タイピング完了
-      await this.completeTyping();
-      return {
-        success: true,
-        message: 'Typing completed!',
-      };
-    }
-
-    // 最後の文字が正しく入力されたかチェック
-    const lastIndex = progress.input.length - 1;
-    const isLastCorrect = !progress.errors.includes(lastIndex);
-
-    return {
-      success: isLastCorrect,
-      message: isLastCorrect ? 'Correct!' : 'Incorrect input',
+    const typingResult: TypingResult = {
+      isSuccess: accuracy >= 0.8,
+      accuracyRating: this.getAccuracyRating(accuracy),
+      speedRating: this.getSpeedRating(speed),
+      totalRating: Math.floor(accuracy * 100 + (speed > 1 ? 20 : 0)),
+      timeTaken,
+      accuracy: accuracy * 100,
     };
+
+    // スキル効果を即座に適用（リアルタイム更新）
+    this.applySkillEffect(skill, typingResult);
+
+    // 次のスキルへ
+    this.currentSkillIndex++;
+    this.startNextSkillChallenge();
   }
 
   /**
-   * 現在のターゲット単語を取得
+   * スキル効果をリアルタイムで適用
    */
-  getCurrentTargetWord(): string {
-    // スキル難易度に基づいて単語を生成
-    const words = ['attack', 'fireball', 'lightning', 'heal', 'shield'];
-    return words[Math.min(this.skill.typingDifficulty - 1, words.length - 1)] || 'attack';
+  private applySkillEffect(skill: Skill, typingResult: TypingResult): void {
+    console.log(`\n⚔️ Executing ${skill.name}...`);
+
+    // Battle.playerUseSkillを使用して効果を適用
+    const result = this.battle.playerUseSkill(skill, typingResult);
+
+    if (result.success) {
+      console.log(`✅ ${result.message}`);
+
+      // サマリーを更新
+      if (result.damage) {
+        this.summary.totalDamageDealt += result.damage;
+        if (typingResult.accuracyRating === 'Perfect') {
+          this.summary.criticalHits++;
+        }
+      }
+
+      if (result.healing) {
+        this.summary.totalHealing += result.healing;
+      }
+
+      if (result.mpRestored) {
+        this.summary.totalMpRestored += result.mpRestored;
+      }
+
+      if (result.statusEffect) {
+        this.summary.statusEffectsApplied.push(result.statusEffect);
+      }
+    } else {
+      console.log(`❌ ${result.message}`);
+      this.summary.misses++;
+    }
+
+    // 現在のHP/MPを表示
+    const enemy = this.battle['enemy'];
+    const player = this.battle['player'];
+
+    if (enemy && player) {
+      console.log(`Enemy HP: ${enemy.currentHp}/${enemy.stats.maxHp}`);
+      console.log(
+        `Player MP: ${player.getBodyStats().getCurrentMP()}/${player.getBodyStats().getMaxMP()}`
+      );
+    }
   }
 
   /**
-   * タイムアウト強制実行（テスト用）
+   * 正確性を計算
    */
-  async forceTimeout(): Promise<CommandResult> {
-    this.isActive = false;
-    return {
-      success: false,
-      message: 'Typing challenge timeout',
+  private calculateAccuracy(target: string, input: string): number {
+    if (target.length === 0) return 1;
+
+    let matches = 0;
+    const minLength = Math.min(target.length, input.length);
+
+    for (let i = 0; i < minLength; i++) {
+      if (target[i] === input[i]) {
+        matches++;
+      }
+    }
+
+    const lengthPenalty = Math.abs(target.length - input.length) / target.length;
+    return Math.max(0, matches / target.length - lengthPenalty);
+  }
+
+  /**
+   * 速度を計算（文字/秒）
+   */
+  private calculateSpeed(charCount: number, timeMs: number): number {
+    return charCount / (timeMs / 1000);
+  }
+
+  /**
+   * 正確性評価を取得
+   */
+  private getAccuracyRating(accuracy: number): 'Perfect' | 'Great' | 'Good' | 'Poor' {
+    if (accuracy >= 0.95) return 'Perfect';
+    if (accuracy >= 0.85) return 'Great';
+    if (accuracy >= 0.7) return 'Good';
+    return 'Poor';
+  }
+
+  /**
+   * 速度評価を取得
+   */
+  private getSpeedRating(speed: number): 'S' | 'A' | 'B' | 'C' | 'F' {
+    if (speed >= 3) return 'S';
+    if (speed >= 2) return 'A';
+    if (speed >= 1) return 'B';
+    if (speed >= 0.5) return 'C';
+    return 'F';
+  }
+
+  /**
+   * 全チャレンジ完了時の処理
+   */
+  private completeAllChallenges(): void {
+    console.log('\n=== ALL SKILLS COMPLETED ===');
+
+    // 戦闘終了チェック
+    const battleEnd = this.battle.checkBattleEnd();
+
+    // 結果をまとめる
+    const result: BattleTypingResult = {
+      completedSkills: this.currentSkillIndex,
+      totalSkills: this.skills.length,
+      summary: this.summary,
+      battleEnded: battleEnd !== null,
     };
+
+    // サマリーを表示
+    console.log('\n📊 BATTLE SUMMARY:');
+    console.log(`Completed Skills: ${result.completedSkills}/${result.totalSkills}`);
+    console.log(`Total Damage Dealt: ${result.summary.totalDamageDealt}`);
+    console.log(`Total Healing: ${result.summary.totalHealing}`);
+    console.log(`Total MP Restored: ${result.summary.totalMpRestored}`);
+    console.log(`Critical Hits: ${result.summary.criticalHits}`);
+    console.log(`Misses: ${result.summary.misses}`);
+
+    if (result.summary.statusEffectsApplied.length > 0) {
+      console.log(`Status Effects: ${result.summary.statusEffectsApplied.join(', ')}`);
+    }
+
+    // コールバックを実行
+    this.onComplete(result);
   }
 }

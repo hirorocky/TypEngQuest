@@ -16,6 +16,9 @@ export interface PlayerSkillResult {
   message: string;
   critical?: boolean;
   mpRecovered?: number;
+  healing?: number;
+  mpRestored?: number;
+  statusEffect?: string;
 }
 
 /**
@@ -155,11 +158,11 @@ export class Battle {
 
   /**
    * 戦闘を終了する
-   * @throws {Error} 戦闘が開始されていない場合
    */
   end(): void {
     if (!this._isActive) {
-      throw new Error('Battle not started');
+      // 既に終了している場合は何もしない
+      return;
     }
 
     this._isActive = false;
