@@ -14,7 +14,7 @@ Object.defineProperty(process.stdin, 'setRawMode', {
 describe('BattleTypingPhase', () => {
   let battleTypingPhase: BattleTypingPhase;
   let mockSkill: any;
-  let mockOnComplete: jest.Mock;
+
   let player: Player;
   let enemy: Enemy;
   let battle: Battle;
@@ -54,11 +54,9 @@ describe('BattleTypingPhase', () => {
     battle = new Battle(player, enemy);
     battle.start();
 
-    mockOnComplete = jest.fn();
     battleTypingPhase = new BattleTypingPhase({
       skills: [mockSkill],
       battle: battle,
-      onComplete: mockOnComplete,
     });
   });
 

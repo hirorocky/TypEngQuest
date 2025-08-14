@@ -5,10 +5,9 @@ import { Player } from '../player/Player';
 import { Enemy } from '../battle/Enemy';
 import { World } from '../world/World';
 import { TabCompleter } from '../core/completion/TabCompleter';
-import { Skill } from '../battle/Skill';
+
 import { BattleTypingResult } from './types';
 import { ConsumableItem } from '../items/ConsumableItem';
-import { BattleTypingPhase } from './BattleTypingPhase';
 
 /**
  * BattlePhaseクラス - 戦闘フェーズの制御を行う
@@ -22,13 +21,6 @@ export class BattlePhase extends Phase {
   private currentTurn: 'player' | 'enemy' | 'waiting' = 'waiting';
   private turnMessage: string = '';
   private isProcessingTurn: boolean = false;
-
-  // スキル実行管理用
-  private pendingSkills: Skill[] = [];
-  private currentSkillIndex: number = 0;
-
-  // タイピングフェーズの管理
-  private typingPhase: BattleTypingPhase | null = null;
 
   constructor(world?: World, tabCompleter?: TabCompleter, player?: Player) {
     super(world, tabCompleter);
@@ -173,88 +165,14 @@ export class BattlePhase extends Phase {
       nextPhase: 'skillSelection',
       data: {
         battle: this.battle,
-        onSkillsSelected: (skills: Skill[]) => this.onSkillsSelected(skills),
-        onBack: () => this.cancelPlayerTurn(),
       },
     };
   }
 
   /**
-   * スキル選択完了後の処理
-   */
-  private async onSkillsSelected(skills: Skill[]): Promise<void> {
-    if (!skills.length) {
-      this.cancelPlayerTurn();
-      return;
-    }
-
-    // スキルを保存して、BattleTypingPhaseに遷移
-    this.pendingSkills = skills;
-    this.currentSkillIndex = 0;
-
-    // BattleTypingPhaseへの遷移を開始
-    await this.startBattleTyping();
-  }
-
-  /**
-   * BattleTypingPhaseへの遷移
-   */
-  private async startBattleTyping(): Promise<void> {
-    if (!this.battle || this.currentSkillIndex >= this.pendingSkills.length) {
-      this.finishPlayerTurn();
-      return;
-    }
-
-    console.log('Transitioning to BattleTypingPhase...');
-
-    // BattleTypingPhaseのインスタンスを作成
-    this.typingPhase = new BattleTypingPhase({
-      skills: this.pendingSkills,
-      battle: this.battle,
-      onComplete: (result: BattleTypingResult) => this.onBattleTypingComplete(result),
-      world: this.world,
-      tabCompleter: this.tabCompleter,
-    });
-
-    // タイピングフェーズを初期化して開始
-    await this.typingPhase.initialize();
-
-    // タイピングフェーズのイベントループを開始
-    // 注: 実際のユーザー入力はprocess.stdinを通じて処理される
-  }
-
-  /**
-   * 仮のスキル実行処理（BattleTypingPhase実装後は削除）
-   * @deprecated BattleTypingPhaseを使用するため、このメソッドは使用しない
-   */
-  private executeSkillsTemporary(): void {
-    if (!this.battle || !this.pendingSkills.length) {
-      this.finishPlayerTurn();
-      return;
-    }
-
-    console.log('\n=== EXECUTING SKILLS ===');
-
-    for (const skill of this.pendingSkills) {
-      const result = this.battle.playerUseSkill(skill, {
-        isSuccess: true,
-        accuracyRating: 'Good',
-        speedRating: 'B',
-        totalRating: 80,
-        timeTaken: 3000,
-        accuracy: 80,
-      });
-
-      console.log(`${skill.name}: ${result.message}`);
-    }
-
-    this.finishPlayerTurn();
-  }
-
-  /**
    * BattleTypingPhase完了後の処理
    */
-  public onBattleTypingComplete(result: BattleTypingResult): void {
+  public handleBattleTypingComplete(result: BattleTypingResult): void {
     console.log('\n=== BATTLE TYPING COMPLETE ===');
     console.log(`Completed ${result.completedSkills}/${result.totalSkills} skills`);
     console.log(`Total Damage: ${result.summary.totalDamageDealt}`);
@@ -329,15 +247,10 @@ export class BattlePhase extends Phase {
 
   private cancelPlayerTurn(): void {
     this.isProcessingTurn = false;
-    this.pendingSkills = [];
-    this.currentSkillIndex = 0;
   }
 
   private finishPlayerTurn(): void {
     if (!this.battle) return;
-
-    this.pendingSkills = [];
-    this.currentSkillIndex = 0;
 
     // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
@@ -422,8 +335,6 @@ export class BattlePhase extends Phase {
     this.currentTurn = 'waiting';
     this.turnMessage = '';
     this.isProcessingTurn = false;
-    this.pendingSkills = [];
-    this.currentSkillIndex = 0;
 
     // 探索フェーズに戻る
     console.log('\nReturning to exploration...');
@@ -471,5 +382,20 @@ export class BattlePhase extends Phase {
           : 'Enemy goes first...',
       ],
     };
+  }
+
+  /**
+   * Battleインスタンスを設定
+   */
+  setBattle(battle: Battle): void {
+    this.battle = battle;
+    if (battle['player']) {
+      this.player = battle['player'];
+    }
+    if (battle['enemy']) {
+      this.enemy = battle['enemy'];
+    }
+    this.currentTurn = battle.getCurrentTurnActor();
+    this.isProcessingTurn = false;
   }
 }

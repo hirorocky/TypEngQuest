@@ -17,7 +17,6 @@ export class BattleTypingPhase extends Phase {
   private skills: Skill[];
   private battle: Battle;
   private currentSkillIndex: number = 0;
-  private onComplete: (result: BattleTypingResult) => void;
 
   // 結果サマリー
   private summary: {
@@ -32,7 +31,6 @@ export class BattleTypingPhase extends Phase {
   constructor(options: {
     skills: Skill[];
     battle: Battle;
-    onComplete: (result: BattleTypingResult) => void;
     world?: World;
     tabCompleter?: TabCompleter;
   }) {
@@ -40,7 +38,6 @@ export class BattleTypingPhase extends Phase {
 
     this.skills = options.skills;
     this.battle = options.battle;
-    this.onComplete = options.onComplete;
 
     // サマリーを初期化
     this.summary = {
@@ -323,7 +320,21 @@ export class BattleTypingPhase extends Phase {
       console.log(`Status Effects: ${result.summary.statusEffectsApplied.join(', ')}`);
     }
 
-    // コールバックを実行
-    this.onComplete(result);
+    // フェーズ遷移を通知
+    this.notifyTransition({
+      success: true,
+      message: 'Battle typing completed',
+      nextPhase: 'battle',
+      data: {
+        battle: this.battle,
+        typingResult: result,
+        transitionReason: 'typingComplete',
+      },
+    });
+
+    // readlineインターフェースを終了してプロンプトを停止
+    if (this.rl) {
+      this.rl.close();
+    }
   }
 }

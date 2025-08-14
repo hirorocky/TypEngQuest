@@ -7,11 +7,19 @@ import { Battle } from '../battle/Battle';
 describe('SkillSelectionPhase', () => {
   let skillSelectionPhase: SkillSelectionPhase;
   let mockPlayer: any;
-  let mockOnSkillSelected: jest.Mock;
-  let mockOnBack: jest.Mock;
   let battle: Battle;
+  let notifyTransitionSpy: jest.Mock;
+
+  // process.stdin.isTTYをモック
+  const originalIsTTY = process.stdin.isTTY;
 
   beforeEach(() => {
+    // TTYをモック
+    process.stdin.isTTY = true;
+    process.stdin.setRawMode = jest.fn();
+
+    // notifyTransitionメソッドをスパイに置き換える
+    notifyTransitionSpy = jest.fn();
     const mockSkills = [
       {
         name: 'attack',
@@ -36,6 +44,8 @@ describe('SkillSelectionPhase', () => {
     mockPlayer = {
       getEquippedItemSkills: jest.fn().mockReturnValue(mockSkills),
       getAllAvailableSkills: jest.fn().mockReturnValue(mockSkills),
+      getCurrentMP: jest.fn().mockReturnValue(15),
+      getMaxMP: jest.fn().mockReturnValue(50),
       getBodyStats: jest.fn().mockReturnValue({
         getCurrentMP: jest.fn().mockReturnValue(15),
         getMaxMP: jest.fn().mockReturnValue(50),
@@ -62,17 +72,18 @@ describe('SkillSelectionPhase', () => {
     });
     battle = new Battle(testPlayer, testEnemy);
 
-    mockOnSkillSelected = jest.fn();
-    mockOnBack = jest.fn();
     skillSelectionPhase = new SkillSelectionPhase({
       player: mockPlayer,
       battle: battle,
-      onSkillsSelected: mockOnSkillSelected,
-      onBack: mockOnBack,
     });
+
+    // notifyTransitionをモックに置き換え
+    (skillSelectionPhase as any).notifyTransition = notifyTransitionSpy;
   });
 
   afterEach(async () => {
+    // TTYモックを元に戻す
+    process.stdin.isTTY = originalIsTTY;
     // クリーンアップを実行してリソースを解放
     if (skillSelectionPhase) {
       await skillSelectionPhase.cleanup();
@@ -109,14 +120,12 @@ describe('SkillSelectionPhase', () => {
       const result = await skillSelectionPhase.processInput('list');
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('Available skills');
-      expect(result.output).toEqual(
-        expect.arrayContaining([
-          '  1. attack - Cost: 0 MP',
-          '  2. fireball - Cost: 10 MP',
-          '  3. heal - Cost: 5 MP',
-        ])
-      );
+      expect(result.message).toBe('Available skills:');
+      expect(result.output).toEqual([
+        '  1. attack (MP: 0)',
+        '  2. fireball (MP: 10)',
+        '  3. heal (MP: 5)',
+      ]);
     });
 
     it('スキル番号選択で正しいスキルを選択', async () => {
@@ -124,7 +133,9 @@ describe('SkillSelectionPhase', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Selected fireball');
-      expect(mockOnSkillSelected).toHaveBeenCalledWith([mockPlayer.getAllAvailableSkills()[1]]);
+      // フェーズ遷移が設定されていることを確認
+      expect(result.nextPhase).toBe('battleTyping');
+      expect(result.data?.skills).toEqual([mockPlayer.getAllAvailableSkills()[1]]);
     });
 
     it('スキル名で選択', async () => {
@@ -132,19 +143,20 @@ describe('SkillSelectionPhase', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Selected fireball');
-      expect(mockOnSkillSelected).toHaveBeenCalledWith([
-        expect.objectContaining({ name: 'fireball' }),
-      ]);
+      // フェーズ遷移が設定されていることを確認
+      expect(result.nextPhase).toBe('battleTyping');
+      expect(result.data?.skills).toEqual([expect.objectContaining({ name: 'fireball' })]);
     });
 
     it('MP不足スキル選択時にエラー', async () => {
       // MPを5に設定してfireball（10MP必要）を選択不可にする
+      mockPlayer.getCurrentMP.mockReturnValue(5);
       mockPlayer.getBodyStats().getCurrentMP.mockReturnValue(5);
 
       const result = await skillSelectionPhase.processInput('fireball');
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Insufficient MP to use this skill');
+      expect(result.message).toBe('Not enough MP for fireball (Requires: 10, Current: 5)');
     });
   });
 
@@ -157,7 +169,7 @@ describe('SkillSelectionPhase', () => {
       const result = await skillSelectionPhase.processInput('help');
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Skill Selection Commands:');
+      expect(result.message).toBe('Available commands:');
       expect(result.output).toContain('  list - Show available skills');
     });
 
@@ -166,7 +178,9 @@ describe('SkillSelectionPhase', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Returning to battle...');
-      expect(mockOnBack).toHaveBeenCalled();
+      // フェーズ遷移が設定されていることを確認
+      expect(result.nextPhase).toBe('battle');
+      expect(result.data?.battle).toBe(battle);
     });
 
     it('statusコマンドでプレイヤーMPを表示', async () => {
@@ -199,8 +213,6 @@ describe('SkillSelectionPhase', () => {
       const emptySkillPhase = new SkillSelectionPhase({
         player: mockPlayer,
         battle: battle,
-        onSkillsSelected: jest.fn(),
-        onBack: mockOnBack,
       });
       await emptySkillPhase.initialize();
 
@@ -214,8 +226,6 @@ describe('SkillSelectionPhase', () => {
       const phaseWithoutPlayer = new SkillSelectionPhase({
         player: null as any,
         battle: battle,
-        onSkillsSelected: jest.fn(),
-        onBack: mockOnBack,
       });
       await phaseWithoutPlayer.initialize();
 

@@ -4,6 +4,7 @@
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
 import { Skill } from '../battle/Skill';
+
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { InventoryPhase } from '../phases/InventoryPhase';
@@ -39,16 +40,11 @@ interface PhaseTransitionData {
   enemy?: Enemy;
 
   // BattleTyping phase
-  skill?: Skill;
-  selectedSkills?: Skill[]; // 追加
-  onComplete?: (result: import('../phases/types').BattleTypingResult) => void; // 型を修正
+  skills?: Skill[];
+  typingResult?: import('../phases/types').BattleTypingResult;
 
-  // SkillSelection phase - 削除（battleで代用）
-  // battle?: {
-  //   calculatePlayerActionPoints: () => number;
-  // };
-  onSkillsSelected?: (skills: Skill[]) => void;
-  onBack?: () => void;
+  // 遷移の詳細情報
+  transitionReason?: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated';
 
   // BattleItemConsumption phase
   onItemUsed?: (item: ConsumableItem) => void;
@@ -122,6 +118,20 @@ export class Game {
   }
 
   private async handleCommandResult(result: CommandResult): Promise<void> {
+    this.displayResult(result);
+
+    if (this.shouldTransition(result)) {
+      await this.handlePhaseTransition(result);
+      return;
+    }
+
+    // Handle special data
+    if (result.data?.exit) {
+      this.state.isRunning = false;
+    }
+  }
+
+  private displayResult(result: CommandResult): void {
     if (result.message) {
       if (result.success) {
         Display.printSuccess(result.message);
@@ -130,21 +140,49 @@ export class Game {
       }
     }
 
-    // Handle output array
     if (result.output && result.output.length > 0) {
       for (const line of result.output) {
         Display.print(line + '\n');
       }
     }
+  }
 
-    // Handle phase transitions
-    if (result.nextPhase) {
-      await this.transitionToPhase(result.nextPhase, result.data);
+  private shouldTransition(result: CommandResult): boolean {
+    return result.nextPhase !== undefined;
+  }
+
+  private async handlePhaseTransition(result: CommandResult): Promise<void> {
+    if (!result.nextPhase) return;
+
+    if (result.data?.transitionReason) {
+      this.logTransitionReason(
+        result.data.transitionReason as
+          | 'skillsSelected'
+          | 'typingComplete'
+          | 'back'
+          | 'enemyDefeated'
+      );
     }
 
-    // Handle special data
-    if (result.data?.exit) {
-      this.state.isRunning = false;
+    await this.transitionToPhase(result.nextPhase, result.data);
+  }
+
+  private logTransitionReason(
+    reason: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated'
+  ): void {
+    switch (reason) {
+      case 'skillsSelected':
+        console.log('Preparing battle typing phase...');
+        break;
+      case 'typingComplete':
+        console.log('Processing typing results...');
+        break;
+      case 'back':
+        console.log('Returning to previous phase...');
+        break;
+      case 'enemyDefeated':
+        console.log('Enemy defeated, processing battle end...');
+        break;
     }
   }
 
@@ -181,52 +219,67 @@ export class Game {
           this.tabCompleter,
           this.currentPlayer!
         );
+
+        // battleインスタンスが渡された場合は設定
+        if (data?.battle) {
+          battlePhase.setBattle(data.battle);
+        }
+
+        // typingResult処理
+        if (data?.typingResult) {
+          Promise.resolve().then(() => {
+            battlePhase.handleBattleTypingComplete(data.typingResult!);
+          });
+        }
+
         // enemyデータがある場合は戦闘を開始
         if (data?.enemy) {
-          // data.enemyはすでにEnemyインスタンス
           const enemy = data.enemy;
-          // 戦闘開始は非同期で行う（initialization後に）
           Promise.resolve().then(async () => {
             await battlePhase.startBattle(enemy);
           });
         }
+
         return battlePhase;
       },
       battleTyping: () => {
-        const skills = data?.selectedSkills;
+        const skills = data?.skills;
         const battle = data?.battle;
         if (!skills || !battle) {
           throw new Error('Skills and Battle instance are required for BattleTypingPhase');
         }
-        const onComplete =
-          data?.onComplete || ((_result: import('../phases/types').BattleTypingResult) => {});
-        return new BattleTypingPhase({
+        const phase = new BattleTypingPhase({
           skills,
           battle,
-          onComplete,
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
         });
+
+        // フェーズ遷移ハンドラーを設定
+        phase.setTransitionHandler(result => this.handleCommandResult(result));
+        return phase;
       },
       skillSelection: () => {
         const battle = data?.battle;
         if (!battle) {
           throw new Error('Battle instance is required for SkillSelectionPhase');
         }
-        return new SkillSelectionPhase({
+        const phase = new SkillSelectionPhase({
           player: this.currentPlayer!,
-          battle: battle, // Battleインスタンスを直接渡す
-          onSkillsSelected: data?.onSkillsSelected || (() => {}),
-          onBack: data?.onBack || (() => {}),
+          battle: battle,
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
         });
+
+        // フェーズ遷移ハンドラーを設定
+        phase.setTransitionHandler(result => this.handleCommandResult(result));
+        return phase;
       },
       battleItemConsumption: () =>
         new BattleItemConsumptionPhase({
           player: this.currentPlayer!,
           onItemUsed: data?.onItemUsed || (() => {}),
-          onBack: data?.onBack || (() => {}),
+          onBack: () => {},
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
         }),

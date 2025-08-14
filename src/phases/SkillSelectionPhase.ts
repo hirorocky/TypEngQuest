@@ -9,8 +9,6 @@ import { TabCompleter } from '../core/completion';
 interface SkillSelectionOptions {
   player: Player;
   battle: Battle;
-  onSkillsSelected: (skills: Skill[]) => void;
-  onBack: () => void;
   world?: World;
   tabCompleter?: TabCompleter;
 }
@@ -21,8 +19,6 @@ interface SkillSelectionOptions {
 export class SkillSelectionPhase extends Phase {
   private player: Player;
   private battle: Battle;
-  private onSkillsSelected: (skills: Skill[]) => void;
-  private onBack: () => void;
   private availableSkills: Skill[] = [];
   private selectedSkills: Skill[] = [];
   private currentIndex: number = 0;
@@ -32,8 +28,6 @@ export class SkillSelectionPhase extends Phase {
     super(options.world, options.tabCompleter);
     this.player = options.player;
     this.battle = options.battle;
-    this.onSkillsSelected = options.onSkillsSelected;
-    this.onBack = options.onBack;
   }
 
   /**
@@ -61,8 +55,79 @@ export class SkillSelectionPhase extends Phase {
       };
     }
 
-    const command = input.trim().toLowerCase();
-    return this.handleCommand(command);
+    const trimmedInput = input.trim();
+
+    // 数字入力でスキル選択
+    const skillIndex = parseInt(trimmedInput, 10);
+    if (!isNaN(skillIndex) && skillIndex > 0 && skillIndex <= this.availableSkills.length) {
+      const skill = this.availableSkills[skillIndex - 1];
+
+      // MP不足チェック
+      const currentMP = this.player.getBodyStats().getCurrentMP();
+      if (currentMP < skill.mpCost) {
+        return {
+          success: false,
+          message: `Not enough MP for ${skill.name} (Requires: ${skill.mpCost}, Current: ${currentMP})`,
+        };
+      }
+
+      this.selectedSkills.push(skill);
+      this.disableRawMode();
+
+      // フェーズ遷移を返す
+      return {
+        success: true,
+        message: `Selected ${skill.name}`,
+        nextPhase: 'battleTyping',
+        data: {
+          battle: this.battle,
+          skills: this.selectedSkills,
+          transitionReason: 'skillsSelected',
+        },
+      };
+    }
+
+    // スキル名で選択
+    const skill = this.availableSkills.find(
+      s => s.name.toLowerCase() === trimmedInput.toLowerCase()
+    );
+    if (skill) {
+      // MP不足チェック
+      const currentMP = this.player.getBodyStats().getCurrentMP();
+      if (currentMP < skill.mpCost) {
+        return {
+          success: false,
+          message: `Not enough MP for ${skill.name} (Requires: ${skill.mpCost}, Current: ${currentMP})`,
+        };
+      }
+
+      this.selectedSkills.push(skill);
+      this.disableRawMode();
+
+      // フェーズ遷移を返す
+      return {
+        success: true,
+        message: `Selected ${skill.name}`,
+        nextPhase: 'battleTyping',
+        data: {
+          battle: this.battle,
+          skills: this.selectedSkills,
+          transitionReason: 'skillsSelected',
+        },
+      };
+    }
+
+    // 親クラスのprocessInputを使用（コマンド処理）
+    const result = await super.processInput(input);
+    if (result.success) {
+      return result;
+    }
+
+    // コマンドでもスキルでもない場合
+    return {
+      success: false,
+      message: 'Unknown command or skill. Type "help" for available commands.',
+    };
   }
   /**
    * 初期化処理
@@ -71,11 +136,99 @@ export class SkillSelectionPhase extends Phase {
     if (this.player) {
       this.availableSkills = this.player.getAllAvailableSkills();
 
+      // コマンドを登録
+      this.registerCommands();
+
       // Raw modeを有効にしてキーボードイベントを取得
       this.enableRawMode();
       this.renderUI();
       this.setupKeyboardHandlers();
     }
+  }
+
+  /**
+   * コマンドを登録
+   */
+  private registerCommands(): void {
+    this.registerCommand({
+      name: 'list',
+      aliases: ['l'],
+      description: 'Show available skills',
+      execute: async () => this.listSkills(),
+    });
+
+    this.registerCommand({
+      name: 'help',
+      aliases: ['h', '?'],
+      description: 'Show available commands',
+      execute: async () => this.showHelp(),
+    });
+
+    this.registerCommand({
+      name: 'back',
+      aliases: ['b', 'return'],
+      description: 'Return to battle',
+      execute: async () => {
+        this.disableRawMode();
+        return {
+          success: true,
+          message: 'Returning to battle...',
+          nextPhase: 'battle',
+          data: {
+            battle: this.battle,
+            transitionReason: 'back',
+          },
+        };
+      },
+    });
+
+    this.registerCommand({
+      name: 'status',
+      aliases: ['s'],
+      description: 'Show player status',
+      execute: async () => this.showStatus(),
+    });
+  }
+
+  private async listSkills() {
+    if (this.availableSkills.length === 0) {
+      return { success: true, message: 'No skills available' };
+    }
+
+    const output = this.availableSkills.map(
+      (skill, index) => `  ${index + 1}. ${skill.name} (MP: ${skill.mpCost})`
+    );
+
+    return {
+      success: true,
+      message: 'Available skills:',
+      output,
+    };
+  }
+
+  private async showHelp() {
+    return {
+      success: true,
+      message: 'Available commands:',
+      output: [
+        '  list - Show available skills',
+        '  back - Return to battle',
+        '  status - Show player MP',
+        '  help - Show this help',
+      ],
+    };
+  }
+
+  private async showStatus() {
+    const bodyStats = this.player?.getBodyStats();
+    const mp = bodyStats?.getCurrentMP() || 0;
+    const maxMp = bodyStats?.getMaxMP() || 0;
+
+    return {
+      success: true,
+      message: 'Player Status:',
+      output: [`  MP: ${mp}/${maxMp}`],
+    };
   }
 
   /**
@@ -127,11 +280,12 @@ export class SkillSelectionPhase extends Phase {
         this.removeLastSkill();
         break;
       case 'q':
-        this.goBack();
+        // qキーでbackコマンドを実行
+        this.processInput('back');
         break;
       case '\r': // Enter
       case '\n':
-        this.confirmSelection();
+        // Enterキーは無視（コマンド入力で処理）
         break;
       case '\u0003': // Ctrl+C
         this.handleExit();
@@ -197,30 +351,6 @@ export class SkillSelectionPhase extends Phase {
       this.selectedSkills.pop();
       this.renderUI();
     }
-  }
-
-  /**
-   * 選択確定
-   */
-  private confirmSelection(): void {
-    if (this.selectedSkills.length === 0) {
-      this.renderUI('No skills selected!');
-      return;
-    }
-
-    this.disableRawMode();
-
-    // BattlePhaseに戻って選択されたスキルでバトル処理を実行
-    // 一時的にコールバックを呼び出し（後でフェーズ遷移システムに統合予定）
-    this.onSkillsSelected(this.selectedSkills);
-  }
-
-  /**
-   * 戻る
-   */
-  private goBack(): void {
-    this.disableRawMode();
-    this.onBack();
   }
 
   /**
