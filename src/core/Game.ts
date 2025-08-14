@@ -104,7 +104,6 @@ export class Game {
   private async gameLoop(): Promise<void> {
     while (this.state.isRunning && this.currentPhase) {
       try {
-        // Phaseに入力処理を委譲
         const result = await this.currentPhase.startInputLoop();
 
         if (result) {
@@ -154,45 +153,14 @@ export class Game {
   private async handlePhaseTransition(result: CommandResult): Promise<void> {
     if (!result.nextPhase) return;
 
-    if (result.data?.transitionReason) {
-      this.logTransitionReason(
-        result.data.transitionReason as
-          | 'skillsSelected'
-          | 'typingComplete'
-          | 'back'
-          | 'enemyDefeated'
-      );
-    }
-
     await this.transitionToPhase(result.nextPhase, result.data);
   }
 
-  private logTransitionReason(
-    reason: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated'
-  ): void {
-    switch (reason) {
-      case 'skillsSelected':
-        console.log('Preparing battle typing phase...');
-        break;
-      case 'typingComplete':
-        console.log('Processing typing results...');
-        break;
-      case 'back':
-        console.log('Returning to previous phase...');
-        break;
-      case 'enemyDefeated':
-        console.log('Enemy defeated, processing battle end...');
-        break;
-    }
-  }
-
   private async transitionToPhase(phaseType: PhaseType, data?: PhaseTransitionData): Promise<void> {
-    // Cleanup current phase
     if (this.currentPhase) {
       await this.currentPhase.cleanup();
     }
 
-    // Create and initialize new phase
     this.currentPhase = this.createPhase(phaseType, data);
     this.state.currentPhase = phaseType;
 
