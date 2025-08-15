@@ -27,6 +27,7 @@ import {
   DirectoryCompletionProvider,
   BattleCompletionProvider,
 } from './completion';
+import { DevelopmentConfigLoader } from './DevelopmentConfigLoader';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
 
 /**
@@ -62,11 +63,11 @@ export class Game {
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
   private currentPlayer: Player | null = null;
-  private isTestMode: boolean;
+  private isDevMode: boolean;
   private commandParser: CommandParser;
   private tabCompleter: TabCompleter;
 
-  constructor(isTestMode: boolean = false) {
+  constructor(isDevMode: boolean = false) {
     this.state = {
       currentPhase: 'title',
       isRunning: false,
@@ -82,7 +83,7 @@ export class Game {
     this.tabCompleter.addProvider(new DirectoryCompletionProvider());
     this.tabCompleter.addProvider(new BattleCompletionProvider());
 
-    this.isTestMode = isTestMode;
+    this.isDevMode = isDevMode;
     this.setupSignalHandlers();
   }
 
@@ -300,9 +301,9 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultWorld(): World {
-    if (this.isTestMode) {
-      // テストモードでは固定のファイル構造を使用
-      return World.generateTestWorld();
+    if (this.isDevMode) {
+      // 開発モードではJSONファイルから設定を読み込む
+      return DevelopmentConfigLoader.loadWorldFromConfig();
     } else {
       // デフォルトはランダムドメインのレベル1
       return World.generateRandomWorld(1);
@@ -314,7 +315,13 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultPlayer(): Player {
-    return new Player('Test Player', this.isTestMode);
+    if (this.isDevMode) {
+      // 開発モードではJSONファイルから設定を読み込む
+      return new Player('Dev Player', true);
+    } else {
+      // デフォルトはシンプルなプレイヤー
+      return new Player('Test Player', false);
+    }
   }
 
   private setupSignalHandlers(): void {

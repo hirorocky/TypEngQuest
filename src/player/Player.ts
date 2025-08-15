@@ -6,6 +6,7 @@ import { EquipmentItem, EquipmentStats as ItemEquipmentStats } from '../items/Eq
 import { Skill } from '../battle/Skill';
 import { Battle } from '../battle/Battle';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
+import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
@@ -43,123 +44,154 @@ export class Player {
    * プレイヤーを初期化する
    * @param name - プレイヤーの名前
    */
-  constructor(name: string, istestMode: boolean = false) {
+  constructor(name: string, isDevMode: boolean = false) {
     this.name = name;
     this.bodyStats = new BodyStats(0); // 初期レベルは0
     this.equipmentStats = new EquipmentStats();
     this.inventory = new Inventory();
     this.equipmentCalculator = new EquipmentEffectCalculator();
-    if (istestMode) {
-      this.bodyStats.takeDamage(50);
-      this.bodyStats.consumeMP(20);
-      for (let i = 0; i < 15; i++) {
-        this.inventory.addItem(
-          new ConsumableItem({
-            id: `test-item-${i}`,
-            name: `Test Item ${i}`,
-            description: `This is a test item for the player.`,
-            type: ItemType.CONSUMABLE,
-            rarity: ItemRarity.COMMON,
-            effects: [{ type: EffectType.HEAL_HP, value: 50 }],
-          })
-        );
+
+    if (isDevMode) {
+      // 開発モードの場合、JSONファイルから設定を読み込む
+      this.loadDevModeConfig();
+    }
+  }
+  /**
+   * 開発モード用の設定をJSONから読み込む
+   */
+  private loadDevModeConfig(): void {
+    try {
+      // DevelopmentConfigLoaderを動的importで使用
+      const configData = DevelopmentConfigLoader.loadPlayerConfigData();
+
+      if (configData) {
+        // Body Statsの調整
+        if (configData.bodyStats?.hpDamage) {
+          this.bodyStats.takeDamage(configData.bodyStats.hpDamage);
+        }
+        if (configData.bodyStats?.mpConsumption) {
+          this.bodyStats.consumeMP(configData.bodyStats.mpConsumption);
+        }
+
+        // インベントリアイテムの追加
+        if (configData.inventory) {
+          this.loadInventoryFromConfig(configData.inventory);
+        }
       }
+    } catch (error) {
+      console.warn('Failed to load dev mode config, using fallback data:', error);
+      throw new Error('Failed to load development mode config');
+    }
+  }
 
-      // テスト用装備アイテムを追加
-      const testEquipments = [
-        new EquipmentItem({
-          id: 'ancient-sword',
-          name: 'ancient',
-          description: 'An ancient blade with mysterious power',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.LEGENDARY,
-          stats: { strength: 5, willpower: 5, agility: 0, fortune: 5 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'magical-shield',
-          name: 'magical',
-          description: 'A shield imbued with protective magic',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 0, willpower: 20, agility: -5, fortune: 0 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'swift-boots',
-          name: 'swift',
-          description: 'Boots that enhance movement speed',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.RARE,
-          stats: { strength: 0, willpower: 0, agility: 20, fortune: 0 },
-          grade: 20,
-        }),
-        new EquipmentItem({
-          id: 'steel-sword',
-          name: 'steel',
-          description: 'A well-crafted steel sword',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 12, willpower: 0, agility: 3, fortune: 0 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'wooden-shield',
-          name: 'wooden',
-          description: 'A basic wooden shield for protection',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 0, willpower: 8, agility: 0, fortune: 0 },
-          grade: 8,
-        }),
-        new EquipmentItem({
-          id: 'powerful-gauntlets',
-          name: 'powerful',
-          description: 'Gauntlets that boost physical strength',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.RARE,
-          stats: { strength: 18, willpower: 3, agility: 0, fortune: 0 },
-          grade: 21,
-        }),
-        new EquipmentItem({
-          id: 'blessed-amulet',
-          name: 'blessed',
-          description: 'An amulet blessed by divine power',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 0, willpower: 0, agility: 0, fortune: 20 },
-          grade: 20,
-        }),
-        new EquipmentItem({
-          id: 'crystal-orb',
-          name: 'crystal',
-          description: 'A mystical crystal orb',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.LEGENDARY,
-          stats: { strength: 30, willpower: 0, agility: 20, fortune: 10 },
-          grade: 60,
-        }),
-        new EquipmentItem({
-          id: 'silver-ring',
-          name: 'silver',
-          description: 'A polished silver ring',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 0, willpower: 0, agility: 7, fortune: 3 },
-          grade: 10,
-        }),
-        new EquipmentItem({
-          id: 'enchanted-bow',
-          name: 'enchanted',
-          description: 'A bow enhanced with magical properties',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 22, willpower: 0, agility: 28, fortune: 0 },
-          grade: 50,
-        }),
-      ];
+  /**
+   * JSON設定からインベントリアイテムを読み込む
+   */
+  private loadInventoryFromConfig(inventory: {
+    consumableItems?: unknown[];
+    equipmentItems?: unknown[];
+  }): void {
+    // 消費アイテムの追加
+    for (const itemConfig of inventory.consumableItems || []) {
+      try {
+        const config = itemConfig as {
+          id: string;
+          name: string;
+          description: string;
+          type: string;
+          rarity: string;
+          effects: { type: string; value: number }[];
+        };
+        const item = new ConsumableItem({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          type: this.parseItemType(config.type),
+          rarity: this.parseItemRarity(config.rarity),
+          effects: config.effects.map((effect: { type: string; value: number }) => ({
+            type: this.parseEffectType(effect.type),
+            value: effect.value,
+          })),
+        });
+        this.inventory.addItem(item);
+      } catch (error) {
+        console.warn(`Failed to load consumable item ${(itemConfig as { id: string }).id}:`, error);
+        throw new Error(`Invalid consumable item config: ${(itemConfig as { id: string }).id}`);
+      }
+    }
 
-      testEquipments.forEach(equipment => this.inventory.addItem(equipment));
+    // 装備アイテムの追加
+    for (const itemConfig of inventory.equipmentItems || []) {
+      try {
+        const config = itemConfig as {
+          id: string;
+          name: string;
+          description: string;
+          type: string;
+          rarity: string;
+          stats: ItemEquipmentStats;
+          grade: number;
+        };
+        const item = new EquipmentItem({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          type: this.parseItemType(config.type),
+          rarity: this.parseItemRarity(config.rarity),
+          stats: config.stats,
+          grade: config.grade,
+        });
+        this.inventory.addItem(item);
+      } catch (error) {
+        console.warn(`Failed to load equipment item ${(itemConfig as { id: string }).id}:`, error);
+        throw new Error(`Invalid equipment item config: ${(itemConfig as { id: string }).id}`);
+      }
+    }
+  }
+
+  /**
+   * 文字列をItemTypeに変換する
+   */
+  private parseItemType(type: string): ItemType {
+    switch (type.toLowerCase()) {
+      case 'consumable':
+        return ItemType.CONSUMABLE;
+      case 'equipment':
+        return ItemType.EQUIPMENT;
+      default:
+        throw new Error(`Unknown item type: ${type}`);
+    }
+  }
+
+  /**
+   * 文字列をItemRarityに変換する
+   */
+  private parseItemRarity(rarity: string): ItemRarity {
+    switch (rarity.toLowerCase()) {
+      case 'common':
+        return ItemRarity.COMMON;
+      case 'rare':
+        return ItemRarity.RARE;
+      case 'epic':
+        return ItemRarity.EPIC;
+      case 'legendary':
+        return ItemRarity.LEGENDARY;
+      default:
+        throw new Error(`Unknown item rarity: ${rarity}`);
+    }
+  }
+
+  /**
+   * 文字列をEffectTypeに変換する
+   */
+  private parseEffectType(effect: string): EffectType {
+    switch (effect.toLowerCase()) {
+      case 'heal_hp':
+        return EffectType.HEAL_HP;
+      case 'heal_mp':
+        return EffectType.HEAL_MP;
+      default:
+        throw new Error(`Unknown effect type: ${effect}`);
     }
   }
 

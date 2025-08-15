@@ -1,3 +1,5 @@
+import { createTestFileSystem } from '../test-utils/createTestFileSystem';
+
 /**
  * ファイルシステムのナビゲーション結果
  */
@@ -340,68 +342,6 @@ export class FileSystem {
   }
 
   /**
-   * 包括的なサンプル用の固定ファイル構造を作成する
-   * dev:testモードやデモンストレーション時の動作確認に使用する
-   * mobile-appディレクトリを含む包括的な構造を提供する
-   * @returns サンプル用FileSystemインスタンス
-   */
-  public static createSampleStructure(): FileSystem {
-    const root = new FileNode('projects', NodeType.DIRECTORY);
-
-    // 階層の一番上にバトル可能なファイルを配置
-    root.addChild(new FileNode('main.js', NodeType.FILE));
-    root.addChild(new FileNode('server.py', NodeType.FILE));
-    root.addChild(new FileNode('index.html', NodeType.FILE));
-
-    // レベル1: プロジェクトディレクトリ
-    const webApp = new FileNode('web-app', NodeType.DIRECTORY);
-    const gameEngine = new FileNode('game-engine', NodeType.DIRECTORY);
-    const mobileApp = new FileNode('mobile-app', NodeType.DIRECTORY);
-
-    root.addChild(webApp);
-    root.addChild(gameEngine);
-    root.addChild(mobileApp);
-
-    // web-appの構造
-    const webSrc = new FileNode('src', NodeType.DIRECTORY);
-    const webPublic = new FileNode('public', NodeType.DIRECTORY);
-    const webTests = new FileNode('tests', NodeType.DIRECTORY);
-
-    webApp.addChild(webSrc);
-    webApp.addChild(webPublic);
-    webApp.addChild(webTests);
-    webApp.addChild(new FileNode('package.json', NodeType.FILE));
-    webApp.addChild(new FileNode('README.md', NodeType.FILE));
-
-    // web-app/srcの構造
-    const webComponents = new FileNode('components', NodeType.DIRECTORY);
-    const webUtils = new FileNode('utils', NodeType.DIRECTORY);
-
-    webSrc.addChild(webComponents);
-    webSrc.addChild(webUtils);
-    webSrc.addChild(new FileNode('index.js', NodeType.FILE));
-    webSrc.addChild(new FileNode('app.ts', NodeType.FILE));
-
-    // game-engineの構造
-    const engineSrc = new FileNode('src', NodeType.DIRECTORY);
-    const engineAssets = new FileNode('assets', NodeType.DIRECTORY);
-
-    gameEngine.addChild(engineSrc);
-    gameEngine.addChild(engineAssets);
-    gameEngine.addChild(new FileNode('engine.exe', NodeType.FILE));
-    gameEngine.addChild(new FileNode('config.yaml', NodeType.FILE));
-
-    // mobile-appの構造（比較的シンプル）
-    const mobileSrc = new FileNode('src', NodeType.DIRECTORY);
-
-    mobileApp.addChild(mobileSrc);
-    mobileApp.addChild(new FileNode('app.py', NodeType.FILE));
-    mobileApp.addChild(new FileNode('.hidden.json', NodeType.FILE));
-
-    return new FileSystem(root);
-  }
-
-  /**
    * 指定されたドメインとレベルでファイルシステムを生成する
    * @param domain ドメインデータ
    * @param level ワールドレベル
@@ -681,11 +621,11 @@ export class FileSystem {
   }
 
   /**
-   * テスト用の固定ファイル構造を作成する（createSampleStructureのエイリアス）
+   * テスト用の固定ファイル構造を作成する
    * 既存のユニットテストとの互換性のために保持
    * @returns テスト用FileSystemインスタンス
    */
   public static createTestStructure(): FileSystem {
-    return FileSystem.createSampleStructure();
+    return createTestFileSystem();
   }
 }

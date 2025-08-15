@@ -1,0 +1,153 @@
+{
+  "name": "Test Player",
+  "bodyStats": {
+    "level": 0,
+    "hpDamage": 50,
+    "mpConsumption": 20
+  },
+  "inventory": {
+    "consumableItems": [
+      {
+        "id": "test-item-0",
+        "name": "Test Item 0",
+        "description": "This is a test item for the player.",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 50 }]
+      },
+      {
+        "id": "test-item-1",
+        "name": "Test Item 1",
+        "description": "This is a test item for the player.",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 50 }]
+      },
+      {
+        "id": "test-item-2",
+        "name": "Test Item 2",
+        "description": "This is a test item for the player.",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 50 }]
+      },
+      {
+        "id": "test-item-3",
+        "name": "Test Item 3",
+        "description": "This is a test item for the player.",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 50 }]
+      },
+      {
+        "id": "test-item-4",
+        "name": "Test Item 4",
+        "description": "This is a test item for the player.",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 50 }]
+      },
+      {
+        "id": "hp-potion",
+        "name": "HP Potion",
+        "description": "Restores health points",
+        "type": "consumable",
+        "rarity": "common",
+        "effects": [{ "type": "heal_hp", "value": 100 }]
+      }
+    ],
+    "equipmentItems": [
+      {
+        "id": "ancient-sword",
+        "name": "ancient",
+        "description": "An ancient blade with mysterious power",
+        "type": "equipment",
+        "rarity": "legendary",
+        "stats": { "strength": 5, "willpower": 5, "agility": 0, "fortune": 5 },
+        "grade": 15
+      },
+      {
+        "id": "magical-shield",
+        "name": "magical",
+        "description": "A shield imbued with protective magic",
+        "type": "equipment",
+        "rarity": "epic",
+        "stats": { "strength": 0, "willpower": 20, "agility": -5, "fortune": 0 },
+        "grade": 15
+      },
+      {
+        "id": "swift-boots",
+        "name": "swift",
+        "description": "Boots that enhance movement speed",
+        "type": "equipment",
+        "rarity": "rare",
+        "stats": { "strength": 0, "willpower": 0, "agility": 20, "fortune": 0 },
+        "grade": 20
+      },
+      {
+        "id": "steel-sword",
+        "name": "steel",
+        "description": "A well-crafted steel sword",
+        "type": "equipment",
+        "rarity": "common",
+        "stats": { "strength": 12, "willpower": 0, "agility": 3, "fortune": 0 },
+        "grade": 15
+      },
+      {
+        "id": "wooden-shield",
+        "name": "wooden",
+        "description": "A basic wooden shield for protection",
+        "type": "equipment",
+        "rarity": "common",
+        "stats": { "strength": 0, "willpower": 8, "agility": 0, "fortune": 0 },
+        "grade": 8
+      },
+      {
+        "id": "powerful-gauntlets",
+        "name": "powerful",
+        "description": "Gauntlets that boost physical strength",
+        "type": "equipment",
+        "rarity": "rare",
+        "stats": { "strength": 18, "willpower": 3, "agility": 0, "fortune": 0 },
+        "grade": 21
+      },
+      {
+        "id": "blessed-amulet",
+        "name": "blessed",
+        "description": "An amulet blessed by divine power",
+        "type": "equipment",
+        "rarity": "epic",
+        "stats": { "strength": 0, "willpower": 0, "agility": 0, "fortune": 20 },
+        "grade": 20
+      },
+      {
+        "id": "crystal-orb",
+        "name": "crystal",
+        "description": "A mystical crystal orb",
+        "type": "equipment",
+        "rarity": "legendary",
+        "stats": { "strength": 30, "willpower": 0, "agility": 20, "fortune": 10 },
+        "grade": 60
+      },
+      {
+        "id": "silver-ring",
+        "name": "silver",
+        "description": "A polished silver ring",
+        "type": "equipment",
+        "rarity": "common",
+        "stats": { "strength": 0, "willpower": 0, "agility": 7, "fortune": 3 },
+        "grade": 10
+      },
+      {
+        "id": "enchanted-bow",
+        "name": "enchanted",
+        "description": "A bow enhanced with magical properties",
+        "type": "equipment",
+        "rarity": "epic",
+        "stats": { "strength": 22, "willpower": 0, "agility": 28, "fortune": 0 },
+        "grade": 50
+      }
+    ]
+  },
+  "description": "開発者モード用のテストプレイヤー設定"
+}
