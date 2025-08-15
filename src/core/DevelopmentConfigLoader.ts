@@ -8,6 +8,8 @@ import { DomainType } from '../world/domains';
 import { Player } from '../player/Player';
 import { FileSystem } from '../world/FileSystem';
 import { FileNode, NodeType } from '../world/FileNode';
+import { Enemy, EnemyParams } from '../battle/Enemy';
+// import { Skill } from '../battle/Skill'; // 現在未使用だがコメントアウトで保持
 
 /**
  * World設定ファイルの型定義
@@ -79,6 +81,57 @@ export interface PlayerConfig {
 }
 
 /**
+ * Enemy設定ファイルの型定義
+ */
+export interface EnemyConfig {
+  enemies: Array<{
+    id: string;
+    name: string;
+    level: number;
+    maxHp: number;
+    currentHp: number;
+    strength: number;
+    defense: number;
+    agility: number;
+    skills: Array<{
+      name: string;
+      power: number;
+      accuracy: number;
+      mpCost: number;
+      description: string;
+    }>;
+    dropItems?: Array<{
+      id: string;
+      name: string;
+      dropRate: number;
+    }>;
+    experiencePoints: number;
+    goldReward: number;
+  }>;
+  defaultEnemyId: string;
+}
+
+/**
+ * Battle設定ファイルの型定義
+ */
+export interface BattleConfig {
+  battleSettings: {
+    typingChallengeSettings: {
+      minWordLength: number;
+      maxWordLength: number;
+      timeLimit: number;
+      difficulty: string;
+    };
+    rewards: {
+      experienceMultiplier: number;
+      goldMultiplier: number;
+    };
+    escapeChance: number;
+  };
+  defaultBattleMode: string;
+}
+
+/**
  * 開発者モード用設定ローダークラス
  */
 /**
@@ -94,6 +147,8 @@ export class DevelopmentConfigLoader {
   private static readonly WORLD_CONFIG_FILE = 'world-config.json';
   private static readonly PLAYER_CONFIG_FILE = 'player-config.json';
   private static readonly FILESYSTEM_CONFIG_FILE = 'filesystem-config.json';
+  private static readonly ENEMY_CONFIG_FILE = 'enemy-config.json';
+  private static readonly BATTLE_CONFIG_FILE = 'battle-config.json';
 
   /**
    * World設定を読み込んでWorldインスタンスを生成する
@@ -255,6 +310,121 @@ export class DevelopmentConfigLoader {
       console.warn('Player config file not found, using default test player');
       return new Player('Test Player', true);
     }
+  }
+
+  /**
+   * Enemy設定を読み込む
+   */
+  static loadEnemyConfigData(): EnemyConfig | null {
+    try {
+      const configPath = path.join(this.CONFIG_DIR, this.ENEMY_CONFIG_FILE);
+
+      if (!fs.existsSync(configPath)) {
+        console.warn(`Enemy config file not found: ${configPath}`);
+        return null;
+      }
+
+      const configData = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(configData);
+    } catch (error) {
+      console.error('Failed to load enemy config:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Battle設定を読み込む
+   */
+  static loadBattleConfigData(): BattleConfig | null {
+    try {
+      const configPath = path.join(this.CONFIG_DIR, this.BATTLE_CONFIG_FILE);
+
+      if (!fs.existsSync(configPath)) {
+        console.warn(`Battle config file not found: ${configPath}`);
+        return null;
+      }
+
+      const configData = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(configData);
+    } catch (error) {
+      console.error('Failed to load battle config:', error);
+      return null;
+    }
+  }
+
+  /**
+   * デフォルトのEnemyデータを取得
+   */
+  static getDefaultEnemy(): EnemyConfig['enemies'][0] | null {
+    const enemyConfig = this.loadEnemyConfigData();
+    if (!enemyConfig) {
+      // フォールバックのEnemy
+      return {
+        id: 'default-enemy',
+        name: 'Test Enemy',
+        level: 1,
+        maxHp: 50,
+        currentHp: 50,
+        strength: 10,
+        defense: 5,
+        agility: 5,
+        skills: [],
+        dropItems: [],
+        experiencePoints: 10,
+        goldReward: 5,
+      };
+    }
+
+    const defaultEnemy = enemyConfig.enemies.find(e => e.id === enemyConfig.defaultEnemyId);
+    return defaultEnemy || enemyConfig.enemies[0];
+  }
+
+  /**
+   * JSON設定からEnemyインスタンスを作成
+   */
+  static createEnemyFromConfig(): Enemy | null {
+    const enemyData = this.getDefaultEnemy();
+    if (!enemyData) {
+      return null;
+    }
+
+    // JSON設定をEnemyParams形式に変換
+    const enemyParams: EnemyParams = {
+      id: enemyData.id,
+      name: enemyData.name,
+      description: `Level ${enemyData.level} enemy`,
+      level: enemyData.level,
+      stats: {
+        maxHp: enemyData.maxHp,
+        maxMp: 50, // デフォルト値
+        strength: enemyData.strength,
+        willpower: 10, // デフォルト値
+        agility: enemyData.agility,
+        fortune: 5, // デフォルト値
+      },
+      skills: enemyData.skills?.map((skill, index) => ({
+        id: `${enemyData.id}-skill-${index}`,
+        name: skill.name,
+        description: skill.description,
+        mpCost: skill.mpCost,
+        mpCharge: 0, // デフォルト値
+        actionCost: 1, // デフォルト値
+        successRate: skill.accuracy,
+        target: 'enemy' as const, // デフォルト値
+        typingDifficulty: 3, // デフォルト値
+        effects: [{
+          type: 'damage' as const,
+          power: skill.power,
+          target: 'enemy' as const,
+        }],
+      })) || [],
+      drops: enemyData.dropItems?.map(drop => ({
+        itemId: drop.id,
+        dropRate: drop.dropRate * 100, // パーセンテージに変換
+      })) || [],
+    };
+
+    return new Enemy(enemyParams);
   }
 
   /**

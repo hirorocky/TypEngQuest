@@ -53,6 +53,10 @@ interface PhaseTransitionData {
   // Typing phase
   difficulty?: number;
 
+  // 開発者モード用のインスタンス
+  world?: import('../world/World').World;
+  player?: import('../player/Player').Player;
+
   // General
   exit?: boolean;
 }
@@ -169,6 +173,12 @@ export class Game {
   }
 
   private createPhase(phaseType: PhaseType, data?: PhaseTransitionData): Phase {
+    // 開発者モード用のWorldとPlayerがdataで渡された場合は使用
+    if (data?.world && data?.player) {
+      this.currentWorld = data.world;
+      this.currentPlayer = data.player;
+    }
+
     const phaseFactories: Record<PhaseType, () => Phase> = {
       title: () => new TitlePhase(undefined, this.tabCompleter),
       exploration: () =>

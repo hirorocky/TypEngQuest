@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "dev:test": "tsx src/index.ts --dev-mode",
+    "dev:test": "DEV_MODE=true tsx src/index.ts",
     "start": "node dist/index.js",
     "watch": "nodemon --exec tsx src/index.ts",
     "lint": "eslint 'src/**/*.ts'",

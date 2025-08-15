@@ -5,8 +5,8 @@ import { Game } from './core/Game';
 async function main() {
   console.log('🎮 TypEngQuest - Starting game...');
 
-  // コマンドライン引数から開発者モードを判定
-  const isDevMode = process.argv.includes('--dev-mode');
+  // 環境変数から開発者モードを判定
+  const isDevMode = process.env.DEV_MODE === 'true';
 
   if (isDevMode) {
     console.log('🧪 Running in dev mode with fixed directory structure...');
