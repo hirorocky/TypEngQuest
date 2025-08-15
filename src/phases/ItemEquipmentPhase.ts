@@ -7,6 +7,7 @@ import { EquipmentItem } from '../items/EquipmentItem';
 import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 import { TabCompleter } from '../core/completion';
+import { EquipmentStatsData } from '../player/EquipmentStats';
 
 /**
  * 装備管理フェーズ - リッチなキー入力UIで装備管理
@@ -55,6 +56,7 @@ export class ItemEquipmentPhase extends Phase {
   /**
    * カスタムreadlineインターフェースを作成（キー入力処理用）
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected createReadlineInterface(): any {
     // eslint-disable-next-line no-undef
     const readline = require('readline');
@@ -395,11 +397,19 @@ export class ItemEquipmentPhase extends Phase {
   /**
    * ステータスの差分を計算
    */
-  private calculateStatsDifference(current: any, preview: any): string {
+  private calculateStatsDifference(
+    current: EquipmentStatsData,
+    preview: EquipmentStatsData
+  ): string {
     const diffs: string[] = [];
 
-    const categories = ['attack', 'defense', 'speed', 'accuracy', 'fortune'];
-    const labels = ['ATK', 'DEF', 'SPD', 'ACC', 'LUK'];
+    const categories: (keyof EquipmentStatsData)[] = [
+      'strength',
+      'willpower',
+      'agility',
+      'fortune',
+    ];
+    const labels = ['STR', 'WIL', 'AGI', 'LUK'];
 
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
@@ -471,7 +481,7 @@ export class ItemEquipmentPhase extends Phase {
   /**
    * 装備ステータスをフォーマットする
    */
-  private formatEquipmentStats(stats: any): string {
+  private formatEquipmentStats(stats: EquipmentStatsData): string {
     const parts: string[] = [];
 
     if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
@@ -497,7 +507,7 @@ export class ItemEquipmentPhase extends Phase {
   /**
    * プレビューステータスを計算する
    */
-  private calculatePreviewStats(newItem: EquipmentItem): any {
+  private calculatePreviewStats(newItem: EquipmentItem): EquipmentStatsData {
     const currentSlots = this.player.getEquipmentSlots();
     const previewSlots = [...currentSlots];
     previewSlots[this.currentSlot] = newItem;

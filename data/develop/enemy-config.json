@@ -1,0 +1,75 @@
+{
+  "enemies": [
+    {
+      "id": "test-enemy-1",
+      "name": "Test Goblin",
+      "level": 5,
+      "maxHp": 100,
+      "currentHp": 100,
+      "strength": 15,
+      "defense": 10,
+      "agility": 9,
+      "skills": [
+        {
+          "name": "Basic Attack",
+          "power": 20,
+          "accuracy": 90,
+          "mpCost": 0,
+          "description": "A basic physical attack"
+        },
+        {
+          "name": "Power Strike",
+          "power": 35,
+          "accuracy": 75,
+          "mpCost": 5,
+          "description": "A powerful strike"
+        }
+      ],
+      "dropItems": [
+        {
+          "id": "potion",
+          "name": "HP Potion",
+          "dropRate": 0.5
+        }
+      ],
+      "experiencePoints": 50,
+      "goldReward": 30
+    },
+    {
+      "id": "test-enemy-2",
+      "name": "Test Dragon",
+      "level": 10,
+      "maxHp": 250,
+      "currentHp": 250,
+      "strength": 25,
+      "defense": 20,
+      "agility": 15,
+      "skills": [
+        {
+          "name": "Dragon Breath",
+          "power": 50,
+          "accuracy": 85,
+          "mpCost": 10,
+          "description": "Breathes fire at the enemy"
+        },
+        {
+          "name": "Tail Sweep",
+          "power": 30,
+          "accuracy": 95,
+          "mpCost": 3,
+          "description": "Sweeps with tail"
+        }
+      ],
+      "dropItems": [
+        {
+          "id": "dragon-scale",
+          "name": "Dragon Scale",
+          "dropRate": 0.3
+        }
+      ],
+      "experiencePoints": 150,
+      "goldReward": 100
+    }
+  ],
+  "defaultEnemyId": "test-enemy-1"
+}

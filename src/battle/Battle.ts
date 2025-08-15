@@ -4,6 +4,8 @@ import { Enemy, EnemyStats } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * プレイヤーの技使用結果
@@ -14,6 +16,9 @@ export interface PlayerSkillResult {
   message: string;
   critical?: boolean;
   mpRecovered?: number;
+  healing?: number;
+  mpRestored?: number;
+  statusEffect?: string;
 }
 
 /**
@@ -65,10 +70,6 @@ export interface BattleResult {
  * Battleクラス - 戦闘フローの制御とターン管理を行う
  */
 export class Battle {
-  // 戦闘で使用する定数
-  private static readonly NORMAL_ATTACK_ACCURACY = 90;
-  private static readonly NORMAL_ATTACK_POWER = 1.0;
-
   // 行動ポイント関連の定数
   private static readonly BASE_ACTION_POINTS = 3;
   private static readonly AGILITY_TO_AP_DIVISOR = 50;
@@ -77,19 +78,36 @@ export class Battle {
   private static readonly MP_RECOVERY_PERFECT_MULTIPLIER = 1.5;
   private static readonly MP_RECOVERY_GREAT_MULTIPLIER = 1.2;
 
-  // 通常攻撃用のデフォルトSkill
-  private static readonly NORMAL_ATTACK_SKILL: Skill = {
-    id: 'normal_attack',
-    name: 'Attack',
-    description: 'A basic attack',
-    mpCost: 0,
-    mpCharge: 0,
-    actionCost: 1,
-    power: Battle.NORMAL_ATTACK_POWER,
-    accuracy: Battle.NORMAL_ATTACK_ACCURACY,
-    target: 'enemy',
-    typingDifficulty: 1,
-  };
+  /**
+   * スキルデータを読み込む
+   */
+  private static skillsData: { skills: Skill[] } | null = null;
+
+  private static loadSkillsData() {
+    if (!Battle.skillsData) {
+      // プロジェクトルートからの相対パスを使用
+      const dataPath = path.resolve(process.cwd(), 'data/skills/skills.json');
+      Battle.skillsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    }
+    return Battle.skillsData;
+  }
+
+  /**
+   * 通常攻撃用のスキルを取得
+   */
+  public static getNormalAttackSkill(): Skill {
+    const data = Battle.loadSkillsData();
+    if (!data) {
+      throw new Error('Failed to load skills data');
+    }
+    const basicAttack = data.skills.find((skill: Skill) => skill.id === 'basic_attack');
+
+    if (!basicAttack) {
+      throw new Error('basic_attack skill not found in skills data');
+    }
+
+    return basicAttack as Skill;
+  }
 
   private player: Player;
   private enemy: Enemy;
@@ -140,11 +158,11 @@ export class Battle {
 
   /**
    * 戦闘を終了する
-   * @throws {Error} 戦闘が開始されていない場合
    */
   end(): void {
     if (!this._isActive) {
-      throw new Error('Battle not started');
+      // 既に終了している場合は何もしない
+      return;
     }
 
     this._isActive = false;
@@ -373,10 +391,16 @@ export class Battle {
     const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
+    // ダメージ効果を検索
+    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
+      | { power: number }
+      | undefined;
+    const power = damageEffect?.power || 1.0;
+
     let damage = BattleCalculator.calculateDamage(
       playerStats.strength,
       enemyStats.willpower,
-      skill.power,
+      power,
       isCritical
     );
 
@@ -414,7 +438,7 @@ export class Battle {
     skill: Skill,
     typingResult?: TypingResult
   ): number {
-    let hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
+    let hitRate = BattleCalculator.calculateHitRate(skill.successRate);
 
     if (typingResult?.isSuccess) {
       hitRate = BattleCalculator.calculateTypingSpeedBonus(
@@ -485,12 +509,12 @@ export class Battle {
    */
   enemyAction(): EnemyActionResult {
     // 技を選択（なければ通常攻撃）
-    const selectedSkill = this.enemy.selectSkill() || Battle.NORMAL_ATTACK_SKILL;
+    const selectedSkill = this.enemy.selectSkill() || Battle.getNormalAttackSkill();
 
     // MP消費チェック
     if (this.enemy.currentMp < selectedSkill.mpCost) {
       // MPが足りない場合は通常攻撃
-      const normalAttackSkill = Battle.NORMAL_ATTACK_SKILL;
+      const normalAttackSkill = Battle.getNormalAttackSkill();
       return this.performEnemyAttack(normalAttackSkill);
     }
 
@@ -517,7 +541,7 @@ export class Battle {
     const enemyStats = this.enemy.stats;
 
     // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
+    const hitRate = BattleCalculator.calculateHitRate(skill.successRate);
     const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
@@ -532,11 +556,17 @@ export class Battle {
     const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
     const isCritical = BattleCalculator.isCritical(criticalRate);
 
+    // ダメージ効果を検索
+    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
+      | { power: number }
+      | undefined;
+    const power = damageEffect?.power || 1.0;
+
     // ダメージ計算
     const damage = BattleCalculator.calculateDamage(
       enemyStats.strength,
       0, // プレイヤーへの攻撃では防御力を考慮しない
-      skill.power,
+      power,
       isCritical
     );
 

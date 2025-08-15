@@ -213,6 +213,7 @@ export class EquipmentStats {
    * @returns EquipmentStatsインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): EquipmentStats {
     if (!this.validateEquipmentStatsData(data)) {
       throw new Error('Invalid equipment stats data format');
@@ -241,6 +242,7 @@ export class EquipmentStats {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateEquipmentStatsData(data: any): data is EquipmentStatsData {
     return (
       typeof data === 'object' &&

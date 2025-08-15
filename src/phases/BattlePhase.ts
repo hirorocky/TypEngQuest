@@ -1,304 +1,401 @@
 import { Phase } from '../core/Phase';
-import { PhaseResult, PhaseTypes, CommandContext } from '../core/types';
-import { Battle, SelectedSkill } from '../battle/Battle';
+import { CommandResult, PhaseType, PhaseTypes } from '../core/types';
+import { Battle } from '../battle/Battle';
+import { Player } from '../player/Player';
 import { Enemy } from '../battle/Enemy';
+import { World } from '../world/World';
+import { TabCompleter } from '../core/completion/TabCompleter';
+
+import { BattleTypingResult } from './types';
+import { ConsumableItem } from '../items/ConsumableItem';
 
 /**
  * BattlePhaseクラス - 戦闘フェーズの制御を行う
+ * - タイピング処理はBattleTypingPhaseに委譲
+ * - フェーズ間の連携を改善
  */
 export class BattlePhase extends Phase {
   private battle: Battle | null = null;
-  private selectedSkills: SelectedSkill[] = [];
-  private actionPoints: number = 0;
+  private player?: Player;
+  private enemy?: Enemy;
+  private currentTurn: 'player' | 'enemy' | 'waiting' = 'waiting';
+  private turnMessage: string = '';
+  private isProcessingTurn: boolean = false;
+
+  constructor(world?: World, tabCompleter?: TabCompleter, player?: Player) {
+    super(world, tabCompleter);
+    this.player = player;
+  }
+
+  getType(): PhaseType {
+    return PhaseTypes.BATTLE;
+  }
+
+  getPrompt(): string {
+    if (this.currentTurn === 'player' && !this.isProcessingTurn) {
+      return 'battle> ';
+    }
+    return '';
+  }
+
+  async initialize(): Promise<void> {
+    this.registerBattleCommands();
+    this.showBattleStatus();
+  }
+
+  private registerBattleCommands(): void {
+    this.registerCommand({
+      name: 'help',
+      aliases: ['h', '?'],
+      description: 'Show battle commands',
+      execute: async () => this.showHelp(),
+    });
+
+    this.registerCommand({
+      name: 'status',
+      aliases: ['s'],
+      description: 'Show battle status',
+      execute: async () => this.showBattleStatus(),
+    });
+
+    this.registerCommand({
+      name: 'skill',
+      aliases: ['skills', 'attack'],
+      description: 'Select and use skills',
+      execute: async () => this.enterSkillSelection(),
+    });
+
+    this.registerCommand({
+      name: 'item',
+      aliases: ['items'],
+      description: 'Use an item',
+      execute: async () => this.enterItemSelection(),
+    });
+
+    this.registerCommand({
+      name: 'run',
+      aliases: ['escape', 'flee'],
+      description: 'Attempt to escape from battle',
+      execute: async () => this.attemptEscape(),
+    });
+  }
+
+  private async showHelp(): Promise<CommandResult> {
+    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+      return {
+        success: false,
+        message: 'Commands not available during enemy turn or processing',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Available battle commands:',
+      output: [
+        '  help/h - Show this help',
+        '  status/s - Show battle status',
+        '  skill/attack - Select and use skills',
+        '  item - Use an item',
+        '  run/escape - Attempt to escape',
+      ],
+    };
+  }
+
+  private async showBattleStatus(): Promise<CommandResult> {
+    if (!this.player || !this.enemy || !this.battle) {
+      return {
+        success: false,
+        message: 'Battle not initialized',
+      };
+    }
+
+    const playerStats = this.player.getBodyStats();
+    const actionPoints = this.battle.calculatePlayerActionPoints();
+    const currentTurnActor = this.battle.getCurrentTurnActor();
+    const turnInfo = currentTurnActor === 'player' ? 'Your Turn' : "Enemy's Turn";
+
+    const output = [
+      `=== BATTLE STATUS ===`,
+      `Turn: ${this.battle.currentTurn} (${turnInfo})`,
+      '',
+      `🗡️ ${this.player.getName()}`,
+      `  HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`,
+      `  MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`,
+      `  Action Points: ${actionPoints}`,
+      '',
+      `👹 ${this.enemy.name}`,
+      `  HP: ${this.enemy.currentHp}/${this.enemy.stats.maxHp}`,
+      `  MP: ${this.enemy.currentMp}/${this.enemy.stats.maxMp}`,
+    ];
+
+    if (this.turnMessage) {
+      output.push('', '--- Last Action ---', this.turnMessage);
+    }
+
+    return {
+      success: true,
+      message: '',
+      output,
+    };
+  }
 
   /**
-   * Battleインスタンスを取得（nullチェック付き）
+   * スキル選択フェーズに移行
    */
-  private getBattle(): Battle {
+  private async enterSkillSelection(): Promise<CommandResult> {
+    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+      return {
+        success: false,
+        message: "It's not your turn or turn is being processed!",
+      };
+    }
+
     if (!this.battle) {
-      throw new Error('battle not initialized');
-    }
-    return this.battle;
-  }
-
-  /**
-   * battle初期化チェック付きでメソッドを実行する
-   */
-  private withBattle<T>(fn: (battle: Battle) => T): T | PhaseResult {
-    try {
-      const battle = this.getBattle();
-      return fn(battle);
-    } catch (_error) {
-      return this.error('battle not initialized');
-    }
-  }
-
-  /**
-   * ターン終了時の共通処理（戦闘終了チェック＋ターン進行）
-   */
-  private endTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      // 戦闘終了チェック
-      const battleEnd = battle.checkBattleEnd();
-      if (battleEnd) {
-        return this.endBattle(battleEnd.winner === 'player');
-      }
-
-      // 次のターンへ
-      battle.nextTurn();
-      return this.startTurn();
-    }) as PhaseResult;
-  }
-
-  /**
-   * フェーズを開始する
-   */
-  async start(context?: CommandContext): Promise<PhaseResult> {
-    if (!context?.enemy) {
-      return this.error('no enemy specified for battle');
+      return {
+        success: false,
+        message: 'Battle not initialized',
+      };
     }
 
-    if (!(context.enemy instanceof Enemy)) {
-      return this.error('Invalid enemy provided for battle');
-    }
-    const enemy = context.enemy;
-    this.battle = new Battle(this.game.player, enemy);
-    const message = this.battle.start();
+    this.isProcessingTurn = true;
 
-    // 戦闘開始メッセージを表示
-    this.output(message);
-    this.output('');
-
-    // 最初のターンを開始
-    return this.startTurn();
+    return {
+      success: true,
+      message: 'Entering skill selection...',
+      nextPhase: 'skillSelection',
+      data: {
+        battle: this.battle,
+      },
+    };
   }
 
   /**
-   * ターンを開始する
+   * BattleTypingPhase完了後の処理
    */
-  private startTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      const actor = battle.getCurrentTurnActor();
+  public handleBattleTypingComplete(result: BattleTypingResult): void {
+    console.log('\n=== BATTLE TYPING COMPLETE ===');
+    console.log(`Completed ${result.completedSkills}/${result.totalSkills} skills`);
+    console.log(`Total Damage: ${result.summary.totalDamageDealt}`);
 
-      if (actor === 'player') {
-        return this.startPlayerTurn();
-      } else {
-        return this.executeEnemyTurn();
-      }
-    }) as PhaseResult;
-  }
-
-  /**
-   * プレイヤーターンを開始する
-   */
-  private startPlayerTurn(): PhaseResult {
-    return this.withBattle(battle => {
-      this.selectedSkills = [];
-      this.actionPoints = battle.calculatePlayerActionPoints();
-
-      this.output(`===== Turn ${battle.currentTurn} - Your turn =====`);
-      this.output(`Action Points: ${this.actionPoints}`);
-      this.output('');
-      this.output('Select skills to use (up to action point limit):');
-      this.output('Type "skills" to see available skills');
-      this.output('Type "select <skill_name>" to add a skill');
-      this.output('Type "confirm" to execute selected skills');
-      this.output('Type "clear" to clear selections');
-
-      return this.success();
-    }) as PhaseResult;
-  }
-
-  /**
-   * 敵ターンを実行する
-   */
-  private executeEnemyTurn(): PhaseResult {
-    try {
-      const battle = this.getBattle();
-      this.output(`===== Turn ${battle.currentTurn} - Enemy turn =====`);
-
-      const result = battle.enemyAction();
-      this.output(result.message);
-
-      return this.endTurn();
-    } catch (_error) {
-      return this.error('battle not initialized');
+    if (result.battleEnded) {
+      this.checkAndEndBattle();
+    } else {
+      this.finishPlayerTurn();
     }
   }
 
   /**
-   * コマンドを処理する
+   * アイテム選択フェーズに移行
    */
-  async processCommand(input: string): Promise<PhaseResult> {
-    try {
-      this.getBattle(); // Nullチェックのみ
-      const [command, ...args] = input.trim().toLowerCase().split(/\s+/);
-
-      switch (command) {
-        case 'skills':
-          return this.showAvailableSkills();
-
-        case 'select':
-          return this.selectSkill(args.join(' '));
-
-        case 'confirm':
-          return this.confirmAndExecuteSkills();
-
-        case 'clear':
-          this.selectedSkills = [];
-          this.output('skill selection cleared');
-          return this.success();
-
-        case 'status':
-          return this.showBattleStatus();
-
-        case 'run':
-          return this.attemptEscape();
-
-        default:
-          return this.error(`unknown command: ${command}`);
-      }
-    } catch (_error) {
-      return this.error('battle not initialized');
+  private async enterItemSelection(): Promise<CommandResult> {
+    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+      return {
+        success: false,
+        message: "It's not your turn or turn is being processed!",
+      };
     }
+
+    if (!this.battle) {
+      return {
+        success: false,
+        message: 'Battle not initialized',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Entering item selection...',
+      nextPhase: 'battleItemConsumption',
+      data: {
+        battle: this.battle,
+        onItemUsed: (item: ConsumableItem) => this.onItemUsed(item),
+        onBack: () => this.cancelPlayerTurn(),
+      },
+    };
   }
 
   /**
-   * 利用可能なスキルを表示
+   * アイテム使用後の処理
    */
-  private showAvailableSkills(): PhaseResult {
-    const skills = this.game.player.getEquippedItemSkills();
-
-    if (skills.length === 0) {
-      this.output('No skills available');
-      return this.success();
-    }
-
-    this.output('Available skills:');
-    skills.forEach(skill => {
-      this.output(`  ${skill.name} - Cost: ${skill.actionCost} AP, ${skill.mpCost} MP`);
-    });
-
-    return this.success();
-  }
-
-  /**
-   * スキルを選択
-   */
-  private selectSkill(skillName: string): PhaseResult {
-    const skills = this.game.player.getEquippedItemSkills();
-    const skill = skills.find(s => s.name.toLowerCase() === skillName);
-
-    if (!skill) {
-      return this.error(`skill not found: ${skillName}`);
-    }
-
-    // 行動ポイントチェック
-    const totalCost =
-      this.selectedSkills.reduce((sum, s) => sum + s.skill.actionCost, 0) + skill.actionCost;
-    if (totalCost > this.actionPoints) {
-      return this.error(`not enough action points (need ${totalCost}, have ${this.actionPoints})`);
-    }
-
-    this.selectedSkills.push({ skill });
-    this.output(`${skill.name} selected (Total AP: ${totalCost}/${this.actionPoints})`);
-
-    return this.success();
-  }
-
-  /**
-   * 選択したスキルを確定して実行
-   */
-  private async confirmAndExecuteSkills(): Promise<PhaseResult> {
-    const battle = this.getBattle();
-
-    // スキルの検証
-    const skills = this.selectedSkills.map(s => s.skill);
-    const validationError = battle.validateSelectedSkills(skills);
-    if (validationError) {
-      return this.error(validationError);
-    }
-
-    // タイピングチャレンジ（実際の実装では各スキルごとに行う）
-    this.output('Executing skills...');
-
-    // スキル実行
-    const turnResult = battle.playerUseMultipleSkills(this.selectedSkills);
-
-    // 結果表示
-    turnResult.skillResults.forEach(result => {
-      this.output(result.message);
-    });
-
-    if (turnResult.totalDamage > 0) {
-      this.output(`Total damage: ${turnResult.totalDamage}`);
-    }
-
-    return this.endTurn();
-  }
-
-  /**
-   * 戦闘ステータスを表示
-   */
-  private showBattleStatus(): PhaseResult {
-    const playerStats = this.game.player.getBodyStats();
-    this.output(`Player HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`);
-    this.output(`Player MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`);
-    // Enemy status would be shown here
-
-    return this.success();
+  private onItemUsed(item: ConsumableItem): void {
+    console.log(`Used ${item.getName()}`);
+    // アイテム使用後、敵のターンへ
+    this.executeEnemyTurn();
   }
 
   /**
    * 逃走を試みる
    */
-  private attemptEscape(): PhaseResult {
-    // 逃走処理（簡略化）
-    this.output('You cannot escape from this battle!');
-    return this.success();
+  private async attemptEscape(): Promise<CommandResult> {
+    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+      return {
+        success: false,
+        message: "It's not your turn!",
+      };
+    }
+
+    // 逃走用のBattleTypingPhaseに遷移する設計も可能
+    // 現在は簡単な実装
+    this.turnMessage = 'You tried to escape but failed!';
+    // setTimeout(() => this.executeEnemyTurn(), 1000);
+
+    return {
+      success: true,
+      message: this.turnMessage,
+    };
   }
 
-  /**
-   * 戦闘を終了する
-   */
-  private endBattle(victory: boolean): PhaseResult {
-    return this.withBattle(battle => {
-      if (victory) {
-        this.output('Victory!');
+  private cancelPlayerTurn(): void {
+    this.isProcessingTurn = false;
+  }
 
-        // ドロップアイテム処理
-        const drops = battle.calculateDrops();
-        if (drops.length > 0) {
-          this.output('Items dropped:');
-          drops.forEach(item => {
-            this.output(`  - ${item}`);
-          });
-        }
+  private finishPlayerTurn(): void {
+    if (!this.battle) return;
 
-        // HP/MP回復
-        const playerStats = this.game.player.getBodyStats();
-        playerStats.healHP(playerStats.getMaxHP());
-        playerStats.resetMP();
-      } else {
-        this.output('Defeat...');
+    // 勝敗判定
+    const battleEnd = this.battle.checkBattleEnd();
+    if (battleEnd) {
+      this.endBattle(battleEnd);
+      return;
+    }
+
+    // 敵ターンに移行
+    this.battle.nextTurn();
+    // setTimeout(() => this.executeEnemyTurn(), 1500);
+  }
+
+  private executeEnemyTurn(): void {
+    if (!this.battle) return;
+
+    console.log('\n=== ENEMY TURN ===');
+
+    const enemyResult = this.battle.enemyAction();
+    this.turnMessage = enemyResult.message;
+    console.log(enemyResult.message);
+
+    // 敵ターン終了後、勝敗判定
+    const battleEnd = this.battle.checkBattleEnd();
+    if (battleEnd) {
+      this.endBattle(battleEnd);
+      return;
+    }
+
+    // プレイヤーターンに移行
+    this.battle.nextTurn();
+    this.currentTurn = 'player';
+    this.isProcessingTurn = false;
+
+    // バトルステータスを表示
+    this.showBattleStatus().then(result => {
+      if (result.output) {
+        console.log('\n' + result.output.join('\n'));
       }
+      console.log('\nWhat will you do? (Type "help" for commands)');
+    });
+  }
 
-      // 探索フェーズに戻る
-      return this.successWithPhase(PhaseTypes.EXPLORATION);
-    }) as PhaseResult;
+  private checkAndEndBattle(): void {
+    if (!this.battle) return;
+
+    const battleEnd = this.battle.checkBattleEnd();
+    if (battleEnd) {
+      this.endBattle(battleEnd);
+    }
+  }
+
+  private endBattle(battleEnd: { winner: 'player' | 'enemy'; message: string }): void {
+    if (!this.battle) return;
+
+    // 既にバトルが終了している場合は何もしない
+    if (!this.battle.isActive) return;
+
+    console.log(`\n=== BATTLE END ===`);
+    console.log(battleEnd.message);
+
+    const battleResult = this.battle.getBattleResult();
+
+    if (battleEnd.winner === 'player' && battleResult?.victory) {
+      // ドロップアイテム計算
+      const droppedItems = this.battle.calculateDrops();
+      if (droppedItems.length > 0) {
+        console.log(`\nDropped items: ${droppedItems.join(', ')}`);
+
+        if (this.player) {
+          // TODO: ドロップアイテムをプレイヤーのインベントリに追加
+          console.log('Items added to inventory!');
+        }
+      }
+    }
+
+    this.battle.end();
+
+    // バトル状態をリセット
+    this.battle = null;
+    this.enemy = undefined;
+    this.currentTurn = 'waiting';
+    this.turnMessage = '';
+    this.isProcessingTurn = false;
+
+    // 探索フェーズに戻る
+    console.log('\nReturning to exploration...');
+    this.transitionToExploration();
+  }
+
+  private transitionToExploration(): void {
+    // Game.jsでフェーズ遷移を処理する必要がある
+    console.log('Battle completed. Game would transition to exploration phase.');
   }
 
   /**
-   * ヘルプメッセージを表示
+   * 戦闘を開始
    */
-  help(): PhaseResult {
-    this.output('Battle Phase Commands:');
-    this.output('  skills         - Show available skills');
-    this.output('  select <skill> - Select a skill to use');
-    this.output('  confirm        - Execute selected skills');
-    this.output('  clear          - Clear skill selection');
-    this.output('  status         - Show battle status');
-    this.output('  run            - Attempt to escape');
-    return this.success();
+  async startBattle(enemy: Enemy): Promise<CommandResult> {
+    if (!this.player) {
+      return {
+        success: false,
+        message: 'Player not available',
+      };
+    }
+
+    this.enemy = enemy;
+    this.battle = new Battle(this.player, enemy);
+    const message = this.battle.start();
+
+    // 最初のターンアクターを設定
+    this.currentTurn = this.battle.getCurrentTurnActor();
+    this.isProcessingTurn = false;
+
+    console.log(`\n${message}`);
+
+    if (this.currentTurn === 'enemy') {
+      // 敵が先攻の場合は敵ターンを実行
+      // setTimeout(() => this.executeEnemyTurn(), 1000);
+    }
+
+    return {
+      success: true,
+      message: message,
+      output: [
+        '',
+        this.currentTurn === 'player'
+          ? 'Your turn! Use "skill" to attack or "help" for commands.'
+          : 'Enemy goes first...',
+      ],
+    };
+  }
+
+  /**
+   * Battleインスタンスを設定
+   */
+  setBattle(battle: Battle): void {
+    this.battle = battle;
+    if (battle['player']) {
+      this.player = battle['player'];
+    }
+    if (battle['enemy']) {
+      this.enemy = battle['enemy'];
+    }
+    this.currentTurn = battle.getCurrentTurnActor();
+    this.isProcessingTurn = false;
   }
 }

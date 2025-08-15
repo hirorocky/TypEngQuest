@@ -173,6 +173,7 @@ export class Item {
    * @returns アイテムインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): Item {
     if (!Item.validateItemData(data)) {
       throw new Error('Invalid item data');
@@ -192,6 +193,7 @@ export class Item {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateItemData(data: any): data is ItemData {
     return (
       typeof data === 'object' &&

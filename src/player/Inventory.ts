@@ -5,7 +5,7 @@ import { ConsumableItem } from '../items/ConsumableItem';
  * インベントリのデータ構造
  */
 export interface InventoryData {
-  items: any[];
+  items: unknown[];
 }
 
 /**
@@ -139,11 +139,13 @@ export class Inventory {
    * @returns インベントリインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): Inventory {
     if (!Inventory.validateInventoryData(data)) {
       throw new Error('Invalid inventory data');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = data.items.map((itemData: any) => {
       switch (itemData.type) {
         case ItemType.CONSUMABLE:
@@ -161,6 +163,7 @@ export class Inventory {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateInventoryData(data: any): data is InventoryData {
     return typeof data === 'object' && data !== null && Array.isArray(data.items);
   }

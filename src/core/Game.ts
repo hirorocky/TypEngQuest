@@ -3,18 +3,63 @@
  */
 import { PhaseType, GameState, CommandResult } from './types';
 import { Phase } from './Phase';
+import { Skill } from '../battle/Skill';
+
 import { TitlePhase } from '../phases/TitlePhase';
 import { ExplorationPhase } from '../phases/ExplorationPhase';
 import { InventoryPhase } from '../phases/InventoryPhase';
 import { ItemConsumptionPhase } from '../phases/ItemConsumptionPhase';
 import { ItemEquipmentPhase } from '../phases/ItemEquipmentPhase';
 import { TypingPhase } from '../phases/TypingPhase';
+import { BattlePhase } from '../phases/BattlePhase';
+import { BattleTypingPhase } from '../phases/BattleTypingPhase';
+import { SkillSelectionPhase } from '../phases/SkillSelectionPhase';
+import { BattleItemConsumptionPhase } from '../phases/BattleItemConsumptionPhase';
+import { Enemy } from '../battle/Enemy';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
+import { ConsumableItem } from '../items/ConsumableItem';
 import { CommandParser } from './CommandParser';
-import { TabCompleter, CommandCompletionProvider, DirectoryCompletionProvider } from './completion';
+import {
+  TabCompleter,
+  CommandCompletionProvider,
+  DirectoryCompletionProvider,
+  BattleCompletionProvider,
+} from './completion';
+import { DevelopmentConfigLoader } from './DevelopmentConfigLoader';
 // import { red, cyan } from '../ui/colors'; // TODO: Use in future error handling
+
+/**
+ * Phase遷移時のデータ型定義
+ */
+interface PhaseTransitionData {
+  // バトル関連のインスタンス
+  battle?: import('../battle/Battle').Battle; // 既存のBattleクラスをそのまま使用
+
+  // Battle phase
+  enemy?: Enemy;
+
+  // BattleTyping phase
+  skills?: Skill[];
+  typingResult?: import('../phases/types').BattleTypingResult;
+
+  // 遷移の詳細情報
+  transitionReason?: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated';
+
+  // BattleItemConsumption phase
+  onItemUsed?: (item: ConsumableItem) => void;
+
+  // Typing phase
+  difficulty?: number;
+
+  // 開発者モード用のインスタンス
+  world?: import('../world/World').World;
+  player?: import('../player/Player').Player;
+
+  // General
+  exit?: boolean;
+}
 
 export class Game {
   private state: GameState;
@@ -22,11 +67,11 @@ export class Game {
   private signalHandlers: { signal: 'SIGINT' | 'SIGTERM'; handler: () => void }[] = [];
   private currentWorld: World | null = null;
   private currentPlayer: Player | null = null;
-  private isTestMode: boolean;
+  private isDevMode: boolean;
   private commandParser: CommandParser;
   private tabCompleter: TabCompleter;
 
-  constructor(isTestMode: boolean = false) {
+  constructor(isDevMode: boolean = false) {
     this.state = {
       currentPhase: 'title',
       isRunning: false,
@@ -40,8 +85,9 @@ export class Game {
     // 補完プロバイダーを追加
     this.tabCompleter.addProvider(new CommandCompletionProvider());
     this.tabCompleter.addProvider(new DirectoryCompletionProvider());
+    this.tabCompleter.addProvider(new BattleCompletionProvider());
 
-    this.isTestMode = isTestMode;
+    this.isDevMode = isDevMode;
     this.setupSignalHandlers();
   }
 
@@ -63,7 +109,6 @@ export class Game {
   private async gameLoop(): Promise<void> {
     while (this.state.isRunning && this.currentPhase) {
       try {
-        // Phaseに入力処理を委譲
         const result = await this.currentPhase.startInputLoop();
 
         if (result) {
@@ -77,24 +122,11 @@ export class Game {
   }
 
   private async handleCommandResult(result: CommandResult): Promise<void> {
-    if (result.message) {
-      if (result.success) {
-        Display.printSuccess(result.message);
-      } else {
-        Display.printError(result.message);
-      }
-    }
+    this.displayResult(result);
 
-    // Handle output array
-    if (result.output && result.output.length > 0) {
-      for (const line of result.output) {
-        Display.print(line + '\n');
-      }
-    }
-
-    // Handle phase transitions
-    if (result.nextPhase) {
-      await this.transitionToPhase(result.nextPhase, result.data);
+    if (this.shouldTransition(result)) {
+      await this.handlePhaseTransition(result);
+      return;
     }
 
     // Handle special data
@@ -103,20 +135,50 @@ export class Game {
     }
   }
 
-  private async transitionToPhase(phaseType: PhaseType, data?: any): Promise<void> {
-    // Cleanup current phase
+  private displayResult(result: CommandResult): void {
+    if (result.message) {
+      if (result.success) {
+        Display.printSuccess(result.message);
+      } else {
+        Display.printError(result.message);
+      }
+    }
+
+    if (result.output && result.output.length > 0) {
+      for (const line of result.output) {
+        Display.print(line + '\n');
+      }
+    }
+  }
+
+  private shouldTransition(result: CommandResult): boolean {
+    return result.nextPhase !== undefined;
+  }
+
+  private async handlePhaseTransition(result: CommandResult): Promise<void> {
+    if (!result.nextPhase) return;
+
+    await this.transitionToPhase(result.nextPhase, result.data);
+  }
+
+  private async transitionToPhase(phaseType: PhaseType, data?: PhaseTransitionData): Promise<void> {
     if (this.currentPhase) {
       await this.currentPhase.cleanup();
     }
 
-    // Create and initialize new phase
     this.currentPhase = this.createPhase(phaseType, data);
     this.state.currentPhase = phaseType;
 
     await this.currentPhase.initialize();
   }
 
-  private createPhase(phaseType: PhaseType, data?: any): Phase {
+  private createPhase(phaseType: PhaseType, data?: PhaseTransitionData): Phase {
+    // 開発者モード用のWorldとPlayerがdataで渡された場合は使用
+    if (data?.world && data?.player) {
+      this.currentWorld = data.world;
+      this.currentPlayer = data.player;
+    }
+
     const phaseFactories: Record<PhaseType, () => Phase> = {
       title: () => new TitlePhase(undefined, this.tabCompleter),
       exploration: () =>
@@ -131,11 +193,80 @@ export class Game {
         throw new Error('Dialog phase not implemented');
       },
       battle: () => {
-        throw new Error('Battle phase not implemented');
+        const battlePhase = new BattlePhase(
+          this.currentWorld!,
+          this.tabCompleter,
+          this.currentPlayer!
+        );
+
+        // battleインスタンスが渡された場合は設定
+        if (data?.battle) {
+          battlePhase.setBattle(data.battle);
+        }
+
+        // typingResult処理
+        if (data?.typingResult) {
+          Promise.resolve().then(() => {
+            battlePhase.handleBattleTypingComplete(data.typingResult!);
+          });
+        }
+
+        // enemyデータがある場合は戦闘を開始
+        if (data?.enemy) {
+          const enemy = data.enemy;
+          Promise.resolve().then(async () => {
+            await battlePhase.startBattle(enemy);
+          });
+        }
+
+        return battlePhase;
       },
+      battleTyping: () => {
+        const skills = data?.skills;
+        const battle = data?.battle;
+        if (!skills || !battle) {
+          throw new Error('Skills and Battle instance are required for BattleTypingPhase');
+        }
+        const phase = new BattleTypingPhase({
+          skills,
+          battle,
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        });
+
+        // フェーズ遷移ハンドラーを設定
+        phase.setTransitionHandler(result => this.handleCommandResult(result));
+        return phase;
+      },
+      skillSelection: () => {
+        const battle = data?.battle;
+        if (!battle) {
+          throw new Error('Battle instance is required for SkillSelectionPhase');
+        }
+        const phase = new SkillSelectionPhase({
+          player: this.currentPlayer!,
+          battle: battle,
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        });
+
+        // フェーズ遷移ハンドラーを設定
+        phase.setTransitionHandler(result => this.handleCommandResult(result));
+        return phase;
+      },
+      battleItemConsumption: () =>
+        new BattleItemConsumptionPhase({
+          player: this.currentPlayer!,
+          onItemUsed: data?.onItemUsed || (() => {}),
+          onBack: () => {},
+          world: this.currentWorld!,
+          tabCompleter: this.tabCompleter,
+        }),
       typing: () => {
         const difficulty = data?.difficulty;
-        return new TypingPhase(difficulty) as any; // TODO: Refactor TypingPhase to extend Phase
+        // TODO: Refactor TypingPhase to properly extend Phase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new TypingPhase(difficulty as 1 | 2 | 3 | 4 | 5 | undefined) as any;
       },
       continue: () => {
         throw new Error('Continue phase not implemented');
@@ -180,9 +311,9 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultWorld(): World {
-    if (this.isTestMode) {
-      // テストモードでは固定のファイル構造を使用
-      return World.generateTestWorld();
+    if (this.isDevMode) {
+      // 開発モードではJSONファイルから設定を読み込む
+      return DevelopmentConfigLoader.loadWorldFromConfig();
     } else {
       // デフォルトはランダムドメインのレベル1
       return World.generateRandomWorld(1);
@@ -194,7 +325,13 @@ export class Game {
    * 設定に基づいて後でカスタマイズ可能
    */
   private generateDefaultPlayer(): Player {
-    return new Player('Test Player', this.isTestMode);
+    if (this.isDevMode) {
+      // 開発モードではJSONファイルから設定を読み込む
+      return new Player('Dev Player', true);
+    } else {
+      // デフォルトはシンプルなプレイヤー
+      return new Player('Test Player', false);
+    }
   }
 
   private setupSignalHandlers(): void {

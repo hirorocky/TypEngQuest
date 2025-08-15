@@ -15,6 +15,9 @@ export abstract class Phase {
   protected rl: readline.Interface | null = null;
   protected tabCompleter?: TabCompleter;
 
+  // フェーズ遷移ハンドラー
+  private transitionHandler?: (result: CommandResult) => void;
+
   constructor(world?: World, tabCompleter?: TabCompleter) {
     this.parser = new CommandParser();
     this.world = world;
@@ -109,6 +112,11 @@ export abstract class Phase {
    * メッセージと出力を表示
    */
   private displayMessages(result: CommandResult): void {
+    // Phase遷移が発生する場合は、Game側でメッセージを処理するのでここではスキップ
+    if (result.nextPhase) {
+      return;
+    }
+
     if (result.message) {
       if (result.success) {
         Display.printSuccess(result.message);
@@ -156,5 +164,21 @@ export abstract class Phase {
 
   getAvailableCommands(): string[] {
     return this.parser.getAvailableCommands();
+  }
+
+  /**
+   * フェーズ遷移を通知
+   */
+  protected notifyTransition(result: CommandResult): void {
+    if (this.transitionHandler) {
+      this.transitionHandler(result);
+    }
+  }
+
+  /**
+   * フェーズ遷移ハンドラーを設定
+   */
+  public setTransitionHandler(handler: (result: CommandResult) => void): void {
+    this.transitionHandler = handler;
   }
 }

@@ -16,10 +16,16 @@ describe('Battle', () => {
     mpCost: 5,
     mpCharge: 0,
     actionCost: 1,
-    power: 1.2,
-    accuracy: 90,
+    successRate: 90,
     target: 'enemy',
     typingDifficulty: 2,
+    effects: [
+      {
+        type: 'damage',
+        power: 1.2,
+        target: 'enemy',
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -68,8 +74,9 @@ describe('Battle', () => {
       expect(() => battle.start()).toThrow('Battle already started');
     });
 
-    it('戦闘が開始されていない状態で終了しようとするとエラーになる', () => {
-      expect(() => battle.end()).toThrow('Battle not started');
+    it('戦闘が開始されていない状態で終了しても何も起こらない', () => {
+      expect(() => battle.end()).not.toThrow();
+      expect(battle.isActive).toBe(false);
     });
   });
 
@@ -294,10 +301,16 @@ describe('Battle', () => {
         mpCost: 0,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.0,
-        accuracy: 100,
+        successRate: 100,
         target: 'enemy',
         typingDifficulty: 1,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.0,
+            target: 'enemy',
+          },
+        ],
       };
 
       jest.spyOn(player, 'getTotalStats').mockReturnValue({
@@ -328,10 +341,16 @@ describe('Battle', () => {
         mpCost: 0,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.0,
-        accuracy: 50,
+        successRate: 50,
         target: 'enemy',
         typingDifficulty: 1,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.0,
+            target: 'enemy',
+          },
+        ],
       };
 
       jest.spyOn(BattleCalculator, 'isHit').mockReturnValue(false);
@@ -372,9 +391,9 @@ describe('Battle', () => {
       jest.spyOn(playerBodyStats, 'takeDamage');
 
       const result = battle.enemyAction();
-      expect(result.skillUsed?.name).toBe('Attack');
+      expect(result.skillUsed?.name).toBe('Basic Attack');
       expect(result.damage).toBe(10);
-      expect(result.message).toContain('Attack');
+      expect(result.message).toContain('Basic Attack');
     });
   });
 
@@ -536,10 +555,16 @@ describe('Battle', () => {
         mpCost: 5,
         mpCharge: 0,
         actionCost: 1,
-        power: 1.5,
-        accuracy: 90,
+        successRate: 90,
         target: 'enemy',
         typingDifficulty: 2,
+        effects: [
+          {
+            type: 'damage',
+            power: 1.5,
+            target: 'enemy',
+          },
+        ],
       };
 
       battle = new Battle(player, enemy);
@@ -636,10 +661,16 @@ describe('Battle', () => {
       mpCost: 10,
       mpCharge: 0,
       actionCost: 1,
-      power: 1.5,
-      accuracy: 90,
+      successRate: 90,
       target: 'enemy',
       typingDifficulty: 2,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.5,
+          target: 'enemy',
+        },
+      ],
     };
 
     const skillWithMPCharge: Skill = {
@@ -649,10 +680,16 @@ describe('Battle', () => {
       mpCost: 5,
       mpCharge: 8,
       actionCost: 1,
-      power: 1.2,
-      accuracy: 90,
+      successRate: 90,
       target: 'enemy',
       typingDifficulty: 2,
+      effects: [
+        {
+          type: 'damage',
+          power: 1.2,
+          target: 'enemy',
+        },
+      ],
     };
 
     beforeEach(() => {
@@ -733,7 +770,7 @@ describe('Battle', () => {
       const result = battle.enemyAction();
 
       // 通常攻撃が使用される
-      expect(result.skillUsed.id).toBe('normal_attack');
+      expect(result.skillUsed.id).toBe('basic_attack');
       expect(result.skillUsed.mpCost).toBe(0);
     });
   });

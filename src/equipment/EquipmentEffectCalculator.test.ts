@@ -320,14 +320,20 @@ describe('EquipmentEffectCalculator', () => {
         skill: {
           id: 'slash',
           name: 'Slash',
+          description: 'A slashing attack',
           mpCost: 5,
+          mpCharge: 0,
+          actionCost: 1,
           successRate: 90,
+          target: 'enemy',
           typingDifficulty: 2,
-          effect: {
-            type: 'damage',
-            power: 50,
-            target: 'enemy',
-          },
+          effects: [
+            {
+              type: 'damage',
+              power: 50,
+              target: 'enemy',
+            },
+          ],
         },
       };
       const equipment = new EquipmentItem(equipmentData);
@@ -356,14 +362,20 @@ describe('EquipmentEffectCalculator', () => {
         skill: {
           id: 'slash',
           name: 'Slash',
+          description: 'A slashing attack',
           mpCost: 5,
+          mpCharge: 0,
+          actionCost: 1,
           successRate: 90,
+          target: 'enemy',
           typingDifficulty: 2,
-          effect: {
-            type: 'damage',
-            power: 50,
-            target: 'enemy',
-          },
+          effects: [
+            {
+              type: 'damage',
+              power: 50,
+              target: 'enemy',
+            },
+          ],
         },
       };
 
@@ -383,14 +395,20 @@ describe('EquipmentEffectCalculator', () => {
         skill: {
           id: 'heal',
           name: 'Heal',
+          description: 'A healing spell',
           mpCost: 10,
+          mpCharge: 0,
+          actionCost: 1,
           successRate: 100,
+          target: 'self',
           typingDifficulty: 1,
-          effect: {
-            type: 'heal',
-            power: 30,
-            target: 'self',
-          },
+          effects: [
+            {
+              type: 'hp_heal',
+              power: 30,
+              target: 'self',
+            },
+          ],
         },
       };
 
@@ -421,14 +439,20 @@ describe('EquipmentEffectCalculator', () => {
         skill: {
           id: 'slash',
           name: 'Slash',
+          description: 'A slashing attack',
           mpCost: 5,
+          mpCharge: 0,
+          actionCost: 1,
           successRate: 90,
+          target: 'enemy',
           typingDifficulty: 2,
-          effect: {
-            type: 'damage',
-            power: 50,
-            target: 'enemy',
-          },
+          effects: [
+            {
+              type: 'damage',
+              power: 50,
+              target: 'enemy',
+            },
+          ],
         },
       };
 

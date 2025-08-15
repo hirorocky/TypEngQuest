@@ -156,6 +156,7 @@ export class ConsumableItem extends Item {
    * @returns 消費アイテムインスタンス
    * @throws {Error} 不正なデータの場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): ConsumableItem {
     if (!ConsumableItem.validateConsumableItemData(data)) {
       throw new Error('Invalid consumable item data');
@@ -176,6 +177,7 @@ export class ConsumableItem extends Item {
    * @param data - 検証するデータ
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateConsumableItemData(data: any): data is ConsumableItemData {
     return (
       typeof data === 'object' &&
@@ -187,6 +189,7 @@ export class ConsumableItem extends Item {
       Object.values(ItemRarity).includes(data.rarity) &&
       Array.isArray(data.effects) &&
       data.effects.length > 0 &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data.effects.every((effect: any) => ConsumableItem.validateEffect(effect))
     );
   }
@@ -196,6 +199,7 @@ export class ConsumableItem extends Item {
    * @param effect - 検証する効果
    * @returns 有効な場合true
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateEffect(effect: any): effect is ItemEffect {
     return (
       typeof effect === 'object' &&

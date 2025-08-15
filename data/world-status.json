@@ -1,0 +1,154 @@
+{
+  "worldStatuses": [
+    {
+      "id": "strength_blessing",
+      "name": "Strength Blessing",
+      "type": "buff",
+      "effects": {
+        "strength": 10
+      },
+      "description": "The gods smile upon your strength, increasing your attack power.",
+      "stackable": false
+    },
+    {
+      "id": "willpower_blessing",
+      "name": "Willpower Blessing",
+      "type": "buff",
+      "effects": {
+        "willpower": 10
+      },
+      "description": "Your will is strengthened by divine power, enhancing your mental fortitude.",
+      "stackable": false
+    },
+    {
+      "id": "agility_blessing",
+      "name": "Agility Blessing",
+      "type": "buff",
+      "effects": {
+        "agility": 10
+      },
+      "description": "Your movements are blessed with supernatural speed and grace.",
+      "stackable": false
+    },
+    {
+      "id": "fortune_blessing",
+      "name": "Fortune Blessing",
+      "type": "buff",
+      "effects": {
+        "fortune": 10
+      },
+      "description": "Lady luck favors you with increased fortune and favorable outcomes.",
+      "stackable": false
+    },
+    {
+      "id": "experience_boost",
+      "name": "Experience Boost",
+      "type": "buff",
+      "effects": {
+        "experienceMultiplier": 1.5
+      },
+      "description": "You learn faster and gain 50% more experience from all activities.",
+      "stackable": false
+    },
+    {
+      "id": "item_drop_boost",
+      "name": "Item Drop Boost",
+      "type": "buff",
+      "effects": {
+        "dropRateMultiplier": 1.3
+      },
+      "description": "Items seem to drop more frequently, increasing your loot by 30%.",
+      "stackable": false
+    },
+    {
+      "id": "strength_curse",
+      "name": "Strength Curse",
+      "type": "debuff",
+      "effects": {
+        "strength": -8
+      },
+      "description": "A dark curse weakens your physical power, reducing your attack damage.",
+      "stackable": false
+    },
+    {
+      "id": "willpower_curse",
+      "name": "Willpower Curse",
+      "type": "debuff",
+      "effects": {
+        "willpower": -8
+      },
+      "description": "Your mind is clouded by malevolent forces, weakening your mental strength.",
+      "stackable": false
+    },
+    {
+      "id": "agility_curse",
+      "name": "Agility Curse",
+      "type": "debuff",
+      "effects": {
+        "agility": -8
+      },
+      "description": "Your movements are hindered by an unseen force, slowing your reactions.",
+      "stackable": false
+    },
+    {
+      "id": "fortune_curse",
+      "name": "Fortune Curse",
+      "type": "debuff",
+      "effects": {
+        "fortune": -8
+      },
+      "description": "Bad luck follows you wherever you go, reducing favorable outcomes.",
+      "stackable": false
+    },
+    {
+      "id": "experience_penalty",
+      "name": "Experience Penalty",
+      "type": "debuff",
+      "effects": {
+        "experienceMultiplier": 0.7
+      },
+      "description": "Your learning is impaired, reducing experience gained by 30%.",
+      "stackable": false
+    },
+    {
+      "id": "critical_master",
+      "name": "Critical Master",
+      "type": "special",
+      "effects": {
+        "criticalRateBonus": 15
+      },
+      "description": "Your mastery of combat grants you 15% additional critical hit chance.",
+      "stackable": false
+    },
+    {
+      "id": "dodge_master",
+      "name": "Dodge Master",
+      "type": "special",
+      "effects": {
+        "dodgeRateBonus": 20
+      },
+      "description": "Your evasion skills are unmatched, increasing dodge rate by 20%.",
+      "stackable": false
+    },
+    {
+      "id": "skill_power_boost",
+      "name": "Skill Power Boost",
+      "type": "special",
+      "effects": {
+        "skillPowerMultiplier": 1.25
+      },
+      "description": "Your skills are enhanced, dealing 25% more damage with all abilities.",
+      "stackable": false
+    },
+    {
+      "id": "mp_efficiency",
+      "name": "MP Efficiency",
+      "type": "special",
+      "effects": {
+        "mpCostMultiplier": 0.8
+      },
+      "description": "Your mana usage is optimized, reducing MP costs by 20%.",
+      "stackable": false
+    }
+  ]
+}

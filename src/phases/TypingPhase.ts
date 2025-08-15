@@ -53,6 +53,7 @@ export class TypingPhase {
    */
   async startInputLoop(): Promise<CommandResult | null> {
     // プレイヤーを作成（TypingPhaseでは使用しないが、インターフェース互換性のため）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dummyPlayer = { name: 'TyperPlayer' } as any;
 
     this.enter(dummyPlayer);
