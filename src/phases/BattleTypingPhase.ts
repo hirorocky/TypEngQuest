@@ -12,12 +12,6 @@ import { Display } from '../ui/Display';
 import { green, red, gray } from '../ui/colors';
 import * as readline from 'readline';
 
-/**
- * BattleTypingPhaseクラス - 戦闘時のタイピングチャレンジフェーズ
- * - TypingPhaseを継承
- * - 複数スキルの連続実行をサポート
- * - リアルタイムで戦闘状態を更新
- */
 export class BattleTypingPhase extends Phase {
   private skills: Skill[];
   private battle: Battle;
@@ -255,6 +249,12 @@ export class BattleTypingPhase extends Phase {
       console.log(
         `Player MP: ${player.getBodyStats().getCurrentMP()}/${player.getBodyStats().getMaxMP()}`
       );
+
+      // 敵のHPが0になったらバトル終了フラグを立てる
+      if (enemy.currentHp <= 0) {
+        console.log('\n💀 Enemy defeated!');
+        // バトル終了を即座に処理せず、全スキル完了後に処理する
+      }
     }
   }
 
@@ -321,42 +321,61 @@ export class BattleTypingPhase extends Phase {
    * 全チャレンジ完了時の処理
    */
   private completeAllChallenges(): CommandResult {
-    console.log('\n=== ALL SKILLS COMPLETED ===');
+    console.log('\n=== SKILL EXECUTION COMPLETE ===');
+    this.displayFinalSummary();
 
-    // 戦闘終了チェック
-    const battleEnd = this.battle.checkBattleEnd();
+    // バトル終了チェック
+    const enemy = this.battle['enemy'];
+    const player = this.battle['player'];
 
-    // 結果をまとめる
+    let battleEnded = false;
+
+    if (enemy && enemy.currentHp <= 0) {
+      battleEnded = true;
+      console.log('\n🎉 Victory! Enemy has been defeated!');
+    } else if (player && player.getBodyStats().getCurrentHP() <= 0) {
+      battleEnded = true;
+      console.log('\n💀 Defeat! You have been defeated!');
+    }
+
+    // 結果を返す
     const result: BattleTypingResult = {
       completedSkills: this.currentSkillIndex,
       totalSkills: this.skills.length,
       summary: this.summary,
-      battleEnded: battleEnd !== null,
+      battleEnded: battleEnded,
     };
 
-    // サマリーを表示
-    console.log('\n📊 BATTLE SUMMARY:');
-    console.log(`Completed Skills: ${result.completedSkills}/${result.totalSkills}`);
-    console.log(`Total Damage Dealt: ${result.summary.totalDamageDealt}`);
-    console.log(`Total Healing: ${result.summary.totalHealing}`);
-    console.log(`Total MP Restored: ${result.summary.totalMpRestored}`);
-    console.log(`Critical Hits: ${result.summary.criticalHits}`);
-    console.log(`Misses: ${result.summary.misses}`);
-
-    if (result.summary.statusEffectsApplied.length > 0) {
-      console.log(`Status Effects: ${result.summary.statusEffectsApplied.join(', ')}`);
-    }
-
-    // フェーズ遷移を返す
+    // BattlePhaseに結果を渡して戻る
     return {
       success: true,
-      message: 'Battle typing completed',
+      message: 'Battle typing complete',
       nextPhase: PhaseTypes.BATTLE,
       data: {
-        battle: this.battle,
         typingResult: result,
-        transitionReason: 'typingComplete',
+        battle: this.battle,
       },
     };
+  }
+
+  /**
+   * 最終結果サマリーを表示
+   */
+  private displayFinalSummary(): void {
+    console.log('\n--- Battle Summary ---');
+    console.log(`Skills completed: ${this.currentSkillIndex}/${this.skills.length}`);
+    console.log(`Total damage dealt: ${this.summary.totalDamageDealt}`);
+    if (this.summary.criticalHits > 0) {
+      console.log(`Critical hits: ${this.summary.criticalHits}`);
+    }
+    if (this.summary.totalHealing > 0) {
+      console.log(`Total healing: ${this.summary.totalHealing}`);
+    }
+    if (this.summary.totalMpRestored > 0) {
+      console.log(`MP restored: ${this.summary.totalMpRestored}`);
+    }
+    if (this.summary.misses > 0) {
+      console.log(`Misses: ${this.summary.misses}`);
+    }
   }
 }

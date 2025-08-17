@@ -273,7 +273,14 @@ export class BattlePhase extends Phase {
     this.turnMessage = enemyResult.message;
     console.log(enemyResult.message);
 
-    // 敵ターン終了後、勝敗判定
+    // 敵ターン終了後、プレイヤーHPチェック
+    if (this.player && this.player.getBodyStats().getCurrentHP() <= 0) {
+      console.log('\n💀 You have been defeated!');
+      this.endBattle({ winner: 'enemy', message: 'You have been defeated!' });
+      return;
+    }
+
+    // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
     if (battleEnd) {
       this.endBattle(battleEnd);
@@ -297,6 +304,19 @@ export class BattlePhase extends Phase {
   private checkAndEndBattle(): void {
     if (!this.battle) return;
 
+    // 敵のHP確認
+    if (this.enemy && this.enemy.currentHp <= 0) {
+      this.endBattle({ winner: 'player', message: 'Victory! Enemy has been defeated!' });
+      return;
+    }
+
+    // プレイヤーのHP確認
+    if (this.player && this.player.getBodyStats().getCurrentHP() <= 0) {
+      this.endBattle({ winner: 'enemy', message: 'Defeat! You have been defeated!' });
+      return;
+    }
+
+    // Battle.checkBattleEndによる判定
     const battleEnd = this.battle.checkBattleEnd();
     if (battleEnd) {
       this.endBattle(battleEnd);
@@ -343,7 +363,10 @@ export class BattlePhase extends Phase {
 
   private transitionToExploration(): void {
     // Game.jsでフェーズ遷移を処理する必要がある
-    console.log('Battle completed. Game would transition to exploration phase.');
+    console.log('Battle completed. Returning to exploration phase...');
+
+    // TODO: Implement proper phase transition through Game class
+    // This would typically be handled by the Game class managing phases
   }
 
   /**
