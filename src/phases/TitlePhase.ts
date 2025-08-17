@@ -168,7 +168,7 @@ export class TitlePhase extends Phase {
 
     // 開発者モード用のWorldとPlayerを生成
     const { Player } = await import('../player/Player');
-    
+
     const devWorld = DevelopmentConfigLoader.loadWorldFromConfig();
     const devPlayer = new Player('DevPlayer', true);
 

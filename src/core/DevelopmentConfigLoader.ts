@@ -402,26 +402,30 @@ export class DevelopmentConfigLoader {
         agility: enemyData.agility,
         fortune: 5, // デフォルト値
       },
-      skills: enemyData.skills?.map((skill, index) => ({
-        id: `${enemyData.id}-skill-${index}`,
-        name: skill.name,
-        description: skill.description,
-        mpCost: skill.mpCost,
-        mpCharge: 0, // デフォルト値
-        actionCost: 1, // デフォルト値
-        successRate: skill.accuracy,
-        target: 'enemy' as const, // デフォルト値
-        typingDifficulty: 3, // デフォルト値
-        effects: [{
-          type: 'damage' as const,
-          power: skill.power,
-          target: 'enemy' as const,
-        }],
-      })) || [],
-      drops: enemyData.dropItems?.map(drop => ({
-        itemId: drop.id,
-        dropRate: drop.dropRate * 100, // パーセンテージに変換
-      })) || [],
+      skills:
+        enemyData.skills?.map((skill, index) => ({
+          id: `${enemyData.id}-skill-${index}`,
+          name: skill.name,
+          description: skill.description,
+          mpCost: skill.mpCost,
+          mpCharge: 0, // デフォルト値
+          actionCost: 1, // デフォルト値
+          successRate: skill.accuracy,
+          target: 'enemy' as const, // デフォルト値
+          typingDifficulty: 3, // デフォルト値
+          effects: [
+            {
+              type: 'damage' as const,
+              power: skill.power,
+              target: 'enemy' as const,
+            },
+          ],
+        })) || [],
+      drops:
+        enemyData.dropItems?.map(drop => ({
+          itemId: drop.id,
+          dropRate: drop.dropRate * 100, // パーセンテージに変換
+        })) || [],
     };
 
     return new Enemy(enemyParams);

@@ -24,9 +24,9 @@ export class BattleCalculator {
     // 最小ダメージは1
     baseDamage = Math.max(1, baseDamage);
 
-    // クリティカル時は1.5倍
+    // クリティカル時は1.2倍
     if (isCritical) {
-      baseDamage *= 1.5;
+      baseDamage *= 1.2;
     }
 
     // 整数に変換して返す
