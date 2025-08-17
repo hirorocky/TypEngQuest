@@ -1,6 +1,7 @@
 import { Phase } from '../core/Phase';
 import { Skill } from '../battle/Skill';
 import { Battle } from '../battle/Battle';
+import { BattleActionExecutor } from '../battle/BattleActionExecutor';
 import { World } from '../world/World';
 import { TabCompleter } from '../core/completion/TabCompleter';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
@@ -210,8 +211,16 @@ export class BattleTypingPhase extends Phase {
   private applySkillEffect(skill: Skill, typingResult: TypingResult): void {
     console.log(`\n⚔️ Executing ${skill.name}...`);
 
-    // Battle.playerUseSkillを使用して効果を適用
-    const result = this.battle.playerUseSkill(skill, typingResult);
+    // BattleActionExecutorを使用して効果を適用
+    const player = this.battle['player'];
+    const enemy = this.battle['enemy'];
+
+    if (!player || !enemy) {
+      console.log('❌ Battle not properly initialized');
+      return;
+    }
+
+    const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, typingResult);
 
     if (result.success) {
       console.log(`✅ ${result.message}`);
@@ -219,7 +228,7 @@ export class BattleTypingPhase extends Phase {
       // サマリーを更新
       if (result.damage) {
         this.summary.totalDamageDealt += result.damage;
-        if (typingResult.accuracyRating === 'Perfect') {
+        if (result.critical) {
           this.summary.criticalHits++;
         }
       }
@@ -228,12 +237,8 @@ export class BattleTypingPhase extends Phase {
         this.summary.totalHealing += result.healing;
       }
 
-      if (result.mpRestored) {
-        this.summary.totalMpRestored += result.mpRestored;
-      }
-
-      if (result.statusEffect) {
-        this.summary.statusEffectsApplied.push(result.statusEffect);
+      if (result.mpRecovered) {
+        this.summary.totalMpRestored += result.mpRecovered;
       }
     } else {
       console.log(`❌ ${result.message}`);
@@ -241,20 +246,15 @@ export class BattleTypingPhase extends Phase {
     }
 
     // 現在のHP/MPを表示
-    const enemy = this.battle['enemy'];
-    const player = this.battle['player'];
+    console.log(`Enemy HP: ${enemy.currentHp}/${enemy.stats.maxHp}`);
+    console.log(
+      `Player MP: ${player.getBodyStats().getCurrentMP()}/${player.getBodyStats().getMaxMP()}`
+    );
 
-    if (enemy && player) {
-      console.log(`Enemy HP: ${enemy.currentHp}/${enemy.stats.maxHp}`);
-      console.log(
-        `Player MP: ${player.getBodyStats().getCurrentMP()}/${player.getBodyStats().getMaxMP()}`
-      );
-
-      // 敵のHPが0になったらバトル終了フラグを立てる
-      if (enemy.currentHp <= 0) {
-        console.log('\n💀 Enemy defeated!');
-        // バトル終了を即座に処理せず、全スキル完了後に処理する
-      }
+    // 敵のHPが0になったらバトル終了フラグを立てる
+    if (enemy.currentHp <= 0) {
+      console.log('\n💀 Enemy defeated!');
+      // バトル終了を即座に処理せず、全スキル完了後に処理する
     }
   }
 

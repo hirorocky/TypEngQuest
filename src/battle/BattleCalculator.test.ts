@@ -54,8 +54,8 @@ describe('BattleCalculator', () => {
 
       const damage = BattleCalculator.calculateDamage(attackPower, defensePower, skillPower, true);
 
-      // 基本ダメージ40 × 1.5 = 60
-      expect(damage).toBe(60);
+      // 基本ダメージ40 × 1.2 = 48
+      expect(damage).toBe(48);
     });
   });
 

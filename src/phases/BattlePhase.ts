@@ -1,6 +1,7 @@
 import { Phase } from '../core/Phase';
 import { CommandResult, PhaseType, PhaseTypes } from '../core/types';
 import { Battle } from '../battle/Battle';
+import { BattleActionExecutor } from '../battle/BattleActionExecutor';
 import { Player } from '../player/Player';
 import { Enemy } from '../battle/Enemy';
 import { World } from '../world/World';
@@ -18,7 +19,6 @@ export class BattlePhase extends Phase {
   private battle: Battle | null = null;
   private player?: Player;
   private enemy?: Enemy;
-  private currentTurn: 'player' | 'enemy' | 'waiting' = 'waiting';
   private turnMessage: string = '';
   private isProcessingTurn: boolean = false;
 
@@ -32,7 +32,7 @@ export class BattlePhase extends Phase {
   }
 
   getPrompt(): string {
-    if (this.currentTurn === 'player' && !this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() === 'player' && !this.isProcessingTurn) {
       return 'battle> ';
     }
     return '';
@@ -81,7 +81,7 @@ export class BattlePhase extends Phase {
   }
 
   private async showHelp(): Promise<CommandResult> {
-    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
       return {
         success: false,
         message: 'Commands not available during enemy turn or processing',
@@ -143,7 +143,7 @@ export class BattlePhase extends Phase {
    * スキル選択フェーズに移行
    */
   private async enterSkillSelection(): Promise<CommandResult> {
-    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
       return {
         success: false,
         message: "It's not your turn or turn is being processed!",
@@ -178,7 +178,10 @@ export class BattlePhase extends Phase {
     console.log(`Total Damage: ${result.summary.totalDamageDealt}`);
 
     if (result.battleEnded) {
-      this.checkAndEndBattle();
+      const battleEnd = this.battle?.checkBattleEnd();
+      if (battleEnd) {
+        this.endBattle(battleEnd);
+      }
     } else {
       this.finishPlayerTurn();
     }
@@ -188,7 +191,7 @@ export class BattlePhase extends Phase {
    * アイテム選択フェーズに移行
    */
   private async enterItemSelection(): Promise<CommandResult> {
-    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
       return {
         success: false,
         message: "It's not your turn or turn is being processed!",
@@ -227,7 +230,7 @@ export class BattlePhase extends Phase {
    * 逃走を試みる
    */
   private async attemptEscape(): Promise<CommandResult> {
-    if (this.currentTurn !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
       return {
         success: false,
         message: "It's not your turn!",
@@ -261,24 +264,25 @@ export class BattlePhase extends Phase {
 
     // 敵ターンに移行
     this.battle.nextTurn();
-    // setTimeout(() => this.executeEnemyTurn(), 1500);
+    global.setTimeout(() => this.executeEnemyTurn(), 1500);
   }
 
   private executeEnemyTurn(): void {
-    if (!this.battle) return;
+    if (!this.battle || !this.enemy || !this.player) return;
 
     console.log('\n=== ENEMY TURN ===');
 
-    const enemyResult = this.battle.enemyAction();
-    this.turnMessage = enemyResult.message;
-    console.log(enemyResult.message);
+    // 敵のスキル選択と実行をBattleActionExecutorで処理
+    const selectedSkill = this.enemy.selectSkill() || Battle.getNormalAttackSkill();
 
-    // 敵ターン終了後、プレイヤーHPチェック
-    if (this.player && this.player.getBodyStats().getCurrentHP() <= 0) {
-      console.log('\n💀 You have been defeated!');
-      this.endBattle({ winner: 'enemy', message: 'You have been defeated!' });
-      return;
-    }
+    // MP消費チェック - 足りない場合は通常攻撃
+    const skillToUse =
+      this.enemy.currentMp < selectedSkill.mpCost ? Battle.getNormalAttackSkill() : selectedSkill;
+
+    const result = BattleActionExecutor.executeEnemySkill(skillToUse, this.enemy, this.player);
+
+    this.turnMessage = result.message;
+    console.log(result.message);
 
     // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
@@ -287,54 +291,54 @@ export class BattlePhase extends Phase {
       return;
     }
 
-    // プレイヤーターンに移行
+    // プレイヤーターンに移行（入力待ち状態）
     this.battle.nextTurn();
-    this.currentTurn = 'player';
     this.isProcessingTurn = false;
 
-    // バトルステータスを表示
-    this.showBattleStatus().then(result => {
-      if (result.output) {
-        console.log('\n' + result.output.join('\n'));
-      }
-      console.log('\nWhat will you do? (Type "help" for commands)');
-    });
+    // プレイヤーターン開始 - ステータス表示は基底クラスのstartInputLoopで行う
   }
 
-  private checkAndEndBattle(): void {
-    if (!this.battle) return;
-
-    // 敵のHP確認
-    if (this.enemy && this.enemy.currentHp <= 0) {
-      this.endBattle({ winner: 'player', message: 'Victory! Enemy has been defeated!' });
-      return;
+  /**
+   * 入力処理ループを開始
+   * @returns Phase遷移が必要な場合はCommandResultを返す
+   */
+  async startInputLoop(): Promise<CommandResult | null> {
+    // バトルが既に終了している場合は即座にExplorationPhaseに遷移
+    if (!this.battle?.isActive) {
+      return {
+        success: true,
+        message: 'Battle has ended, returning to exploration',
+        nextPhase: 'exploration',
+        data: {
+          world: this.world,
+          player: this.player,
+        },
+      };
     }
 
-    // プレイヤーのHP確認
-    if (this.player && this.player.getBodyStats().getCurrentHP() <= 0) {
-      this.endBattle({ winner: 'enemy', message: 'Defeat! You have been defeated!' });
-      return;
+    // プレイヤーターンの場合はバトルステータスを表示
+    if (this.battle?.getCurrentTurnActor() === 'player' && !this.isProcessingTurn) {
+      const statusResult = await this.showBattleStatus();
+      if (statusResult.output) {
+        console.log('\n' + statusResult.output.join('\n'));
+      }
+      console.log('\nWhat will you do? (Type "help" for commands)');
     }
 
-    // Battle.checkBattleEndによる判定
-    const battleEnd = this.battle.checkBattleEnd();
-    if (battleEnd) {
-      this.endBattle(battleEnd);
-    }
+    // 基底クラスの入力ループを使用
+    return super.startInputLoop();
   }
 
   private endBattle(battleEnd: { winner: 'player' | 'enemy'; message: string }): void {
-    if (!this.battle) return;
-
-    // 既にバトルが終了している場合は何もしない
-    if (!this.battle.isActive) return;
+    if (!this.battle) {
+      console.log('No battle object, returning');
+      return;
+    }
 
     console.log(`\n=== BATTLE END ===`);
     console.log(battleEnd.message);
 
-    const battleResult = this.battle.getBattleResult();
-
-    if (battleEnd.winner === 'player' && battleResult?.victory) {
+    if (battleEnd.winner === 'player') {
       // ドロップアイテム計算
       const droppedItems = this.battle.calculateDrops();
       if (droppedItems.length > 0) {
@@ -352,21 +356,31 @@ export class BattlePhase extends Phase {
     // バトル状態をリセット
     this.battle = null;
     this.enemy = undefined;
-    this.currentTurn = 'waiting';
+    // Turn management is now handled by Battle class
     this.turnMessage = '';
     this.isProcessingTurn = false;
 
-    // 探索フェーズに戻る
-    console.log('\nReturning to exploration...');
-    this.transitionToExploration();
-  }
-
-  private transitionToExploration(): void {
-    // Game.jsでフェーズ遷移を処理する必要がある
-    console.log('Battle completed. Returning to exploration phase...');
-
-    // TODO: Implement proper phase transition through Game class
-    // This would typically be handled by the Game class managing phases
+    // フェーズ遷移を通知
+    if (battleEnd.winner === 'player') {
+      // プレイヤー勝利時は探索フェーズに戻る
+      this.notifyTransition({
+        success: true,
+        message: 'Battle ended, returning to exploration',
+        nextPhase: 'exploration',
+        data: {
+          world: this.world,
+          player: this.player,
+        },
+      });
+    } else {
+      // プレイヤー敗北時はタイトルフェーズに戻る
+      this.notifyTransition({
+        success: true,
+        message: 'Game over, returning to title',
+        nextPhase: 'title',
+        data: {},
+      });
+    }
   }
 
   /**
@@ -384,15 +398,14 @@ export class BattlePhase extends Phase {
     this.battle = new Battle(this.player, enemy);
     const message = this.battle.start();
 
-    // 最初のターンアクターを設定
-    this.currentTurn = this.battle.getCurrentTurnActor();
     this.isProcessingTurn = false;
 
     console.log(`\n${message}`);
 
-    if (this.currentTurn === 'enemy') {
-      // 敵が先攻の場合は敵ターンを実行
-      // setTimeout(() => this.executeEnemyTurn(), 1000);
+    if (this.battle.getCurrentTurnActor() === 'enemy') {
+      // 敵が先攻の場合は1秒後に敵ターンを実行
+      console.log('Enemy goes first...');
+      global.setTimeout(() => this.executeEnemyTurn(), 1000);
     }
 
     return {
@@ -400,7 +413,7 @@ export class BattlePhase extends Phase {
       message: message,
       output: [
         '',
-        this.currentTurn === 'player'
+        this.battle.getCurrentTurnActor() === 'player'
           ? 'Your turn! Use "skill" to attack or "help" for commands.'
           : 'Enemy goes first...',
       ],
@@ -418,7 +431,6 @@ export class BattlePhase extends Phase {
     if (battle['enemy']) {
       this.enemy = battle['enemy'];
     }
-    this.currentTurn = battle.getCurrentTurnActor();
     this.isProcessingTurn = false;
   }
 }

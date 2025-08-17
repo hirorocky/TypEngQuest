@@ -201,4 +201,43 @@ export class BattleCalculator {
   static calculateTypingEffectMultiplier(totalRating: number): number {
     return totalRating / 100;
   }
+
+  /**
+   * プレイヤーの行動ポイントを計算する
+   * @param agility プレイヤーの敏捷性ステータス
+   * @returns 行動ポイント
+   */
+  static calculatePlayerActionPoints(agility: number): number {
+    // 基本行動ポイント: 3
+    // agilityボーナス: agility / 50（端数切り捨て）
+    const BASE_ACTION_POINTS = 3;
+    const AGILITY_TO_AP_DIVISOR = 50;
+
+    const basePoints = BASE_ACTION_POINTS;
+    const agilityBonus = Math.floor(agility / AGILITY_TO_AP_DIVISOR);
+    return Math.max(1, basePoints + agilityBonus);
+  }
+
+  /**
+   * MP回復量を計算する（タイピング評価による倍率込み）
+   * @param baseMpRecovery 基本MP回復量
+   * @param accuracyRating タイピング精度評価
+   * @returns 計算されたMP回復量
+   */
+  static calculateMpRecovery(baseMpRecovery: number, accuracyRating?: AccuracyRating): number {
+    if (baseMpRecovery <= 0) {
+      return 0;
+    }
+
+    let mpRecovered = baseMpRecovery;
+
+    if (accuracyRating === 'Perfect') {
+      mpRecovered = Math.floor(mpRecovered * 1.5); // 150%
+    } else if (accuracyRating === 'Great') {
+      mpRecovered = Math.floor(mpRecovered * 1.2); // 120%
+    }
+    // Good, Poor は倍率なし（100%）
+
+    return mpRecovered;
+  }
 }

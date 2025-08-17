@@ -211,6 +211,9 @@ export class Game {
           });
         }
 
+        // フェーズ遷移ハンドラーを設定
+        battlePhase.setTransitionHandler(result => this.handleCommandResult(result));
+
         // enemyデータがある場合は戦闘を開始
         if (data?.enemy) {
           const enemy = data.enemy;

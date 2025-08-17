@@ -12,17 +12,10 @@
       "skills": [
         {
           "name": "Basic Attack",
-          "power": 20,
-          "accuracy": 90,
+          "power": 1,
+          "accuracy": 100,
           "mpCost": 0,
           "description": "A basic physical attack"
-        },
-        {
-          "name": "Power Strike",
-          "power": 35,
-          "accuracy": 75,
-          "mpCost": 5,
-          "description": "A powerful strike"
         }
       ],
       "dropItems": [

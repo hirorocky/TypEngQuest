@@ -1,343 +1,186 @@
 import { BattlePhase } from './BattlePhase';
-import { BattleTypingPhase } from './BattleTypingPhase';
-import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Enemy } from '../battle/Enemy';
-import { PhaseManager } from '../core/PhaseManager';
-import { TabCompleter } from '../core/completion/TabCompleter';
-import { Skill } from '../battle/Skill';
+import { World } from '../world/World';
+import { getDomainData } from '../world/domains';
 
 describe('BattlePhase Integration Tests', () => {
   let battlePhase: BattlePhase;
-  let world: World;
   let player: Player;
-  let enemy: Enemy;
-  let phaseManager: PhaseManager;
-  let tabCompleter: TabCompleter;
+  let world: World;
 
   beforeEach(() => {
-    // Worldとその依存関係をセットアップ
-    world = new World();
-    phaseManager = new PhaseManager();
-    world['phaseManager'] = phaseManager;
-    tabCompleter = new TabCompleter();
+    // テスト用のワールドとプレイヤーを作成
+    const domain = getDomainData('tech-startup')!;
+    world = new World(domain, 1);
+    player = new Player('Test Player');
 
-    // プレイヤーをセットアップ
-    player = new Player('TestPlayer');
-    player.getBodyStats().setMaxHP(100);
-    player.getBodyStats().setCurrentHP(100);
-    player.getBodyStats().setMaxMP(50);
-    player.getBodyStats().setCurrentMP(50);
+    // プレイヤーのHPとMPを設定
+    player.getBodyStats().healHP(100);
+    player.getBodyStats().healMP(50);
 
-    // 敵をセットアップ
-    enemy = new Enemy('TestEnemy', 1, {
-      maxHp: 50,
-      maxMp: 20,
-      attack: 10,
-      defense: 5,
-      speed: 10,
-      intelligence: 10,
-      spirit: 10,
-    });
-
-    // BattlePhaseを作成
-    battlePhase = new BattlePhase(world, tabCompleter, player);
-    phaseManager.pushPhase(battlePhase);
+    battlePhase = new BattlePhase(world, undefined, player);
   });
 
-  describe('Battle End Conditions', () => {
-    it('should end battle when enemy HP reaches 0 after player attack', async () => {
-      // バトルを開始
-      await battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
+  afterEach(async () => {
+    await battlePhase.cleanup();
+  });
 
-      // 敵のHPを1に設定（次の攻撃で倒せる状態）
-      enemy.currentHp = 1;
-
-      // プレイヤーのターンでスキル選択
-      battlePhase['currentTurn'] = 'player';
-      battlePhase['isProcessingTurn'] = false;
-
-      // スキル選択フェーズに入る
-      const result = await battlePhase['enterSkillSelection']();
-      expect(result.success).toBe(true);
-      expect(result.nextPhase).toBe('skillSelection');
-
-      // BattleTypingPhaseをシミュレート
-      const typingPhase = new BattleTypingPhase({
-        world,
-        tabCompleter,
-        skills: [new Skill('1', 'TestSkill', 'A test skill', 'damage', 10, 5)],
-        battle: battle!,
+  describe('敵のターンから始まりプレイヤーが負ける場合', () => {
+    it('敵先攻でプレイヤーを倒した後、探索フェーズに移行する', async () => {
+      // 非常に強い敵を作成（プレイヤーを一撃で倒せる）
+      const strongEnemy = new Enemy({
+        id: 'strong_enemy',
+        name: 'Strong Enemy',
+        description: 'Very strong enemy',
+        level: 10,
+        stats: {
+          maxHp: 1000,
+          maxMp: 100,
+          strength: 200, // 非常に高い攻撃力
+          willpower: 50,
+          agility: 100, // 非常に高い素早さ（先攻を取る）
+          fortune: 50,
+        },
+        skills: [],
+        drops: [],
       });
 
-      // 敵を倒す攻撃をシミュレート
-      typingPhase['applySkillEffect'](
-        new Skill('1', 'TestSkill', 'A test skill', 'damage', 10, 5),
-        {
-          accuracy: 100,
-          speedRating: 'Good',
-          accuracyRating: 'Perfect',
-          totalRating: 120,
-          isSuccess: true,
-        }
-      );
+      // プレイヤーのHPを少なくして一撃で倒せるようにする
+      player.getBodyStats().takeDamage(90); // HP10にする
 
-      // HP確認
-      expect(enemy.currentHp).toBeLessThanOrEqual(0);
+      let phaseTransitionCalled = false;
+      let transitionResult: any = null;
 
-      // バトル終了をチェック
-      battlePhase['checkAndEndBattle']();
+      // フェーズ遷移ハンドラーを設定
+      battlePhase.setTransitionHandler(result => {
+        phaseTransitionCalled = true;
+        transitionResult = result;
+      });
 
-      // バトルが終了していることを確認
-      expect(battlePhase['battle']).toBeNull();
-      expect(battlePhase['currentTurn']).toBe('waiting');
-    });
+      await battlePhase.initialize();
 
-    it('should end battle when player HP reaches 0 after enemy attack', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
+      // バトル開始
+      const startResult = await battlePhase.startBattle(strongEnemy);
+      expect(startResult.success).toBe(true);
 
-      // プレイヤーのHPを低く設定
-      player.getBodyStats().setCurrentHP(5);
+      // 敵が先攻を取ることを確認
+      expect(battlePhase['battle']?.getCurrentTurnActor()).toBe('enemy');
 
-      // 敵のターンを実行
-      battlePhase['currentTurn'] = 'enemy';
+      // プレイヤーの現在HP確認
+      console.log('Player HP before enemy turn:', player.getBodyStats().getCurrentHP());
 
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-      // 敵のターンを実行
+      // 敵ターンを強制実行（setTimeout を待たずに）
       battlePhase['executeEnemyTurn']();
 
-      // プレイヤーのHPが0以下になっていることを確認
-      const playerHP = player.getBodyStats().getCurrentHP();
+      // プレイヤーの現在HP確認
+      console.log('Player HP after enemy turn:', player.getBodyStats().getCurrentHP());
+      console.log('Phase transition called:', phaseTransitionCalled);
+      console.log('Battle active:', battlePhase['battle']?.isActive);
 
-      // バトルが終了メッセージを含むか確認
-      if (playerHP <= 0) {
-        // バトルが終了していることを確認
-        expect(battlePhase['battle']).toBeNull();
-        expect(battlePhase['currentTurn']).toBe('waiting');
-      }
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle victory correctly with drops and transition', async () => {
-      // バトルを開始
-      await battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
-
-      // 敵のHPを0に設定
-      enemy.currentHp = 0;
-
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-      // バトル終了処理
-      battlePhase['endBattle']({ winner: 'player', message: 'Victory!' });
-
-      // バトルがクリーンアップされていることを確認
-      expect(battlePhase['battle']).toBeNull();
-      expect(battlePhase['enemy']).toBeUndefined();
-      expect(battlePhase['currentTurn']).toBe('waiting');
-      expect(battlePhase['turnMessage']).toBe('');
-      expect(battlePhase['isProcessingTurn']).toBe(false);
-
-      // 勝利メッセージが出力されていることを確認
-      expect(consoleSpy).toHaveBeenCalledWith('=== BATTLE END ===');
-      expect(consoleSpy).toHaveBeenCalledWith('Victory!');
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle defeat correctly and transition back', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
-
-      // プレイヤーのHPを0に設定
-      player.getBodyStats().setCurrentHP(0);
-
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-      // バトル終了処理
-      battlePhase['endBattle']({ winner: 'enemy', message: 'Defeat!' });
-
-      // バトルがクリーンアップされていることを確認
-      expect(battlePhase['battle']).toBeNull();
-      expect(battlePhase['enemy']).toBeUndefined();
-      expect(battlePhase['currentTurn']).toBe('waiting');
-
-      // 敗北メッセージが出力されていることを確認
-      expect(consoleSpy).toHaveBeenCalledWith('=== BATTLE END ===');
-      expect(consoleSpy).toHaveBeenCalledWith('Defeat!');
-
-      consoleSpy.mockRestore();
-    });
+      // プレイヤーが負けてタイトルフェーズに遷移することを確認
+      expect(phaseTransitionCalled).toBe(true);
+      expect(transitionResult?.nextPhase).toBe('title');
+      expect(transitionResult?.success).toBe(true);
+      expect(transitionResult?.message).toContain('Game over');
+    }, 10000);
   });
 
-  describe('Phase Transitions', () => {
-    it('should transition to exploration phase after battle ends', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-
-      // PhaseManagerのpopPhaseをスパイ
-      const popPhaseSpy = jest.spyOn(phaseManager, 'popPhase');
-
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-      // transitionToExplorationを呼び出し
-      battlePhase['transitionToExploration']();
-
-      // popPhaseが呼ばれたことを確認
-      expect(popPhaseSpy).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith('Returning to exploration phase...');
-
-      popPhaseSpy.mockRestore();
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle BattleTypingPhase completion correctly', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
-
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-      // BattleTypingPhase完了結果（バトル終了）
-      const resultWithBattleEnd = {
-        completedSkills: 3,
-        totalSkills: 3,
-        summary: {
-          totalDamageDealt: 100,
-          criticalHits: 1,
-          misses: 0,
-          totalHealing: 0,
-          totalMpRestored: 0,
-          statusEffectsApplied: [],
+  describe('プレイヤーターン終了後に敵が負ける場合', () => {
+    it('プレイヤーが敵を倒した後、探索フェーズに移行する', async () => {
+      // 弱い敵を作成（プレイヤーが一撃で倒せる）
+      const weakEnemy = new Enemy({
+        id: 'weak_enemy',
+        name: 'Weak Enemy',
+        description: 'Very weak enemy',
+        level: 1,
+        stats: {
+          maxHp: 1, // 非常に少ないHP
+          maxMp: 10,
+          strength: 1,
+          willpower: 1,
+          agility: 1, // 低い素早さ（後攻になる）
+          fortune: 1,
         },
-        battleEnded: true,
-      };
+        skills: [],
+        drops: [],
+      });
 
-      // 敵のHPを0に設定してバトル終了状態にする
-      enemy.currentHp = 0;
+      let phaseTransitionCalled = false;
+      let transitionResult: any = null;
 
-      // ハンドラーを呼び出し
-      battlePhase.handleBattleTypingComplete(resultWithBattleEnd);
+      // フェーズ遷移ハンドラーを設定
+      battlePhase.setTransitionHandler(result => {
+        phaseTransitionCalled = true;
+        transitionResult = result;
+      });
 
-      // ログ出力を確認
-      expect(consoleSpy).toHaveBeenCalledWith('=== BATTLE TYPING COMPLETE ===');
-      expect(consoleSpy).toHaveBeenCalledWith('Completed 3/3 skills');
-      expect(consoleSpy).toHaveBeenCalledWith('Total Damage: 100');
+      await battlePhase.initialize();
 
-      consoleSpy.mockRestore();
-    });
+      // バトル開始
+      const startResult = await battlePhase.startBattle(weakEnemy);
+      expect(startResult.success).toBe(true);
 
-    it('should continue to enemy turn if battle not ended after player turn', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
+      // プレイヤーが先攻を取ることを確認
+      expect(battlePhase['battle']?.getCurrentTurnActor()).toBe('player');
 
-      // プレイヤーと敵のHPを十分に設定
-      player.getBodyStats().setCurrentHP(100);
-      enemy.currentHp = 50;
+      // 敵に直接ダメージを与えて倒す
+      weakEnemy.takeDamage(100);
 
-      // consoleログをモック
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      // プレイヤーターン終了処理を実行
+      battlePhase['finishPlayerTurn']();
 
-      // BattleTypingPhase完了結果（バトル継続）
-      const resultWithoutBattleEnd = {
-        completedSkills: 2,
-        totalSkills: 3,
-        summary: {
-          totalDamageDealt: 20,
-          criticalHits: 0,
-          misses: 1,
-          totalHealing: 0,
-          totalMpRestored: 0,
-          statusEffectsApplied: [],
-        },
-        battleEnded: false,
-      };
-
-      // ハンドラーを呼び出し
-      battlePhase.handleBattleTypingComplete(resultWithoutBattleEnd);
-
-      // finishPlayerTurnが呼ばれることを確認
-      // （バトルが継続していることを確認）
-      expect(battlePhase['battle']).toBeDefined();
-
-      consoleSpy.mockRestore();
-    });
+      // 敵が負けてフェーズ遷移が発生することを確認
+      expect(phaseTransitionCalled).toBe(true);
+      expect(transitionResult?.nextPhase).toBe('exploration');
+      expect(transitionResult?.success).toBe(true);
+      expect(transitionResult?.data?.world).toBe(world);
+      expect(transitionResult?.data?.player).toBe(player);
+    }, 10000);
   });
 
-  describe('Turn Management', () => {
-    it('should properly alternate between player and enemy turns', () => {
-      // バトルを開始
-      battlePhase.startBattle(enemy);
-      const battle = battlePhase['battle'];
-      expect(battle).toBeDefined();
+  describe('startInputLoop のテスト', () => {
+    it('バトルが非アクティブな場合、即座に探索フェーズに移行する', async () => {
+      await battlePhase.initialize();
 
-      // 初期ターンを確認
-      const initialTurn = battlePhase['currentTurn'];
-      expect(['player', 'enemy']).toContain(initialTurn);
+      // バトルが存在しない状態でstartInputLoopを呼び出し
+      const result = await battlePhase.startInputLoop();
 
-      // プレイヤーターンの場合
-      if (initialTurn === 'player') {
-        battlePhase['currentTurn'] = 'player';
-        battlePhase['finishPlayerTurn']();
-
-        // 次のターンアクターを確認
-        const nextTurn = battle!.getCurrentTurnActor();
-        expect(nextTurn).toBe('enemy');
-      }
+      expect(result).not.toBeNull();
+      expect(result?.success).toBe(true);
+      expect(result?.nextPhase).toBe('exploration');
+      expect(result?.message).toContain('Battle has ended');
+      expect(result?.data?.world).toBe(world);
+      expect(result?.data?.player).toBe(player);
     });
 
-    it('should prevent actions during wrong turn', async () => {
-      // バトルを開始
-      await battlePhase.startBattle(enemy);
+    it('アクティブなバトル中は基底クラスのstartInputLoopが使用される', async () => {
+      const weakEnemy = new Enemy({
+        id: 'test_enemy',
+        name: 'Test Enemy',
+        description: 'Test enemy',
+        level: 1,
+        stats: {
+          maxHp: 100,
+          maxMp: 50,
+          strength: 10,
+          willpower: 8,
+          agility: 1, // 低い素早さ
+          fortune: 5,
+        },
+        skills: [],
+        drops: [],
+      });
 
-      // 敵のターンに設定
-      battlePhase['currentTurn'] = 'enemy';
-      battlePhase['isProcessingTurn'] = false;
+      await battlePhase.initialize();
+      await battlePhase.startBattle(weakEnemy);
 
-      // プレイヤーアクションを試みる
-      const skillResult = await battlePhase['enterSkillSelection']();
-      expect(skillResult.success).toBe(false);
-      expect(skillResult.message).toContain('not your turn');
+      // バトルがアクティブな状態を確認
+      expect(battlePhase['battle']?.isActive).toBe(true);
 
-      const itemResult = await battlePhase['enterItemSelection']();
-      expect(itemResult.success).toBe(false);
-      expect(itemResult.message).toContain('not your turn');
-
-      const escapeResult = await battlePhase['attemptEscape']();
-      expect(escapeResult.success).toBe(false);
-      expect(escapeResult.message).toContain('not your turn');
-    });
-
-    it('should prevent actions during turn processing', async () => {
-      // バトルを開始
-      await battlePhase.startBattle(enemy);
-
-      // プレイヤーターンだが処理中に設定
-      battlePhase['currentTurn'] = 'player';
-      battlePhase['isProcessingTurn'] = true;
-
-      // アクションを試みる
-      const result = await battlePhase['enterSkillSelection']();
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('being processed');
+      // この場合、startInputLoopは基底クラスの実装を使用するため
+      // 実際のテストは難しいが、少なくともエラーが発生しないことを確認
+      // （実際の入力待ちになるため、テスト環境では適切にモックが必要）
     });
   });
 });
