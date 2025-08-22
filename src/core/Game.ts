@@ -199,28 +199,23 @@ export class Game {
           this.currentPlayer!
         );
 
-        // battleインスタンスが渡された場合は設定
+        // バトル開始時
+        if (data?.enemy) {
+          battlePhase.setEnemy(data.enemy);
+        }
+
+        // バトル開始以降
         if (data?.battle) {
           battlePhase.setBattle(data.battle);
         }
 
-        // typingResult処理
+        // タイピング後
         if (data?.typingResult) {
-          Promise.resolve().then(() => {
-            battlePhase.handleBattleTypingComplete(data.typingResult!);
-          });
+          battlePhase.setTypingResult(data.typingResult);
         }
 
         // フェーズ遷移ハンドラーを設定
         battlePhase.setTransitionHandler(result => this.handleCommandResult(result));
-
-        // enemyデータがある場合は戦闘を開始
-        if (data?.enemy) {
-          const enemy = data.enemy;
-          Promise.resolve().then(async () => {
-            await battlePhase.startBattle(enemy);
-          });
-        }
 
         return battlePhase;
       },

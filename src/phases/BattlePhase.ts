@@ -9,6 +9,8 @@ import { TabCompleter } from '../core/completion/TabCompleter';
 
 import { BattleTypingResult } from './types';
 import { ConsumableItem } from '../items/ConsumableItem';
+import { delay } from '../utils/timer';
+import { createFractionBar } from '../ui/FractionBar';
 
 /**
  * BattlePhaseクラス - 戦闘フェーズの制御を行う
@@ -17,12 +19,12 @@ import { ConsumableItem } from '../items/ConsumableItem';
  */
 export class BattlePhase extends Phase {
   private battle: Battle | null = null;
-  private player?: Player;
-  private enemy?: Enemy;
+  private player: Player;
+  private enemy: Enemy | null = null;
   private turnMessage: string = '';
-  private isProcessingTurn: boolean = false;
+  private typingResult: BattleTypingResult | null = null;
 
-  constructor(world?: World, tabCompleter?: TabCompleter, player?: Player) {
+  constructor(world: World, tabCompleter: TabCompleter, player: Player) {
     super(world, tabCompleter);
     this.player = player;
   }
@@ -32,15 +34,82 @@ export class BattlePhase extends Phase {
   }
 
   getPrompt(): string {
-    if (this.battle?.getCurrentTurnActor() === 'player' && !this.isProcessingTurn) {
-      return 'battle> ';
-    }
-    return '';
+    return 'battle> ';
   }
 
   async initialize(): Promise<void> {
     this.registerBattleCommands();
     this.showBattleStatus();
+  }
+
+  /**
+   * Enemyインスタンスを設定
+   */
+  setEnemy(enemy: Enemy): void {
+    this.enemy = enemy;
+  }
+
+  /**
+   * Battleインスタンスを設定
+   */
+  setBattle(battle: Battle): void {
+    this.battle = battle;
+    if (battle['player']) {
+      this.player = battle['player'];
+    }
+    if (battle['enemy']) {
+      this.enemy = battle['enemy'];
+    }
+  }
+
+  /**
+   * タイピング結果を設定
+   */
+  setTypingResult(result: BattleTypingResult): void {
+    this.typingResult = result;
+  }
+
+  /**
+   * 入力処理ループを開始
+   * @returns Phase遷移が必要な場合はCommandResultを返す
+   */
+  async startInputLoop(): Promise<CommandResult | null> {
+    if (this.enemy === null) {
+      throw new Error('Enemy is not set');
+    }
+
+    // 初回
+    if (this.battle === null) {
+      this.battle = new Battle(this.player, this.enemy);
+      const message = this.battle.start();
+      console.log(`\n${message}`);
+      if (this.battle.getCurrentTurnActor() === 'enemy') {
+        console.log('Enemy goes first...');
+        await this.executeEnemyTurn();
+      }
+    }
+
+    // バトルが既に終了している場合は即座にExplorationPhaseに遷移
+    if (!this.battle?.isActive) {
+      return {
+        success: true,
+        message: 'Battle has ended, returning to exploration',
+        nextPhase: 'exploration',
+        data: {
+          world: this.world,
+          player: this.player,
+        },
+      };
+    }
+
+    if (this.typingResult) {
+      await this.handleBattleTypingComplete();
+    }
+
+    await this.startPlayerTurn();
+
+    // 基底クラスの入力ループを使用
+    return super.startInputLoop();
   }
 
   private registerBattleCommands(): void {
@@ -81,10 +150,10 @@ export class BattlePhase extends Phase {
   }
 
   private async showHelp(): Promise<CommandResult> {
-    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
       return {
         success: false,
-        message: 'Commands not available during enemy turn or processing',
+        message: 'Commands not available during enemy turn',
       };
     }
 
@@ -110,22 +179,16 @@ export class BattlePhase extends Phase {
     }
 
     const playerStats = this.player.getBodyStats();
-    const actionPoints = this.battle.calculatePlayerActionPoints();
-    const currentTurnActor = this.battle.getCurrentTurnActor();
-    const turnInfo = currentTurnActor === 'player' ? 'Your Turn' : "Enemy's Turn";
 
     const output = [
-      `=== BATTLE STATUS ===`,
-      `Turn: ${this.battle.currentTurn} (${turnInfo})`,
+      `■ BATTLE STATUS`,
       '',
       `🗡️ ${this.player.getName()}`,
-      `  HP: ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`,
-      `  MP: ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`,
-      `  Action Points: ${actionPoints}`,
+      `  HP: ${createFractionBar(playerStats.getCurrentHP(), playerStats.getMaxHP())} ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`,
+      `  MP: ${createFractionBar(playerStats.getCurrentMP(), playerStats.getMaxMP())} ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`,
       '',
       `👹 ${this.enemy.name}`,
-      `  HP: ${this.enemy.currentHp}/${this.enemy.stats.maxHp}`,
-      `  MP: ${this.enemy.currentMp}/${this.enemy.stats.maxMp}`,
+      `  HP: ${createFractionBar(this.enemy.currentHp, this.enemy.stats.maxHp)} ${this.enemy.currentHp}/${this.enemy.stats.maxHp}`,
     ];
 
     if (this.turnMessage) {
@@ -143,10 +206,10 @@ export class BattlePhase extends Phase {
    * スキル選択フェーズに移行
    */
   private async enterSkillSelection(): Promise<CommandResult> {
-    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
       return {
         success: false,
-        message: "It's not your turn or turn is being processed!",
+        message: "It's not your turn!",
       };
     }
 
@@ -156,8 +219,6 @@ export class BattlePhase extends Phase {
         message: 'Battle not initialized',
       };
     }
-
-    this.isProcessingTurn = true;
 
     return {
       success: true,
@@ -172,8 +233,14 @@ export class BattlePhase extends Phase {
   /**
    * BattleTypingPhase完了後の処理
    */
-  public handleBattleTypingComplete(result: BattleTypingResult): void {
-    console.log('\n=== BATTLE TYPING COMPLETE ===');
+  private async handleBattleTypingComplete(): Promise<void> {
+    const result = this.typingResult;
+
+    if (!result) {
+      throw new Error('No typing result available');
+    }
+
+    console.log('\n=== TYPING COMPLETE ===');
     console.log(`Completed ${result.completedSkills}/${result.totalSkills} skills`);
     console.log(`Total Damage: ${result.summary.totalDamageDealt}`);
 
@@ -183,7 +250,8 @@ export class BattlePhase extends Phase {
         this.endBattle(battleEnd);
       }
     } else {
-      this.finishPlayerTurn();
+      await this.finishPlayerTurn();
+      await this.executeEnemyTurn();
     }
   }
 
@@ -191,10 +259,10 @@ export class BattlePhase extends Phase {
    * アイテム選択フェーズに移行
    */
   private async enterItemSelection(): Promise<CommandResult> {
-    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
       return {
         success: false,
-        message: "It's not your turn or turn is being processed!",
+        message: "It's not your turn!",
       };
     }
 
@@ -230,7 +298,7 @@ export class BattlePhase extends Phase {
    * 逃走を試みる
    */
   private async attemptEscape(): Promise<CommandResult> {
-    if (this.battle?.getCurrentTurnActor() !== 'player' || this.isProcessingTurn) {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
       return {
         success: false,
         message: "It's not your turn!",
@@ -240,7 +308,10 @@ export class BattlePhase extends Phase {
     // 逃走用のBattleTypingPhaseに遷移する設計も可能
     // 現在は簡単な実装
     this.turnMessage = 'You tried to escape but failed!';
-    // setTimeout(() => this.executeEnemyTurn(), 1000);
+
+    // 逃走失敗後、敵のターンへ
+    this.battle.nextTurn();
+    await this.executeEnemyTurn();
 
     return {
       success: true,
@@ -248,11 +319,18 @@ export class BattlePhase extends Phase {
     };
   }
 
-  private cancelPlayerTurn(): void {
-    this.isProcessingTurn = false;
+  private cancelPlayerTurn(): void {}
+
+  private async startPlayerTurn(): Promise<void> {
+    if (!this.battle) return;
+
+    console.log(`\n=== TURN ${this.battle.currentTurn}: PLAYER🗡️ ===`);
+    await delay(250);
+
+    console.log('\nWhat will you do? (Type "help" for commands)');
   }
 
-  private finishPlayerTurn(): void {
+  private async finishPlayerTurn(): Promise<void> {
     if (!this.battle) return;
 
     // 勝敗判定
@@ -264,13 +342,13 @@ export class BattlePhase extends Phase {
 
     // 敵ターンに移行
     this.battle.nextTurn();
-    global.setTimeout(() => this.executeEnemyTurn(), 1500);
   }
 
-  private executeEnemyTurn(): void {
+  private async executeEnemyTurn(): Promise<void> {
     if (!this.battle || !this.enemy || !this.player) return;
 
-    console.log('\n=== ENEMY TURN ===');
+    console.log(`\n=== TURN ${this.battle.currentTurn}: ENEMY👹 ===`);
+    await delay(250);
 
     // 敵のスキル選択と実行をBattleActionExecutorで処理
     const selectedSkill = this.enemy.selectSkill() || Battle.getNormalAttackSkill();
@@ -283,6 +361,7 @@ export class BattlePhase extends Phase {
 
     this.turnMessage = result.message;
     console.log(result.message);
+    await delay(1500);
 
     // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
@@ -293,40 +372,6 @@ export class BattlePhase extends Phase {
 
     // プレイヤーターンに移行（入力待ち状態）
     this.battle.nextTurn();
-    this.isProcessingTurn = false;
-
-    // プレイヤーターン開始 - ステータス表示は基底クラスのstartInputLoopで行う
-  }
-
-  /**
-   * 入力処理ループを開始
-   * @returns Phase遷移が必要な場合はCommandResultを返す
-   */
-  async startInputLoop(): Promise<CommandResult | null> {
-    // バトルが既に終了している場合は即座にExplorationPhaseに遷移
-    if (!this.battle?.isActive) {
-      return {
-        success: true,
-        message: 'Battle has ended, returning to exploration',
-        nextPhase: 'exploration',
-        data: {
-          world: this.world,
-          player: this.player,
-        },
-      };
-    }
-
-    // プレイヤーターンの場合はバトルステータスを表示
-    if (this.battle?.getCurrentTurnActor() === 'player' && !this.isProcessingTurn) {
-      const statusResult = await this.showBattleStatus();
-      if (statusResult.output) {
-        console.log('\n' + statusResult.output.join('\n'));
-      }
-      console.log('\nWhat will you do? (Type "help" for commands)');
-    }
-
-    // 基底クラスの入力ループを使用
-    return super.startInputLoop();
   }
 
   private endBattle(battleEnd: { winner: 'player' | 'enemy'; message: string }): void {
@@ -353,13 +398,6 @@ export class BattlePhase extends Phase {
 
     this.battle.end();
 
-    // バトル状態をリセット
-    this.battle = null;
-    this.enemy = undefined;
-    // Turn management is now handled by Battle class
-    this.turnMessage = '';
-    this.isProcessingTurn = false;
-
     // フェーズ遷移を通知
     if (battleEnd.winner === 'player') {
       // プレイヤー勝利時は探索フェーズに戻る
@@ -382,55 +420,7 @@ export class BattlePhase extends Phase {
       });
     }
   }
-
-  /**
-   * 戦闘を開始
-   */
-  async startBattle(enemy: Enemy): Promise<CommandResult> {
-    if (!this.player) {
-      return {
-        success: false,
-        message: 'Player not available',
-      };
-    }
-
-    this.enemy = enemy;
-    this.battle = new Battle(this.player, enemy);
-    const message = this.battle.start();
-
-    this.isProcessingTurn = false;
-
-    console.log(`\n${message}`);
-
-    if (this.battle.getCurrentTurnActor() === 'enemy') {
-      // 敵が先攻の場合は1秒後に敵ターンを実行
-      console.log('Enemy goes first...');
-      global.setTimeout(() => this.executeEnemyTurn(), 1000);
-    }
-
-    return {
-      success: true,
-      message: message,
-      output: [
-        '',
-        this.battle.getCurrentTurnActor() === 'player'
-          ? 'Your turn! Use "skill" to attack or "help" for commands.'
-          : 'Enemy goes first...',
-      ],
-    };
-  }
-
-  /**
-   * Battleインスタンスを設定
-   */
-  setBattle(battle: Battle): void {
-    this.battle = battle;
-    if (battle['player']) {
-      this.player = battle['player'];
-    }
-    if (battle['enemy']) {
-      this.enemy = battle['enemy'];
-    }
-    this.isProcessingTurn = false;
-  }
+}
+function timer() {
+  throw new Error('Function not implemented.');
 }
