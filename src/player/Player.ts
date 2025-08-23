@@ -36,8 +36,8 @@ export class Player {
   private bodyStats: BodyStats;
   private equipmentStats: EquipmentStats;
   private inventory: Inventory;
-  private equippedItems: EquipmentItem[] = [];
-  private equipmentSlots: (EquipmentItem | null)[] = [null, null, null, null, null]; // 5つのスロット
+  private equippedItems: (EquipmentItem | null)[] = [null, null, null, null, null]; // 装備スロット
+  private readonly equipmentSlotSize: number = 5; // 最大スロット数
   private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
@@ -76,6 +76,17 @@ export class Player {
         // インベントリアイテムの追加
         if (configData.inventory) {
           this.loadInventoryFromConfig(configData.inventory);
+        }
+
+        // デフォルト装備品の設定
+        if (configData.equippedItems && Array.isArray(configData.equippedItems)) {
+          configData.equippedItems.forEach((itemData, slotIndex) => {
+            if (itemData && slotIndex < this.equipmentSlotSize) {
+              // JSONデータからEquipmentItemインスタンスを作成
+              const item = new EquipmentItem(itemData);
+              this.equipToSlot(slotIndex, item);
+            }
+          });
         }
       }
     } catch (error) {
@@ -208,7 +219,13 @@ export class Player {
    * @returns プレイヤーのレベル
    */
   getLevel(): number {
-    return this.equipmentCalculator.calculateAverageGradeBySlots(this.equippedItems, 5);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.calculateAverageGradeBySlots(
+      actualEquippedItems,
+      this.equipmentSlotSize
+    );
   }
 
   /**
@@ -282,7 +299,10 @@ export class Player {
    * @returns 装備ステータスの合計
    */
   getEquippedItemStats(): ItemEquipmentStats {
-    return this.equipmentCalculator.calculateTotalStats(this.equippedItems);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.calculateTotalStats(actualEquippedItems);
   }
 
   /**
@@ -290,7 +310,10 @@ export class Player {
    * @returns 使用可能な技のリスト
    */
   getEquippedItemSkills(): Skill[] {
-    return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.getAvailableSkills(actualEquippedItems);
   }
 
   /**
@@ -311,7 +334,7 @@ export class Player {
    * @returns 装備スロットの配列
    */
   getEquipmentSlots(): (EquipmentItem | null)[] {
-    return [...this.equipmentSlots];
+    return [...this.equippedItems];
   }
 
   /**
@@ -320,26 +343,23 @@ export class Player {
    * @param equipment - 装備するアイテム（nullで装備解除）
    */
   equipToSlot(slotIndex: number, equipment: EquipmentItem | null): void {
-    if (slotIndex < 0 || slotIndex >= 5) {
+    if (slotIndex < 0 || slotIndex >= this.equipmentSlotSize) {
       throw new Error(`Invalid slot index: ${slotIndex}`);
     }
 
     // 既存の装備を解除してインベントリに戻す
-    const currentEquipment = this.equipmentSlots[slotIndex];
+    const currentEquipment = this.equippedItems[slotIndex];
     if (currentEquipment) {
       this.inventory.addItem(currentEquipment);
     }
 
     // 新しい装備をセット
-    this.equipmentSlots[slotIndex] = equipment;
+    this.equippedItems[slotIndex] = equipment;
 
     // 装備をインベントリから削除
     if (equipment) {
       this.inventory.removeItem(equipment);
     }
-
-    // equippedItemsを更新
-    this.equippedItems = this.equipmentSlots.filter(item => item !== null) as EquipmentItem[];
 
     // EquipmentStatsを更新
     this.updateEquipmentStats();
@@ -356,11 +376,13 @@ export class Player {
     this.equipmentStats.clear();
 
     for (const item of this.equippedItems) {
-      const itemStats = item.getStats();
-      this.equipmentStats.addStrength(itemStats.strength);
-      this.equipmentStats.addWillpower(itemStats.willpower);
-      this.equipmentStats.addAgility(itemStats.agility);
-      this.equipmentStats.addFortune(itemStats.fortune);
+      if (item) {
+        const itemStats = item.getStats();
+        this.equipmentStats.addStrength(itemStats.strength);
+        this.equipmentStats.addWillpower(itemStats.willpower);
+        this.equipmentStats.addAgility(itemStats.agility);
+        this.equipmentStats.addFortune(itemStats.fortune);
+      }
     }
   }
 
@@ -369,7 +391,7 @@ export class Player {
    * @returns 装備中のアイテム名の配列
    */
   getEquippedItemNames(): string[] {
-    return this.equipmentSlots.map(item => (item ? item.getName() : ''));
+    return this.equippedItems.map((item: EquipmentItem | null) => (item ? item.getName() : ''));
   }
 
   /**

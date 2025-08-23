@@ -5,6 +5,21 @@
     "hpDamage": 50,
     "mpConsumption": 20
   },
+  "equippedItems": [
+    null,
+    {
+      "id": "wooden-shield",
+      "name": "wooden",
+      "description": "A basic wooden shield for protection",
+      "type": "equipment",
+      "rarity": "common",
+      "stats": { "strength": 100, "willpower": 0, "agility": 0, "fortune": 0 },
+      "grade": 100
+    },
+    null,
+    null,
+    null
+  ],
   "inventory": {
     "consumableItems": [
       {

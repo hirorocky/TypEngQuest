@@ -8,6 +8,7 @@ import { DomainType } from '../world/domains';
 import { Player } from '../player/Player';
 import { FileSystem } from '../world/FileSystem';
 import { FileNode, NodeType } from '../world/FileNode';
+import { EquipmentItemData } from '../items/EquipmentItem';
 import { Enemy, EnemyParams } from '../battle/Enemy';
 // import { Skill } from '../battle/Skill'; // 現在未使用だがコメントアウトで保持
 
@@ -58,6 +59,7 @@ export interface PlayerConfig {
     hpDamage?: number;
     mpConsumption?: number;
   };
+  equippedItems?: (EquipmentItemData | null)[]; // EquipmentItemDataとして保存
   inventory: {
     consumableItems: Array<{
       id: string;

@@ -1,6 +1,6 @@
-import { Player } from '../../../player/Player';
-import { Battle } from '../../../battle/Battle';
-import { Enemy } from '../../../battle/Enemy';
+import { Player } from '../../player/Player';
+import { Battle } from '../../battle/Battle';
+import { Enemy } from '../../battle/Enemy';
 
 describe('Simple Integration Test', () => {
   it('バトルシステムの基本的な統合', () => {

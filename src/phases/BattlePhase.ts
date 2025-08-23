@@ -421,6 +421,3 @@ export class BattlePhase extends Phase {
     }
   }
 }
-function timer() {
-  throw new Error('Function not implemented.');
-}
