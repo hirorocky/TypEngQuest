@@ -247,7 +247,7 @@ export class BattlePhase extends Phase {
     if (result.battleEnded) {
       const battleEnd = this.battle?.checkBattleEnd();
       if (battleEnd) {
-        this.endBattle(battleEnd);
+        await this.endBattle(battleEnd);
       }
     } else {
       await this.finishPlayerTurn();
@@ -336,7 +336,7 @@ export class BattlePhase extends Phase {
     // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
     if (battleEnd) {
-      this.endBattle(battleEnd);
+      await this.endBattle(battleEnd);
       return;
     }
 
@@ -366,7 +366,7 @@ export class BattlePhase extends Phase {
     // 勝敗判定
     const battleEnd = this.battle.checkBattleEnd();
     if (battleEnd) {
-      this.endBattle(battleEnd);
+      await this.endBattle(battleEnd);
       return;
     }
 
@@ -374,7 +374,10 @@ export class BattlePhase extends Phase {
     this.battle.nextTurn();
   }
 
-  private endBattle(battleEnd: { winner: 'player' | 'enemy'; message: string }): void {
+  private async endBattle(battleEnd: {
+    winner: 'player' | 'enemy';
+    message: string;
+  }): Promise<void> {
     if (!this.battle) {
       console.log('No battle object, returning');
       return;
@@ -395,6 +398,9 @@ export class BattlePhase extends Phase {
         }
       }
     }
+
+    // キー入力待ち
+    await this.waitForKeyPress();
 
     this.battle.end();
 

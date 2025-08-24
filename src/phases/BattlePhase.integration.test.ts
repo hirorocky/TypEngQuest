@@ -152,7 +152,7 @@ describe('BattlePhase Integration Tests', () => {
       weakEnemy.takeDamage(100);
 
       // プレイヤーターン終了処理を実行
-      battlePhase['finishPlayerTurn']();
+      await battlePhase['finishPlayerTurn']();
 
       // 敵が負けてフェーズ遷移が発生することを確認
       expect(phaseTransitionCalled).toBe(true);

@@ -181,4 +181,38 @@ export abstract class Phase {
   public setTransitionHandler(handler: (result: CommandResult) => void): void {
     this.transitionHandler = handler;
   }
+
+  /**
+   * キー入力待ち
+   * @param message 表示するメッセージ（デフォルト: "Press any key to continue..."）
+   * @returns Promise that resolves when any key is pressed
+   */
+  protected async waitForKeyPress(message: string = 'Press any key to continue...'): Promise<void> {
+    // テスト環境やTTYでない環境では即座にresolve
+    if (!process.stdin.isTTY || process.env.NODE_ENV === 'test') {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      // 一時的なreadlineインターフェースを作成
+      const tempRl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      console.log(`\n${message}`);
+
+      // キー入力を待つ（rawModeを使用）
+      process.stdin.setRawMode(true);
+
+      const onKeyPress = () => {
+        process.stdin.setRawMode(false);
+        process.stdin.removeListener('data', onKeyPress);
+        tempRl.close();
+        resolve();
+      };
+
+      process.stdin.once('data', onKeyPress);
+    });
+  }
 }
