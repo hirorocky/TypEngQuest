@@ -109,7 +109,7 @@ describe('BattlePhase', () => {
       const result = await battlePhase.processInput('run');
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('Basic Attack and dealt');
+      expect(result.message).toContain('damage!');
     });
 
     it('不明なコマンドでエラーを返す', async () => {

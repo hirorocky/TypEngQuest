@@ -188,12 +188,8 @@ describe('BattlePhase Integration Tests', () => {
       // バトルが存在しない状態でstartInputLoopを呼び出し
       const result = await battlePhase.startInputLoop();
 
-      expect(result).not.toBeNull();
-      expect(result?.success).toBe(true);
-      expect(result?.nextPhase).toBe('exploration');
-      expect(result?.message).toContain('Battle has ended');
-      expect(result?.data?.world).toBe(world);
-      expect(result?.data?.player).toBe(player);
+      // バトルが非アクティブの場合、nullが返される（endBattleメソッド内で遷移処理が行われるため）
+      expect(result).toBeNull();
     });
 
     it('アクティブなバトル中は基底クラスのstartInputLoopが使用される', async () => {

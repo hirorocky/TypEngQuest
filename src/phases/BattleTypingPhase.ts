@@ -86,7 +86,7 @@ export class BattleTypingPhase extends Phase {
     return new Promise(resolve => {
       const rl = readline.createInterface({
         input: process.stdin,
-        output: null,  // outputを無効にしてエコーバックを防ぐ
+        output: undefined, // outputをundefinedに設定してエコーバックを防ぐ
       });
 
       // Raw modeを有効にして文字単位で入力を受け取る
@@ -152,7 +152,7 @@ export class BattleTypingPhase extends Phase {
     // チャレンジ完了チェック
     if (this.currentChallenge.isComplete()) {
       const result = this.currentChallenge.getResult();
-      
+
       // 完了時は最終的なプログレスを表示してから結果を表示
       const progress = this.currentChallenge.getProgress();
       if (!wasFirstInput) {
@@ -161,7 +161,7 @@ export class BattleTypingPhase extends Phase {
       }
       console.log(this.formatProgress(progress));
       console.log(`⌛ Time remaining: ${this.currentChallenge.getRemainingTime().toFixed(1)}s`);
-      
+
       await this.displayResult(result);
 
       // スキル効果を適用
@@ -186,12 +186,12 @@ export class BattleTypingPhase extends Phase {
     // 進捗表示（チャレンジ未完了の場合）
     const progress = this.currentChallenge.getProgress();
     const remainingTime = this.currentChallenge.getRemainingTime();
-    
+
     if (!wasFirstInput) {
       // 2回目以降: プログレスと残り時間の2行分だけを上書き
       process.stdout.write('\x1b[2A\x1b[0J');
     }
-    
+
     // プログレス表示（入力状況を視覚的に表示）
     console.log(this.formatProgress(progress));
     console.log(`⌛ Time remaining: ${remainingTime.toFixed(1)}s`);
@@ -222,7 +222,7 @@ export class BattleTypingPhase extends Phase {
     );
 
     console.log(`\n⌨️ Type the following text:`);
-    console.log(challengeText);  // テンプレートリテラルを使わない
+    console.log(challengeText); // テンプレートリテラルを使わない
     console.log(gray('(Press ESC to cancel)\n'));
 
     // 次のチャレンジ開始時にフラグをリセット
@@ -281,7 +281,6 @@ export class BattleTypingPhase extends Phase {
 
     await this.waitForKeyPress();
   }
-
 
   /**
    * 進捗をフォーマットして表示用文字列を生成

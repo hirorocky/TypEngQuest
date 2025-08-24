@@ -64,7 +64,7 @@ describe('BattleActionExecutor', () => {
       const result = BattleActionExecutor.executePlayerSkill(expensiveSkill, player, enemy);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('Not enough MP');
+      expect(result.message[0]).toContain('Not enough MP');
     });
 
     it('タイピング結果が正しく適用される', () => {
@@ -103,7 +103,7 @@ describe('BattleActionExecutor', () => {
       const result = BattleActionExecutor.executeEnemySkill(expensiveSkill, enemy, player);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("doesn't have enough MP");
+      expect(result.message[0]).toContain("doesn't have enough MP");
     });
   });
 });
