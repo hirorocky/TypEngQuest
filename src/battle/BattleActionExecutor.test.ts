@@ -46,11 +46,16 @@ describe('BattleActionExecutor', () => {
 
   describe('executePlayerSkill', () => {
     it('プレイヤーのスキルを正常に実行する', () => {
+      // Math.randomを命中するように固定
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy);
 
       expect(result.success).toBe(true);
       expect(result.damage).toBeGreaterThan(0);
       expect(result.message).toContain('Test Skill');
+
+      mockRandom.mockRestore();
     });
 
     it('MPが不足している場合は失敗する', () => {
@@ -68,6 +73,9 @@ describe('BattleActionExecutor', () => {
     });
 
     it('タイピング結果が正しく適用される', () => {
+      // Math.randomを命中するように固定
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+
       const typingResult = {
         speedRating: 'S' as const,
         accuracyRating: 'Perfect' as const,
@@ -81,16 +89,23 @@ describe('BattleActionExecutor', () => {
 
       expect(result.success).toBe(true);
       expect(result.damage).toBeGreaterThan(0);
+
+      mockRandom.mockRestore();
     });
   });
 
   describe('executeEnemySkill', () => {
     it('敵のスキルを正常に実行する', () => {
+      // Math.randomを命中するように固定
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+
       const result = BattleActionExecutor.executeEnemySkill(skill, enemy, player);
 
       expect(result.success).toBe(true);
       expect(result.damage).toBeGreaterThan(0);
       expect(result.message).toContain('Test Enemy');
+
+      mockRandom.mockRestore();
     });
 
     it('敵のMPが不足している場合は失敗する', () => {

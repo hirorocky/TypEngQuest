@@ -4,6 +4,7 @@ export default {
   extensionsToTreatAsEsm: ['.ts'],
   silent: true,
   forceExit: true,
+  detectOpenHandles: false,
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: true

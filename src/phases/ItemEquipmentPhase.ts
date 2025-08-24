@@ -54,20 +54,6 @@ export class ItemEquipmentPhase extends Phase {
   }
 
   /**
-   * カスタムreadlineインターフェースを作成（キー入力処理用）
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected createReadlineInterface(): any {
-    // eslint-disable-next-line no-undef
-    const readline = require('readline');
-    return readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      prompt: this.getPrompt(),
-    });
-  }
-
-  /**
    * リッチUI用の入力処理ループ
    */
   async startInputLoop(): Promise<CommandResult | null> {

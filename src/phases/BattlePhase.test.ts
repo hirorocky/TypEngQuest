@@ -106,10 +106,15 @@ describe('BattlePhase', () => {
     });
 
     it('runコマンドで逃走試行メッセージを表示', async () => {
+      // Math.randomを命中するように固定して確実にダメージメッセージを出す
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+
       const result = await battlePhase.processInput('run');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('damage!');
+
+      mockRandom.mockRestore();
     });
 
     it('不明なコマンドでエラーを返す', async () => {

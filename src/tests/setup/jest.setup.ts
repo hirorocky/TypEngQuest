@@ -9,6 +9,27 @@ export {};
 // グローバルなテストタイムアウトを設定
 jest.setTimeout(10000);
 
+// Jest環境でのprocess.stdin問題を回避
+// テスト環境ではstdinを使用しないように設定
+const mockStdin = {
+  isTTY: false,
+  setRawMode: jest.fn(),
+  removeAllListeners: jest.fn(),
+  on: jest.fn(),
+  once: jest.fn(),
+  off: jest.fn(),
+  removeListener: jest.fn(),
+  pause: jest.fn(),
+  resume: jest.fn()
+};
+
+// process.stdinをMockで置き換える（テスト環境のみ）
+Object.defineProperty(process, 'stdin', {
+  value: mockStdin,
+  writable: false,
+  configurable: true
+});
+
 // blessed ライブラリの出力を抑制
 const originalWrite = process.stdout.write;
 process.stdout.write = function(chunk: any, ...args: any[]) {
@@ -74,20 +95,8 @@ afterEach(() => {
   // 全てのモックをクリア
   jest.clearAllMocks();
   
-  // process.stdinのリスナーをクリーンアップ
-  if (process.stdin && typeof process.stdin.removeAllListeners === 'function') {
-    process.stdin.removeAllListeners('data');
-    process.stdin.removeAllListeners('keypress');
-  }
-  
-  // raw modeを無効化
-  if (process.stdin && typeof process.stdin.setRawMode === 'function') {
-    try {
-      process.stdin.setRawMode(false);
-    } catch (_error) {
-      // テスト環境では失敗する可能性があるため、エラーを無視
-    }
-  }
+  // process.stdin関連の処理はJest環境では完全にスキップ
+  // Jest環境では process.stdin の操作は必要ない
 });
 
 // プロセスリスナーの警告を抑制

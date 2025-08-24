@@ -88,8 +88,13 @@ describe('BattlePhase Integration Tests', () => {
       const playerStats = player.getBodyStats();
       playerStats.takeDamage(playerStats.getCurrentHP() - 1);
 
+      // Math.randomを命中するように固定
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+
       // 敵ターンを強制実行（setTimeout を待たずに）
       await battlePhase['executeEnemyTurn']();
+
+      mockRandom.mockRestore();
 
       // プレイヤーの現在HP確認
       console.log('Player HP after enemy turn:', player.getBodyStats().getCurrentHP());

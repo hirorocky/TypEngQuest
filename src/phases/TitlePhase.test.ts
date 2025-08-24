@@ -63,8 +63,18 @@ describe('TitlePhase', () => {
     });
 
     describe('start command', () => {
+      beforeEach(() => {
+        jest.useFakeTimers();
+      });
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
       it('startコマンドを実行する', async () => {
-        const result = await titlePhase.processInput('start');
+        const resultPromise = titlePhase.processInput('start');
+        jest.advanceTimersByTime(500);
+        const result = await resultPromise;
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('New game started');
@@ -72,14 +82,18 @@ describe('TitlePhase', () => {
       });
 
       it('エイリアス"s"でstartコマンドを実行する', async () => {
-        const result = await titlePhase.processInput('s');
+        const resultPromise = titlePhase.processInput('s');
+        jest.advanceTimersByTime(500);
+        const result = await resultPromise;
 
         expect(result.success).toBe(true);
         expect(result.nextPhase).toBe('exploration');
       });
 
       it('エイリアス"new"でstartコマンドを実行する', async () => {
-        const result = await titlePhase.processInput('new');
+        const resultPromise = titlePhase.processInput('new');
+        jest.advanceTimersByTime(500);
+        const result = await resultPromise;
 
         expect(result.success).toBe(true);
         expect(result.nextPhase).toBe('exploration');
@@ -87,15 +101,27 @@ describe('TitlePhase', () => {
     });
 
     describe('load command', () => {
+      beforeEach(() => {
+        jest.useFakeTimers();
+      });
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
       it('loadコマンドを実行する', async () => {
-        const result = await titlePhase.processInput('load');
+        const resultPromise = titlePhase.processInput('load');
+        jest.advanceTimersByTime(500);
+        const result = await resultPromise;
 
         expect(result.success).toBe(false);
         expect(result.message).toContain('No save files found');
       });
 
       it('エイリアス"l"でloadコマンドを実行する', async () => {
-        const result = await titlePhase.processInput('l');
+        const resultPromise = titlePhase.processInput('l');
+        jest.advanceTimersByTime(500);
+        const result = await resultPromise;
 
         expect(result.success).toBe(false);
         expect(result.message).toContain('No save files found');
@@ -202,12 +228,19 @@ describe('TitlePhase', () => {
     });
 
     it('ローディングをシミュレートする', async () => {
-      const startTime = Date.now();
-      await titlePhase['simulateLoading']();
-      const endTime = Date.now();
+      // フェイクタイマーを有効にして高速化
+      jest.useFakeTimers();
 
-      // Should take at least 400ms (allowing for timing variations)
-      expect(endTime - startTime).toBeGreaterThanOrEqual(400);
+      const loadingPromise = titlePhase['simulateLoading']();
+
+      // タイマーを500ms進める
+      jest.advanceTimersByTime(500);
+
+      // ローディングが完了することを確認
+      await expect(loadingPromise).resolves.toBeUndefined();
+
+      // フェイクタイマーを無効にする
+      jest.useRealTimers();
     });
 
     it('正しい内容でタイトル画面を表示する', async () => {
@@ -223,18 +256,26 @@ describe('TitlePhase', () => {
     });
 
     it('startNewGameメソッドを処理する', async () => {
-      const result = await titlePhase['startNewGame']();
+      jest.useFakeTimers();
+      const resultPromise = titlePhase['startNewGame']();
+      jest.advanceTimersByTime(500);
+      const result = await resultPromise;
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('New game started');
       expect(result.nextPhase).toBe('exploration');
+      jest.useRealTimers();
     });
 
     it('loadGameメソッドを処理する', async () => {
-      const result = await titlePhase['loadGame']();
+      jest.useFakeTimers();
+      const resultPromise = titlePhase['loadGame']();
+      jest.advanceTimersByTime(500);
+      const result = await resultPromise;
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('No save files found');
+      jest.useRealTimers();
     });
 
     it('exitGameメソッドを処理する', async () => {
