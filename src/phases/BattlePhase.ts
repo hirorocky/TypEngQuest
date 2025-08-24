@@ -89,21 +89,15 @@ export class BattlePhase extends Phase {
       }
     }
 
-    // バトルが既に終了している場合は即座にExplorationPhaseに遷移
-    if (!this.battle?.isActive) {
-      return {
-        success: true,
-        message: 'Battle has ended, returning to exploration',
-        nextPhase: 'exploration',
-        data: {
-          world: this.world,
-          player: this.player,
-        },
-      };
-    }
-
     if (this.typingResult) {
       await this.handleBattleTypingComplete();
+      this.typingResult = null; // 処理済みの結果をクリア
+    }
+
+    // タイピング結果処理や初回敵ターンでバトルが終了した場合は、ここで処理を終了
+    // （endBattleメソッド内でcleanupとnotifyTransitionが呼ばれているため）
+    if (!this.battle?.isActive) {
+      return null;
     }
 
     await this.startPlayerTurn();
@@ -403,6 +397,9 @@ export class BattlePhase extends Phase {
     await this.waitForKeyPress();
 
     this.battle.end();
+
+    // readlineインターフェースをクリーンアップ
+    this.cleanup();
 
     // フェーズ遷移を通知
     if (battleEnd.winner === 'player') {
