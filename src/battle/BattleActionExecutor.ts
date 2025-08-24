@@ -10,12 +10,12 @@ import { TypingResult } from '../typing/types';
  */
 export interface SkillExecutionResult {
   success: boolean;
-  damage?: number;
-  healing?: number;
-  mpRecovered?: number;
-  critical?: boolean;
-  message: string;
+  damage: number;
+  hpHealing?: number;
+  mpCharge?: number;
+  isCritical?: boolean;
   targetDefeated?: boolean;
+  message: string[];
 }
 
 /**
@@ -58,10 +58,10 @@ export class BattleActionExecutor {
     const hitResult = this.checkHit(playerStats, enemyStats, skill, typingResult);
     if (hitResult) {
       // ミス時でもMP回復処理を行う
-      const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
-      hitResult.mpRecovered = mpRecovered;
-      if (mpRecovered > 0) {
-        hitResult.message += ` Recovered ${mpRecovered} MP.`;
+      const mpCharged = this.processMpRecovery(playerBodyStats, skill, typingResult);
+      hitResult.mpCharge = mpCharged;
+      if (mpCharged > 0) {
+        hitResult.message.push(`Charged ${mpCharged} MP.`);
       }
       return hitResult;
     }
@@ -78,19 +78,17 @@ export class BattleActionExecutor {
     );
 
     // MP回復処理
-    const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
+    const mpCharge = this.processMpRecovery(playerBodyStats, skill, typingResult);
 
     // メッセージ生成
-    const message =
-      this.generateSkillMessage(skill.name, damage, isCritical, typingResult) +
-      (mpRecovered > 0 ? ` Recovered ${mpRecovered} MP.` : '');
+    const message = this.generateSkillMessage(damage, mpCharge, isCritical);
 
     return {
       success: true,
       damage,
       message,
-      critical: isCritical,
-      mpRecovered,
+      isCritical: isCritical,
+      mpCharge: mpCharge,
       targetDefeated: enemy.isDefeated(),
     };
   }
@@ -106,31 +104,15 @@ export class BattleActionExecutor {
     const playerStats = player.getTotalStats();
     const enemyStats = enemy.stats;
 
-    // MP消費チェック
-    if (enemy.currentMp < skill.mpCost) {
-      return {
-        success: false,
-        message: `${enemy.name} doesn't have enough MP for ${skill.name}`,
-      };
-    }
-
-    // MP消費処理
-    enemy.consumeMp(skill.mpCost);
-
     // 命中判定
     const hitRate = BattleCalculator.calculateHitRate(skill.successRate);
     const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
 
     if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      // MP回復処理（ミス時も）
-      if (skill.mpCharge > 0) {
-        enemy.recoverMp(skill.mpCharge);
-      }
-
       return {
         success: false,
         damage: 0,
-        message: `${enemy.name} used ${skill.name} but missed!`,
+        message: [`missed!`],
       };
     }
 
@@ -155,18 +137,15 @@ export class BattleActionExecutor {
     // ダメージを与える
     player.getBodyStats().takeDamage(damage);
 
-    // MP回復処理
-    if (skill.mpCharge > 0) {
-      enemy.recoverMp(skill.mpCharge);
-    }
+    const message = [];
+    isCritical && message.push('Critical hit!');
+    damage > 0 && message.push(`${damage} damage!`);
 
     return {
       success: true,
       damage,
-      message: `${enemy.name} used ${skill.name} and dealt ${damage} damage!${
-        isCritical ? ' Critical hit!' : ''
-      }`,
-      critical: isCritical,
+      message,
+      isCritical: isCritical,
       targetDefeated: player.getBodyStats().getCurrentHP() <= 0,
     };
   }
@@ -182,7 +161,13 @@ export class BattleActionExecutor {
       return {
         success: false,
         damage: 0,
-        message: `Not enough MP! Need ${skill.mpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`,
+        hpHealing: 0,
+        mpCharge: 0,
+        isCritical: false,
+        targetDefeated: false,
+        message: [
+          `Not enough MP! Need ${skill.mpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`,
+        ],
       };
     }
     playerBodyStats.consumeMP(skill.mpCost);
@@ -205,7 +190,11 @@ export class BattleActionExecutor {
       return {
         success: false,
         damage: 0,
-        message: `${skill.name} missed!`,
+        hpHealing: 0,
+        mpCharge: 0,
+        isCritical: false,
+        targetDefeated: false,
+        message: [`missed!`],
       };
     }
     return null;
@@ -323,17 +312,17 @@ export class BattleActionExecutor {
    * スキル使用メッセージを生成する
    */
   private static generateSkillMessage(
-    skillName: string,
     damage: number,
-    isCritical: boolean,
-    typingResult?: TypingResult
-  ): string {
-    let message = `${skillName} dealt ${damage} damage!`;
+    mpCharge: number,
+    isCritical: boolean
+  ): string[] {
+    let message = [];
     if (isCritical) {
-      message += ' Critical hit!';
+      message.push('Critical hit!');
     }
-    if (typingResult?.isSuccess && typingResult.totalRating > 100) {
-      message += ' Great typing!';
+    message.push(`${damage} damage!`);
+    if (mpCharge > 0) {
+      message.push(`Charged ${mpCharge} MP.`);
     }
     return message;
   }

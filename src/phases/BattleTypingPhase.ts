@@ -12,6 +12,7 @@ import { WordDatabase } from '../typing/WordDatabase';
 import { Display } from '../ui/Display';
 import { green, red, gray } from '../ui/colors';
 import * as readline from 'readline';
+import { delay } from '../utils/timer';
 
 export class BattleTypingPhase extends Phase {
   private skills: Skill[];
@@ -19,6 +20,7 @@ export class BattleTypingPhase extends Phase {
   private currentSkillIndex: number = 0;
   private currentChallenge: TypingChallenge | null = null;
   private wordDatabase: WordDatabase;
+  private isFirstInput: boolean = true;
 
   // 結果サマリー
   private summary: {
@@ -84,7 +86,7 @@ export class BattleTypingPhase extends Phase {
     return new Promise(resolve => {
       const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout,
+        output: null,  // outputを無効にしてエコーバックを防ぐ
       });
 
       // Raw modeを有効にして文字単位で入力を受け取る
@@ -136,17 +138,35 @@ export class BattleTypingPhase extends Phase {
       return null;
     }
 
+    // 最初の入力時の特別処理
+    const wasFirstInput = this.isFirstInput;
+    if (this.isFirstInput) {
+      // 初回入力時: challengeTextの行、"(Press ESC to cancel)"の行、その後の空行の3行分を上書き
+      process.stdout.write('\x1b[3A\x1b[0J');
+      this.isFirstInput = false;
+    }
+
     // 入力をチャレンジに渡す
     this.currentChallenge.handleInput(input);
 
     // チャレンジ完了チェック
     if (this.currentChallenge.isComplete()) {
       const result = this.currentChallenge.getResult();
-      this.displayResult(result);
+      
+      // 完了時は最終的なプログレスを表示してから結果を表示
+      const progress = this.currentChallenge.getProgress();
+      if (!wasFirstInput) {
+        // 2回目以降の入力で完了した場合、前の表示をクリア
+        process.stdout.write('\x1b[2A\x1b[0J');
+      }
+      console.log(this.formatProgress(progress));
+      console.log(`⌛ Time remaining: ${this.currentChallenge.getRemainingTime().toFixed(1)}s`);
+      
+      await this.displayResult(result);
 
       // スキル効果を適用
       const skill = this.skills[this.currentSkillIndex];
-      this.applySkillEffect(skill, result);
+      await this.applySkillEffect(skill, result);
 
       // 次のスキルへ
       this.currentSkillIndex++;
@@ -157,15 +177,24 @@ export class BattleTypingPhase extends Phase {
         return this.completeAllChallenges();
       }
 
-      // 次のスキルチャレンジを開始（1秒後）
-      // Note: setTimeoutの代わりに即座に開始
+      // 次のスキルチャレンジを開始
       this.startNextSkillChallenge();
 
       return null;
     }
 
-    // 進捗表示
-    this.displayProgress();
+    // 進捗表示（チャレンジ未完了の場合）
+    const progress = this.currentChallenge.getProgress();
+    const remainingTime = this.currentChallenge.getRemainingTime();
+    
+    if (!wasFirstInput) {
+      // 2回目以降: プログレスと残り時間の2行分だけを上書き
+      process.stdout.write('\x1b[2A\x1b[0J');
+    }
+    
+    // プログレス表示（入力状況を視覚的に表示）
+    console.log(this.formatProgress(progress));
+    console.log(`⌛ Time remaining: ${remainingTime.toFixed(1)}s`);
 
     return null;
   }
@@ -186,16 +215,18 @@ export class BattleTypingPhase extends Phase {
       `\n=== SKILL ${this.currentSkillIndex + 1}/${this.skills.length}: ${skill.name} ===`
     );
     console.log(`Description: ${skill.description}`);
-    console.log(`MP Cost: ${skill.mpCost} | Difficulty: ${'★'.repeat(skill.typingDifficulty)}`);
 
     // タイピングチャレンジのテキストを生成
     const challengeText = this.wordDatabase.getRandomText(
       skill.typingDifficulty as TypingDifficulty
     );
 
-    console.log(`\nType the following text:`);
-    console.log(`"${challengeText}"`);
+    console.log(`\n⌨️ Type the following text:`);
+    console.log(challengeText);  // テンプレートリテラルを使わない
     console.log(gray('(Press ESC to cancel)\n'));
+
+    // 次のチャレンジ開始時にフラグをリセット
+    this.isFirstInput = true;
 
     // チャレンジを作成して開始
     this.currentChallenge = new TypingChallenge(
@@ -208,9 +239,7 @@ export class BattleTypingPhase extends Phase {
   /**
    * スキル効果をリアルタイムで適用
    */
-  private applySkillEffect(skill: Skill, typingResult: TypingResult): void {
-    console.log(`\n⚔️ Executing ${skill.name}...`);
-
+  private async applySkillEffect(skill: Skill, typingResult: TypingResult): Promise<void> {
     // BattleActionExecutorを使用して効果を適用
     const player = this.battle['player'];
     const enemy = this.battle['enemy'];
@@ -223,57 +252,36 @@ export class BattleTypingPhase extends Phase {
     const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, typingResult);
 
     if (result.success) {
-      console.log(`✅ ${result.message}`);
-
+      result.message.forEach(msg => console.log(msg));
       // サマリーを更新
       if (result.damage) {
         this.summary.totalDamageDealt += result.damage;
-        if (result.critical) {
+        if (result.isCritical) {
           this.summary.criticalHits++;
         }
       }
 
-      if (result.healing) {
-        this.summary.totalHealing += result.healing;
+      if (result.hpHealing) {
+        this.summary.totalHealing += result.hpHealing;
       }
 
-      if (result.mpRecovered) {
-        this.summary.totalMpRestored += result.mpRecovered;
+      if (result.mpCharge) {
+        this.summary.totalMpRestored += result.mpCharge;
       }
     } else {
       console.log(`❌ ${result.message}`);
       this.summary.misses++;
     }
 
-    // 現在のHP/MPを表示
-    console.log(`Enemy HP: ${enemy.currentHp}/${enemy.stats.maxHp}`);
-    console.log(
-      `Player MP: ${player.getBodyStats().getCurrentMP()}/${player.getBodyStats().getMaxMP()}`
-    );
-
     // 敵のHPが0になったらバトル終了フラグを立てる
     if (enemy.currentHp <= 0) {
       console.log('\n💀 Enemy defeated!');
       // バトル終了を即座に処理せず、全スキル完了後に処理する
     }
+
+    await this.waitForKeyPress();
   }
 
-  /**
-   * 進捗を表示
-   */
-  private displayProgress(): void {
-    if (!this.currentChallenge) return;
-
-    const progress = this.currentChallenge.getProgress();
-    const remainingTime = this.currentChallenge.getRemainingTime();
-
-    // カーソルを上に移動してクリア（プログレスエリアのみ更新）
-    process.stdout.write('\x1b[3A\x1b[0J'); // 3行上に移動して下をクリア
-
-    console.log('Progress:');
-    console.log(this.formatProgress(progress));
-    console.log(`Time remaining: ${remainingTime.toFixed(1)}s`);
-  }
 
   /**
    * 進捗をフォーマットして表示用文字列を生成
@@ -304,7 +312,7 @@ export class BattleTypingPhase extends Phase {
    * 結果を表示
    * @param result - タイピング結果
    */
-  private displayResult(result: TypingResult): void {
+  private async displayResult(result: TypingResult): Promise<void> {
     console.log('\n=== Challenge Complete! ===');
     console.log(`Speed: ${result.speedRating}`);
     console.log(`Accuracy: ${result.accuracyRating} (${result.accuracy.toFixed(1)}%)`);
@@ -315,6 +323,7 @@ export class BattleTypingPhase extends Phase {
     } else {
       console.log(red('\nFailed...'));
     }
+    await delay(500);
   }
 
   /**
@@ -377,5 +386,40 @@ export class BattleTypingPhase extends Phase {
     if (this.summary.misses > 0) {
       console.log(`Misses: ${this.summary.misses}`);
     }
+  }
+
+  /**
+   * キー入力待ち（BattleTypingPhase専用版）
+   * startInputLoopのdataリスナーと競合しないように、一時的にリスナーを管理する
+   */
+  protected async waitForKeyPress(
+    message: string = '⏸︎ Press any key to continue...'
+  ): Promise<void> {
+    // テスト環境やTTYでない環境では即座にresolve
+    if (!process.stdin.isTTY || process.env.NODE_ENV === 'test') {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      console.log(`\n${message}`);
+
+      // 待機中フラグを設定して、handleInputが処理をスキップするようにする
+      const originalChallenge = this.currentChallenge;
+      this.currentChallenge = null; // 一時的にチャレンジをnullにして入力を無視
+
+      const onKeyPress = () => {
+        // チャレンジを復元
+        this.currentChallenge = originalChallenge;
+        resolve();
+      };
+
+      // 次のキー入力を1回だけ待つ
+      const waitHandler = (_data: Buffer) => {
+        process.stdin.removeListener('data', waitHandler);
+        onKeyPress();
+      };
+
+      process.stdin.once('data', waitHandler);
+    });
   }
 }

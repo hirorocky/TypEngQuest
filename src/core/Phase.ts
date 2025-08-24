@@ -187,7 +187,9 @@ export abstract class Phase {
    * @param message 表示するメッセージ（デフォルト: "Press any key to continue..."）
    * @returns Promise that resolves when any key is pressed
    */
-  protected async waitForKeyPress(message: string = 'Press any key to continue...'): Promise<void> {
+  protected async waitForKeyPress(
+    message: string = '⏸︎ Press any key to continue...'
+  ): Promise<void> {
     // テスト環境やTTYでない環境では即座にresolve
     if (!process.stdin.isTTY || process.env.NODE_ENV === 'test') {
       return Promise.resolve();

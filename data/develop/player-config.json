@@ -13,8 +13,8 @@
       "description": "A basic wooden shield for protection",
       "type": "equipment",
       "rarity": "common",
-      "stats": { "strength": 100, "willpower": 0, "agility": 0, "fortune": 0 },
-      "grade": 100
+      "stats": { "strength": 10, "willpower": 0, "agility": 0, "fortune": 0 },
+      "grade": 10
     },
     null,
     null,

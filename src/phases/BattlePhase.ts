@@ -353,8 +353,8 @@ export class BattlePhase extends Phase {
 
     const result = BattleActionExecutor.executeEnemySkill(skillToUse, this.enemy, this.player);
 
-    this.turnMessage = result.message;
-    console.log(result.message);
+    this.turnMessage = result.message.join(' ');
+    result.message.forEach(msg => console.log(msg));
     await delay(1500);
 
     // 勝敗判定
