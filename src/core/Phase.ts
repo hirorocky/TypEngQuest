@@ -15,6 +15,9 @@ export abstract class Phase {
   protected rl: readline.Interface | null = null;
   protected tabCompleter?: TabCompleter;
 
+  // フェーズ遷移ハンドラー
+  private transitionHandler?: (result: CommandResult) => void;
+
   constructor(world?: World, tabCompleter?: TabCompleter) {
     this.parser = new CommandParser();
     this.world = world;
@@ -109,6 +112,11 @@ export abstract class Phase {
    * メッセージと出力を表示
    */
   private displayMessages(result: CommandResult): void {
+    // Phase遷移が発生する場合は、Game側でメッセージを処理するのでここではスキップ
+    if (result.nextPhase) {
+      return;
+    }
+
     if (result.message) {
       if (result.success) {
         Display.printSuccess(result.message);
@@ -156,5 +164,57 @@ export abstract class Phase {
 
   getAvailableCommands(): string[] {
     return this.parser.getAvailableCommands();
+  }
+
+  /**
+   * フェーズ遷移を通知
+   */
+  protected notifyTransition(result: CommandResult): void {
+    if (this.transitionHandler) {
+      this.transitionHandler(result);
+    }
+  }
+
+  /**
+   * フェーズ遷移ハンドラーを設定
+   */
+  public setTransitionHandler(handler: (result: CommandResult) => void): void {
+    this.transitionHandler = handler;
+  }
+
+  /**
+   * キー入力待ち
+   * @param message 表示するメッセージ（デフォルト: "Press any key to continue..."）
+   * @returns Promise that resolves when any key is pressed
+   */
+  protected async waitForKeyPress(
+    message: string = '⏸︎ Press any key to continue...'
+  ): Promise<void> {
+    // テスト環境やTTYでない環境では即座にresolve
+    if (!process.stdin.isTTY || process.env.NODE_ENV === 'test') {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      // 一時的なreadlineインターフェースを作成
+      const tempRl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      console.log(`\n${message}`);
+
+      // キー入力を待つ（rawModeを使用）
+      process.stdin.setRawMode(true);
+
+      const onKeyPress = () => {
+        process.stdin.setRawMode(false);
+        process.stdin.removeListener('data', onKeyPress);
+        tempRl.close();
+        resolve();
+      };
+
+      process.stdin.once('data', onKeyPress);
+    });
   }
 }

@@ -1,0 +1,185 @@
+{
+  "temporaryStatuses": [
+    {
+      "id": "strength_up",
+      "name": "Strength Up",
+      "type": "buff",
+      "effects": {
+        "strength": 5
+      },
+      "duration": 5,
+      "stackable": true
+    },
+    {
+      "id": "willpower_up",
+      "name": "Willpower Up",
+      "type": "buff",
+      "effects": {
+        "willpower": 5
+      },
+      "duration": 5,
+      "stackable": true
+    },
+    {
+      "id": "agility_up",
+      "name": "Agility Up",
+      "type": "buff",
+      "effects": {
+        "agility": 5
+      },
+      "duration": 5,
+      "stackable": true
+    },
+    {
+      "id": "fortune_up",
+      "name": "Fortune Up",
+      "type": "buff",
+      "effects": {
+        "fortune": 5
+      },
+      "duration": 5,
+      "stackable": true
+    },
+    {
+      "id": "all_stats_up",
+      "name": "All Stats Up",
+      "type": "buff",
+      "effects": {
+        "strength": 3,
+        "willpower": 3,
+        "agility": 3,
+        "fortune": 3
+      },
+      "duration": 3,
+      "stackable": false
+    },
+    {
+      "id": "regeneration",
+      "name": "Regeneration",
+      "type": "buff",
+      "effects": {
+        "hpPerTurn": 10
+      },
+      "duration": 5,
+      "stackable": false
+    },
+    {
+      "id": "strength_down",
+      "name": "Strength Down",
+      "type": "debuff",
+      "effects": {
+        "strength": -3
+      },
+      "duration": 3,
+      "stackable": true
+    },
+    {
+      "id": "willpower_down",
+      "name": "Willpower Down",
+      "type": "debuff",
+      "effects": {
+        "willpower": -3
+      },
+      "duration": 3,
+      "stackable": true
+    },
+    {
+      "id": "agility_down",
+      "name": "Agility Down",
+      "type": "debuff",
+      "effects": {
+        "agility": -3
+      },
+      "duration": 3,
+      "stackable": true
+    },
+    {
+      "id": "fortune_down",
+      "name": "Fortune Down",
+      "type": "debuff",
+      "effects": {
+        "fortune": -3
+      },
+      "duration": 3,
+      "stackable": true
+    },
+    {
+      "id": "all_stats_down",
+      "name": "All Stats Down",
+      "type": "debuff",
+      "effects": {
+        "strength": -2,
+        "willpower": -2,
+        "agility": -2,
+        "fortune": -2
+      },
+      "duration": 4,
+      "stackable": false
+    },
+    {
+      "id": "poison",
+      "name": "Poison",
+      "type": "status_ailment",
+      "effects": {
+        "hpPerTurn": -5
+      },
+      "duration": 3,
+      "stackable": false
+    },
+    {
+      "id": "paralysis",
+      "name": "Paralysis",
+      "type": "status_ailment",
+      "effects": {
+        "cannotAct": true,
+        "agility": -10
+      },
+      "duration": 2,
+      "stackable": false
+    },
+    {
+      "id": "sleep",
+      "name": "Sleep",
+      "type": "status_ailment",
+      "effects": {
+        "cannotAct": true,
+        "cannotRun": false
+      },
+      "duration": 3,
+      "stackable": false
+    },
+    {
+      "id": "confusion",
+      "name": "Confusion",
+      "type": "status_ailment",
+      "effects": {
+        "willpower": -5,
+        "agility": -3
+      },
+      "duration": 2,
+      "stackable": false
+    },
+    {
+      "id": "burn",
+      "name": "Burn",
+      "type": "status_ailment",
+      "effects": {
+        "hpPerTurn": -8,
+        "strength": -2
+      },
+      "duration": 4,
+      "stackable": false
+    },
+    {
+      "id": "freeze",
+      "name": "Freeze",
+      "type": "status_ailment",
+      "effects": {
+        "cannotAct": true,
+        "agility": -15
+      },
+      "duration": 1,
+      "stackable": false
+    }
+  ]
+}

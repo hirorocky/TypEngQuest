@@ -5,6 +5,7 @@
 import { FileSystem } from './FileSystem';
 import { FileNode, NodeType, FileType } from './FileNode';
 import { DomainData, DomainType, getDomainData, getRandomDomain } from './domains';
+import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
 
 /**
  * ワールドのシリアライズ用データインターフェース
@@ -211,13 +212,9 @@ export class World {
     let fileSystem: FileSystem;
 
     if (isTest) {
-      // テスト用の固定ファイルシステム
-      fileSystem = FileSystem.createSampleStructure();
+      // テスト用の固定ファイルシステム（開発者モードではJSON設定を使用）
+      fileSystem = this.generateTestFileSystem();
       this.fileSystem = fileSystem;
-
-      // 固定の配置でボスと鍵を設定
-      this.setBossLocation('/web-app');
-      this.setKeyLocation('/mobile-app/app.py');
     } else {
       // 通常のランダム生成
       fileSystem = FileSystem.generateFileSystem(this.domain, this.level);
@@ -225,6 +222,15 @@ export class World {
       this.placeSpecialItems();
     }
 
+    return fileSystem;
+  }
+
+  /**
+   * テスト用ファイルシステムを生成する
+   * 開発者モードではJSONから、通常はハードコードから生成
+   */
+  protected generateTestFileSystem(): FileSystem {
+    const { fileSystem } = DevelopmentConfigLoader.loadFileSystemConfigData();
     return fileSystem;
   }
 
