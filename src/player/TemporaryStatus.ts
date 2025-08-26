@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 /**
  * 一時ステータスの種別
  */
@@ -74,6 +77,7 @@ export interface TemporaryStatus {
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffects {
   if (typeof obj !== 'object' || obj === null) {
     return false;
@@ -99,38 +103,51 @@ export function isTemporaryStatusEffects(obj: any): obj is TemporaryStatusEffect
 }
 
 /**
- * 有効なTemporaryStatusNameの定数配列
+ * JSONファイルからTemporaryStatusを読み込む
  */
-const VALID_TEMPORARY_STATUS_NAMES: TemporaryStatusName[] = [
-  'Strength Up',
-  'Willpower Up',
-  'Agility Up',
-  'Fortune Up',
-  'All Stats Up',
-  'Regeneration',
-  'Strength Down',
-  'Willpower Down',
-  'Agility Down',
-  'Fortune Down',
-  'All Stats Down',
-  'Poison',
-  'Paralysis',
-  'Sleep',
-  'Confusion',
-  'Burn',
-  'Freeze',
-];
+
+interface TemporaryStatusData {
+  temporaryStatuses: TemporaryStatus[];
+}
+
+let temporaryStatusData: TemporaryStatusData | null = null;
+
+function loadTemporaryStatusData() {
+  if (!temporaryStatusData) {
+    const dataPath = path.join(__dirname, '../../data/temporary-status.json');
+    temporaryStatusData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+  }
+  return temporaryStatusData;
+}
 
 /**
- * 有効なTemporaryStatusTypeの定数配列
+ * 有効なTemporaryStatusNameの配列を取得
  */
-const VALID_TEMPORARY_STATUS_TYPES: TemporaryStatusType[] = ['buff', 'debuff', 'status_ailment'];
+function getValidTemporaryStatusNames(): TemporaryStatusName[] {
+  const data = loadTemporaryStatusData();
+  if (!data) {
+    return [];
+  }
+  return data.temporaryStatuses.map((status: TemporaryStatus) => status.name);
+}
+
+/**
+ * 有効なTemporaryStatusTypeの配列を取得
+ */
+function getValidTemporaryStatusTypes(): TemporaryStatusType[] {
+  const data = loadTemporaryStatusData();
+  if (!data) {
+    return [];
+  }
+  return Array.from(new Set(data.temporaryStatuses.map((status: TemporaryStatus) => status.type)));
+}
 
 /**
  * オブジェクトがTemporaryStatusの有効な構造かどうかを検証する
  * @param obj - 検証するオブジェクト
  * @returns 有効な場合true
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isTemporaryStatus(obj: any): obj is TemporaryStatus {
   if (typeof obj !== 'object' || obj === null) {
     return false;
@@ -144,10 +161,10 @@ export function isTemporaryStatus(obj: any): obj is TemporaryStatus {
   if (typeof obj.stackable !== 'boolean') return false;
 
   // 名前が有効なTemporaryStatusNameかチェック
-  if (!VALID_TEMPORARY_STATUS_NAMES.includes(obj.name as TemporaryStatusName)) return false;
+  if (!getValidTemporaryStatusNames().includes(obj.name as TemporaryStatusName)) return false;
 
   // 種別が有効なTemporaryStatusTypeかチェック
-  if (!VALID_TEMPORARY_STATUS_TYPES.includes(obj.type as TemporaryStatusType)) return false;
+  if (!getValidTemporaryStatusTypes().includes(obj.type as TemporaryStatusType)) return false;
 
   // 効果が有効な構造かチェック
   return isTemporaryStatusEffects(obj.effects);

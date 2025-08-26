@@ -3,7 +3,7 @@ import { yellow, cyan } from './colors';
 
 export interface ListItem {
   name: string;
-  value: any;
+  value: unknown;
   disabled?: boolean;
 }
 
@@ -143,13 +143,13 @@ export class ScrollableList {
     this.scrollOffset = currentPage * maxVisible;
   }
 
-  public async waitForSelection(): Promise<any | null> {
+  public async waitForSelection(): Promise<unknown> {
     if (this.items.length === 0) {
       Display.printInfo('No items available');
       return null;
     }
 
-    return new Promise(resolve => {
+    return new Promise<unknown>(resolve => {
       this.render();
 
       const handleKeypress = (data: Buffer) => {
@@ -167,7 +167,7 @@ export class ScrollableList {
   private handleKeyInput(
     data: Buffer,
     handler: (data: Buffer) => void,
-    resolve: (value: any) => void
+    resolve: (value: unknown) => void
   ): void {
     const key = data.toString();
 
@@ -204,7 +204,7 @@ export class ScrollableList {
   private handleSelectionKeys(
     key: string,
     handler: (data: Buffer) => void,
-    resolve: (value: any) => void
+    resolve: (value: unknown) => void
   ): boolean {
     switch (key) {
       case '\r':
@@ -224,8 +224,8 @@ export class ScrollableList {
 
   private cleanup(
     handler: (data: Buffer) => void,
-    resolve: (value: any) => void,
-    value: any
+    resolve: (value: unknown) => void,
+    value: unknown
   ): void {
     // 元のrawMode状態を復元
     process.stdin.setRawMode(this.originalRawMode);
@@ -242,7 +242,7 @@ export class ScrollableList {
   public static async showList(
     items: ListItem[],
     options: ScrollableListOptions = {}
-  ): Promise<any | null> {
+  ): Promise<unknown> {
     const list = new ScrollableList(items, options);
     return await list.waitForSelection();
   }

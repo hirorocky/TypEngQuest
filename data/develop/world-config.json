@@ -1,0 +1,11 @@
+{
+  "domainType": "tech-startup",
+  "level": 1,
+  "isTest": true,
+  "currentPath": "/",
+  "exploredPaths": ["/"],
+  "keyLocation": null,
+  "bossLocation": null,
+  "hasKey": false,
+  "description": "開発者モード用のテストワールド設定"
+}

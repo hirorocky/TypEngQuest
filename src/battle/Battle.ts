@@ -1,37 +1,20 @@
-import { Player, TotalStatsResult } from '../player/Player';
-import { BodyStats } from '../player/BodyStats';
-import { Enemy, EnemyStats } from './Enemy';
+import { Player } from '../player/Player';
+import { Enemy } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
- * プレイヤーの技使用結果
- */
-export interface PlayerSkillResult {
-  success: boolean;
-  damage: number;
-  message: string;
-  critical?: boolean;
-  mpRecovered?: number;
-}
-
-/**
- * 敵の行動結果
- */
-export interface EnemyActionResult {
-  skillUsed: Skill;
-  damage: number;
-  message: string;
-  critical?: boolean;
-}
-
-/**
- * 戦闘終了結果
+ * 戦闘終了結果（統合版）
  */
 export interface BattleEndResult {
   winner: 'player' | 'enemy';
   message: string;
+  turns: number;
+  enemyDefeated?: string;
+  droppedItems?: string[];
 }
 
 /**
@@ -43,60 +26,46 @@ export interface SelectedSkill {
 }
 
 /**
- * プレイヤーターン結果
- */
-export interface PlayerTurnResult {
-  skillResults: PlayerSkillResult[];
-  totalDamage: number;
-  totalMpRecovered: number;
-}
-
-/**
- * 戦闘の最終結果
- */
-export interface BattleResult {
-  victory: boolean;
-  turns: number;
-  enemyDefeated?: string;
-  droppedItems?: string[];
-}
-
-/**
  * Battleクラス - 戦闘フローの制御とターン管理を行う
  */
 export class Battle {
-  // 戦闘で使用する定数
-  private static readonly NORMAL_ATTACK_ACCURACY = 90;
-  private static readonly NORMAL_ATTACK_POWER = 1.0;
+  /**
+   * スキルデータを読み込む
+   */
+  private static skillsData: { skills: Skill[] } | null = null;
 
-  // 行動ポイント関連の定数
-  private static readonly BASE_ACTION_POINTS = 3;
-  private static readonly AGILITY_TO_AP_DIVISOR = 50;
+  private static loadSkillsData() {
+    if (!Battle.skillsData) {
+      // プロジェクトルートからの相対パスを使用
+      const dataPath = path.resolve(process.cwd(), 'data/skills/skills.json');
+      Battle.skillsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    }
+    return Battle.skillsData;
+  }
 
-  // MP回復倍率の定数
-  private static readonly MP_RECOVERY_PERFECT_MULTIPLIER = 1.5;
-  private static readonly MP_RECOVERY_GREAT_MULTIPLIER = 1.2;
+  /**
+   * 通常攻撃用のスキルを取得
+   */
+  public static getNormalAttackSkill(): Skill {
+    const data = Battle.loadSkillsData();
+    if (!data) {
+      throw new Error('Failed to load skills data');
+    }
+    const basicAttack = data.skills.find((skill: Skill) => skill.id === 'basic_attack');
 
-  // 通常攻撃用のデフォルトSkill
-  private static readonly NORMAL_ATTACK_SKILL: Skill = {
-    id: 'normal_attack',
-    name: 'Attack',
-    description: 'A basic attack',
-    mpCost: 0,
-    mpCharge: 0,
-    actionCost: 1,
-    power: Battle.NORMAL_ATTACK_POWER,
-    accuracy: Battle.NORMAL_ATTACK_ACCURACY,
-    target: 'enemy',
-    typingDifficulty: 1,
-  };
+    if (!basicAttack) {
+      throw new Error('basic_attack skill not found in skills data');
+    }
+
+    return basicAttack as Skill;
+  }
 
   private player: Player;
   private enemy: Enemy;
   private _isActive: boolean = false;
   private _currentTurn: number = 0;
   private _currentTurnActor: 'player' | 'enemy' | null = null;
-  private battleResult: BattleResult | null = null;
+  private battleResult: BattleEndResult | null = null;
 
   /**
    * Battleのコンストラクタ
@@ -140,11 +109,11 @@ export class Battle {
 
   /**
    * 戦闘を終了する
-   * @throws {Error} 戦闘が開始されていない場合
+   * @throws {Error} 戦闘がアクティブでない場合
    */
   end(): void {
     if (!this._isActive) {
-      throw new Error('Battle not started');
+      throw new Error('Battle is not active');
     }
 
     this._isActive = false;
@@ -194,11 +163,7 @@ export class Battle {
    */
   calculatePlayerActionPoints(): number {
     const playerStats = this.player.getTotalStats();
-    // 基本行動ポイント: 3
-    // agilityボーナス: agility / 50（端数切り捨て）
-    const basePoints = Battle.BASE_ACTION_POINTS;
-    const agilityBonus = Math.floor(playerStats.agility / Battle.AGILITY_TO_AP_DIVISOR);
-    return Math.max(1, basePoints + agilityBonus);
+    return BattleCalculator.calculatePlayerActionPoints(playerStats.agility);
   }
 
   /**
@@ -238,349 +203,31 @@ export class Battle {
   }
 
   /**
-   * プレイヤーの複数スキルを使用する
-   * @param selectedSkills 選択されたスキル
-   * @returns プレイヤーターン結果
-   */
-  playerUseMultipleSkills(selectedSkills: SelectedSkill[]): PlayerTurnResult {
-    const skillResults: PlayerSkillResult[] = [];
-    let totalDamage = 0;
-    let totalMpRecovered = 0;
-
-    for (const { skill, typingResult } of selectedSkills) {
-      const result = this.playerUseSkill(skill, typingResult);
-      skillResults.push(result);
-      totalDamage += result.damage;
-      if (result.mpRecovered) {
-        totalMpRecovered += result.mpRecovered;
-      }
-    }
-
-    return {
-      skillResults,
-      totalDamage,
-      totalMpRecovered,
-    };
-  }
-
-  /**
-   * プレイヤーが技を使用する
-   * @param skill 使用する技
-   * @param typingResult タイピング結果（オプション）
-   * @returns 技の使用結果
-   */
-  playerUseSkill(skill: Skill, typingResult?: TypingResult): PlayerSkillResult {
-    const playerBodyStats = this.player.getBodyStats();
-
-    // MPチェックと消費
-    const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, skill);
-    if (mpCheckResult) {
-      return mpCheckResult;
-    }
-
-    // 命中判定
-    const playerStats = this.player.getTotalStats();
-    const enemyStats = this.enemy.stats;
-    const hitResult = this.checkHit({
-      playerBodyStats,
-      playerStats,
-      enemyStats,
-      skill,
-      typingResult,
-    });
-    if (hitResult) {
-      return hitResult;
-    }
-
-    // ダメージ計算と適用
-    const { damage, isCritical } = this.calculateAndApplyDamage(
-      playerStats,
-      enemyStats,
-      skill,
-      typingResult
-    );
-
-    // MP回復処理
-    const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
-
-    return {
-      success: true,
-      damage,
-      message:
-        this.generateSkillMessage(skill.name, damage, isCritical, typingResult) +
-        (mpRecovered > 0 ? ` Recovered ${mpRecovered} MP.` : ''),
-      critical: isCritical,
-      mpRecovered,
-    };
-  }
-
-  /**
-   * MPチェックと消費を行う
-   */
-  private checkAndConsumeMp(playerBodyStats: BodyStats, skill: Skill): PlayerSkillResult | null {
-    if (playerBodyStats.getCurrentMP() < skill.mpCost) {
-      return {
-        success: false,
-        damage: 0,
-        message: `Not enough MP! Need ${skill.mpCost} MP but only have ${playerBodyStats.getCurrentMP()} MP.`,
-      };
-    }
-    playerBodyStats.consumeMP(skill.mpCost);
-    return null;
-  }
-
-  /**
-   * 命中判定を行う
-   */
-  private checkHit({
-    playerBodyStats,
-    playerStats,
-    enemyStats,
-    skill,
-    typingResult,
-  }: {
-    playerBodyStats: BodyStats;
-    playerStats: TotalStatsResult;
-    enemyStats: EnemyStats;
-    skill: Skill;
-    typingResult?: TypingResult;
-  }): PlayerSkillResult | null {
-    const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
-    const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
-
-    if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      // ミス時もMP回復量を計算
-      const mpRecovered = this.processMpRecovery(playerBodyStats, skill, typingResult);
-      return {
-        success: false,
-        damage: 0,
-        message: `${skill.name} missed!${mpRecovered > 0 ? ` Recovered ${mpRecovered} MP.` : ''}`,
-        mpRecovered,
-      };
-    }
-    return null;
-  }
-
-  /**
-   * ダメージ計算と適用を行う
-   */
-  private calculateAndApplyDamage(
-    playerStats: TotalStatsResult,
-    enemyStats: EnemyStats,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): { damage: number; isCritical: boolean } {
-    const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
-    const isCritical = BattleCalculator.isCritical(criticalRate);
-
-    let damage = BattleCalculator.calculateDamage(
-      playerStats.strength,
-      enemyStats.willpower,
-      skill.power,
-      isCritical
-    );
-
-    damage = this.applyTypingEffectMultiplier(damage, typingResult);
-    this.enemy.takeDamage(damage);
-
-    return { damage, isCritical };
-  }
-
-  /**
-   * MP回復処理を行う
-   */
-  private processMpRecovery(
-    playerBodyStats: BodyStats,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): number {
-    let mpRecovered = skill.mpCharge;
-    if (mpRecovered > 0) {
-      if (typingResult?.accuracyRating === 'Perfect') {
-        mpRecovered = Math.floor(mpRecovered * Battle.MP_RECOVERY_PERFECT_MULTIPLIER);
-      } else if (typingResult?.accuracyRating === 'Great') {
-        mpRecovered = Math.floor(mpRecovered * Battle.MP_RECOVERY_GREAT_MULTIPLIER);
-      }
-      playerBodyStats.healMP(mpRecovered);
-    }
-    return mpRecovered;
-  }
-
-  /**
-   * タイピング結果を考慮した命中率を計算する
-   */
-  private calculateEnhancedHitRate(
-    playerStats: TotalStatsResult,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): number {
-    let hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
-
-    if (typingResult?.isSuccess) {
-      hitRate = BattleCalculator.calculateTypingSpeedBonus(
-        hitRate,
-        playerStats.agility,
-        typingResult.speedRating
-      );
-    }
-
-    return hitRate;
-  }
-
-  /**
-   * タイピング結果を考慮したクリティカル率を計算する
-   */
-  private calculateEnhancedCriticalRate(
-    playerStats: TotalStatsResult,
-    typingResult?: TypingResult
-  ): number {
-    let criticalRate = BattleCalculator.calculateCriticalRate(playerStats.fortune);
-
-    if (typingResult?.isSuccess) {
-      criticalRate = BattleCalculator.calculateTypingAccuracyBonus(
-        criticalRate,
-        playerStats.agility,
-        typingResult.accuracyRating
-      );
-    }
-
-    return criticalRate;
-  }
-
-  /**
-   * タイピング効果倍率をダメージに適用する
-   */
-  private applyTypingEffectMultiplier(damage: number, typingResult?: TypingResult): number {
-    if (typingResult?.isSuccess) {
-      const effectMultiplier = BattleCalculator.calculateTypingEffectMultiplier(
-        typingResult.totalRating
-      );
-      return Math.floor(damage * effectMultiplier);
-    }
-    return damage;
-  }
-
-  /**
-   * スキル使用メッセージを生成する
-   */
-  private generateSkillMessage(
-    skillName: string,
-    damage: number,
-    isCritical: boolean,
-    typingResult?: TypingResult
-  ): string {
-    let message = `${skillName} dealt ${damage} damage!`;
-    if (isCritical) {
-      message += ' Critical hit!';
-    }
-    if (typingResult?.isSuccess && typingResult.totalRating > 100) {
-      message += ' Great typing!';
-    }
-    return message;
-  }
-
-  /**
-   * 敵の行動を実行する
-   * @returns 敵の行動結果
-   */
-  enemyAction(): EnemyActionResult {
-    // 技を選択（なければ通常攻撃）
-    const selectedSkill = this.enemy.selectSkill() || Battle.NORMAL_ATTACK_SKILL;
-
-    // MP消費チェック
-    if (this.enemy.currentMp < selectedSkill.mpCost) {
-      // MPが足りない場合は通常攻撃
-      const normalAttackSkill = Battle.NORMAL_ATTACK_SKILL;
-      return this.performEnemyAttack(normalAttackSkill);
-    }
-
-    // MP消費処理
-    this.enemy.consumeMp(selectedSkill.mpCost);
-
-    const result = this.performEnemyAttack(selectedSkill);
-
-    // MP回復処理
-    if (selectedSkill.mpCharge > 0) {
-      this.enemy.recoverMp(selectedSkill.mpCharge);
-    }
-
-    return result;
-  }
-
-  /**
-   * 敵の攻撃を実行する
-   * @param skill 使用する技
-   * @returns 攻撃結果
-   */
-  private performEnemyAttack(skill: Skill): EnemyActionResult {
-    const playerStats = this.player.getTotalStats();
-    const enemyStats = this.enemy.stats;
-
-    // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(skill.accuracy);
-    const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
-
-    if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      return {
-        skillUsed: skill,
-        damage: 0,
-        message: `${this.enemy.name} used ${skill.name} but missed!`,
-      };
-    }
-
-    // クリティカル判定
-    const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
-    const isCritical = BattleCalculator.isCritical(criticalRate);
-
-    // ダメージ計算
-    const damage = BattleCalculator.calculateDamage(
-      enemyStats.strength,
-      0, // プレイヤーへの攻撃では防御力を考慮しない
-      skill.power,
-      isCritical
-    );
-
-    // ダメージを与える
-    this.player.getBodyStats().takeDamage(damage);
-
-    return {
-      skillUsed: skill,
-      damage,
-      message: `${this.enemy.name} used ${skill.name} and dealt ${damage} damage!${
-        isCritical ? ' Critical hit!' : ''
-      }`,
-      critical: isCritical,
-    };
-  }
-
-  /**
    * 戦闘終了をチェックする
    * @returns 戦闘終了結果、継続の場合はnull
    */
   checkBattleEnd(): BattleEndResult | null {
+    if (this.player.getBodyStats().getCurrentHP() <= 0) {
+      this._isActive = false;
+      const result: BattleEndResult = {
+        winner: 'enemy',
+        message: `You were defeated by ${this.enemy.name}...`,
+        turns: this._currentTurn,
+      };
+      this.battleResult = result;
+      return result;
+    }
+
     if (this.enemy.isDefeated()) {
       this._isActive = false;
-      this.battleResult = {
-        victory: true,
+      const result: BattleEndResult = {
+        winner: 'player',
+        message: `You defeated ${this.enemy.name}!`,
         turns: this._currentTurn,
         enemyDefeated: this.enemy.name,
       };
-      return {
-        winner: 'player',
-        message: `You defeated ${this.enemy.name}!`,
-      };
-    }
-
-    if (this.player.getBodyStats().getCurrentHP() <= 0) {
-      this._isActive = false;
-      this.battleResult = {
-        victory: false,
-        turns: this._currentTurn,
-      };
-      return {
-        winner: 'enemy',
-        message: `You were defeated by ${this.enemy.name}...`,
-      };
+      this.battleResult = result;
+      return result;
     }
 
     return null;
@@ -590,7 +237,7 @@ export class Battle {
    * 戦闘結果を取得する
    * @returns 戦闘結果、戦闘中の場合はnull
    */
-  getBattleResult(): BattleResult | null {
+  getBattleResult(): BattleEndResult | null {
     return this.battleResult;
   }
 
@@ -599,7 +246,7 @@ export class Battle {
    * @returns ドロップしたアイテムIDのリスト
    */
   calculateDrops(): string[] {
-    if (!this.battleResult || !this.battleResult.victory) {
+    if (!this.battleResult || this.battleResult.winner !== 'player') {
       return [];
     }
 

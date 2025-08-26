@@ -3,322 +3,182 @@
     {
       "id": "basic_attack",
       "name": "Basic Attack",
+      "description": "A simple attack with your weapon",
       "mpCost": 0,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 100,
+      "target": "enemy",
       "typingDifficulty": 1,
-      "effect": {
-        "type": "damage",
-        "power": 20,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 1,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "power_strike",
       "name": "Power Strike",
+      "description": "A powerful strike that deals extra damage",
       "mpCost": 5,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 90,
+      "target": "enemy",
       "typingDifficulty": 2,
-      "effect": {
-        "type": "damage",
-        "power": 40,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 40,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "fire_ball",
       "name": "Fire Ball",
+      "description": "Launch a ball of fire at the enemy",
       "mpCost": 8,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 85,
+      "target": "enemy",
       "typingDifficulty": 3,
-      "effect": {
-        "type": "damage",
-        "power": 35,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 35,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "ice_shard",
       "name": "Ice Shard",
+      "description": "Launch sharp ice shards at the enemy",
       "mpCost": 8,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 85,
+      "target": "enemy",
       "typingDifficulty": 3,
-      "effect": {
-        "type": "damage",
-        "power": 35,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 35,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "thunder_bolt",
       "name": "Thunder Bolt",
+      "description": "Strike the enemy with lightning",
       "mpCost": 10,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 80,
+      "target": "enemy",
       "typingDifficulty": 4,
-      "effect": {
-        "type": "damage",
-        "power": 45,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 45,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "heal",
       "name": "Heal",
+      "description": "Restore your health points",
       "mpCost": 10,
       "mpCharge": 5,
       "actionCost": 1,
       "successRate": 100,
+      "target": "self",
       "typingDifficulty": 2,
-      "effect": {
-        "type": "heal",
-        "power": 30,
-        "target": "self"
-      }
+      "effects": [
+        {
+          "type": "hp_heal",
+          "power": 30,
+          "target": "self"
+        }
+      ]
     },
     {
       "id": "greater_heal",
       "name": "Greater Heal",
+      "description": "Restore a large amount of health points",
       "mpCost": 20,
       "mpCharge": 10,
       "actionCost": 1,
       "successRate": 100,
+      "target": "self",
       "typingDifficulty": 3,
-      "effect": {
-        "type": "heal",
-        "power": 60,
-        "target": "self"
-      }
-    },
-    {
-      "id": "attack_boost",
-      "name": "Attack Boost",
-      "mpCost": 15,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 95,
-      "typingDifficulty": 2,
-      "effect": {
-        "type": "temporary_status",
-        "power": 20,
-        "target": "self",
-        "duration": 5,
-        "temporaryStatus": {
-          "attack": 20
+      "effects": [
+        {
+          "type": "hp_heal",
+          "power": 60,
+          "target": "self"
         }
-      }
-    },
-    {
-      "id": "defense_boost",
-      "name": "Defense Boost",
-      "mpCost": 15,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 95,
-      "typingDifficulty": 2,
-      "effect": {
-        "type": "temporary_status",
-        "power": 20,
-        "target": "self",
-        "duration": 5,
-        "temporaryStatus": {
-          "defense": 20
-        }
-      }
-    },
-    {
-      "id": "speed_boost",
-      "name": "Speed Boost",
-      "mpCost": 12,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 95,
-      "typingDifficulty": 2,
-      "effect": {
-        "type": "temporary_status",
-        "power": 15,
-        "target": "self",
-        "duration": 5,
-        "temporaryStatus": {
-          "speed": 15
-        }
-      }
-    },
-    {
-      "id": "weaken",
-      "name": "Weaken",
-      "mpCost": 12,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 85,
-      "typingDifficulty": 3,
-      "effect": {
-        "type": "temporary_status",
-        "power": 15,
-        "target": "enemy",
-        "duration": 4,
-        "temporaryStatus": {
-          "attack": -15
-        }
-      }
-    },
-    {
-      "id": "armor_break",
-      "name": "Armor Break",
-      "mpCost": 15,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 80,
-      "typingDifficulty": 3,
-      "effect": {
-        "type": "temporary_status",
-        "power": 20,
-        "target": "enemy",
-        "duration": 4,
-        "temporaryStatus": {
-          "defense": -20
-        }
-      }
-    },
-    {
-      "id": "slow",
-      "name": "Slow",
-      "mpCost": 10,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 90,
-      "typingDifficulty": 2,
-      "effect": {
-        "type": "temporary_status",
-        "power": 10,
-        "target": "enemy",
-        "duration": 4,
-        "temporaryStatus": {
-          "speed": -10
-        }
-      }
-    },
-    {
-      "id": "poison_blade",
-      "name": "Poison Blade",
-      "mpCost": 15,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 75,
-      "typingDifficulty": 4,
-      "effect": {
-        "type": "temporary_status",
-        "power": 5,
-        "target": "enemy",
-        "duration": 3,
-        "temporaryStatus": {
-          "hpPerTurn": -5
-        }
-      }
-    },
-    {
-      "id": "paralyze",
-      "name": "Paralyze",
-      "mpCost": 18,
-      "mpCharge": 0,
-      "actionCost": 2,
-      "successRate": 70,
-      "typingDifficulty": 4,
-      "effect": {
-        "type": "temporary_status",
-        "power": 0,
-        "target": "enemy",
-        "duration": 2,
-        "temporaryStatus": {
-          "cannotAct": true
-        }
-      }
-    },
-    {
-      "id": "burning_strike",
-      "name": "Burning Strike",
-      "mpCost": 20,
-      "mpCharge": 0,
-      "actionCost": 1,
-      "successRate": 75,
-      "typingDifficulty": 4,
-      "effect": {
-        "type": "temporary_status",
-        "power": 8,
-        "target": "enemy",
-        "duration": 3,
-        "temporaryStatus": {
-          "hpPerTurn": -8
-        }
-      }
+      ]
     },
     {
       "id": "critical_strike",
       "name": "Critical Strike",
+      "description": "A devastating attack with high damage",
       "mpCost": 25,
       "mpCharge": 0,
       "actionCost": 2,
       "successRate": 70,
+      "target": "enemy",
       "typingDifficulty": 5,
-      "effect": {
-        "type": "damage",
-        "power": 80,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 80,
+          "target": "enemy"
+        }
+      ]
     },
     {
       "id": "meteor",
       "name": "Meteor",
+      "description": "Call down a meteor to devastate your foe",
       "mpCost": 30,
       "mpCharge": 0,
       "actionCost": 3,
       "successRate": 65,
+      "target": "enemy",
       "typingDifficulty": 5,
-      "effect": {
-        "type": "damage",
-        "power": 100,
-        "target": "enemy"
-      }
-    },
-    {
-      "id": "divine_protection",
-      "name": "Divine Protection",
-      "mpCost": 25,
-      "mpCharge": 0,
-      "actionCost": 2,
-      "successRate": 90,
-      "typingDifficulty": 3,
-      "effect": {
-        "type": "temporary_status",
-        "power": 30,
-        "target": "self",
-        "duration": 10,
-        "temporaryStatus": {
-          "defense": 30
+      "effects": [
+        {
+          "type": "damage",
+          "power": 100,
+          "target": "enemy"
         }
-      }
+      ]
     },
     {
       "id": "dark_strike",
       "name": "Dark Strike",
+      "description": "A strike infused with dark energy",
       "mpCost": 20,
       "mpCharge": 0,
       "actionCost": 1,
       "successRate": 80,
+      "target": "enemy",
       "typingDifficulty": 4,
-      "effect": {
-        "type": "damage",
-        "power": 50,
-        "target": "enemy"
-      }
+      "effects": [
+        {
+          "type": "damage",
+          "power": 50,
+          "target": "enemy"
+        }
+      ]
     }
   ]
 }

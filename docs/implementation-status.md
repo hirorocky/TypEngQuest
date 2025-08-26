@@ -666,5 +666,48 @@
 **チェック済み**: パラメータシステムの再定義が完了し、すべてのテストが通過すること ✅
 **最終確認**: 2025-08-06 - Issue #39完了
 
+### ✅ Issue #49: バトルシステムリファクタリング
+**目標**: バトル関連の実装をリファクタリングし、責務を明確化する
+
+**完了タスク**:
+- [x] Phase 1: BattleActionExecutorの作成
+  - [x] スキル実行ロジックの中央集約化
+  - [x] プレイヤー・敵のスキル実行統一インターフェース
+  - [x] SkillExecutionResult統一形式の実装
+- [x] Phase 2: BattleCalculatorの拡張
+  - [x] 行動ポイント計算メソッド追加
+  - [x] MP回復量計算（タイピング評価込み）追加
+  - [x] 既存計算機能との統合
+- [x] Phase 3: Battleクラスのリファクタリング
+  - [x] スキル実行ロジックをBattleActionExecutorに委譲
+  - [x] 状態管理に特化した責務への集約
+  - [x] 後方互換性を保った既存インターフェース維持
+- [x] Phase 4: BattleTypingPhaseの調整
+  - [x] BattleActionExecutorを使用したスキル効果適用
+  - [x] リアルタイム効果反映機能の維持
+  - [x] 直接的なBattle.playerUseSkill呼び出しの削除
+- [x] Phase 5: BattlePhaseの整理
+  - [x] 敵ターン実行のBattleActionExecutor使用への変更
+  - [x] バトル開始時の先攻判定処理の整理
+  - [x] UIとフロー制御への責務集約
+- [x] Phase 6: 統合テストとデバッグ
+  - [x] TypeScript型チェック通過確認
+  - [x] 基本機能動作テスト実行
+  - [x] ゲーム起動テスト完了
+
+**成果物**:
+- 責務の明確化された戦闘システム
+  - Battle.ts: 純粋なバトル状態管理
+  - BattleActionExecutor.ts: スキル実行の中核ロジック
+  - BattleCalculator.ts: 拡張された計算エンジン
+  - BattlePhase.ts: フロー制御とUI
+  - BattleTypingPhase.ts: タイピングUIとリアルタイム効果
+- ロジック重複の削除
+- 保守性・テスタビリティ・拡張性の向上
+- リアルタイム性の維持
+
+**チェック済み**: バトルシステムのリファクタリングが完了し、責務が明確化されること ✅
+**最終確認**: 2025-08-17 - Issue #49完了
+
 ## アジャイル開発計画
 詳細は@docs/agile-development-plan.mdを参照

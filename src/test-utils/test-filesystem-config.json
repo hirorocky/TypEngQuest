@@ -1,0 +1,109 @@
+{
+  "rootName": "projects",
+  "structure": {
+    "name": "projects",
+    "type": "directory",
+    "children": [
+      {
+        "name": "main.js",
+        "type": "file"
+      },
+      {
+        "name": "server.py",
+        "type": "file"
+      },
+      {
+        "name": "index.html",
+        "type": "file"
+      },
+      {
+        "name": "web-app",
+        "type": "directory",
+        "children": [
+          {
+            "name": "src",
+            "type": "directory",
+            "children": [
+              {
+                "name": "components",
+                "type": "directory"
+              },
+              {
+                "name": "utils",
+                "type": "directory"
+              },
+              {
+                "name": "index.js",
+                "type": "file"
+              },
+              {
+                "name": "app.ts",
+                "type": "file"
+              }
+            ]
+          },
+          {
+            "name": "public",
+            "type": "directory"
+          },
+          {
+            "name": "tests",
+            "type": "directory"
+          },
+          {
+            "name": "package.json",
+            "type": "file"
+          },
+          {
+            "name": "README.md",
+            "type": "file"
+          }
+        ]
+      },
+      {
+        "name": "game-engine",
+        "type": "directory",
+        "children": [
+          {
+            "name": "src",
+            "type": "directory"
+          },
+          {
+            "name": "assets",
+            "type": "directory"
+          },
+          {
+            "name": "engine.exe",
+            "type": "file"
+          },
+          {
+            "name": "config.yaml",
+            "type": "file"
+          }
+        ]
+      },
+      {
+        "name": "mobile-app",
+        "type": "directory",
+        "children": [
+          {
+            "name": "src",
+            "type": "directory"
+          },
+          {
+            "name": "app.py",
+            "type": "file"
+          },
+          {
+            "name": ".hidden.json",
+            "type": "file"
+          }
+        ]
+      }
+    ]
+  },
+  "specialItems": {
+    "bossLocation": "/projects/web-app",
+    "keyLocation": "/projects/mobile-app/app.py"
+  }
+}

@@ -1,11 +1,5 @@
 {
   "mcpServers": {
-    "typescript": {
-      "command": "npx",
-      "args": [
-        "typescript-mcp"
-      ]
-    },
     "serena": {
       "type": "stdio",
       "command": "uvx",
@@ -17,7 +11,7 @@
         "--context",
         "ide-assistant",
         "--project",
-        "/Users/rokio/dev/hobby/TypEngQuest"
+        "."
       ],
       "env": {}
     }

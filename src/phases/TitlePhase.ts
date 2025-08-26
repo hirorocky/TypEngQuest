@@ -53,6 +53,16 @@ export class TitlePhase extends Phase {
       execute: async (args: string[]) => this.startTypingTest(args),
     });
 
+    // 開発者モード用のbattleコマンド
+    if (process.env.DEV_MODE === 'true') {
+      this.registerCommand({
+        name: 'battle',
+        aliases: ['b'],
+        description: '[Dev] Start immediate battle with test enemy',
+        execute: async () => this.startDevBattle(),
+      });
+    }
+
     this.registerCommand({
       name: 'exit',
       aliases: ['quit', 'q'],
@@ -74,6 +84,9 @@ export class TitlePhase extends Phase {
     console.log(`  ${bold(green('start'))} - Begin your adventure`);
     console.log(`  ${bold(cyan('load'))}  - Continue from a save file`);
     console.log(`  ${bold(yellow('type'))}  - Start typing test (specify difficulty 1-5)`);
+    if (process.env.DEV_MODE === 'true') {
+      console.log(`  ${bold(yellow('battle'))} - [Dev] Start immediate battle`);
+    }
     console.log(`  ${bold(red('exit'))}  - Leave the game`);
     console.log();
     console.log('Type a command and press Enter, or type "help" for more options.');
@@ -134,6 +147,44 @@ export class TitlePhase extends Phase {
       message: 'Entering typing test mode',
       nextPhase: 'typing',
       data: { difficulty },
+    };
+  }
+
+  private async startDevBattle(): Promise<CommandResult> {
+    Display.printInfo('[Dev Mode] Starting immediate battle...');
+
+    // DevelopmentConfigLoader からEnemy設定を読み込む
+    const { DevelopmentConfigLoader } = await import('../core/DevelopmentConfigLoader');
+    const enemy = DevelopmentConfigLoader.createEnemyFromConfig();
+
+    if (!enemy) {
+      return {
+        success: false,
+        message: 'Failed to create enemy from configuration',
+      };
+    }
+
+    Display.printSuccess(`Enemy loaded: ${enemy.name} (Level ${enemy.level})`);
+
+    // 開発者モード用のWorldとPlayerを生成
+    const { Player } = await import('../player/Player');
+
+    const devWorld = DevelopmentConfigLoader.loadWorldFromConfig();
+    const devPlayer = new Player('DevPlayer', true);
+
+    // Battleフェーズに必要なデータを準備
+    const battleData = {
+      enemy: enemy,
+      isDevMode: true,
+      world: devWorld,
+      player: devPlayer,
+    };
+
+    return {
+      success: true,
+      message: 'Starting battle...',
+      nextPhase: 'battle',
+      data: battleData,
     };
   }
 

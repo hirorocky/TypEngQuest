@@ -1,0 +1,16 @@
+{
+  "battleSettings": {
+    "typingChallengeSettings": {
+      "minWordLength": 3,
+      "maxWordLength": 10,
+      "timeLimit": 30,
+      "difficulty": "medium"
+    },
+    "rewards": {
+      "experienceMultiplier": 1.5,
+      "goldMultiplier": 1.2
+    },
+    "escapeChance": 0.5
+  },
+  "defaultBattleMode": "normal"
+}

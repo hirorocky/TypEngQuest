@@ -1,4 +1,5 @@
 import { Skill } from './Skill';
+import { Battle } from './Battle';
 
 /**
  * 敵のステータス情報
@@ -130,7 +131,9 @@ export class Enemy {
 
   /** 所持技リスト（読み取り専用） */
   get skills(): readonly Skill[] {
-    return [...this._skills];
+    // 基本攻撃スキルを追加
+    const basicAttackSkill = Battle.getNormalAttackSkill();
+    return [basicAttackSkill, ...this._skills];
   }
 
   /** ドロップアイテムリスト（読み取り専用） */

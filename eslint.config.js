@@ -50,6 +50,9 @@ export default [
       'no-var': 'error',
       'no-duplicate-imports': 'error',
 
+      // TypeScript any restrictions
+      '@typescript-eslint/no-explicit-any': 'error',
+
       // Code quality
       'complexity': ['error', 10],
       'max-depth': ['error', 4],
@@ -100,6 +103,9 @@ export default [
           'caughtErrors': 'all'
         }
       ],
+
+      // TypeScript any restrictions - allow any in tests
+      '@typescript-eslint/no-explicit-any': 'off',
 
       'prefer-const': 'error',
       'no-var': 'error',

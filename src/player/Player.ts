@@ -2,8 +2,11 @@ import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats, EquipmentStatsData } from './EquipmentStats';
 import { Inventory, InventoryData } from './Inventory';
 import { ConsumableItem, EffectType, ItemRarity, ItemType } from '../items';
-import { EquipmentItem, EquipmentStats as ItemEquipmentStats, Skill } from '../items/EquipmentItem';
+import { EquipmentItem, EquipmentStats as ItemEquipmentStats } from '../items/EquipmentItem';
+import { Skill } from '../battle/Skill';
+import { Battle } from '../battle/Battle';
 import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
+import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
 
 /**
  * プレイヤーのセーブデータ形式を定義するインターフェース
@@ -33,131 +36,173 @@ export class Player {
   private bodyStats: BodyStats;
   private equipmentStats: EquipmentStats;
   private inventory: Inventory;
-  private equippedItems: EquipmentItem[] = [];
-  private equipmentSlots: (EquipmentItem | null)[] = [null, null, null, null, null]; // 5つのスロット
+  private equippedItems: (EquipmentItem | null)[] = [null, null, null, null, null]; // 装備スロット
+  private readonly equipmentSlotSize: number = 5; // 最大スロット数
   private equipmentCalculator: EquipmentEffectCalculator;
 
   /**
    * プレイヤーを初期化する
    * @param name - プレイヤーの名前
    */
-  constructor(name: string, istestMode: boolean = false) {
+  constructor(name: string, isDevMode: boolean = false) {
     this.name = name;
     this.bodyStats = new BodyStats(0); // 初期レベルは0
     this.equipmentStats = new EquipmentStats();
     this.inventory = new Inventory();
     this.equipmentCalculator = new EquipmentEffectCalculator();
-    if (istestMode) {
-      this.bodyStats.takeDamage(50);
-      this.bodyStats.consumeMP(20);
-      for (let i = 0; i < 15; i++) {
-        this.inventory.addItem(
-          new ConsumableItem({
-            id: `test-item-${i}`,
-            name: `Test Item ${i}`,
-            description: `This is a test item for the player.`,
-            type: ItemType.CONSUMABLE,
-            rarity: ItemRarity.COMMON,
-            effects: [{ type: EffectType.HEAL_HP, value: 50 }],
-          })
-        );
+
+    if (isDevMode) {
+      // 開発モードの場合、JSONファイルから設定を読み込む
+      this.loadDevModeConfig();
+    }
+  }
+  /**
+   * 開発モード用の設定をJSONから読み込む
+   */
+  private loadDevModeConfig(): void {
+    try {
+      // DevelopmentConfigLoaderを動的importで使用
+      const configData = DevelopmentConfigLoader.loadPlayerConfigData();
+
+      if (configData) {
+        // Body Statsの調整
+        if (configData.bodyStats?.hpDamage) {
+          this.bodyStats.takeDamage(configData.bodyStats.hpDamage);
+        }
+        if (configData.bodyStats?.mpConsumption) {
+          this.bodyStats.consumeMP(configData.bodyStats.mpConsumption);
+        }
+
+        // インベントリアイテムの追加
+        if (configData.inventory) {
+          this.loadInventoryFromConfig(configData.inventory);
+        }
+
+        // デフォルト装備品の設定
+        if (configData.equippedItems && Array.isArray(configData.equippedItems)) {
+          configData.equippedItems.forEach((itemData, slotIndex) => {
+            if (itemData && slotIndex < this.equipmentSlotSize) {
+              // JSONデータからEquipmentItemインスタンスを作成
+              const item = new EquipmentItem(itemData);
+              this.equipToSlot(slotIndex, item);
+            }
+          });
+        }
       }
+    } catch (error) {
+      console.warn('Failed to load dev mode config, using fallback data:', error);
+      throw new Error('Failed to load development mode config');
+    }
+  }
 
-      // テスト用装備アイテムを追加
-      const testEquipments = [
-        new EquipmentItem({
-          id: 'ancient-sword',
-          name: 'ancient',
-          description: 'An ancient blade with mysterious power',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.LEGENDARY,
-          stats: { strength: 5, willpower: 5, agility: 0, fortune: 5 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'magical-shield',
-          name: 'magical',
-          description: 'A shield imbued with protective magic',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 0, willpower: 20, agility: -5, fortune: 0 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'swift-boots',
-          name: 'swift',
-          description: 'Boots that enhance movement speed',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.RARE,
-          stats: { strength: 0, willpower: 0, agility: 20, fortune: 0 },
-          grade: 20,
-        }),
-        new EquipmentItem({
-          id: 'steel-sword',
-          name: 'steel',
-          description: 'A well-crafted steel sword',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 12, willpower: 0, agility: 3, fortune: 0 },
-          grade: 15,
-        }),
-        new EquipmentItem({
-          id: 'wooden-shield',
-          name: 'wooden',
-          description: 'A basic wooden shield for protection',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 0, willpower: 8, agility: 0, fortune: 0 },
-          grade: 8,
-        }),
-        new EquipmentItem({
-          id: 'powerful-gauntlets',
-          name: 'powerful',
-          description: 'Gauntlets that boost physical strength',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.RARE,
-          stats: { strength: 18, willpower: 3, agility: 0, fortune: 0 },
-          grade: 21,
-        }),
-        new EquipmentItem({
-          id: 'blessed-amulet',
-          name: 'blessed',
-          description: 'An amulet blessed by divine power',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 0, willpower: 0, agility: 0, fortune: 20 },
-          grade: 20,
-        }),
-        new EquipmentItem({
-          id: 'crystal-orb',
-          name: 'crystal',
-          description: 'A mystical crystal orb',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.LEGENDARY,
-          stats: { strength: 30, willpower: 0, agility: 20, fortune: 10 },
-          grade: 60,
-        }),
-        new EquipmentItem({
-          id: 'silver-ring',
-          name: 'silver',
-          description: 'A polished silver ring',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 0, willpower: 0, agility: 7, fortune: 3 },
-          grade: 10,
-        }),
-        new EquipmentItem({
-          id: 'enchanted-bow',
-          name: 'enchanted',
-          description: 'A bow enhanced with magical properties',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.EPIC,
-          stats: { strength: 22, willpower: 0, agility: 28, fortune: 0 },
-          grade: 50,
-        }),
-      ];
+  /**
+   * JSON設定からインベントリアイテムを読み込む
+   */
+  private loadInventoryFromConfig(inventory: {
+    consumableItems?: unknown[];
+    equipmentItems?: unknown[];
+  }): void {
+    // 消費アイテムの追加
+    for (const itemConfig of inventory.consumableItems || []) {
+      try {
+        const config = itemConfig as {
+          id: string;
+          name: string;
+          description: string;
+          type: string;
+          rarity: string;
+          effects: { type: string; value: number }[];
+        };
+        const item = new ConsumableItem({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          type: this.parseItemType(config.type),
+          rarity: this.parseItemRarity(config.rarity),
+          effects: config.effects.map((effect: { type: string; value: number }) => ({
+            type: this.parseEffectType(effect.type),
+            value: effect.value,
+          })),
+        });
+        this.inventory.addItem(item);
+      } catch (error) {
+        console.warn(`Failed to load consumable item ${(itemConfig as { id: string }).id}:`, error);
+        throw new Error(`Invalid consumable item config: ${(itemConfig as { id: string }).id}`);
+      }
+    }
 
-      testEquipments.forEach(equipment => this.inventory.addItem(equipment));
+    // 装備アイテムの追加
+    for (const itemConfig of inventory.equipmentItems || []) {
+      try {
+        const config = itemConfig as {
+          id: string;
+          name: string;
+          description: string;
+          type: string;
+          rarity: string;
+          stats: ItemEquipmentStats;
+          grade: number;
+        };
+        const item = new EquipmentItem({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          type: this.parseItemType(config.type),
+          rarity: this.parseItemRarity(config.rarity),
+          stats: config.stats,
+          grade: config.grade,
+        });
+        this.inventory.addItem(item);
+      } catch (error) {
+        console.warn(`Failed to load equipment item ${(itemConfig as { id: string }).id}:`, error);
+        throw new Error(`Invalid equipment item config: ${(itemConfig as { id: string }).id}`);
+      }
+    }
+  }
+
+  /**
+   * 文字列をItemTypeに変換する
+   */
+  private parseItemType(type: string): ItemType {
+    switch (type.toLowerCase()) {
+      case 'consumable':
+        return ItemType.CONSUMABLE;
+      case 'equipment':
+        return ItemType.EQUIPMENT;
+      default:
+        throw new Error(`Unknown item type: ${type}`);
+    }
+  }
+
+  /**
+   * 文字列をItemRarityに変換する
+   */
+  private parseItemRarity(rarity: string): ItemRarity {
+    switch (rarity.toLowerCase()) {
+      case 'common':
+        return ItemRarity.COMMON;
+      case 'rare':
+        return ItemRarity.RARE;
+      case 'epic':
+        return ItemRarity.EPIC;
+      case 'legendary':
+        return ItemRarity.LEGENDARY;
+      default:
+        throw new Error(`Unknown item rarity: ${rarity}`);
+    }
+  }
+
+  /**
+   * 文字列をEffectTypeに変換する
+   */
+  private parseEffectType(effect: string): EffectType {
+    switch (effect.toLowerCase()) {
+      case 'heal_hp':
+        return EffectType.HEAL_HP;
+      case 'heal_mp':
+        return EffectType.HEAL_MP;
+      default:
+        throw new Error(`Unknown effect type: ${effect}`);
     }
   }
 
@@ -174,7 +219,13 @@ export class Player {
    * @returns プレイヤーのレベル
    */
   getLevel(): number {
-    return this.equipmentCalculator.calculateAverageGradeBySlots(this.equippedItems, 5);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.calculateAverageGradeBySlots(
+      actualEquippedItems,
+      this.equipmentSlotSize
+    );
   }
 
   /**
@@ -248,7 +299,10 @@ export class Player {
    * @returns 装備ステータスの合計
    */
   getEquippedItemStats(): ItemEquipmentStats {
-    return this.equipmentCalculator.calculateTotalStats(this.equippedItems);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.calculateTotalStats(actualEquippedItems);
   }
 
   /**
@@ -256,7 +310,23 @@ export class Player {
    * @returns 使用可能な技のリスト
    */
   getEquippedItemSkills(): Skill[] {
-    return this.equipmentCalculator.getAvailableSkills(this.equippedItems);
+    const actualEquippedItems = this.equippedItems.filter(
+      (item): item is EquipmentItem => item !== null
+    );
+    return this.equipmentCalculator.getAvailableSkills(actualEquippedItems);
+  }
+
+  /**
+   * プレイヤーが使用可能なすべての技を取得する
+   * @returns 使用可能なすべての技のリスト
+   */
+  getAllAvailableSkills(): Skill[] {
+    // 基本攻撃スキルを追加
+    const basicAttackSkill = Battle.getNormalAttackSkill();
+
+    // 現在は装備から取得できる技のみと基本攻撃
+    // 後でレベルに応じた技を追加する予定
+    return [basicAttackSkill, ...this.getEquippedItemSkills()];
   }
 
   /**
@@ -264,7 +334,7 @@ export class Player {
    * @returns 装備スロットの配列
    */
   getEquipmentSlots(): (EquipmentItem | null)[] {
-    return [...this.equipmentSlots];
+    return [...this.equippedItems];
   }
 
   /**
@@ -273,26 +343,23 @@ export class Player {
    * @param equipment - 装備するアイテム（nullで装備解除）
    */
   equipToSlot(slotIndex: number, equipment: EquipmentItem | null): void {
-    if (slotIndex < 0 || slotIndex >= 5) {
+    if (slotIndex < 0 || slotIndex >= this.equipmentSlotSize) {
       throw new Error(`Invalid slot index: ${slotIndex}`);
     }
 
     // 既存の装備を解除してインベントリに戻す
-    const currentEquipment = this.equipmentSlots[slotIndex];
+    const currentEquipment = this.equippedItems[slotIndex];
     if (currentEquipment) {
       this.inventory.addItem(currentEquipment);
     }
 
     // 新しい装備をセット
-    this.equipmentSlots[slotIndex] = equipment;
+    this.equippedItems[slotIndex] = equipment;
 
     // 装備をインベントリから削除
     if (equipment) {
       this.inventory.removeItem(equipment);
     }
-
-    // equippedItemsを更新
-    this.equippedItems = this.equipmentSlots.filter(item => item !== null) as EquipmentItem[];
 
     // EquipmentStatsを更新
     this.updateEquipmentStats();
@@ -309,11 +376,13 @@ export class Player {
     this.equipmentStats.clear();
 
     for (const item of this.equippedItems) {
-      const itemStats = item.getStats();
-      this.equipmentStats.addStrength(itemStats.strength);
-      this.equipmentStats.addWillpower(itemStats.willpower);
-      this.equipmentStats.addAgility(itemStats.agility);
-      this.equipmentStats.addFortune(itemStats.fortune);
+      if (item) {
+        const itemStats = item.getStats();
+        this.equipmentStats.addStrength(itemStats.strength);
+        this.equipmentStats.addWillpower(itemStats.willpower);
+        this.equipmentStats.addAgility(itemStats.agility);
+        this.equipmentStats.addFortune(itemStats.fortune);
+      }
     }
   }
 
@@ -322,7 +391,7 @@ export class Player {
    * @returns 装備中のアイテム名の配列
    */
   getEquippedItemNames(): string[] {
-    return this.equipmentSlots.map(item => (item ? item.getName() : ''));
+    return this.equippedItems.map((item: EquipmentItem | null) => (item ? item.getName() : ''));
   }
 
   /**
@@ -344,6 +413,7 @@ export class Player {
    * @returns 復元されたプレイヤーインスタンス
    * @throws {Error} データが不正な場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(data: any): Player {
     Player.validatePlayerData(data);
 
@@ -361,6 +431,7 @@ export class Player {
    * @param data - 検証するデータ
    * @throws {Error} データが不正な場合
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validatePlayerData(data: any): asserts data is PlayerData {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid player data');

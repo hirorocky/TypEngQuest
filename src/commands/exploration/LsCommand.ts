@@ -1,5 +1,6 @@
 import { BaseCommand, CommandContext } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
+import { FileSystem } from '../../world/FileSystem';
 import { FileNode } from '../../world/FileNode';
 import { blueBold } from '../../ui/colors';
 
@@ -11,7 +12,7 @@ export class LsCommand extends BaseCommand {
   public description = 'list directory contents';
 
   protected executeInternal(args: string[], context: CommandContext): CommandResult {
-    const fileSystem = this.getFileSystem(context) as any;
+    const fileSystem = this.getFileSystem(context) as FileSystem;
     const options = this.parseOptions(args);
     const targetPath = options.remaining[0];
 
