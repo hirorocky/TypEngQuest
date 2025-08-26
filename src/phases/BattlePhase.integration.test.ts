@@ -185,9 +185,10 @@ describe('BattlePhase Integration Tests', () => {
 
       battlePhase.setEnemy(enemy);
 
-      // バトルを作成し、終了させる
+      // バトルを作成し、開始してから終了させる
       const battle = new Battle(player, enemy);
-      battle.end(); // バトルを非アクティブにする
+      battle.start(); // バトルを開始
+      battle.end(); // バトルを終了してから非アクティブにする
       battlePhase.setBattle(battle);
 
       // バトルが存在しない状態でstartInputLoopを呼び出し

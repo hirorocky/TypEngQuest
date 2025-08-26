@@ -396,7 +396,10 @@ export class BattlePhase extends Phase {
     // キー入力待ち
     await this.waitForKeyPress();
 
-    this.battle.end();
+    // 戦闘がアクティブな場合のみ終了処理を実行
+    if (this.battle.isActive) {
+      this.battle.end();
+    }
 
     // readlineインターフェースをクリーンアップ
     this.cleanup();
