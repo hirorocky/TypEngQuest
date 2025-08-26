@@ -109,8 +109,13 @@ export class Battle {
 
   /**
    * 戦闘を終了する
+   * @throws {Error} 戦闘がアクティブでない場合
    */
   end(): void {
+    if (!this._isActive) {
+      throw new Error('Battle is not active');
+    }
+
     this._isActive = false;
   }
 

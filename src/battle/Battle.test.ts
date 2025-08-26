@@ -69,6 +69,13 @@ describe('Battle', () => {
       expect(battle.isActive).toBe(false);
     });
 
+    it('戦闘がアクティブでない場合にend()でエラーをスローする', () => {
+      // 戦闘が開始されていない状態
+      expect(battle.isActive).toBe(false);
+
+      expect(() => battle.end()).toThrow('Battle is not active');
+    });
+
     it('ターンを進められる', () => {
       battle.start();
       const initialTurn = battle.currentTurn;
