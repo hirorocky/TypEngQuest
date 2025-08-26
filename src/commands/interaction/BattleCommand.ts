@@ -89,7 +89,7 @@ export class BattleCommand extends BaseCommand {
       level: baseLevel,
       stats: stats,
       skills: this.generateEnemySkills(extension),
-      drops: this.generateEnemyDrops(extension),
+      drops: this.generateEnemyDrops(),
     });
   }
 
@@ -187,9 +187,9 @@ export class BattleCommand extends BaseCommand {
   }
 
   /**
-   * 拡張子に基づいて敵のドロップアイテムを生成
+   * 敵のドロップアイテムを生成
    */
-  private generateEnemyDrops(_extension: string): DropItem[] {
+  private generateEnemyDrops(): DropItem[] {
     return [
       {
         itemId: 'code_fragment',
