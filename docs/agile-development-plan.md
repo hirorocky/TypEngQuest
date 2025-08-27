@@ -335,7 +335,1650 @@
 
 ---
 
-### 🩸 プロジェクト10: 状態異常システム
+### ⌨️ プロジェクト10A: タイピング評価簡素化
+**目標**: タイピング評価システムを簡素化し、理解しやすくする
+
+**成果物**:
+- 速度評価を4段階に簡素化（Fast/Normal/Slow/Miss）
+- 精度評価を3段階に簡素化（Perfect/Good/Poor）
+- 新しい評価基準によるスキル成功率計算
+
+**詳細設計**:
+
+#### 現在の評価システム
+- **速度評価**: S/A/B/C/F（5段階）
+- **精度評価**: Perfect/Great/Good/Poor（4段階）
+
+#### 新しい評価システム
+- **正確さ**: Perfect(100%), Good(95%以上), Poor(94%以下) - 3段階
+- **速さ**: Fast(制限時間の70%以下), Normal(85%以下), Slow(制限時間以内), Miss(制限時間超過) - 4段階
+
+#### 実装変更点
+```typescript
+// 現在: 'Perfect' | 'Great' | 'Good' | 'Poor'
+// 新仕様: 'Perfect' | 'Good' | 'Poor'
+type AccuracyRating = 'Perfect' | 'Good' | 'Poor';
+
+// 現在: 'S' | 'A' | 'B' | 'C' | 'F'
+// 新仕様: 'Fast' | 'Normal' | 'Slow' | 'Miss'
+type SpeedRating = 'Fast' | 'Normal' | 'Slow' | 'Miss';
+```
+
+#### 評価計算ロジック
+```typescript
+// 精度評価：100%=Perfect, 95%以上=Good, 94%以下=Poor
+function calculateAccuracyRating(accuracy: number): AccuracyRating {
+  if (accuracy === 100) return 'Perfect';
+  if (accuracy >= 95) return 'Good';
+  return 'Poor';
+}
+
+// 速度評価：70%以下=Fast, 85%以下=Normal, 100%以下=Slow, 100%超=Miss
+function calculateSpeedRating(timeUsedRatio: number): SpeedRating {
+  if (timeUsedRatio <= 0.70) return 'Fast';
+  if (timeUsedRatio <= 0.85) return 'Normal';
+  if (timeUsedRatio <= 1.00) return 'Slow';
+  return 'Miss';
+}
+```
+
+#### タイピングボーナス計算
+```typescript
+function getTypingBonus(typingResult: TypingResult): number {
+  const speedBonus = {
+    'Fast': 15, 'Normal': 10, 'Slow': 5, 'Miss': 0
+  }[typingResult.speedRating];
+
+  const accuracyBonus = {
+    'Perfect': 20, 'Good': 10, 'Poor': 0
+  }[typingResult.accuracyRating];
+
+  return speedBonus + accuracyBonus;
+}
+```
+
+**タスク**:
+1. SpeedRating型の変更（S/A/B/C/F → Fast/Normal/Slow/Miss）
+2. AccuracyRating型の変更（Perfect/Great/Good/Poor → Perfect/Good/Poor）
+3. TypingChallengeクラスの評価ロジック更新
+   - 精度評価：100%=Perfect, 95%以上=Good, 94%以下=Poor
+   - 速度評価：70%以下=Fast, 85%以下=Normal, 100%以下=Slow, 100%超=Miss
+4. 既存テストの更新と新しい評価基準のテスト追加
+5. UI表示の更新（評価結果の表示変更）
+
+**チェックポイント**: 新しい評価システムでタイピングチャレンジが正常に動作すること
+
+---
+
+### ⚔️ プロジェクト10B: バトル計算システム改善
+**目標**: 3層成功率システムとスキル種別システムを実装する
+
+**成果物**:
+- 物理/魔法スキル種別システム
+- 敵の物理/魔法回避率システム
+- 3層スキル実行システム（スキル成功→効果成功→威力計算）
+- 敵のMP概念削除と行動予告システム
+
+**詳細設計**:
+
+#### スキル効果への3層成功率システム
+
+**第1層: スキル全体の成功率**
+- agilityとタイピング評価が影響
+- スキル種別（物理/魔法）に応じて敵の回避率が適用される
+- タイピング評価の影響はスキル全体の成功率のみ
+
+**第2層: 各効果の成功率**
+- 各効果が独自の固定成功率を持つ
+- ステータスの影響は受けない
+
+**第3層: 効果の威力計算**
+- 各効果が独自の基本威力を持つ
+- strength, willpower, agility, fortuneのいずれかが影響可能
+
+#### 新しいSkillインターフェース
+
+```typescript
+// スキル種別の定義
+export type SkillType = 'physical' | 'magical';
+
+export interface Skill {
+  // 既存プロパティ
+  id: string;
+  name: string;
+  description: string;
+  grade: number;
+  mpCost: number;
+  mpCharge: number;
+  actionCost: number;
+  typingDifficulty: number;
+  target: SkillTarget;
+
+  // スキル種別（新規）
+  skillType: SkillType;
+
+  // スキル全体の成功率（新規）
+  skillSuccessRate: {
+    baseRate: number; // 基本成功率（%）
+    agilityInfluence: number; // agility影響率
+    typingInfluence: number; // タイピング評価影響率
+  };
+
+  // クリティカル率（新規）
+  criticalRate: {
+    baseRate: number; // 基本クリティカル率（%）
+    fortuneInfluence: number; // fortune影響率
+  };
+
+  // 各効果（拡張）
+  effects: SkillEffect[];
+}
+
+// パラメータ影響の定義
+interface StatInfluence {
+  stat: 'strength' | 'willpower' | 'agility' | 'fortune';
+  rate: number; // 影響度（パーセント単位）
+}
+
+// 拡張されたEffectインターフェース
+export type SkillEffect = {
+  type: 'damage' | 'hp_heal' | 'add_status' | 'remove_status';
+  target: SkillTarget;
+
+  // 効果の威力
+  basePower: number;
+  powerInfluence?: StatInfluence;
+
+  // 効果の成功率（固定値）
+  successRate: number;
+};
+```
+
+#### Enemyインターフェースの拡張
+
+```typescript
+export interface Enemy {
+  // 既存プロパティ...
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+
+  // ステータス
+  hp: number;
+  // mp: number; ← 削除：敵にMPは不要
+  strength: number;
+  willpower: number;
+  agility: number;
+  fortune: number;
+
+  // 新規: 種別別回避率
+  physicalEvadeRate: number; // 物理スキル回避率（%）
+  magicalEvadeRate: number;  // 魔法スキル回避率（%）
+
+  // 新規: 次回行動予告システム
+  nextSkillId: string | null; // 次に使用するスキルID（事前表示用）
+
+  // その他...
+  skills: string[]; // 敵スキルはMP消費なし
+  dropItems: ItemDrop[];
+}
+```
+
+#### スキル実行フロー計算
+
+```typescript
+class SkillExecutionSystem {
+  /**
+   * 3段階判定でスキルを実行
+   */
+  async executeSkill(
+    skill: Skill,
+    user: Player,
+    target: Player | Enemy,
+    typingResult: TypingResult
+  ): Promise<SkillExecutionResult> {
+
+    // 第1段階: スキル全体の成功判定
+    const skillSuccessRate = this.calculateSkillSuccessRate(
+      skill,
+      user.getBodyStats().agility,
+      target,
+      typingResult
+    );
+
+    if (!this.rollSuccess(skillSuccessRate)) {
+      return { skillSucceeded: false, effectResults: [] };
+    }
+
+    // 第2段階: 各効果の個別判定・実行
+    const effectResults = [];
+    for (const effect of skill.effects) {
+      const effectResult = await this.executeEffect(effect, user, target);
+      effectResults.push(effectResult);
+    }
+
+    return { skillSucceeded: true, effectResults };
+  }
+
+  /**
+   * スキル成功率計算（agility + タイピング評価影響 + 敵回避率）
+   */
+  private calculateSkillSuccessRate(
+    skill: Skill,
+    userAgility: number,
+    target: Player | Enemy,
+    typingResult: TypingResult
+  ): number {
+    let finalRate = skill.skillSuccessRate.baseRate;
+
+    // agility影響
+    const agilityBonus = (userAgility * skill.skillSuccessRate.agilityInfluence) / 100;
+    finalRate += agilityBonus;
+
+    // タイピング評価影響
+    const typingBonus = this.getTypingBonus(typingResult) * skill.skillSuccessRate.typingInfluence;
+    finalRate += typingBonus;
+
+    // 敵の回避率を適用
+    const enemyEvadeRate = this.getEnemyEvadeRate(target, skill.skillType);
+    finalRate -= enemyEvadeRate;
+
+    return Math.max(5, Math.min(100, finalRate)); // 最低5%は保証
+  }
+}
+```
+
+#### 計算例
+
+```typescript
+// プレイヤー: agility=60, strength=45, willpower=50
+// 敵: physicalEvadeRate=15%, magicalEvadeRate=10%
+// タイピング結果: Fast + Perfect（ボーナス=35）
+
+// precisionStrike実行（物理スキル）:
+// 1. スキル成功率: 75 + (60×1.0/100) + (35×1.5) - 15 = 75 + 0.6 + 52.5 - 15 = 113.1% → 100%
+// 2. ダメージ威力: 80 × (1 + 45×2.0/100) = 80 × 1.9 = 152ダメージ
+// 3. ダメージ成功率: 100%（確定）
+
+// focusedHeal実行（魔法スキル、自分対象）:
+// 1. スキル成功率: 85 + (60×0.2/100) + (35×2.0) - 0 = 85 + 0.12 + 70 = 155.12% → 100%
+// 2. 回復量: 40 × (1 + 50×1.8/100) = 40 × 1.9 = 76回復
+// 3. 回復成功率: 95%（固定値）
+```
+
+#### 基本計算式
+
+**スキル成功率計算式**
+```typescript
+最終成功率 = 基本成功率 + agilityボーナス + タイピングボーナス - 敵回避率
+// 物理スキル: 敵physicalEvadeRate を減算
+// 魔法スキル: 敵magicalEvadeRate を減算
+// 自分対象: 回避率減算なし
+```
+
+**クリティカル率計算式**
+```typescript
+最終クリティカル率 = スキルの基本クリティカル率 + (fortune値 × fortuneInfluence) / 100
+// 最大50%、最小0%に制限
+```
+
+**ダメージ計算式**
+```typescript
+影響後威力 = 技の基本威力 × (1 + (影響パラメータ値 × 影響率) / 100)
+クリティカル判定 = ランダム値 < 最終クリティカル率
+最終ダメージ = 影響後威力 × (クリティカル判定 ? 1.5 : 1.0)
+```
+
+**タスク**:
+1. SkillType型の追加（'physical' | 'magical'）
+2. Skillインターフェースの拡張
+   - skillType: SkillType追加
+   - skillSuccessRate: { baseRate, agilityInfluence, typingInfluence }追加
+   - criticalRate: { baseRate, fortuneInfluence }追加
+3. SkillEffect型の拡張
+   - basePower, powerInfluence, successRate追加
+4. Enemyインターフェースの修正
+   - mpプロパティ削除
+   - physicalEvadeRate, magicalEvadeRate追加
+   - nextSkillIdプロパティ追加
+5. BattleCalculatorの3層システム実装
+   - calculateSkillSuccessRate関数
+   - executeEffect関数
+   - getEnemyEvadeRate関数
+6. 既存スキルデータの新形式への変換
+7. テストケースの更新
+
+**チェックポイント**: 新しいバトル計算システムで戦闘が正常に動作すること
+
+---
+
+### 🎯 プロジェクト10C: スキル柔軟性向上システム
+**目標**: スキルの発動条件、潜在効果、コンボブーストシステムを実装する
+
+**成果物**:
+- スキル効果の発動条件システム
+- グレード3以上のスキルの潜在効果システム
+- コンボブーストシステム（次スキル強化）
+- スキルグレードシステム
+
+**詳細設計**:
+
+#### 効果レベルでの発動条件
+```typescript
+interface SkillEffect {
+  // 新規追加
+  conditions?: SkillCondition[];
+  // 以下、前章で定義済み
+}
+
+interface SkillCondition {
+  type: 'typing_speed' | 'typing_accuracy' | 'hp_threshold' | 'enemy_status' | 'self_buff' | 'agility_check';
+  value: number | string;
+  operator: '>=' | '<=' | '==' | 'has' | 'not_has';
+}
+```
+
+#### 潜在効果システム（グレード3以上）
+```typescript
+interface SkillPotentialEffect {
+  triggerCondition: {
+    typingPerfect: 'speed' | 'accuracy' | 'both' | null,
+    exMode: 'spark' | 'focus' | null
+  };
+  effect: SkillEffect;
+}
+
+// スキルに潜在効果を追加
+interface Skill {
+  // 既存プロパティ...
+  grade: number;
+  potentialEffects?: SkillPotentialEffect[]; // グレード3以上のみ
+}
+```
+
+#### Combo Boost システム
+```typescript
+interface ComboBoost {
+  id: string;
+  name: string;
+  description: string;
+  boostType: 'damage' | 'heal' | 'skill_success' | 'status_success' | 'mp_cost_reduction' | 'typing_difficulty' | 'potential';
+  value: number; // +10%なら10
+  duration: 1; // 次のスキル使用まで
+}
+
+// 使用例のスキル
+const comboPowerStrike: Skill = {
+  id: 'combo_power_strike',
+  name: 'Power Strike',
+  grade: 2,
+  // ... 他のプロパティ
+  
+  // コンボブースト付き
+  comboBoosts: [{
+    id: 'damage_boost',
+    name: 'Damage Boost',
+    description: '次のダメージスキルを10%強化',
+    boostType: 'damage',
+    value: 10,
+    duration: 1
+  }],
+  
+  effects: [{
+    type: 'damage',
+    basePower: 40,
+    powerInfluence: { stat: 'strength', rate: 1.5 },
+    successRate: 95,
+    
+    // 発動条件例
+    conditions: [{
+      type: 'hp_threshold',
+      value: 50,
+      operator: '>='
+    }]
+  }]
+};
+```
+
+#### スキル柔軟性の実装例
+
+```typescript
+// 例1: タイピング結果に応じた効果変化
+const adaptiveStrike: Skill = {
+  id: 'adaptive_strike',
+  grade: 3,
+  // ...基本プロパティ
+  
+  effects: [{
+    type: 'damage',
+    basePower: 30,
+    successRate: 100,
+    conditions: [{
+      type: 'typing_accuracy',
+      value: 'Perfect',
+      operator: '=='
+    }]
+  }],
+  
+  // 潜在効果：Perfect入力時に追加ダメージ
+  potentialEffects: [{
+    triggerCondition: {
+      typingPerfect: 'accuracy',
+      exMode: null
+    },
+    effect: {
+      type: 'damage',
+      basePower: 20, // 追加ダメージ
+      successRate: 100
+    }
+  }]
+};
+
+// 例2: 敵の状態に応じた効果強化
+const opportunisticStrike: Skill = {
+  id: 'opportunistic_strike',
+  grade: 4,
+  
+  effects: [{
+    type: 'damage',
+    basePower: 35,
+    successRate: 90,
+    
+    // 敵が毒状態の時に威力2倍
+    conditions: [{
+      type: 'enemy_status',
+      value: 'poisoned',
+      operator: 'has'
+    }]
+  }]
+};
+```
+
+#### コンボブーストシステムの実装
+
+```typescript
+class ComboBoostManager {
+  private activeBoosts: Map<string, ComboBoost[]> = new Map();
+  
+  /**
+   * スキル使用時にコンボブーストを適用
+   */
+  applyComboBoosts(skill: Skill, effectPower: number): number {
+    const applicableBoosts = this.getApplicableBoosts(skill);
+    let modifiedPower = effectPower;
+    
+    for (const boost of applicableBoosts) {
+      if (boost.boostType === 'damage' && skill.effects[0].type === 'damage') {
+        modifiedPower *= (1 + boost.value / 100);
+      }
+      // 他のブーストタイプも同様に処理
+    }
+    
+    // ブーストを消費
+    this.consumeBoosts(applicableBoosts);
+    
+    return modifiedPower;
+  }
+  
+  /**
+   * スキル実行後にコンボブーストを登録
+   */
+  registerComboBoosts(skill: Skill): void {
+    if (skill.comboBoosts) {
+      for (const boost of skill.comboBoosts) {
+        this.activeBoosts.set(boost.id, [boost]);
+      }
+    }
+  }
+}
+```
+
+#### 状況による効果の変化例
+
+```typescript
+// HP閾値による効果変化
+const desperateStrike: Skill = {
+  effects: [{
+    type: 'damage',
+    basePower: 20,
+    successRate: 100
+  }, {
+    type: 'damage', 
+    basePower: 40, // HP30%以下で追加ダメージ
+    successRate: 100,
+    conditions: [{
+      type: 'hp_threshold',
+      value: 30,
+      operator: '<='
+    }]
+  }]
+};
+
+// 自身バフ状態による強化
+const empoweredHeal: Skill = {
+  effects: [{
+    type: 'hp_heal',
+    basePower: 25,
+    successRate: 100
+  }, {
+    type: 'hp_heal',
+    basePower: 15, // strength buffがある時追加回復
+    successRate: 100,
+    conditions: [{
+      type: 'self_buff',
+      value: 'strength_buff',
+      operator: 'has'
+    }]
+  }]
+};
+```
+
+**タスク**:
+1. SkillConditionインターフェース実装
+   - type: 'typing_speed' | 'typing_accuracy' | 'hp_threshold' | 'enemy_status' | 'self_buff' | 'agility_check'
+   - value, operator プロパティ
+2. SkillPotentialEffectインターフェース実装
+   - triggerCondition（タイピング最高評価時の追加効果）
+3. ComboBoostシステム実装
+   - ComboBoostインターフェース
+   - 次スキル強化効果の管理
+4. Skillインターフェースにgradeプロパティ追加
+5. スキル実行時の条件チェック機能
+6. 潜在効果発動ロジック
+7. コンボブースト適用・管理システム
+8. テストケース作成
+
+**チェックポイント**: 条件付きスキル効果とコンボブーストが正常に動作すること
+
+---
+
+### ⭐ プロジェクト10D: EXポイントシステム
+**目標**: EXポイント獲得とFocus Mode/Spark Mode を実装する
+
+**成果物**:
+- タイピング結果に基づくEXポイント獲得システム
+- Focus Mode（全スキルコスト1、MP0、難易度最低、1ミスで終了）
+- Spark Mode（1スキル選択、1文字タイピング、成功数分連続発動）
+
+**詳細設計**:
+
+#### EXポイント獲得計算
+```typescript
+function calculateExPointGain(
+  typingDifficulty: number, // 1-5
+  speedRating: 'Fast' | 'Normal' | 'Slow' | 'Miss',
+  accuracyRating: 'Perfect' | 'Good' | 'Poor'
+): number {
+  let basePoints = typingDifficulty;
+
+  const speedMultiplier = {
+    'Fast': 2.0, 'Normal': 1.5, 'Slow': 1.0, 'Miss': 0.0
+  }[speedRating];
+
+  const accuracyMultiplier = {
+    'Perfect': 2.0, 'Good': 1.0, 'Poor': 0.5
+  }[accuracyRating];
+
+  return Math.floor(basePoints * speedMultiplier * accuracyMultiplier);
+}
+
+// 使用例:
+// 難易度5, Fast + Perfect = 5 × 2.0 × 2.0 = 20EXP
+// 難易度3, Normal + Good = 3 × 1.5 × 1.0 = 4EXP
+```
+
+#### Focus Mode実装
+```typescript
+class FocusMode {
+  /**
+   * Focus Mode：全スキル行動コスト1、MPコスト0、タイピング難易度最低
+   * 1度でもミス・時間切れでターン終了
+   */
+  async executeFocusMode(player: Player, availableSkills: Skill[]): Promise<FocusModeResult> {
+    const modifiedSkills = availableSkills.map(skill => ({
+      ...skill,
+      actionCost: 1,
+      mpCost: 0,
+      typingDifficulty: 1 // 最低難易度
+    }));
+
+    const results: SkillExecutionResult[] = [];
+    let turnEnded = false;
+
+    while (!turnEnded) {
+      // スキル選択UI
+      const selectedSkill = await this.selectSkill(modifiedSkills);
+      
+      // タイピングチャレンジ
+      const typingResult = await this.performTypingChallenge(selectedSkill);
+      
+      // ミス・時間切れチェック
+      if (typingResult.speedRating === 'Miss' || typingResult.accuracyRating === 'Poor') {
+        turnEnded = true;
+        break;
+      }
+      
+      // スキル実行
+      const skillResult = await this.executeSkill(selectedSkill, typingResult);
+      results.push(skillResult);
+      
+      // 継続確認
+      const continueTurn = await this.askContinue();
+      if (!continueTurn) {
+        turnEnded = true;
+      }
+    }
+
+    return { results, reason: turnEnded ? 'mistake_or_timeout' : 'voluntary_end' };
+  }
+}
+```
+
+#### Spark Mode実装
+```typescript
+class SparkMode {
+  /**
+   * Spark Mode：1スキル選択、1文字ずつタイピング、成功数分連続発動
+   */
+  async executeSparkMode(player: Player, availableSkills: Skill[]): Promise<SparkModeResult> {
+    // スキル選択
+    const selectedSkill = await this.selectSkill(availableSkills);
+    
+    // 1文字ずつタイピングチャレンジ
+    const singleCharChallenges = this.generateSingleCharChallenges();
+    let successCount = 0;
+    
+    for (let i = 0; i < singleCharChallenges.length; i++) {
+      const char = singleCharChallenges[i];
+      const result = await this.singleCharTyping(char, 2000); // 2秒制限
+      
+      if (result.success) {
+        successCount++;
+      } else {
+        break; // 失敗時点で終了
+      }
+    }
+    
+    // 成功数分だけスキルを連続実行
+    const executionResults: SkillExecutionResult[] = [];
+    for (let i = 0; i < successCount; i++) {
+      const result = await this.executeSkillWithoutTyping(selectedSkill);
+      executionResults.push(result);
+    }
+    
+    return { 
+      selectedSkill, 
+      successCount, 
+      totalChallenges: singleCharChallenges.length,
+      executionResults 
+    };
+  }
+  
+  private generateSingleCharChallenges(): string[] {
+    // a-z, A-Z, 0-9からランダムに10文字選択
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const challenges: string[] = [];
+    
+    for (let i = 0; i < 10; i++) {
+      const randomChar = chars[Math.floor(Math.random() * chars.length)];
+      challenges.push(randomChar);
+    }
+    
+    return challenges;
+  }
+}
+```
+
+#### バトルフェーズでのEXモード統合
+```typescript
+class BattlePhase {
+  async processPlayerTurn(player: Player): Promise<void> {
+    const availableActions = [
+      'skill', 'item', 'run'
+    ];
+    
+    // EXポイントが十分にある場合、EXモード選択肢追加
+    if (player.exPoints >= 10) {
+      availableActions.push('focus_mode');
+    }
+    if (player.exPoints >= 15) {
+      availableActions.push('spark_mode');
+    }
+    
+    const action = await this.selectAction(availableActions);
+    
+    switch (action) {
+      case 'focus_mode':
+        await this.executeFocusMode(player);
+        player.exPoints -= 10;
+        break;
+        
+      case 'spark_mode':
+        await this.executeSparkMode(player);
+        player.exPoints -= 15;
+        break;
+        
+      // 通常のスキル使用等...
+    }
+  }
+}
+```
+
+#### EXポイント表示・管理
+```typescript
+interface PlayerStats {
+  // 既存ステータス...
+  exPoints: number; // EXポイント追加
+}
+
+// バトル画面での表示
+class BattleDisplay {
+  displayPlayerStatus(player: Player): string {
+    return `
+      HP: ${player.hp}/${player.maxHp}
+      MP: ${player.mp}/${player.maxMp}
+      EX: ${player.exPoints} ${this.getExModeStatus(player.exPoints)}
+    `;
+  }
+  
+  private getExModeStatus(exPoints: number): string {
+    const modes = [];
+    if (exPoints >= 10) modes.push('Focus');
+    if (exPoints >= 15) modes.push('Spark');
+    return modes.length > 0 ? `(${modes.join(', ')} Available)` : '';
+  }
+}
+```
+
+**タスク**:
+1. EXポイント計算システム実装
+   - calculateExPointGain関数
+   - タイピング難易度 × 速度倍率 × 精度倍率
+2. Player/BattleにEXポイント管理機能追加
+3. Focus Mode実装
+   - 全スキルの行動コスト1、MPコスト0化
+   - タイピング難易度最低化
+   - 1ミス・時間切れでターン即終了
+4. Spark Mode実装
+   - スキル選択UI
+   - 1文字ずつタイピングチャレンジ
+   - 成功回数分のスキル連続発動
+5. バトルフェーズでのEXモード選択UI
+6. EXポイント消費システム
+7. テストケース作成
+
+**チェックポイント**: EXポイントシステムとFocus/Sparkモードが正常に動作すること
+
+---
+
+### ⚔️ プロジェクト10E: 装備システム刷新
+**目標**: 装備システムを「形容詞+武器/アクセサリー」構成に変更する
+
+**成果物**:
+- 8スロット装備システム（形容詞+武器1、形容詞+武器2、形容詞+アクセサリー1、形容詞+アクセサリー2）
+- 3種類のアイテム種別（weapon, accessory, adjective）
+- レアリティ廃止、グレード1-100システム
+- 装備アイテムへの最大2スキル・コンボブースト付与
+- プレイヤーレベル＝装備グレード平均値計算
+
+**詳細設計**:
+
+#### 新しい装備スロット構成（最大8スロット）
+```typescript
+enum EquipmentSlot {
+  ADJECTIVE_1 = 'adjective_1',
+  WEAPON_1 = 'weapon_1',
+  ADJECTIVE_2 = 'adjective_2', 
+  WEAPON_2 = 'weapon_2',
+  ADJECTIVE_3 = 'adjective_3',
+  ACCESSORY_1 = 'accessory_1',
+  ADJECTIVE_4 = 'adjective_4',
+  ACCESSORY_2 = 'accessory_2' // キーアイテムで解放
+}
+
+// 装備構成例: "swift steel sword" + "magical crystal pendant"
+// slot1: swift(adjective) + slot2: steel(adjective) + slot3: sword(weapon)
+// slot4: magical(adjective) + slot5: crystal(adjective) + slot6: pendant(accessory)
+```
+
+#### アイテム種別の再定義
+```typescript
+enum EquipmentType {
+  WEAPON = 'weapon',        // strength, willpower寄り
+  ACCESSORY = 'accessory',  // agility, fortune寄り
+  ADJECTIVE = 'adjective'   // バランス型
+}
+
+interface EquipmentItem {
+  id: string;
+  name: string;
+  type: EquipmentType;
+  grade: number; // 1-100（レアリティ廃止）
+  
+  // ステータス
+  stats: {
+    strength: number;
+    willpower: number;
+    agility: number;
+    fortune: number;
+  };
+  
+  // 新機能
+  skills: Skill[]; // 最大2個のスキル
+  comboBoosts: ComboBoost[]; // コンボブースト効果
+}
+```
+
+#### ステータス分布の特徴
+```typescript
+class EquipmentGenerator {
+  generateEquipmentStats(type: EquipmentType, grade: number): Stats {
+    const baseStatTotal = grade * 2; // グレード50なら合計100ポイント
+    
+    switch (type) {
+      case EquipmentType.WEAPON:
+        // strength 40%, willpower 30%, agility 20%, fortune 10%
+        return this.distributeStats(baseStatTotal, [0.4, 0.3, 0.2, 0.1]);
+        
+      case EquipmentType.ACCESSORY:
+        // agility 40%, fortune 30%, strength 20%, willpower 10%
+        return this.distributeStats(baseStatTotal, [0.2, 0.1, 0.4, 0.3]);
+        
+      case EquipmentType.ADJECTIVE:
+        // バランス型: 各25%
+        return this.distributeStats(baseStatTotal, [0.25, 0.25, 0.25, 0.25]);
+    }
+  }
+  
+  private distributeStats(total: number, ratios: number[]): Stats {
+    return {
+      strength: Math.floor(total * ratios[0]),
+      willpower: Math.floor(total * ratios[1]), 
+      agility: Math.floor(total * ratios[2]),
+      fortune: Math.floor(total * ratios[3])
+    };
+  }
+}
+```
+
+#### 装備スロット管理システム
+```typescript
+class EquipmentSlotManager {
+  private maxSlots = 8;
+  private unlockedSlots = 6; // 初期は6スロット、2つ目のアクセサリーで8スロット
+  
+  /**
+   * 装備可能かチェック
+   */
+  canEquip(slot: EquipmentSlot, item: EquipmentItem): boolean {
+    // スロット解放チェック
+    if (!this.isSlotUnlocked(slot)) {
+      return false;
+    }
+    
+    // 種別とスロットの適合性チェック
+    const expectedType = this.getExpectedTypeForSlot(slot);
+    return item.type === expectedType;
+  }
+  
+  private getExpectedTypeForSlot(slot: EquipmentSlot): EquipmentType {
+    if (slot.includes('adjective')) return EquipmentType.ADJECTIVE;
+    if (slot.includes('weapon')) return EquipmentType.WEAPON;
+    if (slot.includes('accessory')) return EquipmentType.ACCESSORY;
+    throw new Error(`Unknown slot type: ${slot}`);
+  }
+  
+  /**
+   * プレイヤーレベル計算（装備グレードの平均値）
+   */
+  calculatePlayerLevel(equippedItems: Map<EquipmentSlot, EquipmentItem>): number {
+    const grades = Array.from(equippedItems.values()).map(item => item.grade);
+    
+    if (grades.length === 0) return 1;
+    
+    const sum = grades.reduce((total, grade) => total + grade, 0);
+    return Math.floor(sum / this.maxSlots); // 最大スロット数で割る
+  }
+}
+```
+
+#### スキル・コンボブースト付与システム
+```typescript
+class EquipmentEnhancer {
+  /**
+   * 装備生成時にスキルとコンボブーストをランダム付与
+   */
+  generateEnhancements(item: EquipmentItem): void {
+    // スキル付与（最大2個）
+    const skillCount = Math.random() > 0.7 ? 2 : Math.random() > 0.3 ? 1 : 0;
+    item.skills = this.generateRandomSkills(skillCount, item.grade);
+    
+    // コンボブースト付与（確率）
+    if (Math.random() > 0.6) {
+      item.comboBoosts = [this.generateRandomComboBoost()];
+    }
+  }
+  
+  private generateRandomSkills(count: number, grade: number): Skill[] {
+    const availableSkills = this.getSkillsByGrade(grade);
+    const skills: Skill[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+      skills.push(randomSkill);
+    }
+    
+    return skills;
+  }
+  
+  private generateRandomComboBoost(): ComboBoost {
+    const boostTypes = ['damage', 'heal', 'skill_success', 'mp_cost_reduction'];
+    const randomType = boostTypes[Math.floor(Math.random() * boostTypes.length)];
+    
+    return {
+      id: `boost_${Date.now()}`,
+      name: `${randomType} Boost`,
+      description: `次のスキルの${randomType}を10%向上`,
+      boostType: randomType as any,
+      value: 10,
+      duration: 1
+    };
+  }
+}
+```
+
+#### 装備UI更新（8スロット対応）
+```typescript
+class EquipmentUI {
+  displayEquipmentSlots(equippedItems: Map<EquipmentSlot, EquipmentItem>): string {
+    return `
+      Equipment Configuration:
+      ┌─────────────────────────────────────┐
+      │ Slot 1-2: ${this.formatEquipmentPair('adjective_1', 'weapon_1', equippedItems)}    │
+      │ Slot 3-4: ${this.formatEquipmentPair('adjective_2', 'weapon_2', equippedItems)}    │
+      │ Slot 5-6: ${this.formatEquipmentPair('adjective_3', 'accessory_1', equippedItems)} │
+      │ Slot 7-8: ${this.formatEquipmentPair('adjective_4', 'accessory_2', equippedItems)} │
+      └─────────────────────────────────────┘
+      
+      Active Skills: ${this.getActiveSkills(equippedItems).length}
+      Active Combo Boosts: ${this.getActiveComboBoosts(equippedItems).length}
+    `;
+  }
+  
+  private formatEquipmentPair(adjSlot: string, itemSlot: string, equipped: Map<EquipmentSlot, EquipmentItem>): string {
+    const adj = equipped.get(adjSlot as EquipmentSlot);
+    const item = equipped.get(itemSlot as EquipmentSlot);
+    
+    const adjName = adj ? adj.name : '[empty]';
+    const itemName = item ? item.name : '[empty]';
+    
+    return `${adjName} ${itemName}`.padEnd(20);
+  }
+}
+```
+
+**タスク**:
+1. EquipmentType enum拡張（WEAPON, ACCESSORY, ADJECTIVE）
+2. EquipmentItemインターフェース更新
+   - type: EquipmentType追加
+   - skills: Skill[]（最大2個）
+   - comboBoosts: ComboBoost[]追加
+   - rarityプロパティ削除
+3. 装備スロット管理システム更新（8スロット対応）
+4. 装備アイテム生成システム更新
+   - 種別ごとのステータス傾向設定
+   - weapon: strength/willpower寄り
+   - accessory: agility/fortune寄り
+   - adjective: バランス型
+5. EquipmentEffectCalculator更新（8スロット対応）
+6. 装備UI更新（8スロット表示対応）
+7. アイテムデータ更新（新形式への変換）
+8. テストケース更新
+
+**チェックポイント**: 新しい装備システムで装備変更とステータス計算が正常に動作すること
+
+---
+
+### 📦 プロジェクト10F: 消費アイテム拡張
+**目標**: 消費アイテムの種類を大幅に拡張する
+
+**成果物**:
+- オーバーヒール系アイテム（HP最大値超過回復）
+- バフ系アイテム（各ステータス一時アップ）
+- 状態回復系アイテム（状態異常回復、一時無敵）
+- 特殊系アイテム（EXポイント回復）
+
+**詳細設計**:
+
+#### 新しい効果タイプ
+```typescript
+enum EffectType {
+  // 既存
+  HEAL_HP, HEAL_MP,
+
+  // 新規
+  OVERHEAL_HP,              // HPを最大値を超えて回復
+  BUFF_STRENGTH,            // 攻撃力アップ
+  BUFF_WILLPOWER,           // 意志力アップ
+  BUFF_AGILITY,             // 敏捷性アップ
+  BUFF_FORTUNE,             // 幸運アップ
+  DEBUFF_STRENGTH,          // デバフ効果
+  APPLY_POISON,             // 状態異常付与
+  CURE_ALL_STATUS,          // 全状態異常回復
+  RESTORE_EX_POINTS,        // EX Point回復
+  TEMPORARY_INVINCIBILITY   // 一時的無敵
+}
+```
+
+#### 使用条件の拡張
+```typescript
+interface ItemEffect {
+  // ... 既存プロパティ
+  duration?: number;        // 持続時間（ターン数）
+  target?: 'self' | 'enemy' | 'all';
+  conditions?: {
+    usableInBattle?: boolean;
+    usableOutBattle?: boolean;
+  };
+}
+```
+
+#### 新アイテムの実装例
+
+```typescript
+// オーバーヒール系
+const overHealPotion: ConsumableItem = {
+  id: 'overheal_potion',
+  name: 'Over Heal Potion',
+  description: 'HP最大値を超えて回復するポーション',
+  grade: 3,
+  
+  effects: [{
+    type: EffectType.OVERHEAL_HP,
+    power: 50, // 最大HP + 50まで回復
+    target: 'self',
+    conditions: {
+      usableInBattle: true,
+      usableOutBattle: true
+    }
+  }]
+};
+
+// バフ系
+const strengthElixir: ConsumableItem = {
+  id: 'strength_elixir',
+  name: 'Strength Elixir',
+  description: '5ターンの間攻撃力を20アップ',
+  grade: 2,
+  
+  effects: [{
+    type: EffectType.BUFF_STRENGTH,
+    power: 20,
+    duration: 5, // 5ターン持続
+    target: 'self',
+    conditions: {
+      usableInBattle: true,
+      usableOutBattle: false // バトル中のみ使用可能
+    }
+  }]
+};
+
+// 状態回復系
+const panacea: ConsumableItem = {
+  id: 'panacea',
+  name: 'Panacea',
+  description: '全ての状態異常を回復する万能薬',
+  grade: 4,
+  
+  effects: [{
+    type: EffectType.CURE_ALL_STATUS,
+    power: 0, // powerは使用しない
+    target: 'self',
+    conditions: {
+      usableInBattle: true,
+      usableOutBattle: true
+    }
+  }]
+};
+
+// 特殊系
+const focusStone: ConsumableItem = {
+  id: 'focus_stone',
+  name: 'Focus Stone',
+  description: 'EXポイントを10回復する石',
+  grade: 3,
+  
+  effects: [{
+    type: EffectType.RESTORE_EX_POINTS,
+    power: 10,
+    target: 'self',
+    conditions: {
+      usableInBattle: false,
+      usableOutBattle: true // バトル外でのみ使用可能
+    }
+  }]
+};
+```
+
+#### アイテム効果システムの実装
+
+```typescript
+class ItemEffectSystem {
+  /**
+   * アイテム効果を実行
+   */
+  async executeItemEffect(
+    item: ConsumableItem, 
+    user: Player, 
+    target?: Player | Enemy
+  ): Promise<ItemEffectResult> {
+    const results: EffectResult[] = [];
+    
+    for (const effect of item.effects) {
+      // 使用条件チェック
+      if (!this.checkUsageConditions(effect, user)) {
+        continue;
+      }
+      
+      const result = await this.applyEffect(effect, user, target);
+      results.push(result);
+    }
+    
+    return { item, results, success: results.length > 0 };
+  }
+  
+  private checkUsageConditions(effect: ItemEffect, user: Player): boolean {
+    const inBattle = user.isInBattle();
+    
+    if (inBattle && effect.conditions?.usableInBattle === false) {
+      return false;
+    }
+    
+    if (!inBattle && effect.conditions?.usableOutBattle === false) {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  private async applyEffect(
+    effect: ItemEffect, 
+    user: Player, 
+    target?: Player | Enemy
+  ): Promise<EffectResult> {
+    switch (effect.type) {
+      case EffectType.OVERHEAL_HP:
+        return this.applyOverHeal(effect, user);
+        
+      case EffectType.BUFF_STRENGTH:
+        return this.applyStatBuff(effect, user, 'strength');
+        
+      case EffectType.CURE_ALL_STATUS:
+        return this.cureAllStatus(user);
+        
+      case EffectType.RESTORE_EX_POINTS:
+        return this.restoreExPoints(effect, user);
+        
+      case EffectType.TEMPORARY_INVINCIBILITY:
+        return this.applyInvincibility(effect, user);
+        
+      // 他の効果タイプ...
+    }
+  }
+  
+  private applyOverHeal(effect: ItemEffect, user: Player): EffectResult {
+    const currentHp = user.hp;
+    const maxHp = user.maxHp;
+    const healAmount = effect.power;
+    
+    // 最大HP + healAmountまで回復可能
+    const newHp = Math.min(currentHp + healAmount, maxHp + healAmount);
+    user.hp = newHp;
+    
+    return {
+      type: 'overheal',
+      amount: newHp - currentHp,
+      message: `HP over-healed by ${newHp - currentHp} (${newHp}/${maxHp})`
+    };
+  }
+  
+  private applyStatBuff(
+    effect: ItemEffect, 
+    user: Player, 
+    stat: 'strength' | 'willpower' | 'agility' | 'fortune'
+  ): EffectResult {
+    const buff: TemporaryStatusEffect = {
+      id: `buff_${stat}`,
+      name: `${stat} Buff`,
+      type: 'buff',
+      stat: stat,
+      value: effect.power,
+      duration: effect.duration || 3
+    };
+    
+    user.addTemporaryStatus(buff);
+    
+    return {
+      type: 'buff',
+      stat: stat,
+      value: effect.power,
+      duration: buff.duration,
+      message: `${stat} increased by ${effect.power} for ${buff.duration} turns`
+    };
+  }
+  
+  private cureAllStatus(user: Player): EffectResult {
+    const curedStatuses = user.getAllStatusAilments();
+    user.clearAllStatusAilments();
+    
+    return {
+      type: 'cure_all',
+      curedCount: curedStatuses.length,
+      message: `All status ailments cured (${curedStatuses.length} effects)`
+    };
+  }
+  
+  private restoreExPoints(effect: ItemEffect, user: Player): EffectResult {
+    const restored = effect.power;
+    user.exPoints = Math.min(user.exPoints + restored, user.maxExPoints || 100);
+    
+    return {
+      type: 'ex_restore',
+      amount: restored,
+      message: `EX Points restored by ${restored}`
+    };
+  }
+}
+```
+
+#### バトル中/バトル外での使用制限
+
+```typescript
+class ItemUsageManager {
+  canUseItem(item: ConsumableItem, player: Player): boolean {
+    const inBattle = player.isInBattle();
+    
+    for (const effect of item.effects) {
+      if (inBattle && effect.conditions?.usableInBattle === false) {
+        return false;
+      }
+      
+      if (!inBattle && effect.conditions?.usableOutBattle === false) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  getUsageRestrictionMessage(item: ConsumableItem, player: Player): string {
+    const inBattle = player.isInBattle();
+    
+    if (inBattle) {
+      return "このアイテムは戦闘中には使用できません";
+    } else {
+      return "このアイテムは戦闘外では使用できません";
+    }
+  }
+}
+```
+
+**タスク**:
+1. EffectType enum拡張
+   - OVERHEAL_HP, BUFF_STRENGTH, BUFF_WILLPOWER, BUFF_AGILITY, BUFF_FORTUNE追加
+   - DEBUFF_STRENGTH, APPLY_POISON, CURE_ALL_STATUS追加
+   - RESTORE_EX_POINTS, TEMPORARY_INVINCIBILITY追加
+2. ItemEffectインターフェース拡張
+   - duration, target, conditionsプロパティ追加
+3. 新しい効果タイプの実装
+   - オーバーヒール処理
+   - バフ効果の適用・管理
+   - 状態異常回復処理
+   - EXポイント回復処理
+4. アイテム使用条件の実装
+   - 戦闘中/戦闘外使用制限
+5. 新アイテムデータ作成
+6. アイテム効果のテスト作成
+
+**チェックポイント**: 新しい消費アイテムが正常に動作すること
+
+---
+
+### 🔓 プロジェクト10G: キーアイテム解放システム
+**目標**: 段階的システム解放機能を実装する
+
+**成果物**:
+- 8つのシステム段階的解放機能
+- キーアイテムによる解放トリガー
+- 解放状態の管理と保存
+
+**詳細設計**:
+
+#### 段階的システム解放
+```typescript
+enum UnlockableSystem {
+  COMBO_BOOST,              // コンボブーストシステム
+  FOCUS_MODE,               // フォーカスモード + EX Point
+  SPARK_MODE,               // スパークモード
+  SECOND_ACCESSORY,         // 2個目のアクセサリ
+  SKILL_GRADE_2,            // スキルグレード2解放
+  SKILL_GRADE_3,            // スキルグレード3解放（潜在効果付き）
+  SKILL_GRADE_4,            // スキルグレード4解放
+  SKILL_GRADE_5             // スキルグレード5解放
+}
+```
+
+#### キーアイテム定義
+```typescript
+interface KeyItem {
+  id: string;
+  name: string;
+  description: string;
+  unlocks: UnlockableSystem;
+}
+
+// キーアイテムの定義
+const keyItems: KeyItem[] = [
+  {
+    id: 'combat_manual',
+    name: 'Combat Manual',
+    description: 'コンボブーストシステムを解放する戦闘マニュアル',
+    unlocks: UnlockableSystem.COMBO_BOOST
+  },
+  {
+    id: 'focus_meditation_scroll',
+    name: 'Focus Meditation Scroll',
+    description: 'フォーカスモードとEXポイントシステムを解放する瞑想の書',
+    unlocks: UnlockableSystem.FOCUS_MODE
+  },
+  {
+    id: 'spark_technique_manual',
+    name: 'Spark Technique Manual',
+    description: 'スパークモードを解放する技術書',
+    unlocks: UnlockableSystem.SPARK_MODE
+  },
+  {
+    id: 'accessory_mastery_ring',
+    name: 'Accessory Mastery Ring',
+    description: '2個目のアクセサリスロットを解放するリング',
+    unlocks: UnlockableSystem.SECOND_ACCESSORY
+  },
+  {
+    id: 'skill_mastery_tome_2',
+    name: 'Skill Mastery Tome II',
+    description: 'グレード2スキルを解放する技能書',
+    unlocks: UnlockableSystem.SKILL_GRADE_2
+  },
+  {
+    id: 'skill_mastery_tome_3',
+    name: 'Skill Mastery Tome III',
+    description: 'グレード3スキルと潜在効果を解放する技能書',
+    unlocks: UnlockableSystem.SKILL_GRADE_3
+  },
+  {
+    id: 'skill_mastery_tome_4',
+    name: 'Skill Mastery Tome IV',
+    description: 'グレード4スキルを解放する技能書',
+    unlocks: UnlockableSystem.SKILL_GRADE_4
+  },
+  {
+    id: 'skill_mastery_tome_5',
+    name: 'Skill Mastery Tome V',
+    description: 'グレード5スキルを解放する技能書',
+    unlocks: UnlockableSystem.SKILL_GRADE_5
+  }
+];
+```
+
+#### SystemUnlockManagerクラス実装
+```typescript
+interface SystemUnlockState {
+  unlockedSystems: Set<UnlockableSystem>;
+}
+
+class SystemUnlockManager {
+  private unlockState: SystemUnlockState;
+  
+  constructor() {
+    this.unlockState = {
+      unlockedSystems: new Set([
+        // 初期から利用可能なシステム
+      ])
+    };
+  }
+  
+  /**
+   * キーアイテム取得時の解放処理
+   */
+  onKeyItemObtained(keyItemId: string): UnlockResult {
+    const keyItem = this.findKeyItem(keyItemId);
+    if (!keyItem) {
+      return { success: false, error: 'Unknown key item' };
+    }
+    
+    if (this.isSystemUnlocked(keyItem.unlocks)) {
+      return { success: false, error: 'System already unlocked' };
+    }
+    
+    // システム解放
+    this.unlockState.unlockedSystems.add(keyItem.unlocks);
+    
+    return {
+      success: true,
+      unlockedSystem: keyItem.unlocks,
+      message: `${keyItem.name}により${this.getSystemName(keyItem.unlocks)}が解放されました！`
+    };
+  }
+  
+  /**
+   * システムが解放済みかチェック
+   */
+  isSystemUnlocked(systemId: UnlockableSystem): boolean {
+    return this.unlockState.unlockedSystems.has(systemId);
+  }
+  
+  /**
+   * 取得可能な最大スキルグレードを返す
+   */
+  getMaxAllowedSkillGrade(): number {
+    if (this.isSystemUnlocked(UnlockableSystem.SKILL_GRADE_5)) return 5;
+    if (this.isSystemUnlocked(UnlockableSystem.SKILL_GRADE_4)) return 4;
+    if (this.isSystemUnlocked(UnlockableSystem.SKILL_GRADE_3)) return 3;
+    if (this.isSystemUnlocked(UnlockableSystem.SKILL_GRADE_2)) return 2;
+    return 1; // 初期は1まで
+  }
+  
+  /**
+   * 装備可能スロット数を返す
+   */
+  getEquipmentSlotCount(): number {
+    return this.isSystemUnlocked(UnlockableSystem.SECOND_ACCESSORY) ? 8 : 6;
+  }
+  
+  /**
+   * EXポイントシステムが利用可能か
+   */
+  isExPointSystemAvailable(): boolean {
+    return this.isSystemUnlocked(UnlockableSystem.FOCUS_MODE);
+  }
+  
+  /**
+   * コンボブーストシステムが利用可能か
+   */
+  isComboBoostSystemAvailable(): boolean {
+    return this.isSystemUnlocked(UnlockableSystem.COMBO_BOOST);
+  }
+  
+  private findKeyItem(keyItemId: string): KeyItem | undefined {
+    return keyItems.find(item => item.id === keyItemId);
+  }
+  
+  private getSystemName(system: UnlockableSystem): string {
+    const systemNames = {
+      [UnlockableSystem.COMBO_BOOST]: 'コンボブーストシステム',
+      [UnlockableSystem.FOCUS_MODE]: 'フォーカスモード・EXポイントシステム',
+      [UnlockableSystem.SPARK_MODE]: 'スパークモード',
+      [UnlockableSystem.SECOND_ACCESSORY]: '2個目のアクセサリスロット',
+      [UnlockableSystem.SKILL_GRADE_2]: 'グレード2スキル',
+      [UnlockableSystem.SKILL_GRADE_3]: 'グレード3スキル（潜在効果）',
+      [UnlockableSystem.SKILL_GRADE_4]: 'グレード4スキル',
+      [UnlockableSystem.SKILL_GRADE_5]: 'グレード5スキル'
+    };
+    return systemNames[system] || 'Unknown System';
+  }
+}
+```
+
+#### 解放状態に応じたシステム制限
+```typescript
+class GameSystemRestrictions {
+  private unlockManager: SystemUnlockManager;
+  
+  constructor(unlockManager: SystemUnlockManager) {
+    this.unlockManager = unlockManager;
+  }
+  
+  /**
+   * スキル生成時のグレード制限
+   */
+  filterSkillsByGrade(skills: Skill[]): Skill[] {
+    const maxGrade = this.unlockManager.getMaxAllowedSkillGrade();
+    return skills.filter(skill => skill.grade <= maxGrade);
+  }
+  
+  /**
+   * 装備生成時のスロット数制限
+   */
+  getAvailableEquipmentSlots(): EquipmentSlot[] {
+    const maxSlots = this.unlockManager.getEquipmentSlotCount();
+    const allSlots = Object.values(EquipmentSlot);
+    return allSlots.slice(0, maxSlots);
+  }
+  
+  /**
+   * バトル時のEXモード利用可能性チェック
+   */
+  getAvailableExModes(): string[] {
+    const modes: string[] = [];
+    
+    if (this.unlockManager.isSystemUnlocked(UnlockableSystem.FOCUS_MODE)) {
+      modes.push('focus_mode');
+    }
+    
+    if (this.unlockManager.isSystemUnlocked(UnlockableSystem.SPARK_MODE)) {
+      modes.push('spark_mode');
+    }
+    
+    return modes;
+  }
+  
+  /**
+   * スキル効果にコンボブースト適用可能かチェック
+   */
+  canApplyComboBoost(): boolean {
+    return this.unlockManager.isSystemUnlocked(UnlockableSystem.COMBO_BOOST);
+  }
+}
+```
+
+#### 解放通知UI
+```typescript
+class UnlockNotificationUI {
+  /**
+   * システム解放通知の表示
+   */
+  displayUnlockNotification(result: UnlockResult): void {
+    if (!result.success) return;
+    
+    const systemName = this.getSystemDisplayName(result.unlockedSystem!);
+    
+    console.log(`
+    ╔════════════════════════════════════╗
+    ║        🎉 SYSTEM UNLOCKED! 🎉       ║
+    ╠════════════════════════════════════╣
+    ║                                    ║
+    ║  ${systemName.padEnd(32)} ║
+    ║                                    ║
+    ║  新しい機能が利用可能になりました！  ║
+    ║                                    ║
+    ╚════════════════════════════════════╝
+    `);
+  }
+  
+  /**
+   * 利用可能なシステム一覧表示
+   */
+  displaySystemStatus(unlockManager: SystemUnlockManager): void {
+    const systems = Object.values(UnlockableSystem);
+    
+    console.log('\n=== SYSTEM STATUS ===');
+    for (const system of systems) {
+      const isUnlocked = unlockManager.isSystemUnlocked(system);
+      const status = isUnlocked ? '✅' : '🔒';
+      const name = this.getSystemDisplayName(system);
+      console.log(`${status} ${name}`);
+    }
+  }
+  
+  private getSystemDisplayName(system: UnlockableSystem): string {
+    // SystemUnlockManager.getSystemNameと同じロジック
+    // 表示用の名前を返す
+  }
+}
+```
+
+#### セーブデータへの解放状態保存
+```typescript
+interface SaveData {
+  // ... 既存データ
+  unlockState: {
+    unlockedSystems: UnlockableSystem[];
+  };
+}
+
+class SaveManager {
+  saveUnlockState(unlockManager: SystemUnlockManager): void {
+    const saveData = this.loadSaveData();
+    saveData.unlockState = {
+      unlockedSystems: Array.from(unlockManager.getUnlockedSystems())
+    };
+    this.writeSaveData(saveData);
+  }
+  
+  loadUnlockState(): SystemUnlockState {
+    const saveData = this.loadSaveData();
+    return {
+      unlockedSystems: new Set(saveData.unlockState?.unlockedSystems || [])
+    };
+  }
+}
+```
+
+**タスク**:
+1. UnlockableSystem enum実装
+   - COMBO_BOOST, FOCUS_MODE, SPARK_MODE, SECOND_ACCESSORY追加
+   - SKILL_GRADE_2, SKILL_GRADE_3, SKILL_GRADE_4, SKILL_GRADE_5追加
+2. SystemUnlockManagerクラス実装
+   - unlockState管理
+   - onKeyItemObtained, isSystemUnlocked関数
+   - getMaxAllowedSkillGrade, getEquipmentSlotCount関数
+3. キーアイテム定義
+   - Combat Manual, Focus Meditation Scroll, Spark Technique Manual等
+4. 解放状態に応じたシステム制限
+   - スキルグレード制限
+   - 装備スロット数制限
+   - EXモード利用制限
+   - コンボブースト機能制限
+5. 解放通知UI
+6. セーブデータへの解放状態保存
+7. テストケース作成
+
+**チェックポイント**: キーアイテムによる段階的システム解放が正常に動作すること
+
+---
+
+### 🩸 プロジェクト11: 状態異常システム
 **目標**: 状態異常の管理と効果を実装する
 
 **成果物**:
@@ -353,7 +1996,7 @@
 
 ---
 
-### 🎲 プロジェクト11A: イベント基礎システム
+### 🎲 プロジェクト12A: イベント基礎システム
 **目標**: イベントの基本構造を実装する
 
 **成果物**:
@@ -370,7 +2013,7 @@
 
 ---
 
-### 🎲 プロジェクト11B: イベントシステム完成
+### 🎲 プロジェクト12B: イベントシステム完成
 **目標**: イベントシステムを完成させる
 
 **成果物**:
@@ -388,7 +2031,7 @@
 
 ---
 
-### 👑 プロジェクト12A: 鍵システム
+### 👑 プロジェクト13A: 鍵システム
 **目標**: 鍵とアクセス制御を実装する
 
 **成果物**:
@@ -405,7 +2048,7 @@
 
 ---
 
-### 👑 プロジェクト12B: ボス・クリアシステム
+### 👑 プロジェクト13B: ボス・クリアシステム
 **目標**: ボス戦とワールドクリアを実装する
 
 **成果物**:
@@ -423,7 +2066,7 @@
 ---
 
 
-### 💾 プロジェクト13A: セーブデータ構造
+### 💾 プロジェクト14A: セーブデータ構造
 **目標**: セーブデータの基本構造を実装する
 
 **成果物**:
@@ -440,7 +2083,7 @@
 
 ---
 
-### 💾 プロジェクト13B: ロードシステム完成
+### 💾 プロジェクト14B: ロードシステム完成
 **目標**: ロード機能を完成させる
 
 **成果物**:
@@ -458,7 +2101,7 @@
 
 ---
 
-### ✨ プロジェクト14: ポリッシュ・最終調整
+### ✨ プロジェクト15: ポリッシュ・最終調整
 **目標**: ゲーム体験を向上させる
 
 **成果物**:
