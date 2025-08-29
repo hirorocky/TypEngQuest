@@ -212,11 +212,11 @@ describe('TypingChallenge', () => {
       expect(result.isSuccess).toBe(true);
     });
 
-    test('速い入力で1文字ミス（Fast + Perfect）', () => {
+    test('速い入力でミス修正（Fast + Perfect）', () => {
       jest.setSystemTime(Date.now() + 3000); // 3秒で完了（15秒の20%なのでFast）
       challenge.handleInput('h');
       challenge.handleInput('x'); // ミス
-      challenge.handleInput('\x7f'); // 削除（バックスペースで削除すると統計も調整される）
+      challenge.handleInput('\x7f'); // バックスペースで削除（統計からもミスが除去される仕様）
       challenge.handleInput('e');
       challenge.handleInput('l');
       challenge.handleInput('l');
@@ -224,7 +224,7 @@ describe('TypingChallenge', () => {
 
       const result = challenge.getResult();
       expect(result.speedRating).toBe('Fast');
-      expect(result.accuracyRating).toBe('Perfect'); // バックスペースで削除したので100%
+      expect(result.accuracyRating).toBe('Perfect'); // バックスペースで修正したため統計上は100%
       expect(result.accuracy).toBe(100);
       expect(result.totalRating).toBe(150); // Fast + Perfect
     });
