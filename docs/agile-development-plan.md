@@ -562,19 +562,14 @@ class SkillExecutionSystem {
   }
 
   /**
-   * スキル成功率計算（agility + タイピング評価影響 + 敵回避率）
+   * スキル成功率計算（タイピング評価影響 + 敵回避率）
    */
   private calculateSkillSuccessRate(
     skill: Skill,
-    userAgility: number,
     target: Player | Enemy,
     typingResult: TypingResult
   ): number {
     let finalRate = skill.skillSuccessRate.baseRate;
-
-    // agility影響
-    const agilityBonus = (userAgility * skill.skillSuccessRate.agilityInfluence) / 100;
-    finalRate += agilityBonus;
 
     // タイピング評価影響
     const typingBonus = this.getTypingBonus(typingResult) * skill.skillSuccessRate.typingInfluence;
@@ -584,7 +579,7 @@ class SkillExecutionSystem {
     const enemyEvadeRate = this.getEnemyEvadeRate(target, skill.skillType);
     finalRate -= enemyEvadeRate;
 
-    return Math.max(5, Math.min(100, finalRate)); // 最低5%は保証
+    return Math.max(0, Math.min(100, finalRate));
   }
 }
 ```
@@ -611,7 +606,7 @@ class SkillExecutionSystem {
 
 **スキル成功率計算式**
 ```typescript
-最終成功率 = 基本成功率 + agilityボーナス + タイピングボーナス - 敵回避率
+最終成功率 = 基本成功率 + タイピングボーナス - 敵回避率
 // 物理スキル: 敵physicalEvadeRate を減算
 // 魔法スキル: 敵magicalEvadeRate を減算
 // 自分対象: 回避率減算なし
@@ -620,7 +615,7 @@ class SkillExecutionSystem {
 **クリティカル率計算式**
 ```typescript
 最終クリティカル率 = スキルの基本クリティカル率 + (fortune値 × fortuneInfluence) / 100
-// 最大50%、最小0%に制限
+// 最大100%、最小0%
 ```
 
 **ダメージ計算式**
@@ -634,7 +629,7 @@ class SkillExecutionSystem {
 1. SkillType型の追加（'physical' | 'magical'）
 2. Skillインターフェースの拡張
    - skillType: SkillType追加
-   - skillSuccessRate: { baseRate, agilityInfluence, typingInfluence }追加
+   - skillSuccessRate: { baseRate, typingInfluence }追加
    - criticalRate: { baseRate, fortuneInfluence }追加
 3. SkillEffect型の拡張
    - basePower, powerInfluence, successRate追加
@@ -714,7 +709,7 @@ const comboPowerStrike: Skill = {
   name: 'Power Strike',
   grade: 2,
   // ... 他のプロパティ
-  
+
   // コンボブースト付き
   comboBoosts: [{
     id: 'damage_boost',
@@ -724,13 +719,13 @@ const comboPowerStrike: Skill = {
     value: 10,
     duration: 1
   }],
-  
+
   effects: [{
     type: 'damage',
     basePower: 40,
     powerInfluence: { stat: 'strength', rate: 1.5 },
     successRate: 95,
-    
+
     // 発動条件例
     conditions: [{
       type: 'hp_threshold',
@@ -749,7 +744,7 @@ const adaptiveStrike: Skill = {
   id: 'adaptive_strike',
   grade: 3,
   // ...基本プロパティ
-  
+
   effects: [{
     type: 'damage',
     basePower: 30,
@@ -760,7 +755,7 @@ const adaptiveStrike: Skill = {
       operator: '=='
     }]
   }],
-  
+
   // 潜在効果：Perfect入力時に追加ダメージ
   potentialEffects: [{
     triggerCondition: {
@@ -779,12 +774,12 @@ const adaptiveStrike: Skill = {
 const opportunisticStrike: Skill = {
   id: 'opportunistic_strike',
   grade: 4,
-  
+
   effects: [{
     type: 'damage',
     basePower: 35,
     successRate: 90,
-    
+
     // 敵が毒状態の時に威力2倍
     conditions: [{
       type: 'enemy_status',
@@ -800,27 +795,27 @@ const opportunisticStrike: Skill = {
 ```typescript
 class ComboBoostManager {
   private activeBoosts: Map<string, ComboBoost[]> = new Map();
-  
+
   /**
    * スキル使用時にコンボブーストを適用
    */
   applyComboBoosts(skill: Skill, effectPower: number): number {
     const applicableBoosts = this.getApplicableBoosts(skill);
     let modifiedPower = effectPower;
-    
+
     for (const boost of applicableBoosts) {
       if (boost.boostType === 'damage' && skill.effects[0].type === 'damage') {
         modifiedPower *= (1 + boost.value / 100);
       }
       // 他のブーストタイプも同様に処理
     }
-    
+
     // ブーストを消費
     this.consumeBoosts(applicableBoosts);
-    
+
     return modifiedPower;
   }
-  
+
   /**
    * スキル実行後にコンボブーストを登録
    */
@@ -844,7 +839,7 @@ const desperateStrike: Skill = {
     basePower: 20,
     successRate: 100
   }, {
-    type: 'damage', 
+    type: 'damage',
     basePower: 40, // HP30%以下で追加ダメージ
     successRate: 100,
     conditions: [{
@@ -949,20 +944,20 @@ class FocusMode {
     while (!turnEnded) {
       // スキル選択UI
       const selectedSkill = await this.selectSkill(modifiedSkills);
-      
+
       // タイピングチャレンジ
       const typingResult = await this.performTypingChallenge(selectedSkill);
-      
+
       // ミス・時間切れチェック
       if (typingResult.speedRating === 'Miss' || typingResult.accuracyRating === 'Poor') {
         turnEnded = true;
         break;
       }
-      
+
       // スキル実行
       const skillResult = await this.executeSkill(selectedSkill, typingResult);
       results.push(skillResult);
-      
+
       // 継続確認
       const continueTurn = await this.askContinue();
       if (!continueTurn) {
@@ -984,47 +979,47 @@ class SparkMode {
   async executeSparkMode(player: Player, availableSkills: Skill[]): Promise<SparkModeResult> {
     // スキル選択
     const selectedSkill = await this.selectSkill(availableSkills);
-    
+
     // 1文字ずつタイピングチャレンジ
     const singleCharChallenges = this.generateSingleCharChallenges();
     let successCount = 0;
-    
+
     for (let i = 0; i < singleCharChallenges.length; i++) {
       const char = singleCharChallenges[i];
       const result = await this.singleCharTyping(char, 2000); // 2秒制限
-      
+
       if (result.success) {
         successCount++;
       } else {
         break; // 失敗時点で終了
       }
     }
-    
+
     // 成功数分だけスキルを連続実行
     const executionResults: SkillExecutionResult[] = [];
     for (let i = 0; i < successCount; i++) {
       const result = await this.executeSkillWithoutTyping(selectedSkill);
       executionResults.push(result);
     }
-    
-    return { 
-      selectedSkill, 
-      successCount, 
+
+    return {
+      selectedSkill,
+      successCount,
       totalChallenges: singleCharChallenges.length,
-      executionResults 
+      executionResults
     };
   }
-  
+
   private generateSingleCharChallenges(): string[] {
     // a-z, A-Z, 0-9からランダムに10文字選択
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const challenges: string[] = [];
-    
+
     for (let i = 0; i < 10; i++) {
       const randomChar = chars[Math.floor(Math.random() * chars.length)];
       challenges.push(randomChar);
     }
-    
+
     return challenges;
   }
 }
@@ -1037,7 +1032,7 @@ class BattlePhase {
     const availableActions = [
       'skill', 'item', 'run'
     ];
-    
+
     // EXポイントが十分にある場合、EXモード選択肢追加
     if (player.exPoints >= 10) {
       availableActions.push('focus_mode');
@@ -1045,20 +1040,20 @@ class BattlePhase {
     if (player.exPoints >= 15) {
       availableActions.push('spark_mode');
     }
-    
+
     const action = await this.selectAction(availableActions);
-    
+
     switch (action) {
       case 'focus_mode':
         await this.executeFocusMode(player);
         player.exPoints -= 10;
         break;
-        
+
       case 'spark_mode':
         await this.executeSparkMode(player);
         player.exPoints -= 15;
         break;
-        
+
       // 通常のスキル使用等...
     }
   }
@@ -1081,7 +1076,7 @@ class BattleDisplay {
       EX: ${player.exPoints} ${this.getExModeStatus(player.exPoints)}
     `;
   }
-  
+
   private getExModeStatus(exPoints: number): string {
     const modes = [];
     if (exPoints >= 10) modes.push('Focus');
@@ -1129,7 +1124,7 @@ class BattleDisplay {
 enum EquipmentSlot {
   ADJECTIVE_1 = 'adjective_1',
   WEAPON_1 = 'weapon_1',
-  ADJECTIVE_2 = 'adjective_2', 
+  ADJECTIVE_2 = 'adjective_2',
   WEAPON_2 = 'weapon_2',
   ADJECTIVE_3 = 'adjective_3',
   ACCESSORY_1 = 'accessory_1',
@@ -1155,7 +1150,7 @@ interface EquipmentItem {
   name: string;
   type: EquipmentType;
   grade: number; // 1-100（レアリティ廃止）
-  
+
   // ステータス
   stats: {
     strength: number;
@@ -1163,7 +1158,7 @@ interface EquipmentItem {
     agility: number;
     fortune: number;
   };
-  
+
   // 新機能
   skills: Skill[]; // 最大2個のスキル
   comboBoosts: ComboBoost[]; // コンボブースト効果
@@ -1175,26 +1170,26 @@ interface EquipmentItem {
 class EquipmentGenerator {
   generateEquipmentStats(type: EquipmentType, grade: number): Stats {
     const baseStatTotal = grade * 2; // グレード50なら合計100ポイント
-    
+
     switch (type) {
       case EquipmentType.WEAPON:
         // strength 40%, willpower 30%, agility 20%, fortune 10%
         return this.distributeStats(baseStatTotal, [0.4, 0.3, 0.2, 0.1]);
-        
+
       case EquipmentType.ACCESSORY:
         // agility 40%, fortune 30%, strength 20%, willpower 10%
         return this.distributeStats(baseStatTotal, [0.2, 0.1, 0.4, 0.3]);
-        
+
       case EquipmentType.ADJECTIVE:
         // バランス型: 各25%
         return this.distributeStats(baseStatTotal, [0.25, 0.25, 0.25, 0.25]);
     }
   }
-  
+
   private distributeStats(total: number, ratios: number[]): Stats {
     return {
       strength: Math.floor(total * ratios[0]),
-      willpower: Math.floor(total * ratios[1]), 
+      willpower: Math.floor(total * ratios[1]),
       agility: Math.floor(total * ratios[2]),
       fortune: Math.floor(total * ratios[3])
     };
@@ -1207,7 +1202,7 @@ class EquipmentGenerator {
 class EquipmentSlotManager {
   private maxSlots = 8;
   private unlockedSlots = 6; // 初期は6スロット、2つ目のアクセサリーで8スロット
-  
+
   /**
    * 装備可能かチェック
    */
@@ -1216,27 +1211,27 @@ class EquipmentSlotManager {
     if (!this.isSlotUnlocked(slot)) {
       return false;
     }
-    
+
     // 種別とスロットの適合性チェック
     const expectedType = this.getExpectedTypeForSlot(slot);
     return item.type === expectedType;
   }
-  
+
   private getExpectedTypeForSlot(slot: EquipmentSlot): EquipmentType {
     if (slot.includes('adjective')) return EquipmentType.ADJECTIVE;
     if (slot.includes('weapon')) return EquipmentType.WEAPON;
     if (slot.includes('accessory')) return EquipmentType.ACCESSORY;
     throw new Error(`Unknown slot type: ${slot}`);
   }
-  
+
   /**
    * プレイヤーレベル計算（装備グレードの平均値）
    */
   calculatePlayerLevel(equippedItems: Map<EquipmentSlot, EquipmentItem>): number {
     const grades = Array.from(equippedItems.values()).map(item => item.grade);
-    
+
     if (grades.length === 0) return 1;
-    
+
     const sum = grades.reduce((total, grade) => total + grade, 0);
     return Math.floor(sum / this.maxSlots); // 最大スロット数で割る
   }
@@ -1253,29 +1248,29 @@ class EquipmentEnhancer {
     // スキル付与（最大2個）
     const skillCount = Math.random() > 0.7 ? 2 : Math.random() > 0.3 ? 1 : 0;
     item.skills = this.generateRandomSkills(skillCount, item.grade);
-    
+
     // コンボブースト付与（確率）
     if (Math.random() > 0.6) {
       item.comboBoosts = [this.generateRandomComboBoost()];
     }
   }
-  
+
   private generateRandomSkills(count: number, grade: number): Skill[] {
     const availableSkills = this.getSkillsByGrade(grade);
     const skills: Skill[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
       skills.push(randomSkill);
     }
-    
+
     return skills;
   }
-  
+
   private generateRandomComboBoost(): ComboBoost {
     const boostTypes = ['damage', 'heal', 'skill_success', 'mp_cost_reduction'];
     const randomType = boostTypes[Math.floor(Math.random() * boostTypes.length)];
-    
+
     return {
       id: `boost_${Date.now()}`,
       name: `${randomType} Boost`,
@@ -1300,19 +1295,19 @@ class EquipmentUI {
       │ Slot 5-6: ${this.formatEquipmentPair('adjective_3', 'accessory_1', equippedItems)} │
       │ Slot 7-8: ${this.formatEquipmentPair('adjective_4', 'accessory_2', equippedItems)} │
       └─────────────────────────────────────┘
-      
+
       Active Skills: ${this.getActiveSkills(equippedItems).length}
       Active Combo Boosts: ${this.getActiveComboBoosts(equippedItems).length}
     `;
   }
-  
+
   private formatEquipmentPair(adjSlot: string, itemSlot: string, equipped: Map<EquipmentSlot, EquipmentItem>): string {
     const adj = equipped.get(adjSlot as EquipmentSlot);
     const item = equipped.get(itemSlot as EquipmentSlot);
-    
+
     const adjName = adj ? adj.name : '[empty]';
     const itemName = item ? item.name : '[empty]';
-    
+
     return `${adjName} ${itemName}`.padEnd(20);
   }
 }
@@ -1393,7 +1388,7 @@ const overHealPotion: ConsumableItem = {
   name: 'Over Heal Potion',
   description: 'HP最大値を超えて回復するポーション',
   grade: 3,
-  
+
   effects: [{
     type: EffectType.OVERHEAL_HP,
     power: 50, // 最大HP + 50まで回復
@@ -1411,7 +1406,7 @@ const strengthElixir: ConsumableItem = {
   name: 'Strength Elixir',
   description: '5ターンの間攻撃力を20アップ',
   grade: 2,
-  
+
   effects: [{
     type: EffectType.BUFF_STRENGTH,
     power: 20,
@@ -1430,7 +1425,7 @@ const panacea: ConsumableItem = {
   name: 'Panacea',
   description: '全ての状態異常を回復する万能薬',
   grade: 4,
-  
+
   effects: [{
     type: EffectType.CURE_ALL_STATUS,
     power: 0, // powerは使用しない
@@ -1448,7 +1443,7 @@ const focusStone: ConsumableItem = {
   name: 'Focus Stone',
   description: 'EXポイントを10回復する石',
   grade: 3,
-  
+
   effects: [{
     type: EffectType.RESTORE_EX_POINTS,
     power: 10,
@@ -1469,83 +1464,83 @@ class ItemEffectSystem {
    * アイテム効果を実行
    */
   async executeItemEffect(
-    item: ConsumableItem, 
-    user: Player, 
+    item: ConsumableItem,
+    user: Player,
     target?: Player | Enemy
   ): Promise<ItemEffectResult> {
     const results: EffectResult[] = [];
-    
+
     for (const effect of item.effects) {
       // 使用条件チェック
       if (!this.checkUsageConditions(effect, user)) {
         continue;
       }
-      
+
       const result = await this.applyEffect(effect, user, target);
       results.push(result);
     }
-    
+
     return { item, results, success: results.length > 0 };
   }
-  
+
   private checkUsageConditions(effect: ItemEffect, user: Player): boolean {
     const inBattle = user.isInBattle();
-    
+
     if (inBattle && effect.conditions?.usableInBattle === false) {
       return false;
     }
-    
+
     if (!inBattle && effect.conditions?.usableOutBattle === false) {
       return false;
     }
-    
+
     return true;
   }
-  
+
   private async applyEffect(
-    effect: ItemEffect, 
-    user: Player, 
+    effect: ItemEffect,
+    user: Player,
     target?: Player | Enemy
   ): Promise<EffectResult> {
     switch (effect.type) {
       case EffectType.OVERHEAL_HP:
         return this.applyOverHeal(effect, user);
-        
+
       case EffectType.BUFF_STRENGTH:
         return this.applyStatBuff(effect, user, 'strength');
-        
+
       case EffectType.CURE_ALL_STATUS:
         return this.cureAllStatus(user);
-        
+
       case EffectType.RESTORE_EX_POINTS:
         return this.restoreExPoints(effect, user);
-        
+
       case EffectType.TEMPORARY_INVINCIBILITY:
         return this.applyInvincibility(effect, user);
-        
+
       // 他の効果タイプ...
     }
   }
-  
+
   private applyOverHeal(effect: ItemEffect, user: Player): EffectResult {
     const currentHp = user.hp;
     const maxHp = user.maxHp;
     const healAmount = effect.power;
-    
+
     // 最大HP + healAmountまで回復可能
     const newHp = Math.min(currentHp + healAmount, maxHp + healAmount);
     user.hp = newHp;
-    
+
     return {
       type: 'overheal',
       amount: newHp - currentHp,
       message: `HP over-healed by ${newHp - currentHp} (${newHp}/${maxHp})`
     };
   }
-  
+
   private applyStatBuff(
-    effect: ItemEffect, 
-    user: Player, 
+    effect: ItemEffect,
+    user: Player,
     stat: 'strength' | 'willpower' | 'agility' | 'fortune'
   ): EffectResult {
     const buff: TemporaryStatusEffect = {
@@ -1556,9 +1551,9 @@ class ItemEffectSystem {
       value: effect.power,
       duration: effect.duration || 3
     };
-    
+
     user.addTemporaryStatus(buff);
-    
+
     return {
       type: 'buff',
       stat: stat,
@@ -1567,22 +1562,22 @@ class ItemEffectSystem {
       message: `${stat} increased by ${effect.power} for ${buff.duration} turns`
     };
   }
-  
+
   private cureAllStatus(user: Player): EffectResult {
     const curedStatuses = user.getAllStatusAilments();
     user.clearAllStatusAilments();
-    
+
     return {
       type: 'cure_all',
       curedCount: curedStatuses.length,
       message: `All status ailments cured (${curedStatuses.length} effects)`
     };
   }
-  
+
   private restoreExPoints(effect: ItemEffect, user: Player): EffectResult {
     const restored = effect.power;
     user.exPoints = Math.min(user.exPoints + restored, user.maxExPoints || 100);
-    
+
     return {
       type: 'ex_restore',
       amount: restored,
@@ -1598,23 +1593,23 @@ class ItemEffectSystem {
 class ItemUsageManager {
   canUseItem(item: ConsumableItem, player: Player): boolean {
     const inBattle = player.isInBattle();
-    
+
     for (const effect of item.effects) {
       if (inBattle && effect.conditions?.usableInBattle === false) {
         return false;
       }
-      
+
       if (!inBattle && effect.conditions?.usableOutBattle === false) {
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   getUsageRestrictionMessage(item: ConsumableItem, player: Player): string {
     const inBattle = player.isInBattle();
-    
+
     if (inBattle) {
       return "このアイテムは戦闘中には使用できません";
     } else {
@@ -1739,7 +1734,7 @@ interface SystemUnlockState {
 
 class SystemUnlockManager {
   private unlockState: SystemUnlockState;
-  
+
   constructor() {
     this.unlockState = {
       unlockedSystems: new Set([
@@ -1747,7 +1742,7 @@ class SystemUnlockManager {
       ])
     };
   }
-  
+
   /**
    * キーアイテム取得時の解放処理
    */
@@ -1756,28 +1751,28 @@ class SystemUnlockManager {
     if (!keyItem) {
       return { success: false, error: 'Unknown key item' };
     }
-    
+
     if (this.isSystemUnlocked(keyItem.unlocks)) {
       return { success: false, error: 'System already unlocked' };
     }
-    
+
     // システム解放
     this.unlockState.unlockedSystems.add(keyItem.unlocks);
-    
+
     return {
       success: true,
       unlockedSystem: keyItem.unlocks,
       message: `${keyItem.name}により${this.getSystemName(keyItem.unlocks)}が解放されました！`
     };
   }
-  
+
   /**
    * システムが解放済みかチェック
    */
   isSystemUnlocked(systemId: UnlockableSystem): boolean {
     return this.unlockState.unlockedSystems.has(systemId);
   }
-  
+
   /**
    * 取得可能な最大スキルグレードを返す
    */
@@ -1788,32 +1783,32 @@ class SystemUnlockManager {
     if (this.isSystemUnlocked(UnlockableSystem.SKILL_GRADE_2)) return 2;
     return 1; // 初期は1まで
   }
-  
+
   /**
    * 装備可能スロット数を返す
    */
   getEquipmentSlotCount(): number {
     return this.isSystemUnlocked(UnlockableSystem.SECOND_ACCESSORY) ? 8 : 6;
   }
-  
+
   /**
    * EXポイントシステムが利用可能か
    */
   isExPointSystemAvailable(): boolean {
     return this.isSystemUnlocked(UnlockableSystem.FOCUS_MODE);
   }
-  
+
   /**
    * コンボブーストシステムが利用可能か
    */
   isComboBoostSystemAvailable(): boolean {
     return this.isSystemUnlocked(UnlockableSystem.COMBO_BOOST);
   }
-  
+
   private findKeyItem(keyItemId: string): KeyItem | undefined {
     return keyItems.find(item => item.id === keyItemId);
   }
-  
+
   private getSystemName(system: UnlockableSystem): string {
     const systemNames = {
       [UnlockableSystem.COMBO_BOOST]: 'コンボブーストシステム',
@@ -1834,11 +1829,11 @@ class SystemUnlockManager {
 ```typescript
 class GameSystemRestrictions {
   private unlockManager: SystemUnlockManager;
-  
+
   constructor(unlockManager: SystemUnlockManager) {
     this.unlockManager = unlockManager;
   }
-  
+
   /**
    * スキル生成時のグレード制限
    */
@@ -1846,7 +1841,7 @@ class GameSystemRestrictions {
     const maxGrade = this.unlockManager.getMaxAllowedSkillGrade();
     return skills.filter(skill => skill.grade <= maxGrade);
   }
-  
+
   /**
    * 装備生成時のスロット数制限
    */
@@ -1855,24 +1850,24 @@ class GameSystemRestrictions {
     const allSlots = Object.values(EquipmentSlot);
     return allSlots.slice(0, maxSlots);
   }
-  
+
   /**
    * バトル時のEXモード利用可能性チェック
    */
   getAvailableExModes(): string[] {
     const modes: string[] = [];
-    
+
     if (this.unlockManager.isSystemUnlocked(UnlockableSystem.FOCUS_MODE)) {
       modes.push('focus_mode');
     }
-    
+
     if (this.unlockManager.isSystemUnlocked(UnlockableSystem.SPARK_MODE)) {
       modes.push('spark_mode');
     }
-    
+
     return modes;
   }
-  
+
   /**
    * スキル効果にコンボブースト適用可能かチェック
    */
@@ -1890,9 +1885,9 @@ class UnlockNotificationUI {
    */
   displayUnlockNotification(result: UnlockResult): void {
     if (!result.success) return;
-    
+
     const systemName = this.getSystemDisplayName(result.unlockedSystem!);
-    
+
     console.log(`
     ╔════════════════════════════════════╗
     ║        🎉 SYSTEM UNLOCKED! 🎉       ║
@@ -1905,13 +1900,13 @@ class UnlockNotificationUI {
     ╚════════════════════════════════════╝
     `);
   }
-  
+
   /**
    * 利用可能なシステム一覧表示
    */
   displaySystemStatus(unlockManager: SystemUnlockManager): void {
     const systems = Object.values(UnlockableSystem);
-    
+
     console.log('\n=== SYSTEM STATUS ===');
     for (const system of systems) {
       const isUnlocked = unlockManager.isSystemUnlocked(system);
@@ -1920,7 +1915,7 @@ class UnlockNotificationUI {
       console.log(`${status} ${name}`);
     }
   }
-  
+
   private getSystemDisplayName(system: UnlockableSystem): string {
     // SystemUnlockManager.getSystemNameと同じロジック
     // 表示用の名前を返す
@@ -1945,7 +1940,7 @@ class SaveManager {
     };
     this.writeSaveData(saveData);
   }
-  
+
   loadUnlockState(): SystemUnlockState {
     const saveData = this.loadSaveData();
     return {
