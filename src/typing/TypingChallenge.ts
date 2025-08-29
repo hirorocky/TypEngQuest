@@ -55,16 +55,9 @@ export class TypingChallenge {
     if (char === '\x7f') {
       if (this.input.length > 0) {
         const deleteIndex = this.input.length - 1;
-        const wasError = this.errors.has(deleteIndex);
         this.errors.delete(deleteIndex);
-
         this.input = this.input.slice(0, -1);
-
-        // バックスペースによる削除はtotalKeystrokesとincorrectKeystrokesを調整
-        this.totalKeystrokes--;
-        if (wasError) {
-          this.incorrectKeystrokes--;
-        }
+        // 注意: バックスペースで削除しても統計からミスは除去されない
       }
       return;
     }
@@ -198,11 +191,10 @@ export class TypingChallenge {
     const timeLimit = this.getTimeLimit() * 1000; // ミリ秒に変換
     const percentage = (timeTaken / timeLimit) * 100;
 
-    if (percentage <= 50) return 'S';
-    if (percentage <= 70) return 'A';
-    if (percentage <= 90) return 'B';
-    if (percentage <= 100) return 'C';
-    return 'F';
+    if (percentage > 100) return 'Miss'; // 時間切れ
+    if (percentage <= 70) return 'Fast'; // 70%以下
+    if (percentage <= 85) return 'Normal'; // 85%以下
+    return 'Slow'; // 100%以下
   }
 
   /**
@@ -212,8 +204,7 @@ export class TypingChallenge {
    */
   private calculateAccuracyRating(accuracy: number): AccuracyRating {
     if (accuracy === 100) return 'Perfect';
-    if (accuracy >= 95) return 'Great';
-    if (accuracy >= 90) return 'Good';
+    if (accuracy >= 95) return 'Good';
     return 'Poor';
   }
 
@@ -224,28 +215,28 @@ export class TypingChallenge {
    * @returns 効果倍率
    */
   private calculateTotalRating(speedRating: SpeedRating, accuracyRating: AccuracyRating): number {
-    // F or Poorの場合は失敗
-    if (speedRating === 'F' || accuracyRating === 'Poor') {
+    // Miss or Poorの場合は失敗
+    if (speedRating === 'Miss' || accuracyRating === 'Poor') {
       return 0;
     }
 
-    // S + Perfect
-    if (speedRating === 'S' && accuracyRating === 'Perfect') {
+    // Fast + Perfect
+    if (speedRating === 'Fast' && accuracyRating === 'Perfect') {
       return 150;
     }
 
-    // A + Perfect/Great
-    if (speedRating === 'A' && (accuracyRating === 'Perfect' || accuracyRating === 'Great')) {
+    // Fast + Good
+    if (speedRating === 'Fast' && accuracyRating === 'Good') {
       return 120;
     }
 
-    // B + Perfect/Great/Good
-    if (speedRating === 'B') {
+    // Normal + Perfect/Good
+    if (speedRating === 'Normal') {
       return 100;
     }
 
-    // C + Any
-    if (speedRating === 'C') {
+    // Slow + Perfect/Good
+    if (speedRating === 'Slow') {
       return 80;
     }
 

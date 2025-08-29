@@ -77,7 +77,7 @@ describe('BattleActionExecutor', () => {
       const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
 
       const typingResult = {
-        speedRating: 'S' as const,
+        speedRating: 'Fast' as const,
         accuracyRating: 'Perfect' as const,
         totalRating: 150,
         timeTaken: 1000,

@@ -1,12 +1,12 @@
 /**
  * タイピング評価の速度レーティング
  */
-export type SpeedRating = 'S' | 'A' | 'B' | 'C' | 'F';
+export type SpeedRating = 'Fast' | 'Normal' | 'Slow' | 'Miss';
 
 /**
  * タイピング評価の精度レーティング
  */
-export type AccuracyRating = 'Perfect' | 'Great' | 'Good' | 'Poor';
+export type AccuracyRating = 'Perfect' | 'Good' | 'Poor';
 
 /**
  * タイピング結果
