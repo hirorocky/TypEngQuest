@@ -330,8 +330,9 @@ describe('EquipmentEffectCalculator', () => {
           effects: [
             {
               type: 'damage',
-              power: 50,
+              basePower: 50,
               target: 'enemy',
+              successRate: 100,
             },
           ],
         },
@@ -372,8 +373,9 @@ describe('EquipmentEffectCalculator', () => {
           effects: [
             {
               type: 'damage',
-              power: 50,
+              basePower: 50,
               target: 'enemy',
+              successRate: 100,
             },
           ],
         },
@@ -405,8 +407,9 @@ describe('EquipmentEffectCalculator', () => {
           effects: [
             {
               type: 'hp_heal',
-              power: 30,
+              basePower: 30,
               target: 'self',
+              successRate: 100,
             },
           ],
         },
@@ -449,8 +452,9 @@ describe('EquipmentEffectCalculator', () => {
           effects: [
             {
               type: 'damage',
-              power: 50,
+              basePower: 50,
               target: 'enemy',
+              successRate: 100,
             },
           ],
         },

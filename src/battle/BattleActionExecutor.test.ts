@@ -20,12 +20,13 @@ describe('BattleActionExecutor', () => {
       level: 1,
       stats: {
         maxHp: 100,
-        maxMp: 50,
         strength: 10,
         willpower: 8,
         agility: 12,
         fortune: 5,
       },
+      physicalEvadeRate: 15,
+      magicalEvadeRate: 10,
       skills: [],
       drops: [],
     });
@@ -34,13 +35,29 @@ describe('BattleActionExecutor', () => {
       id: 'test_skill',
       name: 'Test Skill',
       description: 'Test skill',
-      effects: [{ type: 'damage', power: 1.0, target: 'enemy' }],
-      successRate: 100,
+      skillType: 'physical',
       mpCost: 5,
       mpCharge: 0,
       actionCost: 1,
-      typingDifficulty: 1,
       target: 'enemy',
+      typingDifficulty: 1,
+      skillSuccessRate: {
+        baseRate: 100,
+        agilityInfluence: 0.1,
+        typingInfluence: 0.2,
+      },
+      criticalRate: {
+        baseRate: 5,
+        fortuneInfluence: 0.1,
+      },
+      effects: [
+        {
+          type: 'damage',
+          target: 'enemy',
+          basePower: 1.0,
+          successRate: 100,
+        },
+      ],
     };
   });
 
@@ -106,19 +123,6 @@ describe('BattleActionExecutor', () => {
       expect(result.message).toContain('Test Enemy');
 
       mockRandom.mockRestore();
-    });
-
-    it('敵のMPが不足している場合は失敗する', () => {
-      enemy.consumeMp(50); // 全MPを消費
-      const expensiveSkill = {
-        ...skill,
-        mpCost: 10,
-      };
-
-      const result = BattleActionExecutor.executeEnemySkill(expensiveSkill, enemy, player);
-
-      expect(result.success).toBe(false);
-      expect(result.message[0]).toContain("doesn't have enough MP");
     });
   });
 });

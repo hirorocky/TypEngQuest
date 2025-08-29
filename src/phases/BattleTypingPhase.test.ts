@@ -24,13 +24,29 @@ describe('BattleTypingPhase', () => {
       id: 'fireball',
       name: 'fireball',
       description: 'A powerful fireball spell',
+      skillType: 'magical',
       mpCost: 10,
       mpCharge: 15,
       actionCost: 1,
-      successRate: 90,
       target: 'enemy',
       typingDifficulty: 2,
-      effects: [{ type: 'damage', value: 30 }],
+      skillSuccessRate: {
+        baseRate: 90,
+        agilityInfluence: 0.1,
+        typingInfluence: 0.2,
+      },
+      criticalRate: {
+        baseRate: 8,
+        fortuneInfluence: 0.1,
+      },
+      effects: [
+        {
+          type: 'damage',
+          target: 'enemy',
+          basePower: 30,
+          successRate: 100,
+        },
+      ],
     };
 
     player = new Player('TestPlayer');
@@ -41,12 +57,13 @@ describe('BattleTypingPhase', () => {
       level: 1,
       stats: {
         maxHp: 100,
-        maxMp: 50,
         strength: 10,
         willpower: 5,
         agility: 10,
         fortune: 5,
       },
+      physicalEvadeRate: 12,
+      magicalEvadeRate: 18,
       drops: [],
       skills: [],
     });

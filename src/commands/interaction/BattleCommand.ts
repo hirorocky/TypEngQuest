@@ -2,7 +2,7 @@ import { BaseCommand, CommandContext, ValidationResult } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
 import { FileType, FileNode } from '../../world/FileNode';
 import { Enemy, EnemyStats, DropItem } from '../../battle/Enemy';
-import { Skill, DamageSkillEffect } from '../../battle/Skill';
+import { Skill } from '../../battle/Skill';
 
 /**
  * battleコマンド - モンスターファイルとバトルする
@@ -90,6 +90,8 @@ export class BattleCommand extends BaseCommand {
       stats: stats,
       skills: this.generateEnemySkills(extension),
       drops: this.generateEnemyDrops(),
+      physicalEvadeRate: 10 + Math.floor(stats.agility / 10),
+      magicalEvadeRate: 5 + Math.floor(stats.agility / 15),
     });
   }
 
@@ -129,13 +131,33 @@ export class BattleCommand extends BaseCommand {
         id: 'syntax_error',
         name: 'Syntax Error',
         description: 'A confusing syntax error attack',
+        skillType: 'physical',
         actionCost: 1,
         mpCost: 3,
         mpCharge: 0,
-        successRate: 90,
         target: 'enemy',
         typingDifficulty: 2,
-        effects: [{ type: 'damage', power: 8, target: 'enemy' } as DamageSkillEffect],
+        skillSuccessRate: {
+          baseRate: 90,
+          agilityInfluence: 0.5,
+          typingInfluence: 0.8,
+        },
+        criticalRate: {
+          baseRate: 8,
+          fortuneInfluence: 0.4,
+        },
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            basePower: 80,
+            powerInfluence: {
+              stat: 'strength',
+              rate: 1.2,
+            },
+            successRate: 92,
+          },
+        ],
       },
     ];
 
@@ -145,37 +167,97 @@ export class BattleCommand extends BaseCommand {
         id: 'callback_hell',
         name: 'Callback Hell',
         description: 'Unleash a cascade of asynchronous nightmares',
+        skillType: 'magical',
         actionCost: 2,
         mpCost: 5,
         mpCharge: 0,
-        successRate: 85,
         target: 'enemy',
         typingDifficulty: 3,
-        effects: [{ type: 'damage', power: 12, target: 'enemy' } as DamageSkillEffect],
+        skillSuccessRate: {
+          baseRate: 85,
+          agilityInfluence: 0.3,
+          typingInfluence: 1.5,
+        },
+        criticalRate: {
+          baseRate: 10,
+          fortuneInfluence: 0.6,
+        },
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            basePower: 100,
+            powerInfluence: {
+              stat: 'willpower',
+              rate: 1.5,
+            },
+            successRate: 88,
+          },
+        ],
       },
       '.py': {
         id: 'indentation_error',
         name: 'Indentation Error',
         description: 'Strike with misaligned whitespace',
+        skillType: 'physical',
         actionCost: 1,
         mpCost: 4,
         mpCharge: 0,
-        successRate: 90,
         target: 'enemy',
         typingDifficulty: 2,
-        effects: [{ type: 'damage', power: 10, target: 'enemy' } as DamageSkillEffect],
+        skillSuccessRate: {
+          baseRate: 90,
+          agilityInfluence: 0.6,
+          typingInfluence: 1.0,
+        },
+        criticalRate: {
+          baseRate: 7,
+          fortuneInfluence: 0.5,
+        },
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            basePower: 90,
+            powerInfluence: {
+              stat: 'strength',
+              rate: 1.3,
+            },
+            successRate: 90,
+          },
+        ],
       },
       '.html': {
         id: 'tag_mismatch',
         name: 'Tag Mismatch',
         description: 'Confuse with unclosed tags',
+        skillType: 'physical',
         actionCost: 1,
         mpCost: 3,
         mpCharge: 0,
-        successRate: 95,
         target: 'enemy',
         typingDifficulty: 1,
-        effects: [{ type: 'damage', power: 6, target: 'enemy' } as DamageSkillEffect],
+        skillSuccessRate: {
+          baseRate: 95,
+          agilityInfluence: 0.4,
+          typingInfluence: 0.6,
+        },
+        criticalRate: {
+          baseRate: 5,
+          fortuneInfluence: 0.3,
+        },
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            basePower: 70,
+            powerInfluence: {
+              stat: 'strength',
+              rate: 1.0,
+            },
+            successRate: 95,
+          },
+        ],
       },
     };
 
