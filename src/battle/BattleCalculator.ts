@@ -1,4 +1,6 @@
 import { SpeedRating, AccuracyRating } from '../typing/types';
+import { Skill, SkillSuccessRate, SkillCriticalRate, StatInfluence, SkillType } from './Skill';
+import { Enemy } from './Enemy';
 
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
@@ -237,5 +239,206 @@ export class BattleCalculator {
     // Poor は倍率なし（100%）
 
     return mpRecovered;
+  }
+
+  // Phase 4: 3層判定システム新メソッド
+
+  /**
+   * スキル成功率を計算する
+   * @param skillSuccessRate スキルの成功率設定
+   * @param playerAgility プレイヤーの敏捷性
+   * @param typingScore タイピング評価（%）
+   * @returns 最終スキル成功率（%）
+   */
+  static calculateSkillSuccessRate(
+    skillSuccessRate: SkillSuccessRate,
+    playerAgility: number,
+    typingScore: number
+  ): number {
+    // 基本成功率
+    let finalRate = skillSuccessRate.baseRate;
+
+    // 敏捷性影響
+    finalRate += playerAgility * skillSuccessRate.agilityInfluence;
+
+    // タイピング影響（typingScoreは100を基準とした%）
+    const typingBonus = (typingScore - 100) * skillSuccessRate.typingInfluence;
+    finalRate += typingBonus;
+
+    // 上限100%、下限10%
+    return Math.max(10, Math.min(100, finalRate));
+  }
+
+  /**
+   * 物理・魔法スキルの回避判定
+   * @param skillType スキルの種別
+   * @param enemy 敵
+   * @returns 回避されたかどうか
+   */
+  static isSkillEvaded(skillType: SkillType, enemy: Enemy): boolean {
+    const evadeRate = skillType === 'physical' ? enemy.physicalEvadeRate : enemy.magicalEvadeRate;
+
+    const random = Math.random() * 100;
+    return random < evadeRate;
+  }
+
+  /**
+   * 効果の成功判定
+   * @param successRate 効果の成功率（%）
+   * @returns 成功したかどうか
+   */
+  static isEffectSuccess(successRate: number): boolean {
+    const random = Math.random() * 100;
+    return random < successRate;
+  }
+
+  /**
+   * 効果の威力を計算する（ステータス影響込み）
+   * @param basePower 基本威力
+   * @param playerStats プレイヤーのステータス
+   * @param statInfluence ステータス影響設定（省略可能）
+   * @returns 最終威力
+   */
+  static calculateEffectPower(
+    basePower: number,
+    playerStats: { strength: number; willpower: number; agility: number; fortune: number },
+    statInfluence?: StatInfluence
+  ): number {
+    if (!statInfluence) {
+      // ステータス影響なし = 固定威力
+      return basePower;
+    }
+
+    const statValue = playerStats[statInfluence.stat];
+    const statBonus = statValue * statInfluence.rate;
+
+    return Math.floor(basePower + statBonus);
+  }
+
+  /**
+   * スキルのクリティカル率を計算する
+   * @param criticalRate クリティカル率設定
+   * @param playerFortune プレイヤーの幸運
+   * @returns 最終クリティカル率（%）
+   */
+  static calculateSkillCriticalRate(
+    criticalRate: SkillCriticalRate,
+    playerFortune: number
+  ): number {
+    const finalRate = criticalRate.baseRate + playerFortune * criticalRate.fortuneInfluence;
+
+    // 上限95%、下限0%
+    return Math.max(0, Math.min(95, finalRate));
+  }
+
+  /**
+   * 3層判定システム全体を実行する
+   * @param skill 使用するスキル
+   * @param enemy 対象の敵
+   * @param playerStats プレイヤーのステータス
+   * @param typingScore タイピング評価（%）
+   * @returns 判定結果
+   */
+  static executeThreeLayerJudgment(
+    skill: Skill,
+    enemy: Enemy,
+    playerStats: { strength: number; willpower: number; agility: number; fortune: number },
+    typingScore: number
+  ): {
+    skillSuccess: boolean;
+    evaded: boolean;
+    effectResults: Array<{
+      effectIndex: number;
+      success: boolean;
+      power: number;
+      isCritical: boolean;
+    }>;
+    finalDamage: number;
+    isCritical: boolean;
+  } {
+    const result = {
+      skillSuccess: false,
+      evaded: false,
+      effectResults: [] as Array<{
+        effectIndex: number;
+        success: boolean;
+        power: number;
+        isCritical: boolean;
+      }>,
+      finalDamage: 0,
+      isCritical: false,
+    };
+
+    // Layer 1: スキル成功率判定
+    const skillSuccessRate = this.calculateSkillSuccessRate(
+      skill.skillSuccessRate,
+      playerStats.agility,
+      typingScore
+    );
+
+    result.skillSuccess = this.isEffectSuccess(skillSuccessRate);
+
+    if (!result.skillSuccess) {
+      return result;
+    }
+
+    // Layer 2: 回避判定
+    result.evaded = this.isSkillEvaded(skill.skillType, enemy);
+
+    if (result.evaded) {
+      return result;
+    }
+
+    // Layer 3: 効果処理
+    let totalDamage = 0;
+    let anyEffectCritical = false;
+
+    skill.effects.forEach((effect, index) => {
+      const effectSuccess = this.isEffectSuccess(effect.successRate);
+
+      if (effectSuccess) {
+        const power = this.calculateEffectPower(
+          effect.basePower,
+          playerStats,
+          effect.powerInfluence
+        );
+
+        // クリティカル判定
+        const criticalRate = this.calculateSkillCriticalRate(
+          skill.criticalRate,
+          playerStats.fortune
+        );
+        const isCritical = this.isCritical(criticalRate);
+
+        const finalPower = isCritical ? Math.floor(power * 1.5) : power;
+
+        result.effectResults.push({
+          effectIndex: index,
+          success: true,
+          power: finalPower,
+          isCritical,
+        });
+
+        if (effect.type === 'damage') {
+          totalDamage += finalPower;
+        }
+
+        if (isCritical) {
+          anyEffectCritical = true;
+        }
+      } else {
+        result.effectResults.push({
+          effectIndex: index,
+          success: false,
+          power: 0,
+          isCritical: false,
+        });
+      }
+    });
+
+    result.finalDamage = totalDamage;
+    result.isCritical = anyEffectCritical;
+
+    return result;
   }
 }
