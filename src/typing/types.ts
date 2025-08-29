@@ -1,10 +1,10 @@
 /**
- * タイピング評価の速度レーティング（簡素化版）
+ * タイピング評価の速度レーティング
  */
 export type SpeedRating = 'Fast' | 'Normal' | 'Slow' | 'Miss';
 
 /**
- * タイピング評価の精度レーティング（簡素化版）
+ * タイピング評価の精度レーティング
  */
 export type AccuracyRating = 'Perfect' | 'Good' | 'Poor';
 
