@@ -110,7 +110,7 @@ describe('TypingPhase', () => {
 
     test('チャレンジ完了時に結果が表示される', async () => {
       const mockResult: TypingResult = {
-        speedRating: 'S',
+        speedRating: 'Fast',
         accuracyRating: 'Perfect',
         totalRating: 150,
         timeTaken: 5000,
@@ -127,7 +127,7 @@ describe('TypingPhase', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('=== Challenge Complete! ===')
       );
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Speed: S'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Speed: Fast'));
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Accuracy: Perfect (100.0%)')
       );

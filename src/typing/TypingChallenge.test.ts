@@ -200,20 +200,20 @@ describe('TypingChallenge', () => {
       challenge.start();
     });
 
-    test('完璧な入力（S + Perfect）', () => {
+    test('完璧な入力（Fast + Perfect）', () => {
       jest.setSystemTime(Date.now() + 1000); // 1秒で完了
       'hello'.split('').forEach(char => challenge.handleInput(char));
 
       const result = challenge.getResult();
-      expect(result.speedRating).toBe('S');
+      expect(result.speedRating).toBe('Fast');
       expect(result.accuracyRating).toBe('Perfect');
       expect(result.totalRating).toBe(150);
       expect(result.accuracy).toBe(100);
       expect(result.isSuccess).toBe(true);
     });
 
-    test('速い入力で1文字ミス（S + Perfect）', () => {
-      jest.setSystemTime(Date.now() + 3000); // 3秒で完了（15秒の20%なのでS）
+    test('速い入力で1文字ミス（Fast + Perfect）', () => {
+      jest.setSystemTime(Date.now() + 3000); // 3秒で完了（15秒の20%なのでFast）
       challenge.handleInput('h');
       challenge.handleInput('x'); // ミス
       challenge.handleInput('\x7f'); // 削除（バックスペースで削除すると統計も調整される）
@@ -223,14 +223,14 @@ describe('TypingChallenge', () => {
       challenge.handleInput('o');
 
       const result = challenge.getResult();
-      expect(result.speedRating).toBe('S');
+      expect(result.speedRating).toBe('Fast');
       expect(result.accuracyRating).toBe('Perfect'); // バックスペースで削除したので100%
       expect(result.accuracy).toBe(100);
-      expect(result.totalRating).toBe(150); // S + Perfect
+      expect(result.totalRating).toBe(150); // Fast + Perfect
     });
 
-    test('ミスを修正しない場合（B + Poor）', () => {
-      jest.setSystemTime(Date.now() + 11000); // 11秒で完了（15秒の73%なのでB）
+    test('ミスを修正しない場合（Normal + Poor）', () => {
+      jest.setSystemTime(Date.now() + 11000); // 11秒で完了（15秒の73%なのでNormal）
       challenge.handleInput('h');
       challenge.handleInput('x'); // ミス（修正せず）
       challenge.handleInput('l');
@@ -238,29 +238,29 @@ describe('TypingChallenge', () => {
       challenge.handleInput('o');
 
       const result = challenge.getResult();
-      expect(result.speedRating).toBe('B');
-      expect(result.accuracyRating).toBe('Poor'); // 4/5 = 80% < 90%
+      expect(result.speedRating).toBe('Normal');
+      expect(result.accuracyRating).toBe('Poor'); // 4/5 = 80% < 95%
       expect(result.accuracy).toBe(80);
-      expect(result.totalRating).toBe(0); // B + Poor = 失敗
+      expect(result.totalRating).toBe(0); // Normal + Poor = 失敗
     });
 
-    test('遅い入力（C + Perfect）', () => {
+    test('遅い入力（Slow + Perfect）', () => {
       jest.setSystemTime(Date.now() + 14000); // 14秒で完了
       'hello'.split('').forEach(char => challenge.handleInput(char));
 
       const result = challenge.getResult();
-      expect(result.speedRating).toBe('C');
+      expect(result.speedRating).toBe('Slow');
       expect(result.accuracyRating).toBe('Perfect');
       expect(result.totalRating).toBe(80);
     });
 
-    test('時間切れ（F）', () => {
+    test('時間切れ（Miss）', () => {
       jest.setSystemTime(Date.now() + 16000); // 16秒（時間切れ）
       challenge.handleInput('h');
       challenge.handleInput('e');
 
       const result = challenge.getResult();
-      expect(result.speedRating).toBe('F');
+      expect(result.speedRating).toBe('Miss');
       expect(result.totalRating).toBe(0);
       expect(result.isSuccess).toBe(false);
     });
@@ -271,7 +271,7 @@ describe('TypingChallenge', () => {
       'hxlxo'.split('').forEach(char => challenge.handleInput(char));
 
       const result = challenge.getResult();
-      expect(result.accuracyRating).toBe('Poor'); // 3/5 = 60% < 90%
+      expect(result.accuracyRating).toBe('Poor'); // 3/5 = 60% < 95%
       expect(result.totalRating).toBe(0);
       expect(result.isSuccess).toBe(false);
     });

@@ -313,29 +313,45 @@ describe('BattleCalculator', () => {
     const playerAgility = 50;
 
     describe('タイピング速度ボーナス', () => {
-      it('速度評価Sで最大ボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'S');
+      it('速度評価Fastで最大ボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(
+          baseHitRate,
+          playerAgility,
+          'Fast'
+        );
 
         // 80 × (1.0 + 50/200) × 1.5 = 80 × 1.25 × 1.5 = 150（最大99%）
         expect(result).toBe(99);
       });
 
-      it('速度評価Aでボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'A');
+      it('速度評価Normalでボーナスを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(
+          baseHitRate,
+          playerAgility,
+          'Normal'
+        );
 
         // 80 × (1.0 + 50/200) × 1.2 = 80 × 1.25 × 1.2 = 120（最大99%で制限）
         expect(result).toBe(99);
       });
 
-      it('速度評価Bで標準倍率を適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'B');
+      it('速度評価Slowで標準倍率を適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(
+          baseHitRate,
+          playerAgility,
+          'Slow'
+        );
 
         // 80 × (1.0 + 50/200) × 1.0 = 80 × 1.25 × 1.0 = 100（最大99%で制限）
         expect(result).toBe(99);
       });
 
-      it('速度評価Fでペナルティを適用', () => {
-        const result = BattleCalculator.calculateTypingSpeedBonus(baseHitRate, playerAgility, 'F');
+      it('速度評価Missでペナルティを適用', () => {
+        const result = BattleCalculator.calculateTypingSpeedBonus(
+          baseHitRate,
+          playerAgility,
+          'Miss'
+        );
 
         // 80 × (1.0 + 50/200) × 0.7 = 80 × 1.25 × 0.7 = 70
         expect(result).toBe(70);
@@ -354,11 +370,11 @@ describe('BattleCalculator', () => {
         expect(result).toBe(25);
       });
 
-      it('精度評価Greatでボーナスを適用', () => {
+      it('精度評価Goodでボーナスを適用', () => {
         const result = BattleCalculator.calculateTypingAccuracyBonus(
           baseCriticalRate,
           playerAgility,
-          'Great'
+          'Good'
         );
 
         // 10 × (1.0 + 50/200) × 1.5 = 10 × 1.25 × 1.5 = 18.75

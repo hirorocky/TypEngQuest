@@ -155,11 +155,10 @@ export class BattleCalculator {
 
     // タイピング速度による倍率
     const speedMultiplier = {
-      S: 1.5, // 150%
-      A: 1.2, // 120%
-      B: 1.0, // 100%
-      C: 0.9, // 90%
-      F: 0.7, // 70%
+      Fast: 1.5, // 150%
+      Normal: 1.2, // 120%
+      Slow: 1.0, // 100%
+      Miss: 0.7, // 70%
     }[speedRating];
 
     const enhancedHitRate = baseHitRate * agilityBonus * speedMultiplier;
@@ -184,8 +183,7 @@ export class BattleCalculator {
     // タイピング精度による倍率
     const accuracyMultiplier = {
       Perfect: 2.0, // 200%
-      Great: 1.5, // 150%
-      Good: 1.2, // 120%
+      Good: 1.5, // 150%
       Poor: 0.8, // 80%
     }[accuracyRating];
 
@@ -233,10 +231,10 @@ export class BattleCalculator {
 
     if (accuracyRating === 'Perfect') {
       mpRecovered = Math.floor(mpRecovered * 1.5); // 150%
-    } else if (accuracyRating === 'Great') {
+    } else if (accuracyRating === 'Good') {
       mpRecovered = Math.floor(mpRecovered * 1.2); // 120%
     }
-    // Good, Poor は倍率なし（100%）
+    // Poor は倍率なし（100%）
 
     return mpRecovered;
   }
