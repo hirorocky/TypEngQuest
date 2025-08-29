@@ -64,12 +64,13 @@ describe('SkillSelectionPhase', () => {
       level: 1,
       stats: {
         maxHp: 50,
-        maxMp: 20,
         strength: 10,
         willpower: 8,
         agility: 6,
         fortune: 4,
       },
+      physicalEvadeRate: 10,
+      magicalEvadeRate: 15,
       skills: [],
       drops: [],
     });

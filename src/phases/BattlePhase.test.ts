@@ -32,12 +32,13 @@ describe('BattlePhase', () => {
       level: 1,
       stats: {
         maxHp: 50,
-        maxMp: 20,
         strength: 10,
         willpower: 8,
         agility: 6,
         fortune: 4,
       },
+      physicalEvadeRate: 12,
+      magicalEvadeRate: 8,
       skills: [],
       drops: [],
     });

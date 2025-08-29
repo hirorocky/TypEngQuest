@@ -392,8 +392,9 @@ describe('Player', () => {
           effects: [
             {
               type: 'damage',
-              power: 50,
+              basePower: 50,
               target: 'enemy',
+              successRate: 100,
             },
           ],
         },

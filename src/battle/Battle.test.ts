@@ -16,12 +16,13 @@ describe('Battle', () => {
       level: 1,
       stats: {
         maxHp: 100,
-        maxMp: 50,
         strength: 10,
         willpower: 8,
         agility: 12,
         fortune: 5,
       },
+      physicalEvadeRate: 15,
+      magicalEvadeRate: 10,
       skills: [],
       drops: [],
     });

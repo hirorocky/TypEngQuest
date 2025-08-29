@@ -46,48 +46,83 @@ export class BattleActionExecutor {
   ): SkillExecutionResult {
     const playerBodyStats = player.getBodyStats();
     const playerStats = player.getTotalStats();
-    const enemyStats = enemy.stats;
 
-    // MPチェックと消費
+    // MPチェックと消費（プレイヤーのみ）
     const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, skill);
     if (mpCheckResult) {
       return mpCheckResult;
     }
 
-    // 命中判定
-    const hitResult = this.checkHit(playerStats, enemyStats, skill, typingResult);
-    if (hitResult) {
-      // ミス時でもMP回復処理を行う
-      const mpCharged = this.processMpRecovery(playerBodyStats, skill, typingResult);
-      hitResult.mpCharge = mpCharged;
-      if (mpCharged > 0) {
-        hitResult.message.push(`Charged ${mpCharged} MP.`);
-      }
-      return hitResult;
-    }
+    // タイピング評価を%に変換（100 = 100%）
+    const typingScore = typingResult ? this.convertTypingResultToScore(typingResult) : 100;
 
-    // ダメージ計算と適用
-    const { damage, isCritical } = this.calculateAndApplyDamage(
+    // 新しい3層判定システムを使用
+    const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
+      skill,
+      enemy,
       {
-        playerStats,
-        enemyStats,
-        skill,
-        enemy,
+        strength: playerStats.strength,
+        willpower: playerStats.willpower,
+        agility: playerStats.agility,
+        fortune: playerStats.fortune,
       },
-      typingResult
+      typingScore
     );
 
     // MP回復処理
     const mpCharge = this.processMpRecovery(playerBodyStats, skill, typingResult);
 
+    // スキル失敗の場合
+    if (!judgmentResult.skillSuccess) {
+      const message = this.generateSkillMessage(0, mpCharge, false, {
+        skillName: skill.name,
+        messageType: 'skill_failed',
+      });
+      return {
+        success: false,
+        damage: 0,
+        message,
+        isCritical: false,
+        mpCharge: mpCharge,
+        targetDefeated: false,
+      };
+    }
+
+    // 回避された場合
+    if (judgmentResult.evaded) {
+      const message = this.generateSkillMessage(0, mpCharge, false, {
+        skillName: skill.name,
+        messageType: 'evaded',
+      });
+      return {
+        success: true,
+        damage: 0,
+        message,
+        isCritical: false,
+        mpCharge: mpCharge,
+        targetDefeated: false,
+      };
+    }
+
+    // ダメージ適用
+    if (judgmentResult.finalDamage > 0) {
+      enemy.takeDamage(judgmentResult.finalDamage);
+    }
+
     // メッセージ生成
-    const message = this.generateSkillMessage(damage, mpCharge, isCritical, skill.name);
+    const messageType = judgmentResult.finalDamage > 0 ? 'success' : 'no_effect';
+    const message = this.generateSkillMessage(
+      judgmentResult.finalDamage,
+      mpCharge,
+      judgmentResult.isCritical,
+      { skillName: skill.name, messageType }
+    );
 
     return {
       success: true,
-      damage,
+      damage: judgmentResult.finalDamage,
       message,
-      isCritical: isCritical,
+      isCritical: judgmentResult.isCritical,
       mpCharge: mpCharge,
       targetDefeated: enemy.isDefeated(),
     };
@@ -102,60 +137,70 @@ export class BattleActionExecutor {
    */
   static executeEnemySkill(skill: Skill, enemy: Enemy, player: Player): SkillExecutionResult {
     const playerStats = player.getTotalStats();
-    const enemyStats = enemy.stats;
 
-    // MPチェック
-    if (enemy.currentMp < skill.mpCost) {
-      return {
-        success: false,
-        damage: 0,
-        message: [`${enemy.name} doesn't have enough MP`],
-      };
-    }
+    // 敵はMP制約なし（新仕様）- MP関連処理を除去
 
-    // MP消費
-    enemy.consumeMp(skill.mpCost);
-
-    // 命中判定
-    const hitRate = BattleCalculator.calculateHitRate(skill.successRate);
-    const evadeRate = BattleCalculator.calculateEvadeRate(playerStats.agility);
-
-    if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      return {
-        success: false,
-        damage: 0,
-        message: [`${enemy.name} missed!`],
-      };
-    }
-
-    // クリティカル判定
-    const criticalRate = BattleCalculator.calculateCriticalRate(enemyStats.fortune);
-    const isCritical = BattleCalculator.isCritical(criticalRate);
-
-    // ダメージ効果を検索
-    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
-      | { power: number }
-      | undefined;
-    const power = damageEffect?.power || 1.0;
-
-    // ダメージ計算
-    const damage = BattleCalculator.calculateDamage(
-      enemyStats.strength,
-      0, // プレイヤーへの攻撃では防御力を考慮しない
-      power,
-      isCritical
+    // 新しい3層判定システムを使用（敵視点）
+    const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
+      skill,
+      // 敵が攻撃する場合、プレイヤーを「敵」として扱う必要があるが、
+      // 現在のシステムではプレイヤーに回避率がないため、簡素化した判定を使用
+      enemy, // ダミー（実際には使用されない）
+      {
+        strength: enemy.stats.strength,
+        willpower: enemy.stats.willpower,
+        agility: enemy.stats.agility,
+        fortune: enemy.stats.fortune,
+      },
+      100 // 敵はタイピング評価なし（基準値）
     );
 
-    // ダメージを与える
-    player.getBodyStats().takeDamage(damage);
+    // プレイヤーへの回避判定は別途実装（プレイヤーには固定回避率を使用）
+    const playerEvadeRate = 5 + playerStats.agility / 20; // 従来の計算式
+    const isEvaded = Math.random() * 100 < playerEvadeRate;
 
-    const message = this.generateSkillMessage(damage, 0, isCritical, enemy.name);
+    // スキル失敗の場合
+    if (!judgmentResult.skillSuccess) {
+      return {
+        success: false,
+        damage: 0,
+        message: [`${enemy.name}のスキルが失敗しました`],
+        isCritical: false,
+        targetDefeated: false,
+      };
+    }
+
+    // 回避された場合
+    if (isEvaded) {
+      return {
+        success: true,
+        damage: 0,
+        message: [`${enemy.name}の攻撃を回避しました`],
+        isCritical: false,
+        targetDefeated: false,
+      };
+    }
+
+    // ダメージ適用
+    if (judgmentResult.finalDamage > 0) {
+      player.getBodyStats().takeDamage(judgmentResult.finalDamage);
+    }
+
+    const message = this.generateSkillMessage(
+      judgmentResult.finalDamage,
+      0, // 敵はMP回復なし
+      judgmentResult.isCritical,
+      {
+        skillName: enemy.name,
+        messageType: judgmentResult.finalDamage > 0 ? 'success' : 'no_effect',
+      }
+    );
 
     return {
       success: true,
-      damage,
+      damage: judgmentResult.finalDamage,
       message,
-      isCritical: isCritical,
+      isCritical: judgmentResult.isCritical,
       targetDefeated: player.getBodyStats().getCurrentHP() <= 0,
     };
   }
@@ -272,7 +317,7 @@ export class BattleActionExecutor {
     skill: Skill,
     typingResult?: TypingResult
   ): number {
-    let hitRate = BattleCalculator.calculateHitRate(skill.successRate);
+    let hitRate = BattleCalculator.calculateHitRate(skill.skillSuccessRate.baseRate);
 
     if (typingResult?.isSuccess) {
       hitRate = BattleCalculator.calculateTypingSpeedBonus(
@@ -325,19 +370,63 @@ export class BattleActionExecutor {
     damage: number,
     mpCharge: number,
     isCritical: boolean,
-    skillName?: string
+    options: {
+      skillName?: string;
+      messageType?: 'success' | 'skill_failed' | 'evaded' | 'no_effect';
+    } = {}
   ): string[] {
+    const { skillName, messageType = 'success' } = options;
     const message = [];
+
     if (skillName) {
       message.push(skillName);
     }
-    if (isCritical) {
-      message.push('Critical hit!');
+
+    switch (messageType) {
+      case 'skill_failed':
+        message.push('スキルが失敗しました');
+        break;
+      case 'evaded':
+        message.push('攻撃が回避されました');
+        break;
+      case 'no_effect':
+        message.push('効果がありませんでした');
+        break;
+      case 'success':
+      default:
+        if (isCritical) {
+          message.push('Critical hit!');
+        }
+        message.push(`${damage} damage!`);
+        break;
     }
-    message.push(`${damage} damage!`);
+
     if (mpCharge > 0) {
       message.push(`Charged ${mpCharge} MP.`);
     }
     return message;
+  }
+
+  /**
+   * タイピング結果を%スコアに変換する
+   * @private
+   */
+  private static convertTypingResultToScore(typingResult: TypingResult): number {
+    // accuracyRatingとspeedRatingから総合評価を計算
+    const accuracyScore = {
+      Perfect: 150,
+      Good: 120,
+      Poor: 80,
+    }[typingResult.accuracyRating];
+
+    const speedScore = {
+      Fast: 150,
+      Normal: 120,
+      Slow: 80,
+      Miss: 60,
+    }[typingResult.speedRating];
+
+    // 平均を取って最終スコア
+    return Math.floor((accuracyScore + speedScore) / 2);
   }
 }

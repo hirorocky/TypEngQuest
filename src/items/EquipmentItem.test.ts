@@ -9,17 +9,27 @@ describe('EquipmentItem', () => {
     id: 'slash',
     name: 'Slash',
     description: 'A basic slash attack',
+    skillType: 'physical',
     mpCost: 5,
     mpCharge: 0,
     actionCost: 1,
-    successRate: 90,
     target: 'enemy',
     typingDifficulty: 2,
+    skillSuccessRate: {
+      baseRate: 90,
+      agilityInfluence: 0.1,
+      typingInfluence: 0.2,
+    },
+    criticalRate: {
+      baseRate: 8,
+      fortuneInfluence: 0.1,
+    },
     effects: [
       {
         type: 'damage',
-        power: 50,
+        basePower: 50,
         target: 'enemy',
+        successRate: 100,
       },
     ],
   };
@@ -28,17 +38,27 @@ describe('EquipmentItem', () => {
     id: 'heal',
     name: 'Heal',
     description: 'A basic heal spell',
+    skillType: 'magical',
     mpCost: 10,
     mpCharge: 0,
     actionCost: 1,
-    successRate: 100,
     target: 'self',
     typingDifficulty: 1,
+    skillSuccessRate: {
+      baseRate: 100,
+      agilityInfluence: 0.0,
+      typingInfluence: 0.1,
+    },
+    criticalRate: {
+      baseRate: 5,
+      fortuneInfluence: 0.1,
+    },
     effects: [
       {
         type: 'hp_heal',
-        power: 30,
+        basePower: 30,
         target: 'self',
+        successRate: 100,
       },
     ],
   };

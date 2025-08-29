@@ -11,12 +11,13 @@ describe('Enemy', () => {
         level: 1,
         stats: {
           maxHp: 50,
-          maxMp: 10,
           strength: 10,
           willpower: 5,
           agility: 78,
           fortune: 5,
         },
+        physicalEvadeRate: 10,
+        magicalEvadeRate: 5,
       });
 
       expect(enemy.id).toBe('slime_001');
@@ -34,12 +35,13 @@ describe('Enemy', () => {
           level: -1,
           stats: {
             maxHp: 50,
-            maxMp: 10,
             strength: 10,
             willpower: 5,
             agility: 78,
             fortune: 5,
           },
+          physicalEvadeRate: 10,
+          magicalEvadeRate: 5,
         });
       }).toThrow('Level must be positive');
     });
@@ -56,20 +58,19 @@ describe('Enemy', () => {
         level: 3,
         stats: {
           maxHp: 100,
-          maxMp: 20,
           strength: 15,
           willpower: 8,
           agility: 87,
           fortune: 10,
         },
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 8,
       });
     });
 
-    it('初期HPとMPは最大値と同じ', () => {
+    it('初期HPは最大値と同じ', () => {
       expect(enemy.currentHp).toBe(100);
-      expect(enemy.currentMp).toBe(20);
       expect(enemy.stats.maxHp).toBe(100);
-      expect(enemy.stats.maxMp).toBe(20);
     });
 
     it('各ステータスを取得できる', () => {
@@ -98,12 +99,13 @@ describe('Enemy', () => {
         level: 5,
         stats: {
           maxHp: 150,
-          maxMp: 30,
           strength: 20,
           willpower: 10,
           agility: 95,
           fortune: 12,
         },
+        physicalEvadeRate: 20,
+        magicalEvadeRate: 12,
       });
     });
 
@@ -137,27 +139,6 @@ describe('Enemy', () => {
       expect(() => enemy.heal(-10)).toThrow('Heal amount must be non-negative');
     });
 
-    it('MP消費ができる', () => {
-      enemy.consumeMp(10);
-      expect(enemy.currentMp).toBe(20);
-    });
-
-    it('MPが不足している場合はfalseを返す', () => {
-      expect(enemy.consumeMp(50)).toBe(false);
-      expect(enemy.currentMp).toBe(30);
-    });
-
-    it('MP回復ができる', () => {
-      enemy.consumeMp(10);
-      enemy.recoverMp(5);
-      expect(enemy.currentMp).toBe(25);
-    });
-
-    it('最大MPを超えて回復しない', () => {
-      enemy.recoverMp(50);
-      expect(enemy.currentMp).toBe(30);
-    });
-
     it('戦闘不能状態を判定できる', () => {
       expect(enemy.isDefeated()).toBe(false);
       enemy.takeDamage(150);
@@ -171,17 +152,31 @@ describe('Enemy', () => {
       id: 'tackle',
       name: 'Tackle',
       description: 'A basic physical attack',
+      skillType: 'physical',
       mpCost: 0,
       mpCharge: 0,
       actionCost: 1,
-      successRate: 90,
       target: 'enemy',
       typingDifficulty: 1,
+      skillSuccessRate: {
+        baseRate: 90,
+        agilityInfluence: 1.0,
+        typingInfluence: 1.5,
+      },
+      criticalRate: {
+        baseRate: 10,
+        fortuneInfluence: 0.8,
+      },
       effects: [
         {
           type: 'damage',
-          power: 1.2,
           target: 'enemy',
+          basePower: 120,
+          powerInfluence: {
+            stat: 'strength',
+            rate: 1.2,
+          },
+          successRate: 95,
         },
       ],
     };
@@ -190,17 +185,31 @@ describe('Enemy', () => {
       id: 'fire_breath',
       name: 'Fire Breath',
       description: 'Breathes fire at the enemy',
+      skillType: 'magical',
       mpCost: 5,
       mpCharge: 0,
       actionCost: 1,
-      successRate: 85,
       target: 'enemy',
       typingDifficulty: 3,
+      skillSuccessRate: {
+        baseRate: 85,
+        agilityInfluence: 1.0,
+        typingInfluence: 1.5,
+      },
+      criticalRate: {
+        baseRate: 15,
+        fortuneInfluence: 0.8,
+      },
       effects: [
         {
           type: 'damage',
-          power: 1.8,
           target: 'enemy',
+          basePower: 180,
+          powerInfluence: {
+            stat: 'willpower',
+            rate: 1.8,
+          },
+          successRate: 90,
         },
       ],
     };
@@ -213,12 +222,13 @@ describe('Enemy', () => {
         level: 10,
         stats: {
           maxHp: 300,
-          maxMp: 50,
           strength: 35,
           willpower: 20,
           agility: 103,
           fortune: 15,
         },
+        physicalEvadeRate: 25,
+        magicalEvadeRate: 15,
         skills: [mockSkill1, mockSkill2],
       });
     });
@@ -251,12 +261,13 @@ describe('Enemy', () => {
         level: 1,
         stats: {
           maxHp: 30,
-          maxMp: 5,
           strength: 5,
           willpower: 2,
           agility: 65,
           fortune: 3,
         },
+        physicalEvadeRate: 8,
+        magicalEvadeRate: 3,
       });
 
       expect(weakEnemy.skills).toHaveLength(1); // 基本攻撃スキルのみ
@@ -267,13 +278,12 @@ describe('Enemy', () => {
       expect([mockSkill1, mockSkill2]).toContainEqual(skill);
     });
 
-    it('MPが足りない場合は使用可能な技のみ選択する', () => {
-      enemy.consumeMp(48); // MP残り2
+    it('技選択は全ての技から選択される（MP制約なし）', () => {
       const skill = enemy.selectSkill();
-      expect(skill).toEqual(mockSkill1); // MP0のTackleのみ使用可能
+      expect([mockSkill1, mockSkill2]).toContainEqual(skill);
     });
 
-    it('使用可能な技がない場合はnullを返す', () => {
+    it('技がない場合はnullを返す', () => {
       const noSkillEnemy = new Enemy({
         id: 'dummy',
         name: 'Dummy',
@@ -281,12 +291,13 @@ describe('Enemy', () => {
         level: 1,
         stats: {
           maxHp: 10,
-          maxMp: 0,
           strength: 1,
           willpower: 1,
           agility: 51,
           fortune: 1,
         },
+        physicalEvadeRate: 5,
+        magicalEvadeRate: 2,
       });
 
       expect(noSkillEnemy.selectSkill()).toBeNull();
@@ -302,12 +313,13 @@ describe('Enemy', () => {
         level: 5,
         stats: {
           maxHp: 80,
-          maxMp: 20,
           strength: 12,
           willpower: 8,
           agility: 90,
           fortune: 30,
         },
+        physicalEvadeRate: 18,
+        magicalEvadeRate: 12,
         drops: [
           { itemId: 'potion', dropRate: 50 },
           { itemId: 'gold_coin', dropRate: 80 },
@@ -327,12 +339,13 @@ describe('Enemy', () => {
         level: 3,
         stats: {
           maxHp: 60,
-          maxMp: 30,
           strength: 8,
           willpower: 3,
           agility: 105,
           fortune: 5,
         },
+        physicalEvadeRate: 22,
+        magicalEvadeRate: 8,
       });
 
       expect(enemy.drops).toHaveLength(0);
@@ -347,12 +360,13 @@ describe('Enemy', () => {
           level: 1,
           stats: {
             maxHp: 10,
-            maxMp: 5,
             strength: 5,
             willpower: 2,
             agility: 65,
             fortune: 3,
           },
+          physicalEvadeRate: 5,
+          magicalEvadeRate: 2,
           drops: [{ itemId: 'item', dropRate: 101 }],
         });
       }).toThrow('Drop rate must be between 0 and 100');
@@ -365,12 +379,13 @@ describe('Enemy', () => {
           level: 1,
           stats: {
             maxHp: 10,
-            maxMp: 5,
             strength: 5,
             willpower: 2,
             agility: 65,
             fortune: 3,
           },
+          physicalEvadeRate: 5,
+          magicalEvadeRate: 2,
           drops: [{ itemId: 'item', dropRate: -1 }],
         });
       }).toThrow('Drop rate must be between 0 and 100');
@@ -386,28 +401,43 @@ describe('Enemy', () => {
         level: 7,
         stats: {
           maxHp: 200,
-          maxMp: 25,
           strength: 28,
           willpower: 15,
           agility: 85,
           fortune: 8,
         },
+        physicalEvadeRate: 20,
+        magicalEvadeRate: 10,
         skills: [
           {
             id: 'heavy_swing',
             name: 'Heavy Swing',
             description: 'A powerful swing',
+            skillType: 'physical',
             mpCost: 3,
             mpCharge: 0,
             actionCost: 1,
-            successRate: 80,
             target: 'enemy',
             typingDifficulty: 2,
+            skillSuccessRate: {
+              baseRate: 80,
+              agilityInfluence: 1.0,
+              typingInfluence: 1.5,
+            },
+            criticalRate: {
+              baseRate: 12,
+              fortuneInfluence: 0.8,
+            },
             effects: [
               {
                 type: 'damage',
-                power: 1.5,
                 target: 'enemy',
+                basePower: 150,
+                powerInfluence: {
+                  stat: 'strength',
+                  rate: 1.5,
+                },
+                successRate: 90,
               },
             ],
           },
@@ -416,7 +446,6 @@ describe('Enemy', () => {
       });
 
       enemy.takeDamage(50);
-      enemy.consumeMp(5);
 
       const json = enemy.toJSON();
       expect(json).toEqual({
@@ -426,30 +455,44 @@ describe('Enemy', () => {
         level: 7,
         stats: {
           maxHp: 200,
-          maxMp: 25,
           strength: 28,
           willpower: 15,
           agility: 85,
           fortune: 8,
         },
         currentHp: 150,
-        currentMp: 20,
+        physicalEvadeRate: 20,
+        magicalEvadeRate: 10,
         skills: [
           {
             id: 'heavy_swing',
             name: 'Heavy Swing',
             description: 'A powerful swing',
+            skillType: 'physical',
             mpCost: 3,
             mpCharge: 0,
             actionCost: 1,
-            successRate: 80,
             target: 'enemy',
             typingDifficulty: 2,
+            skillSuccessRate: {
+              baseRate: 80,
+              agilityInfluence: 1.0,
+              typingInfluence: 1.5,
+            },
+            criticalRate: {
+              baseRate: 12,
+              fortuneInfluence: 0.8,
+            },
             effects: [
               {
                 type: 'damage',
-                power: 1.5,
                 target: 'enemy',
+                basePower: 150,
+                powerInfluence: {
+                  stat: 'strength',
+                  rate: 1.5,
+                },
+                successRate: 90,
               },
             ],
           },
@@ -466,14 +509,14 @@ describe('Enemy', () => {
         level: 4,
         stats: {
           maxHp: 120,
-          maxMp: 15,
           strength: 18,
           willpower: 12,
           agility: 78,
           fortune: 3,
         },
         currentHp: 80,
-        currentMp: 10,
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 8,
         skills: [],
         drops: [{ itemId: 'bone', dropRate: 60 }],
       };
@@ -482,8 +525,163 @@ describe('Enemy', () => {
       expect(enemy.id).toBe('skeleton_001');
       expect(enemy.name).toBe('Skeleton Warrior');
       expect(enemy.currentHp).toBe(80);
-      expect(enemy.currentMp).toBe(10);
       expect(enemy.drops).toHaveLength(1);
+    });
+  });
+
+  describe('回避率システム（物理・魔法）', () => {
+    let enemy: Enemy;
+
+    beforeEach(() => {
+      enemy = new Enemy({
+        id: 'agile_rogue',
+        name: 'Agile Rogue',
+        description: 'A nimble enemy with different evasion rates',
+        level: 6,
+        stats: {
+          maxHp: 100,
+          strength: 15,
+          willpower: 12,
+          agility: 120,
+          fortune: 20,
+        },
+        physicalEvadeRate: 25,
+        magicalEvadeRate: 10,
+      });
+    });
+
+    it('物理回避率を持つ', () => {
+      expect(enemy.physicalEvadeRate).toBe(25);
+    });
+
+    it('魔法回避率を持つ', () => {
+      expect(enemy.magicalEvadeRate).toBe(10);
+    });
+
+    it('回避率が0-100範囲外の場合はエラーになる', () => {
+      expect(() => {
+        new Enemy({
+          id: 'invalid',
+          name: 'Invalid',
+          description: 'Invalid',
+          level: 1,
+          stats: {
+            maxHp: 50,
+            strength: 10,
+            willpower: 5,
+            agility: 78,
+            fortune: 5,
+          },
+          physicalEvadeRate: 101,
+          magicalEvadeRate: 5,
+        });
+      }).toThrow('Evade rate must be between 0 and 100');
+
+      expect(() => {
+        new Enemy({
+          id: 'invalid2',
+          name: 'Invalid2',
+          description: 'Invalid2',
+          level: 1,
+          stats: {
+            maxHp: 50,
+            strength: 10,
+            willpower: 5,
+            agility: 78,
+            fortune: 5,
+          },
+          physicalEvadeRate: 5,
+          magicalEvadeRate: -1,
+        });
+      }).toThrow('Evade rate must be between 0 and 100');
+    });
+  });
+
+  describe('MP除去による簡素化', () => {
+    let enemy: Enemy;
+
+    beforeEach(() => {
+      enemy = new Enemy({
+        id: 'simple_enemy',
+        name: 'Simple Enemy',
+        description: 'An enemy without MP system',
+        level: 3,
+        stats: {
+          maxHp: 80,
+          strength: 12,
+          willpower: 8,
+          agility: 85,
+          fortune: 10,
+        },
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 8,
+      });
+    });
+
+    it('MPプロパティを持たない', () => {
+      expect((enemy as any).currentMp).toBeUndefined();
+      expect((enemy as any).maxMp).toBeUndefined();
+      expect((enemy.stats as any).maxMp).toBeUndefined();
+    });
+
+    it('MP関連メソッドを持たない', () => {
+      expect((enemy as any).consumeMp).toBeUndefined();
+      expect((enemy as any).recoverMp).toBeUndefined();
+    });
+
+    it('技選択にMPの制限がない', () => {
+      const enemyWithSkills = new Enemy({
+        id: 'skill_enemy',
+        name: 'Skill Enemy',
+        description: 'An enemy with skills but no MP',
+        level: 5,
+        stats: {
+          maxHp: 120,
+          strength: 20,
+          willpower: 15,
+          agility: 95,
+          fortune: 12,
+        },
+        physicalEvadeRate: 20,
+        magicalEvadeRate: 5,
+        skills: [
+          {
+            id: 'powerful_strike',
+            name: 'Powerful Strike',
+            description: 'A strong attack',
+            skillType: 'physical',
+            mpCost: 10,
+            mpCharge: 0,
+            actionCost: 1,
+            target: 'enemy',
+            typingDifficulty: 2,
+            skillSuccessRate: {
+              baseRate: 80,
+              agilityInfluence: 1.0,
+              typingInfluence: 1.5,
+            },
+            criticalRate: {
+              baseRate: 15,
+              fortuneInfluence: 0.8,
+            },
+            effects: [
+              {
+                type: 'damage',
+                target: 'enemy',
+                basePower: 120,
+                powerInfluence: {
+                  stat: 'strength',
+                  rate: 2.0,
+                },
+                successRate: 95,
+              },
+            ],
+          },
+        ],
+      });
+
+      const selectedSkill = enemyWithSkills.selectSkill();
+      expect(selectedSkill?.id).toBe('powerful_strike');
     });
   });
 });
