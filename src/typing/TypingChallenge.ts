@@ -55,16 +55,9 @@ export class TypingChallenge {
     if (char === '\x7f') {
       if (this.input.length > 0) {
         const deleteIndex = this.input.length - 1;
-        const wasError = this.errors.has(deleteIndex);
         this.errors.delete(deleteIndex);
-
         this.input = this.input.slice(0, -1);
-
-        // バックスペースによる削除はtotalKeystrokesとincorrectKeystrokesを調整
-        this.totalKeystrokes--;
-        if (wasError) {
-          this.incorrectKeystrokes--;
-        }
+        // 注意: バックスペースで削除しても統計からミスは除去されない
       }
       return;
     }
