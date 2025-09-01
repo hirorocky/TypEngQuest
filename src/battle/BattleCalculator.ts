@@ -1,10 +1,17 @@
 import { SpeedRating, AccuracyRating } from '../typing/types';
 import { Skill, SkillSuccessRate, SkillCriticalRate, StatInfluence, SkillType } from './Skill';
-import { Enemy } from './Enemy';
 
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
  */
+/**
+ * 戦闘でのターゲット（回避率を持つオブジェクト）を表すインターフェース
+ */
+export interface BattleTarget {
+  physicalEvadeRate: number;
+  magicalEvadeRate: number;
+}
+
 export class BattleCalculator {
   /**
    * ダメージ計算
@@ -275,8 +282,8 @@ export class BattleCalculator {
    * @param enemy 敵
    * @returns 回避されたかどうか
    */
-  static isSkillEvaded(skillType: SkillType, enemy: Enemy): boolean {
-    const evadeRate = skillType === 'physical' ? enemy.physicalEvadeRate : enemy.magicalEvadeRate;
+  static isSkillEvaded(skillType: SkillType, target: BattleTarget): boolean {
+    const evadeRate = skillType === 'physical' ? target.physicalEvadeRate : target.magicalEvadeRate;
 
     const random = Math.random() * 100;
     return random < evadeRate;
@@ -341,8 +348,8 @@ export class BattleCalculator {
    */
   static executeThreeLayerJudgment(
     skill: Skill,
-    enemy: Enemy,
-    playerStats: { strength: number; willpower: number; agility: number; fortune: number },
+    target: BattleTarget,
+    attackerStats: { strength: number; willpower: number; agility: number; fortune: number },
     typingScore: number
   ): {
     skillSuccess: boolean;
@@ -372,7 +379,7 @@ export class BattleCalculator {
     // Layer 1: スキル成功率判定
     const skillSuccessRate = this.calculateSkillSuccessRate(
       skill.skillSuccessRate,
-      playerStats.agility,
+      attackerStats.agility,
       typingScore
     );
 
@@ -383,7 +390,7 @@ export class BattleCalculator {
     }
 
     // Layer 2: 回避判定
-    result.evaded = this.isSkillEvaded(skill.skillType, enemy);
+    result.evaded = this.isSkillEvaded(skill.skillType, target);
 
     if (result.evaded) {
       return result;
@@ -399,14 +406,14 @@ export class BattleCalculator {
       if (effectSuccess) {
         const power = this.calculateEffectPower(
           effect.basePower,
-          playerStats,
+          attackerStats,
           effect.powerInfluence
         );
 
         // クリティカル判定
         const criticalRate = this.calculateSkillCriticalRate(
           skill.criticalRate,
-          playerStats.fortune
+          attackerStats.fortune
         );
         const isCritical = this.isCritical(criticalRate);
 

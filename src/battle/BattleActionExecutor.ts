@@ -56,10 +56,16 @@ export class BattleActionExecutor {
     // タイピング評価を%に変換（100 = 100%）
     const typingScore = typingResult ? this.convertTypingResultToScore(typingResult) : 100;
 
+    // 敵をBattleTargetとして扱う
+    const enemyTarget = {
+      physicalEvadeRate: enemy.physicalEvadeRate,
+      magicalEvadeRate: enemy.magicalEvadeRate,
+    };
+
     // 新しい3層判定システムを使用
     const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
       skill,
-      enemy,
+      enemyTarget,
       {
         strength: playerStats.strength,
         willpower: playerStats.willpower,
@@ -138,14 +144,17 @@ export class BattleActionExecutor {
   static executeEnemySkill(skill: Skill, enemy: Enemy, player: Player): SkillExecutionResult {
     const playerStats = player.getTotalStats();
 
-    // 敵はMP制約なし（新仕様）- MP関連処理を除去
+    // プレイヤーをターゲットとして扱うための一時オブジェクトを作成
+    // BattleCalculator.executeThreeLayerJudgmentが汎用的なターゲットを受け取るように修正
+    const playerTarget = {
+      physicalEvadeRate: 5 + playerStats.agility / 20,
+      magicalEvadeRate: 5 + playerStats.agility / 20, // 物理・魔法で同じ回避率
+    };
 
     // 新しい3層判定システムを使用（敵視点）
     const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
       skill,
-      // 敵が攻撃する場合、プレイヤーを「敵」として扱う必要があるが、
-      // 現在のシステムではプレイヤーに回避率がないため、簡素化した判定を使用
-      enemy, // ダミー（実際には使用されない）
+      playerTarget, // プレイヤーをターゲットとして渡す
       {
         strength: enemy.stats.strength,
         willpower: enemy.stats.willpower,
@@ -155,27 +164,31 @@ export class BattleActionExecutor {
       100 // 敵はタイピング評価なし（基準値）
     );
 
-    // プレイヤーへの回避判定は別途実装（プレイヤーには固定回避率を使用）
-    const playerEvadeRate = 5 + playerStats.agility / 20; // 従来の計算式
-    const isEvaded = Math.random() * 100 < playerEvadeRate;
-
     // スキル失敗の場合
     if (!judgmentResult.skillSuccess) {
+      const message = this.generateSkillMessage(0, 0, false, {
+        skillName: enemy.name,
+        messageType: 'skill_failed',
+      });
       return {
         success: false,
         damage: 0,
-        message: [`${enemy.name}のスキルが失敗しました`],
+        message,
         isCritical: false,
         targetDefeated: false,
       };
     }
 
     // 回避された場合
-    if (isEvaded) {
+    if (judgmentResult.evaded) {
+      const message = this.generateSkillMessage(0, 0, false, {
+        skillName: enemy.name,
+        messageType: 'evaded',
+      });
       return {
         success: true,
         damage: 0,
-        message: [`${enemy.name}の攻撃を回避しました`],
+        message,
         isCritical: false,
         targetDefeated: false,
       };
@@ -186,13 +199,14 @@ export class BattleActionExecutor {
       player.getBodyStats().takeDamage(judgmentResult.finalDamage);
     }
 
+    const messageType = judgmentResult.finalDamage > 0 ? 'success' : 'no_effect';
     const message = this.generateSkillMessage(
       judgmentResult.finalDamage,
       0, // 敵はMP回復なし
       judgmentResult.isCritical,
       {
         skillName: enemy.name,
-        messageType: judgmentResult.finalDamage > 0 ? 'success' : 'no_effect',
+        messageType,
       }
     );
 

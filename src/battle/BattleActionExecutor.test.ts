@@ -63,8 +63,13 @@ describe('BattleActionExecutor', () => {
 
   describe('executePlayerSkill', () => {
     it('プレイヤーのスキルを正常に実行する', () => {
-      // Math.randomを命中するように固定
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      // 1. スキル成功率判定, 2. 回避率判定, 3. 効果成功率判定, 4. クリティカル率判定
+      const mockRandom = jest.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01)  // スキル成功（90%成功率）
+        .mockReturnValueOnce(0.99)  // 回避失敗（敵の回避率より高い値）
+        .mockReturnValueOnce(0.01)  // 効果成功（95%成功率）
+        .mockReturnValueOnce(0.95); // クリティカル失敗（10%クリティカル率）
 
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy);
 
@@ -90,8 +95,12 @@ describe('BattleActionExecutor', () => {
     });
 
     it('タイピング結果が正しく適用される', () => {
-      // Math.randomを命中するように固定
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      const mockRandom = jest.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01)  // スキル成功
+        .mockReturnValueOnce(0.99)  // 回避失敗
+        .mockReturnValueOnce(0.01)  // 効果成功
+        .mockReturnValueOnce(0.95); // クリティカル失敗
 
       const typingResult = {
         speedRating: 'Fast' as const,
@@ -113,8 +122,12 @@ describe('BattleActionExecutor', () => {
 
   describe('executeEnemySkill', () => {
     it('敵のスキルを正常に実行する', () => {
-      // Math.randomを命中するように固定
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      const mockRandom = jest.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01)  // スキル成功
+        .mockReturnValueOnce(0.99)  // 回避失敗
+        .mockReturnValueOnce(0.01)  // 効果成功
+        .mockReturnValueOnce(0.95); // クリティカル失敗
 
       const result = BattleActionExecutor.executeEnemySkill(skill, enemy, player);
 
