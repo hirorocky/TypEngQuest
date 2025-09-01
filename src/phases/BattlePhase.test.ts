@@ -107,8 +107,14 @@ describe('BattlePhase', () => {
     });
 
     it('runコマンドで逃走試行メッセージを表示', async () => {
-      // Math.randomを命中するように固定して確実にダメージメッセージを出す
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      // 逃走失敗 → 敵のターン → 敵の攻撃成功でダメージ発生
+      const mockRandom = jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01) // 敵スキル成功
+        .mockReturnValueOnce(0.99) // プレイヤーの回避失敗
+        .mockReturnValueOnce(0.01) // 効果成功
+        .mockReturnValueOnce(0.95); // クリティカル失敗
 
       const result = await battlePhase.processInput('run');
 

@@ -258,6 +258,9 @@ describe('BattleCalculator Phase 4: 3層判定システム', () => {
         },
       };
 
+      // Math.randomをモックして確実に失敗させる（0%成功率に対して99を返す）
+      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.99);
+
       const result = BattleCalculator.executeThreeLayerJudgment(failSkill, enemy, playerStats, 100);
 
       expect(result.skillSuccess).toBe(false);
@@ -265,6 +268,8 @@ describe('BattleCalculator Phase 4: 3層判定システム', () => {
       expect(result.effectResults).toEqual([]);
       expect(result.finalDamage).toBe(0);
       expect(result.isCritical).toBe(false);
+
+      mockRandom.mockRestore();
     });
 
     it('回避成功時は後続処理をスキップする', () => {

@@ -89,8 +89,13 @@ describe('BattlePhase Integration Tests', () => {
       const playerStats = player.getBodyStats();
       playerStats.takeDamage(playerStats.getCurrentHP() - 1);
 
-      // Math.randomを命中するように固定
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      const mockRandom = jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01) // 敵スキル成功
+        .mockReturnValueOnce(0.99) // プレイヤーの回避失敗
+        .mockReturnValueOnce(0.01) // 効果成功
+        .mockReturnValueOnce(0.95); // クリティカル失敗
 
       // 敵ターンを強制実行（setTimeout を待たずに）
       await battlePhase['executeEnemyTurn']();
