@@ -53,8 +53,9 @@ export class BattleActionExecutor {
       return mpCheckResult;
     }
 
-    // タイピング評価を%に変換（100 = 100%）
-    const typingScore = typingResult ? this.convertTypingResultToScore(typingResult) : 100;
+    // タイピングの速度/精度を判定用に渡す（威力には影響させない）
+    const speedRating = typingResult?.speedRating;
+    const accuracyRating = typingResult?.accuracyRating;
 
     // 敵をBattleTargetとして扱う
     const enemyTarget = {
@@ -72,7 +73,7 @@ export class BattleActionExecutor {
         agility: playerStats.agility,
         fortune: playerStats.fortune,
       },
-      typingScore
+      { speedRating, accuracyRating }
     );
 
     // MP回復処理
@@ -161,7 +162,7 @@ export class BattleActionExecutor {
         agility: enemy.stats.agility,
         fortune: enemy.stats.fortune,
       },
-      100 // 敵はタイピング評価なし（基準値）
+      { speedRating: 'Normal' } // 敵はタイピング評価なし（基準値）
     );
 
     // スキル失敗の場合
@@ -398,13 +399,13 @@ export class BattleActionExecutor {
 
     switch (messageType) {
       case 'skill_failed':
-        message.push('スキルが失敗しました');
+        message.push('Skill failed.');
         break;
       case 'evaded':
-        message.push('攻撃が回避されました');
+        message.push('Attack was evaded.');
         break;
       case 'no_effect':
-        message.push('効果がありませんでした');
+        message.push('No effect.');
         break;
       case 'success':
       default:

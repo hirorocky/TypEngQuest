@@ -210,7 +210,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
       expect(result.success).toBe(false);
       expect(result.damage).toBe(0);
       expect(result.isCritical).toBe(false);
-      expect(result.message).toEqual(expect.arrayContaining([expect.stringContaining('失敗')]));
+      expect(result.message).toEqual(expect.arrayContaining([expect.stringContaining('failed')]));
     });
 
     it('回避成功時の処理が正しく動作する', () => {
@@ -253,7 +253,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
 
       expect(result.success).toBe(true);
       expect(result.damage).toBe(0);
-      expect(result.message).toEqual(expect.arrayContaining([expect.stringContaining('回避')]));
+      expect(result.message).toEqual(expect.arrayContaining([expect.stringContaining('evaded')]));
 
       jest.restoreAllMocks();
     });
