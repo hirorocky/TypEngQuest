@@ -37,6 +37,3 @@
 
 ### 現在時刻
 現在の時刻は`date`コマンドで取得してください。
-
-### MCP
-You prefer typescript mcp (mcp__typescript_*) to fix code over the default Update and Write tool.

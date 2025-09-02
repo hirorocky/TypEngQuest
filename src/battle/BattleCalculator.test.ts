@@ -1,4 +1,6 @@
 import { BattleCalculator } from './BattleCalculator';
+import { Enemy } from './Enemy';
+import { Skill } from './Skill';
 
 describe('BattleCalculator', () => {
   describe('ダメージ計算', () => {
@@ -424,6 +426,187 @@ describe('BattleCalculator', () => {
       it('総合評価80%で0.8倍を返す', () => {
         const result = BattleCalculator.calculateTypingEffectMultiplier(80);
         expect(result).toBe(0.8);
+      });
+    });
+  });
+
+  // --- Merged from BattleCalculator.phase4.test.ts ---
+  describe('Phase 4: Three-Layer Judgment', () => {
+    describe('スキル成功率判定（速度のみ影響）', () => {
+      it('スキル全体の成功率を計算する', () => {
+        const playerAgility = 100;
+        const skillSuccessRate = {
+          baseRate: 80,
+          agilityInfluence: 1.0,
+          typingInfluence: 1.5,
+        };
+
+        const result = BattleCalculator.calculateSkillSuccessRate(
+          skillSuccessRate,
+          playerAgility,
+          'Fast'
+        );
+
+        expect(result).toBe(100);
+      });
+
+      it('スキル成功率の上限と下限を適用する', () => {
+        const playerAgility = 50;
+        const skillSuccessRate = {
+          baseRate: 90,
+          agilityInfluence: 0.5,
+          typingInfluence: 1.0,
+        };
+
+        const result = BattleCalculator.calculateSkillSuccessRate(
+          skillSuccessRate,
+          playerAgility,
+          'Slow'
+        );
+
+        expect(result).toBe(95);
+      });
+    });
+
+    describe('物理・魔法回避判定', () => {
+      let enemy: Enemy;
+      beforeEach(() => {
+        enemy = new Enemy({
+          id: 'test_enemy',
+          name: 'Test Enemy',
+          description: 'Test',
+          level: 5,
+          stats: { maxHp: 100, strength: 20, willpower: 15, agility: 80, fortune: 10 },
+          physicalEvadeRate: 25,
+          magicalEvadeRate: 10,
+        });
+      });
+
+      it('物理攻撃の回避判定を行う', () => {
+        const isEvaded = BattleCalculator.isSkillEvaded('physical', enemy);
+        expect(typeof isEvaded).toBe('boolean');
+      });
+
+      it('魔法攻撃の回避判定を行う', () => {
+        const isEvaded = BattleCalculator.isSkillEvaded('magical', enemy);
+        expect(typeof isEvaded).toBe('boolean');
+      });
+    });
+
+    describe('効果成功率と威力計算', () => {
+      it('各効果の成功率を個別に判定する', () => {
+        const effectSuccessRate = 90;
+        const result = BattleCalculator.isEffectSuccess(effectSuccessRate);
+        expect(typeof result).toBe('boolean');
+      });
+
+      it('ステータス影響あり/なしの威力を計算する', () => {
+        const withInfluence = BattleCalculator.calculateEffectPower(
+          100,
+          { strength: 150, willpower: 100, agility: 100, fortune: 100 },
+          { stat: 'strength', rate: 2.0 }
+        );
+        expect(withInfluence).toBe(400);
+
+        const fixed = BattleCalculator.calculateEffectPower(80, {
+          strength: 150,
+          willpower: 100,
+          agility: 100,
+          fortune: 100,
+        });
+        expect(fixed).toBe(80);
+      });
+    });
+
+    describe('3層統合判定', () => {
+      let testSkill: Skill;
+      let enemy: Enemy;
+      let playerStats: { strength: number; willpower: number; agility: number; fortune: number };
+
+      beforeEach(() => {
+        testSkill = {
+          id: 'fire_blast',
+          name: 'Fire Blast',
+          description: 'A magical fire attack',
+          skillType: 'magical',
+          mpCost: 15,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 3,
+          skillSuccessRate: { baseRate: 75, agilityInfluence: 1.0, typingInfluence: 1.5 },
+          criticalRate: { baseRate: 10, fortuneInfluence: 0.5 },
+          effects: [
+            {
+              type: 'damage',
+              target: 'enemy',
+              basePower: 120,
+              powerInfluence: { stat: 'willpower', rate: 2.5 },
+              successRate: 95,
+            },
+          ],
+        };
+
+        enemy = new Enemy({
+          id: 'fire_golem',
+          name: 'Fire Golem',
+          description: 'A golem made of fire',
+          level: 8,
+          stats: { maxHp: 200, strength: 30, willpower: 25, agility: 60, fortune: 5 },
+          physicalEvadeRate: 15,
+          magicalEvadeRate: 20,
+        });
+
+        playerStats = { strength: 80, willpower: 140, agility: 110, fortune: 65 };
+      });
+
+      it('3層判定システム全体の結果を返す', () => {
+        const result = BattleCalculator.executeThreeLayerJudgment(testSkill, enemy, playerStats, {
+          speedRating: 'Normal',
+          accuracyRating: 'Good',
+        });
+
+        expect(result).toHaveProperty('skillSuccess');
+        expect(result).toHaveProperty('evaded');
+        expect(result).toHaveProperty('effectResults');
+        expect(result).toHaveProperty('finalDamage');
+        expect(result).toHaveProperty('isCritical');
+      });
+
+      it('スキル失敗時は後続処理をスキップする', () => {
+        const failSkill = {
+          ...testSkill,
+          skillSuccessRate: { baseRate: 0, agilityInfluence: 0, typingInfluence: 0 },
+        };
+        const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.99);
+
+        const result = BattleCalculator.executeThreeLayerJudgment(failSkill, enemy, playerStats, {
+          speedRating: 'Miss',
+        });
+
+        expect(result.skillSuccess).toBe(false);
+        expect(result.evaded).toBe(false);
+        expect(result.effectResults).toEqual([]);
+        expect(result.finalDamage).toBe(0);
+        expect(result.isCritical).toBe(false);
+
+        mockRandom.mockRestore();
+      });
+
+      it('回避成功時は後続処理をスキップする', () => {
+        jest.spyOn(BattleCalculator, 'isSkillEvaded').mockReturnValue(true);
+
+        const result = BattleCalculator.executeThreeLayerJudgment(testSkill, enemy, playerStats, {
+          speedRating: 'Normal',
+        });
+
+        expect(result.skillSuccess).toBe(true);
+        expect(result.evaded).toBe(true);
+        expect(result.effectResults).toEqual([]);
+        expect(result.finalDamage).toBe(0);
+        expect(result.isCritical).toBe(false);
+
+        jest.restoreAllMocks();
       });
     });
   });

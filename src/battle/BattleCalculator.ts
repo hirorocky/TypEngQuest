@@ -260,7 +260,7 @@ export class BattleCalculator {
   static calculateSkillSuccessRate(
     skillSuccessRate: SkillSuccessRate,
     playerAgility: number,
-    typingScore: number
+    speedRating: SpeedRating
   ): number {
     // 基本成功率
     let finalRate = skillSuccessRate.baseRate;
@@ -268,8 +268,9 @@ export class BattleCalculator {
     // 敏捷性影響
     finalRate += playerAgility * skillSuccessRate.agilityInfluence;
 
-    // タイピング影響（typingScoreは100を基準とした%）
-    const typingBonus = (typingScore - 100) * skillSuccessRate.typingInfluence;
+    // タイピング影響（速度のみ反映）: SpeedRating をスコア(150/120/100/60)へ変換し線形加算
+    const speedScore = { Fast: 150, Normal: 120, Slow: 80, Miss: 60 }[speedRating];
+    const typingBonus = (speedScore - 100) * skillSuccessRate.typingInfluence;
     finalRate += typingBonus;
 
     // 上限100%、下限10%
@@ -350,7 +351,7 @@ export class BattleCalculator {
     skill: Skill,
     target: BattleTarget,
     attackerStats: { strength: number; willpower: number; agility: number; fortune: number },
-    typingScore: number
+    options?: { speedRating?: SpeedRating; accuracyRating?: AccuracyRating }
   ): {
     skillSuccess: boolean;
     evaded: boolean;
@@ -377,10 +378,13 @@ export class BattleCalculator {
     };
 
     // Layer 1: スキル成功率判定
+    const speedRating: SpeedRating = options?.speedRating ?? 'Normal';
+    const accuracyRating: AccuracyRating | undefined = options?.accuracyRating;
+
     const skillSuccessRate = this.calculateSkillSuccessRate(
       skill.skillSuccessRate,
       attackerStats.agility,
-      typingScore
+      speedRating
     );
 
     result.skillSuccess = this.isEffectSuccess(skillSuccessRate);
@@ -411,10 +415,18 @@ export class BattleCalculator {
         );
 
         // クリティカル判定
-        const criticalRate = this.calculateSkillCriticalRate(
+        // クリティカル率: スキル設定+幸運 を基礎に、タイピング精度のボーナスを適用
+        let criticalRate = this.calculateSkillCriticalRate(
           skill.criticalRate,
           attackerStats.fortune
         );
+        if (accuracyRating) {
+          criticalRate = this.calculateTypingAccuracyBonus(
+            criticalRate,
+            attackerStats.agility,
+            accuracyRating
+          );
+        }
         const isCritical = this.isCritical(criticalRate);
 
         const finalPower = isCritical ? Math.floor(power * 1.5) : power;

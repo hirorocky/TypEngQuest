@@ -1,6 +1,6 @@
-import { Player, TotalStatsResult } from '../player/Player';
+import { Player } from '../player/Player';
 import { BodyStats } from '../player/BodyStats';
-import { Enemy, EnemyStats } from './Enemy';
+import { Enemy } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
@@ -245,67 +245,6 @@ export class BattleActionExecutor {
   }
 
   /**
-   * 命中判定を行う
-   */
-  private static checkHit(
-    playerStats: TotalStatsResult,
-    enemyStats: EnemyStats,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): SkillExecutionResult | null {
-    const hitRate = this.calculateEnhancedHitRate(playerStats, skill, typingResult);
-    const evadeRate = BattleCalculator.calculateEvadeRate(enemyStats.agility);
-
-    if (!BattleCalculator.isHit(hitRate, evadeRate)) {
-      return {
-        success: false,
-        damage: 0,
-        hpHealing: 0,
-        mpCharge: 0,
-        isCritical: false,
-        targetDefeated: false,
-        message: [`missed!`],
-      };
-    }
-    return null;
-  }
-
-  /**
-   * ダメージ計算と適用を行う
-   */
-  private static calculateAndApplyDamage(
-    context: {
-      playerStats: TotalStatsResult;
-      enemyStats: EnemyStats;
-      skill: Skill;
-      enemy: Enemy;
-    },
-    typingResult?: TypingResult
-  ): { damage: number; isCritical: boolean } {
-    const { playerStats, enemyStats, skill, enemy } = context;
-    const criticalRate = this.calculateEnhancedCriticalRate(playerStats, typingResult);
-    const isCritical = BattleCalculator.isCritical(criticalRate);
-
-    // ダメージ効果を検索
-    const damageEffect = skill.effects.find(effect => effect.type === 'damage') as
-      | { power: number }
-      | undefined;
-    const power = damageEffect?.power || 1.0;
-
-    let damage = BattleCalculator.calculateDamage(
-      playerStats.strength,
-      enemyStats.willpower,
-      power,
-      isCritical
-    );
-
-    damage = this.applyTypingEffectMultiplier(damage, typingResult);
-    enemy.takeDamage(damage);
-
-    return { damage, isCritical };
-  }
-
-  /**
    * MP回復処理を行う
    */
   private static processMpRecovery(
@@ -322,60 +261,6 @@ export class BattleActionExecutor {
       playerBodyStats.healMP(mpRecovered);
     }
     return mpRecovered;
-  }
-
-  /**
-   * タイピング結果を考慮した命中率を計算する
-   */
-  private static calculateEnhancedHitRate(
-    playerStats: TotalStatsResult,
-    skill: Skill,
-    typingResult?: TypingResult
-  ): number {
-    let hitRate = BattleCalculator.calculateHitRate(skill.skillSuccessRate.baseRate);
-
-    if (typingResult?.isSuccess) {
-      hitRate = BattleCalculator.calculateTypingSpeedBonus(
-        hitRate,
-        playerStats.agility,
-        typingResult.speedRating
-      );
-    }
-
-    return hitRate;
-  }
-
-  /**
-   * タイピング結果を考慮したクリティカル率を計算する
-   */
-  private static calculateEnhancedCriticalRate(
-    playerStats: TotalStatsResult,
-    typingResult?: TypingResult
-  ): number {
-    let criticalRate = BattleCalculator.calculateCriticalRate(playerStats.fortune);
-
-    if (typingResult?.isSuccess) {
-      criticalRate = BattleCalculator.calculateTypingAccuracyBonus(
-        criticalRate,
-        playerStats.agility,
-        typingResult.accuracyRating
-      );
-    }
-
-    return criticalRate;
-  }
-
-  /**
-   * タイピング効果倍率をダメージに適用する
-   */
-  private static applyTypingEffectMultiplier(damage: number, typingResult?: TypingResult): number {
-    if (typingResult?.isSuccess) {
-      const effectMultiplier = BattleCalculator.calculateTypingEffectMultiplier(
-        typingResult.totalRating
-      );
-      return Math.floor(damage * effectMultiplier);
-    }
-    return damage;
   }
 
   /**
@@ -422,26 +307,5 @@ export class BattleActionExecutor {
     return message;
   }
 
-  /**
-   * タイピング結果を%スコアに変換する
-   * @private
-   */
-  private static convertTypingResultToScore(typingResult: TypingResult): number {
-    // accuracyRatingとspeedRatingから総合評価を計算
-    const accuracyScore = {
-      Perfect: 150,
-      Good: 120,
-      Poor: 80,
-    }[typingResult.accuracyRating];
-
-    const speedScore = {
-      Fast: 150,
-      Normal: 120,
-      Slow: 80,
-      Miss: 60,
-    }[typingResult.speedRating];
-
-    // 平均を取って最終スコア
-    return Math.floor((accuracyScore + speedScore) / 2);
-  }
+  // 旧システムの補助メソッドは廃止（速度・精度の扱いはBattleCalculator側で集約）
 }
