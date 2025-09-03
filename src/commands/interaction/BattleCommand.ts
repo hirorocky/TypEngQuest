@@ -3,6 +3,8 @@ import { CommandResult } from '../../core/types';
 import { FileType, FileNode } from '../../world/FileNode';
 import { Enemy, EnemyStats, DropItem } from '../../battle/Enemy';
 import { Skill } from '../../battle/Skill';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * battleコマンド - モンスターファイルとバトルする
@@ -123,149 +125,44 @@ export class BattleCommand extends BaseCommand {
   }
 
   /**
-   * 拡張子に基づいて敵のスキルを生成
+   * skills.json からスキル定義を読み込み、拡張子に応じたスキルIDで取得
+   */
+  private static skillsDataCache: { skills: Skill[] } | null = null;
+
+  private loadSkillsData(): { skills: Skill[] } {
+    if (!BattleCommand.skillsDataCache) {
+      const dataPath = path.resolve(process.cwd(), 'data/skills/skills.json');
+      const loaded = JSON.parse(fs.readFileSync(dataPath, 'utf8')) as { skills: Skill[] };
+      BattleCommand.skillsDataCache = loaded;
+      return loaded;
+    }
+    return BattleCommand.skillsDataCache as { skills: Skill[] };
+  }
+
+  private getSkillById(id: string): Skill | null {
+    const data = this.loadSkillsData();
+    const found = data.skills.find((s) => s.id === id);
+    return found ?? null;
+  }
+
+  /**
+   * 拡張子に基づいて敵のスキルを生成（データファイルからID参照）
    */
   private generateEnemySkills(extension: string): Skill[] {
-    const baseSkills: Skill[] = [
-      {
-        id: 'syntax_error',
-        name: 'Syntax Error',
-        description: 'A confusing syntax error attack',
-        skillType: 'physical',
-        actionCost: 1,
-        mpCost: 3,
-        mpCharge: 0,
-        target: 'enemy',
-        typingDifficulty: 2,
-        skillSuccessRate: {
-          baseRate: 90,
-          agilityInfluence: 0.5,
-          typingInfluence: 0.8,
-        },
-        criticalRate: {
-          baseRate: 8,
-          fortuneInfluence: 0.4,
-        },
-        effects: [
-          {
-            type: 'damage',
-            target: 'enemy',
-            basePower: 80,
-            powerInfluence: {
-              stat: 'strength',
-              rate: 1.2,
-            },
-            successRate: 92,
-          },
-        ],
-      },
-    ];
-
-    // 拡張子による特殊スキル
-    const specialSkills: { [key: string]: Skill } = {
-      '.js': {
-        id: 'callback_hell',
-        name: 'Callback Hell',
-        description: 'Unleash a cascade of asynchronous nightmares',
-        skillType: 'magical',
-        actionCost: 2,
-        mpCost: 5,
-        mpCharge: 0,
-        target: 'enemy',
-        typingDifficulty: 3,
-        skillSuccessRate: {
-          baseRate: 85,
-          agilityInfluence: 0.3,
-          typingInfluence: 1.5,
-        },
-        criticalRate: {
-          baseRate: 10,
-          fortuneInfluence: 0.6,
-        },
-        effects: [
-          {
-            type: 'damage',
-            target: 'enemy',
-            basePower: 100,
-            powerInfluence: {
-              stat: 'willpower',
-              rate: 1.5,
-            },
-            successRate: 88,
-          },
-        ],
-      },
-      '.py': {
-        id: 'indentation_error',
-        name: 'Indentation Error',
-        description: 'Strike with misaligned whitespace',
-        skillType: 'physical',
-        actionCost: 1,
-        mpCost: 4,
-        mpCharge: 0,
-        target: 'enemy',
-        typingDifficulty: 2,
-        skillSuccessRate: {
-          baseRate: 90,
-          agilityInfluence: 0.6,
-          typingInfluence: 1.0,
-        },
-        criticalRate: {
-          baseRate: 7,
-          fortuneInfluence: 0.5,
-        },
-        effects: [
-          {
-            type: 'damage',
-            target: 'enemy',
-            basePower: 90,
-            powerInfluence: {
-              stat: 'strength',
-              rate: 1.3,
-            },
-            successRate: 90,
-          },
-        ],
-      },
-      '.html': {
-        id: 'tag_mismatch',
-        name: 'Tag Mismatch',
-        description: 'Confuse with unclosed tags',
-        skillType: 'physical',
-        actionCost: 1,
-        mpCost: 3,
-        mpCharge: 0,
-        target: 'enemy',
-        typingDifficulty: 1,
-        skillSuccessRate: {
-          baseRate: 95,
-          agilityInfluence: 0.4,
-          typingInfluence: 0.6,
-        },
-        criticalRate: {
-          baseRate: 5,
-          fortuneInfluence: 0.3,
-        },
-        effects: [
-          {
-            type: 'damage',
-            target: 'enemy',
-            basePower: 70,
-            powerInfluence: {
-              stat: 'strength',
-              rate: 1.0,
-            },
-            successRate: 95,
-          },
-        ],
-      },
+    const ids: string[] = ['syntax_error'];
+    const extMap: Record<string, string> = {
+      '.js': 'callback_hell',
+      '.py': 'indentation_error',
+      '.html': 'tag_mismatch',
     };
+    if (extMap[extension]) ids.push(extMap[extension]);
 
-    if (specialSkills[extension]) {
-      baseSkills.push(specialSkills[extension]);
+    const skills: Skill[] = [];
+    for (const id of ids) {
+      const skill = this.getSkillById(id);
+      if (skill) skills.push(skill);
     }
-
-    return baseSkills;
+    return skills;
   }
 
   /**

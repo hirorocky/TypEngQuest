@@ -319,6 +319,134 @@
           "successRate": 88
         }
       ]
+    },
+    {
+      "id": "syntax_error",
+      "name": "Syntax Error",
+      "description": "A confusing syntax error attack",
+      "skillType": "physical",
+      "mpCost": 3,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 90,
+        "agilityInfluence": 0.5,
+        "typingInfluence": 0.8
+      },
+      "criticalRate": {
+        "baseRate": 8,
+        "fortuneInfluence": 0.4
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 80,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.2
+          },
+          "successRate": 92
+        }
+      ]
+    },
+    {
+      "id": "callback_hell",
+      "name": "Callback Hell",
+      "description": "Unleash a cascade of asynchronous nightmares",
+      "skillType": "magical",
+      "mpCost": 5,
+      "mpCharge": 0,
+      "actionCost": 2,
+      "target": "enemy",
+      "typingDifficulty": 3,
+      "skillSuccessRate": {
+        "baseRate": 85,
+        "agilityInfluence": 0.3,
+        "typingInfluence": 1.5
+      },
+      "criticalRate": {
+        "baseRate": 10,
+        "fortuneInfluence": 0.6
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 100,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.5
+          },
+          "successRate": 88
+        }
+      ]
+    },
+    {
+      "id": "indentation_error",
+      "name": "Indentation Error",
+      "description": "Strike with misaligned whitespace",
+      "skillType": "physical",
+      "mpCost": 4,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 90,
+        "agilityInfluence": 0.6,
+        "typingInfluence": 1.0
+      },
+      "criticalRate": {
+        "baseRate": 7,
+        "fortuneInfluence": 0.5
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 90,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.3
+          },
+          "successRate": 90
+        }
+      ]
+    },
+    {
+      "id": "tag_mismatch",
+      "name": "Tag Mismatch",
+      "description": "Confuse with unclosed tags",
+      "skillType": "physical",
+      "mpCost": 3,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 1,
+      "skillSuccessRate": {
+        "baseRate": 95,
+        "agilityInfluence": 0.4,
+        "typingInfluence": 0.6
+      },
+      "criticalRate": {
+        "baseRate": 5,
+        "fortuneInfluence": 0.3
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 70,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.0
+          },
+          "successRate": 95
+        }
+      ]
     }
   ]
 }
