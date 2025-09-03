@@ -347,7 +347,6 @@ export class BattlePhase extends Phase {
     // 敵のスキル選択と実行をBattleActionExecutorで処理
     const selectedSkill = this.enemy.selectSkill() || Battle.getNormalAttackSkill();
 
-    // 敵はMP制約なし（新仕様）- MP関連処理を除去
     const result = BattleActionExecutor.executeEnemySkill(selectedSkill, this.enemy, this.player);
 
     this.turnMessage = result.message.join(' ');
