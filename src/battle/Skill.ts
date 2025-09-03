@@ -24,7 +24,7 @@ export interface StatInfluence {
 export interface SkillSuccessRate {
   /** 基本成功率（%） */
   baseRate: number;
-  /** agility影響率 */
+  /** agility影響率（現在は未使用） */
   agilityInfluence: number;
   /** タイピング評価影響率 */
   typingInfluence: number;
@@ -36,7 +36,7 @@ export interface SkillSuccessRate {
 export interface SkillCriticalRate {
   /** 基本クリティカル率（%） */
   baseRate: number;
-  /** fortune影響率 */
+  /** fortune影響率（現在は未使用） */
   fortuneInfluence: number;
 }
 
@@ -63,26 +63,8 @@ export interface SkillEffect {
   statusId?: string;
 }
 
-// 後方互換性のための型定義
-export type DamageSkillEffect = {
-  type: 'damage';
-  power: number; // 威力倍率
-  target: SkillTarget; // ターゲット
-};
-
-export type HealSkillEffect = {
-  type: 'hp_heal';
-  power: number; // HP回復量
-  target: SkillTarget; // ターゲット
-};
-
-export type StatusSkillEffect = {
-  type: 'add_status' | 'remove_status';
-  statusId: string; // 一時ステータスID
-};
-
 /**
- * 技のインターフェース（新仕様）
+ * 技のインターフェース
  */
 export interface Skill {
   /** 技ID */
@@ -109,8 +91,4 @@ export interface Skill {
   criticalRate: SkillCriticalRate;
   /** 効果リスト */
   effects: SkillEffect[];
-
-  // 後方互換性のための非推奨プロパティ
-  /** @deprecated 新仕様ではskillSuccessRate.baseRateを使用 */
-  successRate?: number;
 }
