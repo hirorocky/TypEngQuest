@@ -447,7 +447,8 @@ describe('BattleCalculator', () => {
           'Fast'
         );
 
-        expect(result).toBe(100);
+        // 新仕様: 上限200%のため、155%まで上がる
+        expect(result).toBe(155);
       });
 
       it('スキル成功率の上限と下限を適用する', () => {
@@ -464,7 +465,8 @@ describe('BattleCalculator', () => {
           'Slow'
         );
 
-        expect(result).toBe(95);
+        // 新仕様: 下限0%のため、70%まで下がる
+        expect(result).toBe(70);
       });
     });
 

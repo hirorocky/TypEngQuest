@@ -259,22 +259,20 @@ export class BattleCalculator {
    */
   static calculateSkillSuccessRate(
     skillSuccessRate: SkillSuccessRate,
-    playerAgility: number,
+    _playerAgility: number,
     speedRating: SpeedRating
   ): number {
     // 基本成功率
     let finalRate = skillSuccessRate.baseRate;
-
-    // 敏捷性影響
-    finalRate += playerAgility * skillSuccessRate.agilityInfluence;
+    // レビュー対応: 敏捷性の影響を廃止（skillSuccessRate.agilityInfluenceは無視）
 
     // タイピング影響（速度のみ反映）: SpeedRating をスコア(150/120/100/60)へ変換し線形加算
     const speedScore = { Fast: 150, Normal: 120, Slow: 80, Miss: 60 }[speedRating];
     const typingBonus = (speedScore - 100) * skillSuccessRate.typingInfluence;
     finalRate += typingBonus;
 
-    // 上限100%、下限10%
-    return Math.max(10, Math.min(100, finalRate));
+    // レビュー対応: 下限0%、上限200%
+    return Math.max(0, Math.min(200, finalRate));
   }
 
   /**
@@ -331,12 +329,13 @@ export class BattleCalculator {
    */
   static calculateSkillCriticalRate(
     criticalRate: SkillCriticalRate,
-    playerFortune: number
+    _playerFortune: number
   ): number {
-    const finalRate = criticalRate.baseRate + playerFortune * criticalRate.fortuneInfluence;
+    // レビュー対応: 幸運の影響を廃止し、基本率のみを使用
+    const finalRate = criticalRate.baseRate;
 
-    // 上限95%、下限0%
-    return Math.max(0, Math.min(95, finalRate));
+    // レビュー対応: 上限100%、下限0%
+    return Math.max(0, Math.min(100, finalRate));
   }
 
   /**
