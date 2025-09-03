@@ -25,6 +25,8 @@
 
 ## コーディングスタイルと命名規則
 - 言語: TypeScript（`strict: true`）。
+- コメント: JSDoc形式でクラスやメソッドの説明を書くのは推奨。他の部分はできるだけ書かないのが望ましい。
+  - 特に、「レビュー対応」などの開発者に向けたコメントや「〜〜をする」などのWhatを説明するコメントは避ける。
 - フォーマット: Prettier（`.prettierrc`）: 2 スペース、100 桁、シングルクォート、セミコロンあり。
 - Lint: ESLint（`eslint.config.js`）: `const` を優先、`var` 禁止、重複 import 禁止、循環的複雑度 ≤ 10、ネスト深さ ≤ 4、引数個数 ≤ 4。`src/**` では `any` を禁止（テストは許可）。
 - 命名: クラス/型は PascalCase、変数/関数は camelCase、定数は `UPPER_SNAKE_CASE`。
