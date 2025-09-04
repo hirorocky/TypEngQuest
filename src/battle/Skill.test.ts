@@ -76,12 +76,11 @@ describe('Skill', () => {
         typingDifficulty: 2,
         skillSuccessRate: {
           baseRate: 75,
-          agilityInfluence: 1.0,
           typingInfluence: 1.5,
         },
         criticalRate: {
           baseRate: 10,
-          fortuneInfluence: 0.5,
+          typingInfluence: 0.5,
         },
         effects: [
           {
@@ -99,7 +98,7 @@ describe('Skill', () => {
 
       expect(skill.skillType).toBe('physical');
       expect(skill.skillSuccessRate.baseRate).toBe(75);
-      expect(skill.criticalRate.fortuneInfluence).toBe(0.5);
+      expect(skill.criticalRate.typingInfluence).toBe(0.5);
       expect(skill.effects[0].basePower).toBe(80);
       expect(skill.effects[0].powerInfluence?.stat).toBe('strength');
     });
@@ -117,12 +116,11 @@ describe('Skill', () => {
         typingDifficulty: 3,
         skillSuccessRate: {
           baseRate: 85,
-          agilityInfluence: 0.2,
           typingInfluence: 2.0,
         },
         criticalRate: {
           baseRate: 5,
-          fortuneInfluence: 0.3,
+          typingInfluence: 0.3,
         },
         effects: [
           {
@@ -155,12 +153,11 @@ describe('Skill', () => {
         typingDifficulty: 1,
         skillSuccessRate: {
           baseRate: 90,
-          agilityInfluence: 0.1,
           typingInfluence: 1.0,
         },
         criticalRate: {
           baseRate: 0,
-          fortuneInfluence: 0,
+          typingInfluence: 0,
         },
         effects: [
           {
@@ -179,28 +176,26 @@ describe('Skill', () => {
   });
 
   describe('SkillSuccessRate インターフェース', () => {
-    test('baseRate, agilityInfluence, typingInfluence が設定できる', () => {
+    test('baseRate, typingInfluence が設定できる', () => {
       const successRate: SkillSuccessRate = {
         baseRate: 80,
-        agilityInfluence: 1.2,
         typingInfluence: 1.8,
       };
 
       expect(successRate.baseRate).toBe(80);
-      expect(successRate.agilityInfluence).toBe(1.2);
       expect(successRate.typingInfluence).toBe(1.8);
     });
   });
 
   describe('SkillCriticalRate インターフェース', () => {
-    test('baseRate, fortuneInfluence が設定できる', () => {
+    test('baseRate, typingInfluence が設定できる', () => {
       const criticalRate: SkillCriticalRate = {
         baseRate: 15,
-        fortuneInfluence: 0.8,
+        typingInfluence: 0.8,
       };
 
       expect(criticalRate.baseRate).toBe(15);
-      expect(criticalRate.fortuneInfluence).toBe(0.8);
+      expect(criticalRate.typingInfluence).toBe(0.8);
     });
   });
 

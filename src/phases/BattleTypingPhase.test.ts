@@ -32,12 +32,11 @@ describe('BattleTypingPhase', () => {
       typingDifficulty: 2,
       skillSuccessRate: {
         baseRate: 90,
-        agilityInfluence: 0.1,
         typingInfluence: 0.2,
       },
       criticalRate: {
         baseRate: 8,
-        fortuneInfluence: 0.1,
+        typingInfluence: 0.1,
       },
       effects: [
         {

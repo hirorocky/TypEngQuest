@@ -418,12 +418,11 @@ export class DevelopmentConfigLoader {
           typingDifficulty: 3, // デフォルト値
           skillSuccessRate: {
             baseRate: skill.accuracy,
-            agilityInfluence: 0.5,
             typingInfluence: 0.8,
           },
           criticalRate: {
             baseRate: 8,
-            fortuneInfluence: 0.5,
+            typingInfluence: 0.5,
           },
           effects: [
             {

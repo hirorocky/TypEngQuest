@@ -160,12 +160,11 @@ describe('Enemy', () => {
       typingDifficulty: 1,
       skillSuccessRate: {
         baseRate: 90,
-        agilityInfluence: 1.0,
         typingInfluence: 1.5,
       },
       criticalRate: {
         baseRate: 10,
-        fortuneInfluence: 0.8,
+        typingInfluence: 0.8,
       },
       effects: [
         {
@@ -193,12 +192,11 @@ describe('Enemy', () => {
       typingDifficulty: 3,
       skillSuccessRate: {
         baseRate: 85,
-        agilityInfluence: 1.0,
         typingInfluence: 1.5,
       },
       criticalRate: {
         baseRate: 15,
-        fortuneInfluence: 0.8,
+        typingInfluence: 0.8,
       },
       effects: [
         {
@@ -421,12 +419,11 @@ describe('Enemy', () => {
             typingDifficulty: 2,
             skillSuccessRate: {
               baseRate: 80,
-              agilityInfluence: 1.0,
               typingInfluence: 1.5,
             },
             criticalRate: {
               baseRate: 12,
-              fortuneInfluence: 0.8,
+              typingInfluence: 0.8,
             },
             effects: [
               {
@@ -476,12 +473,11 @@ describe('Enemy', () => {
             typingDifficulty: 2,
             skillSuccessRate: {
               baseRate: 80,
-              agilityInfluence: 1.0,
               typingInfluence: 1.5,
             },
             criticalRate: {
               baseRate: 12,
-              fortuneInfluence: 0.8,
+              typingInfluence: 0.8,
             },
             effects: [
               {
@@ -625,8 +621,8 @@ describe('Enemy', () => {
               actionCost: 1,
               target: 'enemy',
               typingDifficulty: 2,
-              skillSuccessRate: { baseRate: 80, agilityInfluence: 1.0, typingInfluence: 1.5 },
-              criticalRate: { baseRate: 15, fortuneInfluence: 0.8 },
+              skillSuccessRate: { baseRate: 80, typingInfluence: 1.5 },
+              criticalRate: { baseRate: 15, typingInfluence: 0.8 },
               effects: [
                 {
                   type: 'damage',

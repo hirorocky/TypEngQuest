@@ -44,12 +44,11 @@ describe('BattleActionExecutor', () => {
       typingDifficulty: 1,
       skillSuccessRate: {
         baseRate: 100,
-        agilityInfluence: 0.1,
         typingInfluence: 0.2,
       },
       criticalRate: {
         baseRate: 5,
-        fortuneInfluence: 0.1,
+        typingInfluence: 0.1,
       },
       effects: [
         {
@@ -203,12 +202,11 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
       typingDifficulty: 2,
       skillSuccessRate: {
         baseRate: 85,
-        agilityInfluence: 0.8,
         typingInfluence: 1.2,
       },
       criticalRate: {
         baseRate: 12,
-        fortuneInfluence: 0.6,
+        typingInfluence: 0.6,
       },
       effects: [
         {
@@ -236,12 +234,11 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
       typingDifficulty: 3,
       skillSuccessRate: {
         baseRate: 80,
-        agilityInfluence: 0.3,
         typingInfluence: 1.8,
       },
       criticalRate: {
         baseRate: 8,
-        fortuneInfluence: 0.4,
+        typingInfluence: 0.4,
       },
       effects: [
         {

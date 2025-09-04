@@ -17,12 +17,11 @@ describe('EquipmentItem', () => {
     typingDifficulty: 2,
     skillSuccessRate: {
       baseRate: 90,
-      agilityInfluence: 0.1,
       typingInfluence: 0.2,
     },
     criticalRate: {
       baseRate: 8,
-      fortuneInfluence: 0.1,
+      typingInfluence: 0.1,
     },
     effects: [
       {
@@ -46,12 +45,11 @@ describe('EquipmentItem', () => {
     typingDifficulty: 1,
     skillSuccessRate: {
       baseRate: 100,
-      agilityInfluence: 0.0,
       typingInfluence: 0.1,
     },
     criticalRate: {
       baseRate: 5,
-      fortuneInfluence: 0.1,
+      typingInfluence: 0.1,
     },
     effects: [
       {

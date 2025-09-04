@@ -360,49 +360,45 @@ describe('BattleCalculator', () => {
       });
     });
 
-    describe('タイピング精度ボーナス', () => {
+    describe('タイピング精度ボーナス（クリティカル率計算に統合）', () => {
       it('精度評価Perfectで最大ボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingAccuracyBonus(
-          baseCriticalRate,
-          playerAgility,
+        const result = BattleCalculator.calculateSkillCriticalRate(
+          { baseRate: baseCriticalRate, typingInfluence: 1.0 },
           'Perfect'
         );
 
-        // 10 × (1.0 + 50/200) × 2.0 = 10 × 1.25 × 2.0 = 25
-        expect(result).toBe(25);
+        // 10 × (1 + (2.0-1.0)×1.0) = 20
+        expect(result).toBe(20);
       });
 
       it('精度評価Goodでボーナスを適用', () => {
-        const result = BattleCalculator.calculateTypingAccuracyBonus(
-          baseCriticalRate,
-          playerAgility,
+        const result = BattleCalculator.calculateSkillCriticalRate(
+          { baseRate: baseCriticalRate, typingInfluence: 1.0 },
           'Good'
         );
 
-        // 10 × (1.0 + 50/200) × 1.5 = 10 × 1.25 × 1.5 = 18.75
-        expect(result).toBeCloseTo(18.75, 5);
+        // 10 × (1 + 0.5×1.0) = 15
+        expect(result).toBeCloseTo(15.0, 5);
       });
 
       it('精度評価Poorでペナルティを適用', () => {
-        const result = BattleCalculator.calculateTypingAccuracyBonus(
-          baseCriticalRate,
-          playerAgility,
+        const result = BattleCalculator.calculateSkillCriticalRate(
+          { baseRate: baseCriticalRate, typingInfluence: 1.0 },
           'Poor'
         );
 
-        // 10 × (1.0 + 50/200) × 0.8 = 10 × 1.25 × 0.8 = 10.0
-        expect(result).toBeCloseTo(10.0, 5);
+        // 10 × (1 - 0.2×1.0) = 8
+        expect(result).toBeCloseTo(8.0, 5);
       });
 
       it('クリティカル率の上限50%を超えない', () => {
         const highBaseCriticalRate = 40;
-        const result = BattleCalculator.calculateTypingAccuracyBonus(
-          highBaseCriticalRate,
-          100, // 高い精度ステータス
+        const result = BattleCalculator.calculateSkillCriticalRate(
+          { baseRate: highBaseCriticalRate, typingInfluence: 1.0 },
           'Perfect'
         );
 
-        // 40 × (1.0 + 100/200) × 2.0 = 40 × 1.5 × 2.0 = 120 → 最大50%
+        // 40 × (1 + 1.0) = 80 → 最大50%
         expect(result).toBe(50);
       });
     });
@@ -437,7 +433,6 @@ describe('BattleCalculator', () => {
         const playerAgility = 100;
         const skillSuccessRate = {
           baseRate: 80,
-          agilityInfluence: 1.0,
           typingInfluence: 1.5,
         };
 
@@ -455,7 +450,6 @@ describe('BattleCalculator', () => {
         const playerAgility = 50;
         const skillSuccessRate = {
           baseRate: 90,
-          agilityInfluence: 0.5,
           typingInfluence: 1.0,
         };
 
@@ -536,8 +530,8 @@ describe('BattleCalculator', () => {
           actionCost: 1,
           target: 'enemy',
           typingDifficulty: 3,
-          skillSuccessRate: { baseRate: 75, agilityInfluence: 1.0, typingInfluence: 1.5 },
-          criticalRate: { baseRate: 10, fortuneInfluence: 0.5 },
+          skillSuccessRate: { baseRate: 75, typingInfluence: 1.5 },
+          criticalRate: { baseRate: 10, typingInfluence: 0.5 },
           effects: [
             {
               type: 'damage',
@@ -578,7 +572,7 @@ describe('BattleCalculator', () => {
       it('スキル失敗時は後続処理をスキップする', () => {
         const failSkill = {
           ...testSkill,
-          skillSuccessRate: { baseRate: 0, agilityInfluence: 0, typingInfluence: 0 },
+          skillSuccessRate: { baseRate: 0, typingInfluence: 0 },
         };
         const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.99);
 

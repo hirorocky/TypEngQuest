@@ -24,8 +24,6 @@ export interface StatInfluence {
 export interface SkillSuccessRate {
   /** 基本成功率（%） */
   baseRate: number;
-  /** agility影響率（現在は未使用） */
-  agilityInfluence: number;
   /** タイピング評価影響率 */
   typingInfluence: number;
 }
@@ -36,8 +34,8 @@ export interface SkillSuccessRate {
 export interface SkillCriticalRate {
   /** 基本クリティカル率（%） */
   baseRate: number;
-  /** fortune影響率（現在は未使用） */
-  fortuneInfluence: number;
+  /** タイピング精度影響率（クリティカル率に対する影響） */
+  typingInfluence: number;
 }
 
 /**

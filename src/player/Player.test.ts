@@ -391,12 +391,11 @@ describe('Player', () => {
           typingDifficulty: 2,
           skillSuccessRate: {
             baseRate: 90,
-            agilityInfluence: 1.0,
             typingInfluence: 1.5,
           },
           criticalRate: {
             baseRate: 10,
-            fortuneInfluence: 0.8,
+            typingInfluence: 0.8,
           },
           effects: [
             {
