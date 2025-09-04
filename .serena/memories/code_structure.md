@@ -1,0 +1,10 @@
+- Source: `src/` organized by domain: `core/`, `phases/`, `world/`, `player/`, `battle/`, `commands/`, `ui/`, `items/`, `equipment/`, `typing/`, `utils/`, `test-utils/`.
+- Tests: colocated beside source as `*.test.ts`; Jest setup at `src/tests/setup/jest.setup.ts`.
+- Data: `data/` (e.g., `develop/*.json`, `skills/skills.json`, various status JSON).
+- Build: `dist/`; Docs: `docs/`; Scripts: `scripts/`.
+- Key modules:
+  - `battle/`: `BattleCalculator`, `BattleActionExecutor`, `Enemy`, `Skill` (types)
+  - `phases/`: Title/Exploration/Battle/Inventory/Typing phase orchestrations
+  - `player/`: BodyStats, EquipmentStats, statuses, world status
+  - `items/` + `equipment/`: item models and calculators
+  - `core/`: game loop, phase system, config loader

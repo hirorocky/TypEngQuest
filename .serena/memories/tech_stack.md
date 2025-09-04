@@ -1,0 +1,8 @@
+- Language: TypeScript (strict, ESM)
+- Runtime/Dev: Node.js, `tsx` for dev, `tsc` for build
+- Testing: Jest (ts-jest, ESM). Tests colocated as `*.test.ts`, setup at `src/tests/setup/jest.setup.ts`
+- Lint/Format: ESLint (v9) + @typescript-eslint, Prettier (v3)
+- CLI/UX libs: commander, inquirer, blessed, chalk, figlet, cli-progress
+- Data/validation: lowdb, zod
+- Scripts (package.json): build/ dev/ start/ watch/ lint/ lint:fix/ format/ format:check/ test/ test:watch/ test:coverage/ check
+- Binary: `dist/index.js` exposed as `typengquest`

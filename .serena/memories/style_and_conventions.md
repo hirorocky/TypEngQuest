@@ -1,0 +1,8 @@
+- TypeScript strict: enable types everywhere; avoid `any` in `src/**` (tests may use `any`).
+- Comments: Prefer minimal comments; JSDoc for classes/methods is encouraged; avoid dev-chatter or obvious "what" comments.
+- Formatting (Prettier): 2 spaces, 100 columns, single quotes, semicolons.
+- ESLint: prefer `const`, forbid `var`, no duplicate imports, cyclomatic complexity ≤ 10, nesting depth ≤ 4, max args ≤ 4.
+- Naming: Classes/Types → PascalCase; variables/functions → camelCase; constants → UPPER_SNAKE_CASE.
+- Tests: colocated `*.test.ts`. High coverage target (~94%+). Use helpers under `src/test-utils/**`.
+- Commits: Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`) in imperative mood; Japanese/English allowed.
+- Security: never commit `.env`; use `DISCORD_WEBHOOK_URL` for webhook; avoid absolute paths; do not edit `dist/`.
