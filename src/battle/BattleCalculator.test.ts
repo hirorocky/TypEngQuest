@@ -391,15 +391,15 @@ describe('BattleCalculator', () => {
         expect(result).toBeCloseTo(8.0, 5);
       });
 
-      it('クリティカル率の上限50%を超えない', () => {
-        const highBaseCriticalRate = 40;
+      it('クリティカル率の上限100%を超えない', () => {
+        const highBaseCriticalRate = 60;
         const result = BattleCalculator.calculateSkillCriticalRate(
           { baseRate: highBaseCriticalRate, typingInfluence: 1.0 },
           'Perfect'
         );
 
-        // 40 × (1 + 1.0) = 80 → 最大50%
-        expect(result).toBe(50);
+        // 60 × (1 + 1.0) = 120 → 最大100%
+        expect(result).toBe(100);
       });
 
       it('ペナルティが大きくても負の倍率にならない（下限0）', () => {

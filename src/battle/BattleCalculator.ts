@@ -325,8 +325,8 @@ export class BattleCalculator {
       finalRate = finalRate * factor;
     }
 
-    // クリティカル率の下限/上限（0〜50%）
-    return Math.max(0, Math.min(50, finalRate));
+    // クリティカル率の下限/上限（0〜100%）
+    return Math.max(0, Math.min(100, finalRate));
   }
 
   /**
