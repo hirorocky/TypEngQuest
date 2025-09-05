@@ -401,6 +401,15 @@ describe('BattleCalculator', () => {
         // 40 × (1 + 1.0) = 80 → 最大50%
         expect(result).toBe(50);
       });
+
+      it('ペナルティが大きくても負の倍率にならない（下限0）', () => {
+        // Poor(-0.2) × influence(10) = -2.0 → factor = max(0, 1 + (-2.0)) = 0
+        const result = BattleCalculator.calculateSkillCriticalRate(
+          { baseRate: 30, typingInfluence: 10.0 },
+          'Poor'
+        );
+        expect(result).toBe(0);
+      });
     });
 
     describe('タイピング効果倍率', () => {

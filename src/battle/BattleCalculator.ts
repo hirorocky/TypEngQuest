@@ -320,7 +320,8 @@ export class BattleCalculator {
 
       const delta = accuracyMultiplier - 1.0; // -0.2, +0.5, +1.0
       const influence = criticalRate.typingInfluence ?? 1.0;
-      const factor = 1.0 + delta * influence;
+      // factor が負にならないように下限を0にクリップ
+      const factor = Math.max(0, 1.0 + delta * influence);
       finalRate = finalRate * factor;
     }
 
