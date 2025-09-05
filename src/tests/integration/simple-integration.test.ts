@@ -12,12 +12,13 @@ describe('Simple Integration Test', () => {
       level: 1,
       stats: {
         maxHp: 50,
-        maxMp: 30,
         strength: 8,
         willpower: 6,
         agility: 10,
         fortune: 5,
       },
+      physicalEvadeRate: 12,
+      magicalEvadeRate: 8,
       skills: [],
       drops: [],
     });

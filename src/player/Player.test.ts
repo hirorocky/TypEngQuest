@@ -383,17 +383,30 @@ describe('Player', () => {
           id: 'slash',
           name: 'Slash',
           description: 'A slashing attack',
+          skillType: 'physical',
           mpCost: 5,
           mpCharge: 0,
           actionCost: 1,
-          successRate: 90,
           target: 'enemy',
           typingDifficulty: 2,
+          skillSuccessRate: {
+            baseRate: 90,
+            typingInfluence: 1.5,
+          },
+          criticalRate: {
+            baseRate: 10,
+            typingInfluence: 0.8,
+          },
           effects: [
             {
               type: 'damage',
-              power: 50,
               target: 'enemy',
+              basePower: 50,
+              powerInfluence: {
+                stat: 'strength',
+                rate: 1.2,
+              },
+              successRate: 100,
             },
           ],
         },

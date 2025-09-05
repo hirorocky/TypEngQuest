@@ -398,28 +398,42 @@ export class DevelopmentConfigLoader {
       level: enemyData.level,
       stats: {
         maxHp: enemyData.maxHp,
-        maxMp: 50, // デフォルト値
         strength: enemyData.strength,
         willpower: 10, // デフォルト値
         agility: enemyData.agility,
         fortune: 5, // デフォルト値
       },
+      physicalEvadeRate: 5 + Math.floor(enemyData.agility / 15), // 回避率をagilityから算出
+      magicalEvadeRate: 3 + Math.floor(enemyData.agility / 20),
       skills:
         enemyData.skills?.map((skill, index) => ({
           id: `${enemyData.id}-skill-${index}`,
           name: skill.name,
           description: skill.description,
+          skillType: 'physical' as const, // デフォルト値
           mpCost: skill.mpCost,
           mpCharge: 0, // デフォルト値
           actionCost: 1, // デフォルト値
-          successRate: skill.accuracy,
           target: 'enemy' as const, // デフォルト値
           typingDifficulty: 3, // デフォルト値
+          skillSuccessRate: {
+            baseRate: skill.accuracy,
+            typingInfluence: 0.8,
+          },
+          criticalRate: {
+            baseRate: 8,
+            typingInfluence: 0.5,
+          },
           effects: [
             {
               type: 'damage' as const,
-              power: skill.power,
               target: 'enemy' as const,
+              basePower: skill.power,
+              powerInfluence: {
+                stat: 'strength' as const,
+                rate: 1.2,
+              },
+              successRate: 90,
             },
           ],
         })) || [],

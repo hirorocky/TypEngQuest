@@ -44,12 +44,13 @@ describe('BattlePhase Integration Tests', () => {
         level: 10,
         stats: {
           maxHp: 1000,
-          maxMp: 100,
           strength: 200, // 非常に高い攻撃力
           willpower: 50,
           agility: 100, // 非常に高い素早さ（先攻を取る）
           fortune: 50,
         },
+        physicalEvadeRate: 20,
+        magicalEvadeRate: 15,
         skills: [],
         drops: [],
       });
@@ -88,8 +89,13 @@ describe('BattlePhase Integration Tests', () => {
       const playerStats = player.getBodyStats();
       playerStats.takeDamage(playerStats.getCurrentHP() - 1);
 
-      // Math.randomを命中するように固定
-      const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.01); // 1%（命中確実）
+      // Math.randomを3層判定システム用に複数回の判定に対応
+      const mockRandom = jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.01) // 敵スキル成功
+        .mockReturnValueOnce(0.99) // プレイヤーの回避失敗
+        .mockReturnValueOnce(0.01) // 効果成功
+        .mockReturnValueOnce(0.95); // クリティカル失敗
 
       // 敵ターンを強制実行（setTimeout を待たずに）
       await battlePhase['executeEnemyTurn']();
@@ -119,12 +125,13 @@ describe('BattlePhase Integration Tests', () => {
         level: 1,
         stats: {
           maxHp: 1, // 非常に少ないHP
-          maxMp: 10,
           strength: 1,
           willpower: 1,
           agility: 1, // 低い素早さ（後攻になる）
           fortune: 1,
         },
+        physicalEvadeRate: 5,
+        magicalEvadeRate: 5,
         skills: [],
         drops: [],
       });
@@ -178,7 +185,9 @@ describe('BattlePhase Integration Tests', () => {
         name: 'Test Enemy',
         description: 'A test enemy',
         level: 1,
-        stats: { maxHp: 50, maxMp: 20, strength: 5, willpower: 5, agility: 5, fortune: 5 },
+        stats: { maxHp: 50, strength: 5, willpower: 5, agility: 5, fortune: 5 },
+        physicalEvadeRate: 10,
+        magicalEvadeRate: 8,
         skills: [],
         drops: [],
       });
@@ -206,12 +215,13 @@ describe('BattlePhase Integration Tests', () => {
         level: 1,
         stats: {
           maxHp: 100,
-          maxMp: 50,
           strength: 10,
           willpower: 8,
           agility: 1, // 低い素早さ
           fortune: 5,
         },
+        physicalEvadeRate: 10,
+        magicalEvadeRate: 12,
         skills: [],
         drops: [],
       });

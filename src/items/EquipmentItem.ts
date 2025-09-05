@@ -217,7 +217,9 @@ export class EquipmentItem extends Item {
 
     // 残りのプロパティの比較
     return (
-      this.skill.successRate === otherSkill.successRate &&
+      JSON.stringify(this.skill.skillSuccessRate) === JSON.stringify(otherSkill.skillSuccessRate) &&
+      JSON.stringify(this.skill.criticalRate) === JSON.stringify(otherSkill.criticalRate) &&
+      this.skill.skillType === otherSkill.skillType &&
       this.skill.target === otherSkill.target &&
       this.skill.typingDifficulty === otherSkill.typingDifficulty &&
       JSON.stringify(this.skill.effects) === JSON.stringify(otherSkill.effects)
@@ -376,8 +378,9 @@ export class EquipmentItem extends Item {
       typeof skill.mpCost === 'number' &&
       typeof skill.mpCharge === 'number' &&
       typeof skill.actionCost === 'number' &&
-      typeof skill.successRate === 'number' &&
-      typeof skill.typingDifficulty === 'number'
+      typeof skill.typingDifficulty === 'number' &&
+      typeof skill.skillSuccessRate === 'object' &&
+      typeof skill.criticalRate === 'object'
     );
   }
 }

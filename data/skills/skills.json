@@ -4,17 +4,31 @@
       "id": "basic_attack",
       "name": "Basic Attack",
       "description": "A simple attack with your weapon",
+      "skillType": "physical",
       "mpCost": 0,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 100,
       "target": "enemy",
       "typingDifficulty": 1,
+      "skillSuccessRate": {
+        "baseRate": 100,
+        "agilityInfluence": 0.5,
+        "typingInfluence": 0.8
+      },
+      "criticalRate": {
+        "baseRate": 5,
+        "fortuneInfluence": 0.5
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 1,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 80,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.0
+          },
+          "successRate": 95
         }
       ]
     },
@@ -22,17 +36,31 @@
       "id": "power_strike",
       "name": "Power Strike",
       "description": "A powerful strike that deals extra damage",
+      "skillType": "physical",
       "mpCost": 5,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 90,
       "target": "enemy",
       "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 90,
+        "agilityInfluence": 0.7,
+        "typingInfluence": 1.0
+      },
+      "criticalRate": {
+        "baseRate": 8,
+        "fortuneInfluence": 0.6
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 40,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 120,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.5
+          },
+          "successRate": 90
         }
       ]
     },
@@ -40,17 +68,31 @@
       "id": "fire_ball",
       "name": "Fire Ball",
       "description": "Launch a ball of fire at the enemy",
+      "skillType": "magical",
       "mpCost": 8,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 85,
       "target": "enemy",
       "typingDifficulty": 3,
+      "skillSuccessRate": {
+        "baseRate": 85,
+        "agilityInfluence": 0.4,
+        "typingInfluence": 1.5
+      },
+      "criticalRate": {
+        "baseRate": 6,
+        "fortuneInfluence": 0.4
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 35,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 100,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.8
+          },
+          "successRate": 88
         }
       ]
     },
@@ -58,17 +100,31 @@
       "id": "ice_shard",
       "name": "Ice Shard",
       "description": "Launch sharp ice shards at the enemy",
+      "skillType": "magical",
       "mpCost": 8,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 85,
       "target": "enemy",
       "typingDifficulty": 3,
+      "skillSuccessRate": {
+        "baseRate": 85,
+        "agilityInfluence": 0.4,
+        "typingInfluence": 1.5
+      },
+      "criticalRate": {
+        "baseRate": 6,
+        "fortuneInfluence": 0.4
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 35,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 95,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.7
+          },
+          "successRate": 88
         }
       ]
     },
@@ -76,17 +132,31 @@
       "id": "thunder_bolt",
       "name": "Thunder Bolt",
       "description": "Strike the enemy with lightning",
+      "skillType": "magical",
       "mpCost": 10,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 80,
       "target": "enemy",
       "typingDifficulty": 4,
+      "skillSuccessRate": {
+        "baseRate": 80,
+        "agilityInfluence": 0.3,
+        "typingInfluence": 1.8
+      },
+      "criticalRate": {
+        "baseRate": 7,
+        "fortuneInfluence": 0.5
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 45,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 110,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 2.0
+          },
+          "successRate": 85
         }
       ]
     },
@@ -94,17 +164,31 @@
       "id": "heal",
       "name": "Heal",
       "description": "Restore your health points",
+      "skillType": "magical",
       "mpCost": 10,
       "mpCharge": 5,
       "actionCost": 1,
-      "successRate": 100,
       "target": "self",
       "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 100,
+        "agilityInfluence": 0.2,
+        "typingInfluence": 1.0
+      },
+      "criticalRate": {
+        "baseRate": 3,
+        "fortuneInfluence": 0.3
+      },
       "effects": [
         {
           "type": "hp_heal",
-          "power": 30,
-          "target": "self"
+          "target": "self",
+          "basePower": 80,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.2
+          },
+          "successRate": 98
         }
       ]
     },
@@ -112,17 +196,31 @@
       "id": "greater_heal",
       "name": "Greater Heal",
       "description": "Restore a large amount of health points",
+      "skillType": "magical",
       "mpCost": 20,
       "mpCharge": 10,
       "actionCost": 1,
-      "successRate": 100,
       "target": "self",
       "typingDifficulty": 3,
+      "skillSuccessRate": {
+        "baseRate": 100,
+        "agilityInfluence": 0.2,
+        "typingInfluence": 1.2
+      },
+      "criticalRate": {
+        "baseRate": 5,
+        "fortuneInfluence": 0.4
+      },
       "effects": [
         {
           "type": "hp_heal",
-          "power": 60,
-          "target": "self"
+          "target": "self",
+          "basePower": 150,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.5
+          },
+          "successRate": 98
         }
       ]
     },
@@ -130,17 +228,31 @@
       "id": "critical_strike",
       "name": "Critical Strike",
       "description": "A devastating attack with high damage",
+      "skillType": "physical",
       "mpCost": 25,
       "mpCharge": 0,
       "actionCost": 2,
-      "successRate": 70,
       "target": "enemy",
       "typingDifficulty": 5,
+      "skillSuccessRate": {
+        "baseRate": 70,
+        "agilityInfluence": 0.9,
+        "typingInfluence": 1.5
+      },
+      "criticalRate": {
+        "baseRate": 15,
+        "fortuneInfluence": 0.8
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 80,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 180,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 2.2
+          },
+          "successRate": 85
         }
       ]
     },
@@ -148,17 +260,31 @@
       "id": "meteor",
       "name": "Meteor",
       "description": "Call down a meteor to devastate your foe",
+      "skillType": "magical",
       "mpCost": 30,
       "mpCharge": 0,
       "actionCost": 3,
-      "successRate": 65,
       "target": "enemy",
       "typingDifficulty": 5,
+      "skillSuccessRate": {
+        "baseRate": 65,
+        "agilityInfluence": 0.3,
+        "typingInfluence": 2.0
+      },
+      "criticalRate": {
+        "baseRate": 10,
+        "fortuneInfluence": 0.7
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 100,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 200,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 2.5
+          },
+          "successRate": 80
         }
       ]
     },
@@ -166,17 +292,159 @@
       "id": "dark_strike",
       "name": "Dark Strike",
       "description": "A strike infused with dark energy",
+      "skillType": "physical",
       "mpCost": 20,
       "mpCharge": 0,
       "actionCost": 1,
-      "successRate": 80,
       "target": "enemy",
       "typingDifficulty": 4,
+      "skillSuccessRate": {
+        "baseRate": 80,
+        "agilityInfluence": 0.6,
+        "typingInfluence": 1.3
+      },
+      "criticalRate": {
+        "baseRate": 12,
+        "fortuneInfluence": 0.7
+      },
       "effects": [
         {
           "type": "damage",
-          "power": 50,
-          "target": "enemy"
+          "target": "enemy",
+          "basePower": 130,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.8
+          },
+          "successRate": 88
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "name": "Syntax Error",
+      "description": "A confusing syntax error attack",
+      "skillType": "physical",
+      "mpCost": 3,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 90,
+        "agilityInfluence": 0.5,
+        "typingInfluence": 0.8
+      },
+      "criticalRate": {
+        "baseRate": 8,
+        "fortuneInfluence": 0.4
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 80,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.2
+          },
+          "successRate": 92
+        }
+      ]
+    },
+    {
+      "id": "callback_hell",
+      "name": "Callback Hell",
+      "description": "Unleash a cascade of asynchronous nightmares",
+      "skillType": "magical",
+      "mpCost": 5,
+      "mpCharge": 0,
+      "actionCost": 2,
+      "target": "enemy",
+      "typingDifficulty": 3,
+      "skillSuccessRate": {
+        "baseRate": 85,
+        "agilityInfluence": 0.3,
+        "typingInfluence": 1.5
+      },
+      "criticalRate": {
+        "baseRate": 10,
+        "fortuneInfluence": 0.6
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 100,
+          "powerInfluence": {
+            "stat": "willpower",
+            "rate": 1.5
+          },
+          "successRate": 88
+        }
+      ]
+    },
+    {
+      "id": "indentation_error",
+      "name": "Indentation Error",
+      "description": "Strike with misaligned whitespace",
+      "skillType": "physical",
+      "mpCost": 4,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 2,
+      "skillSuccessRate": {
+        "baseRate": 90,
+        "agilityInfluence": 0.6,
+        "typingInfluence": 1.0
+      },
+      "criticalRate": {
+        "baseRate": 7,
+        "fortuneInfluence": 0.5
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 90,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.3
+          },
+          "successRate": 90
+        }
+      ]
+    },
+    {
+      "id": "tag_mismatch",
+      "name": "Tag Mismatch",
+      "description": "Confuse with unclosed tags",
+      "skillType": "physical",
+      "mpCost": 3,
+      "mpCharge": 0,
+      "actionCost": 1,
+      "target": "enemy",
+      "typingDifficulty": 1,
+      "skillSuccessRate": {
+        "baseRate": 95,
+        "agilityInfluence": 0.4,
+        "typingInfluence": 0.6
+      },
+      "criticalRate": {
+        "baseRate": 5,
+        "fortuneInfluence": 0.3
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "target": "enemy",
+          "basePower": 70,
+          "powerInfluence": {
+            "stat": "strength",
+            "rate": 1.0
+          },
+          "successRate": 95
         }
       ]
     }

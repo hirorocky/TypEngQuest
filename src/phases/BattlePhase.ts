@@ -347,11 +347,7 @@ export class BattlePhase extends Phase {
     // 敵のスキル選択と実行をBattleActionExecutorで処理
     const selectedSkill = this.enemy.selectSkill() || Battle.getNormalAttackSkill();
 
-    // MP消費チェック - 足りない場合は通常攻撃
-    const skillToUse =
-      this.enemy.currentMp < selectedSkill.mpCost ? Battle.getNormalAttackSkill() : selectedSkill;
-
-    const result = BattleActionExecutor.executeEnemySkill(skillToUse, this.enemy, this.player);
+    const result = BattleActionExecutor.executeEnemySkill(selectedSkill, this.enemy, this.player);
 
     this.turnMessage = result.message.join(' ');
     result.message.forEach(msg => console.log(msg));

@@ -1,0 +1,9 @@
+- Before pushing:
+  - Ensure tests pass: `npm run check` (format + lint + test); keep coverage high (~94%+ target).
+  - Update related docs under `docs/` when code changes (game systems, guidelines, structure, commands, testing, agile plan, implementation status).
+- Commits/PRs:
+  - Use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`) with clear, imperative messages.
+  - For PRs: include summary, related Issue (e.g., `Issue #53`), background/intent; attach CLI output or screenshots for UX changes; ensure `npm run check` passes.
+- Security/Settings:
+  - Do not commit secrets (`.env`). Use `DISCORD_WEBHOOK_URL` for webhooks.
+  - Use `data/develop/*.json` for dev data; avoid absolute paths; never edit `dist/` directly.

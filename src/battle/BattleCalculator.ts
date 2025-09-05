@@ -1,8 +1,17 @@
 import { SpeedRating, AccuracyRating } from '../typing/types';
+import { Skill, SkillSuccessRate, SkillCriticalRate, StatInfluence, SkillType } from './Skill';
 
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
  */
+/**
+ * 戦闘でのターゲット（回避率を持つオブジェクト）を表すインターフェース
+ */
+export interface BattleTarget {
+  physicalEvadeRate: number;
+  magicalEvadeRate: number;
+}
+
 export class BattleCalculator {
   /**
    * ダメージ計算
@@ -165,31 +174,7 @@ export class BattleCalculator {
     return Math.min(99, enhancedHitRate); // 最大99%
   }
 
-  /**
-   * タイピング精度に基づくクリティカル率ボーナス計算
-   * @param baseCriticalRate 基本クリティカル率
-   * @param playerAgility プレイヤーの敏捷性ステータス
-   * @param accuracyRating タイピング精度評価
-   * @returns ボーナス適用後のクリティカル率
-   */
-  static calculateTypingAccuracyBonus(
-    baseCriticalRate: number,
-    playerAgility: number,
-    accuracyRating: AccuracyRating
-  ): number {
-    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
-    const agilityBonus = 1.0 + playerAgility / 200;
-
-    // タイピング精度による倍率
-    const accuracyMultiplier = {
-      Perfect: 2.0, // 200%
-      Good: 1.5, // 150%
-      Poor: 0.8, // 80%
-    }[accuracyRating];
-
-    const enhancedCriticalRate = baseCriticalRate * agilityBonus * accuracyMultiplier;
-    return Math.min(50, enhancedCriticalRate); // 最大50%
-  }
+  // calculateTypingAccuracyBonus は calculateSkillCriticalRate に統合
 
   /**
    * タイピング総合評価に基づく効果倍率計算
@@ -237,5 +222,222 @@ export class BattleCalculator {
     // Poor は倍率なし（100%）
 
     return mpRecovered;
+  }
+
+  // Phase 4: 3層判定システム新メソッド
+
+  /**
+   * スキル成功率を計算する
+   * @param skillSuccessRate スキルの成功率設定
+   * @param playerAgility プレイヤーの敏捷性
+   * @param typingScore タイピング評価（%）
+   * @returns 最終スキル成功率（%）
+   */
+  static calculateSkillSuccessRate(
+    skillSuccessRate: SkillSuccessRate,
+    _playerAgility: number,
+    speedRating: SpeedRating
+  ): number {
+    // 基本成功率
+    let finalRate = skillSuccessRate.baseRate;
+    // レビュー対応: 敏捷性の影響を廃止（skillSuccessRate.agilityInfluenceは無視）
+
+    // タイピング影響（速度のみ反映）: SpeedRating をスコア(150/120/100/60)へ変換し線形加算
+    const speedScore = { Fast: 150, Normal: 120, Slow: 80, Miss: 60 }[speedRating];
+    const typingBonus = (speedScore - 100) * skillSuccessRate.typingInfluence;
+    finalRate += typingBonus;
+
+    // レビュー対応: 下限0%、上限200%
+    return Math.max(0, Math.min(200, finalRate));
+  }
+
+  /**
+   * 物理・魔法スキルの回避判定
+   * @param skillType スキルの種別
+   * @param enemy 敵
+   * @returns 回避されたかどうか
+   */
+  static isSkillEvaded(skillType: SkillType, target: BattleTarget): boolean {
+    const evadeRate = skillType === 'physical' ? target.physicalEvadeRate : target.magicalEvadeRate;
+
+    const random = Math.random() * 100;
+    return random < evadeRate;
+  }
+
+  /**
+   * 効果の成功判定
+   * @param successRate 効果の成功率（%）
+   * @returns 成功したかどうか
+   */
+  static isEffectSuccess(successRate: number): boolean {
+    const random = Math.random() * 100;
+    return random < successRate;
+  }
+
+  /**
+   * 効果の威力を計算する（ステータス影響込み）
+   * @param basePower 基本威力
+   * @param playerStats プレイヤーのステータス
+   * @param statInfluence ステータス影響設定（省略可能）
+   * @returns 最終威力
+   */
+  static calculateEffectPower(
+    basePower: number,
+    playerStats: { strength: number; willpower: number; agility: number; fortune: number },
+    statInfluence?: StatInfluence
+  ): number {
+    if (!statInfluence) {
+      // ステータス影響なし = 固定威力
+      return basePower;
+    }
+
+    const statValue = playerStats[statInfluence.stat];
+    const statBonus = statValue * statInfluence.rate;
+
+    return Math.floor(basePower + statBonus);
+  }
+
+  /**
+   * スキルのクリティカル率を計算する
+   * @param criticalRate クリティカル率設定
+   * @param playerFortune プレイヤーの幸運
+   * @returns 最終クリティカル率（%）
+   */
+  static calculateSkillCriticalRate(
+    criticalRate: SkillCriticalRate,
+    accuracyRating?: AccuracyRating
+  ): number {
+    // 基本率
+    let finalRate = criticalRate.baseRate;
+
+    // タイピング精度の影響を反映（影響度は criticalRate.typingInfluence で調整）
+    if (accuracyRating) {
+      const accuracyMultiplier = {
+        Perfect: 2.0,
+        Good: 1.5,
+        Poor: 0.8,
+      }[accuracyRating];
+
+      const delta = accuracyMultiplier - 1.0; // -0.2, +0.5, +1.0
+      const influence = criticalRate.typingInfluence ?? 1.0;
+      // factor が負にならないように下限を0にクリップ
+      const factor = Math.max(0, 1.0 + delta * influence);
+      finalRate = finalRate * factor;
+    }
+
+    // クリティカル率の下限/上限（0〜100%）
+    return Math.max(0, Math.min(100, finalRate));
+  }
+
+  /**
+   * 3層判定システム全体を実行する
+   * @param skill 使用するスキル
+   * @param enemy 対象の敵
+   * @param playerStats プレイヤーのステータス
+   * @param typingScore タイピング評価（%）
+   * @returns 判定結果
+   */
+  static executeThreeLayerJudgment(
+    skill: Skill,
+    target: BattleTarget,
+    attackerStats: { strength: number; willpower: number; agility: number; fortune: number },
+    options?: { speedRating?: SpeedRating; accuracyRating?: AccuracyRating }
+  ): {
+    skillSuccess: boolean;
+    evaded: boolean;
+    effectResults: Array<{
+      effectIndex: number;
+      success: boolean;
+      power: number;
+      isCritical: boolean;
+    }>;
+    finalDamage: number;
+    isCritical: boolean;
+  } {
+    const result = {
+      skillSuccess: false,
+      evaded: false,
+      effectResults: [] as Array<{
+        effectIndex: number;
+        success: boolean;
+        power: number;
+        isCritical: boolean;
+      }>,
+      finalDamage: 0,
+      isCritical: false,
+    };
+
+    // Layer 1: スキル成功率判定
+    const speedRating: SpeedRating = options?.speedRating ?? 'Normal';
+    const accuracyRating: AccuracyRating | undefined = options?.accuracyRating;
+
+    const skillSuccessRate = this.calculateSkillSuccessRate(
+      skill.skillSuccessRate,
+      attackerStats.agility,
+      speedRating
+    );
+
+    result.skillSuccess = this.isEffectSuccess(skillSuccessRate);
+
+    if (!result.skillSuccess) {
+      return result;
+    }
+
+    // Layer 2: 回避判定
+    result.evaded = this.isSkillEvaded(skill.skillType, target);
+
+    if (result.evaded) {
+      return result;
+    }
+
+    // Layer 3: 効果処理
+    let totalDamage = 0;
+    let anyEffectCritical = false;
+
+    skill.effects.forEach((effect, index) => {
+      const effectSuccess = this.isEffectSuccess(effect.successRate);
+
+      if (effectSuccess) {
+        const power = this.calculateEffectPower(
+          effect.basePower,
+          attackerStats,
+          effect.powerInfluence
+        );
+
+        // クリティカル判定
+        // クリティカル率: スキル設定+幸運 を基礎に、タイピング精度のボーナスを適用
+        const criticalRate = this.calculateSkillCriticalRate(skill.criticalRate, accuracyRating);
+        const isCritical = this.isCritical(criticalRate);
+
+        const finalPower = isCritical ? Math.floor(power * 1.5) : power;
+
+        result.effectResults.push({
+          effectIndex: index,
+          success: true,
+          power: finalPower,
+          isCritical,
+        });
+
+        if (effect.type === 'damage') {
+          totalDamage += finalPower;
+        }
+
+        if (isCritical) {
+          anyEffectCritical = true;
+        }
+      } else {
+        result.effectResults.push({
+          effectIndex: index,
+          success: false,
+          power: 0,
+          isCritical: false,
+        });
+      }
+    });
+
+    result.finalDamage = totalDamage;
+    result.isCritical = anyEffectCritical;
+
+    return result;
   }
 }
