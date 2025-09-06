@@ -652,7 +652,7 @@ class SkillExecutionSystem {
 
 **成果物**:
 - スキル効果の発動条件システム
-- グレード3以上のスキルの潜在効果システム
+- スキルの潜在効果システム
 - コンボブーストシステム（次スキル強化）
 - スキルグレードシステム
 
@@ -673,7 +673,7 @@ interface SkillCondition {
 }
 ```
 
-#### 潜在効果システム（グレード3以上）
+#### 潜在効果システム
 ```typescript
 interface SkillPotentialEffect {
   triggerCondition: {
@@ -686,8 +686,7 @@ interface SkillPotentialEffect {
 // スキルに潜在効果を追加
 interface Skill {
   // 既存プロパティ...
-  grade: number;
-  potentialEffects?: SkillPotentialEffect[]; // グレード3以上のみ
+  potentialEffects?: SkillPotentialEffect[];
 }
 ```
 
@@ -706,7 +705,6 @@ interface ComboBoost {
 const comboPowerStrike: Skill = {
   id: 'combo_power_strike',
   name: 'Power Strike',
-  grade: 2,
   // ... 他のプロパティ
 
   // コンボブースト付き
@@ -741,7 +739,6 @@ const comboPowerStrike: Skill = {
 // 例1: タイピング結果に応じた効果変化
 const adaptiveStrike: Skill = {
   id: 'adaptive_strike',
-  grade: 3,
   // ...基本プロパティ
 
   effects: [{
@@ -772,7 +769,6 @@ const adaptiveStrike: Skill = {
 // 例2: 敵の状態に応じた効果強化
 const opportunisticStrike: Skill = {
   id: 'opportunistic_strike',
-  grade: 4,
 
   effects: [{
     type: 'damage',
@@ -877,11 +873,10 @@ const empoweredHeal: Skill = {
 3. ComboBoostシステム実装
    - ComboBoostインターフェース
    - 次スキル強化効果の管理
-4. Skillインターフェースにgradeプロパティ追加
-5. スキル実行時の条件チェック機能
-6. 潜在効果発動ロジック
-7. コンボブースト適用・管理システム
-8. テストケース作成
+4. スキル実行時の条件チェック機能
+5. 潜在効果発動ロジック
+6. コンボブースト適用・管理システム
+7. テストケース作成
 
 **チェックポイント**: 条件付きスキル効果とコンボブーストが正常に動作すること
 

@@ -59,6 +59,77 @@ export interface SkillEffect {
   successRate: number;
   /** 状態異常ID（add_status/remove_status用） */
   statusId?: string;
+  /** 効果が適用されるための条件（すべて満たす必要あり） */
+  conditions?: SkillCondition[];
+}
+
+/**
+ * スキル効果発動条件
+ */
+export type SkillCondition =
+  | {
+      type: 'typing_speed';
+      value: import('../typing/types').SpeedRating;
+      /** 既定: 'eq' */
+      operator?: 'eq' | 'ne';
+    }
+  | {
+      type: 'typing_accuracy';
+      value: import('../typing/types').AccuracyRating;
+      /** 既定: 'eq' */
+      operator?: 'eq' | 'ne';
+    }
+  | {
+      /** HPしきい値（%） */
+      type: 'hp_threshold';
+      target: 'self' | 'enemy';
+      operator: 'lte' | 'gte';
+      value: number; // 0-100 の割合
+    }
+  | {
+      /** 敵が指定の状態異常IDを保持しているか */
+      type: 'enemy_status';
+      statusId: string;
+    }
+  | {
+      /** 自身が指定のバフIDを保持しているか（TemporaryStatus.id） */
+      type: 'self_buff';
+      buffId: string;
+    }
+  | {
+      /** 敏捷性判定（総合ステータスのagility） */
+      type: 'agility_check';
+      operator: 'lte' | 'gte';
+      value: number;
+    };
+
+/**
+ * 潜在効果（特定条件で追加適用される効果）
+ */
+export interface SkillPotentialEffect {
+  triggerCondition: {
+    typingPerfect?: boolean;
+    exMode?: boolean;
+  };
+  effect: SkillEffect;
+}
+
+/**
+ * コンボブースト定義
+ */
+export interface ComboBoost {
+  boostType:
+    | 'damage'
+    | 'heal'
+    | 'skill_success'
+    | 'status_success'
+    | 'mp_cost_reduction'
+    | 'typing_difficulty'
+    | 'potential';
+  /** 値の意味は種類ごとに異なる（倍率や加算値） */
+  value: number;
+  /** デフォルト1（=次の1回のみ） */
+  duration?: number;
 }
 
 /**
@@ -89,4 +160,8 @@ export interface Skill {
   criticalRate: SkillCriticalRate;
   /** 効果リスト */
   effects: SkillEffect[];
+  /** 潜在効果（条件成立時に追加） */
+  potentialEffects?: SkillPotentialEffect[];
+  /** このスキルが付与するコンボブースト（使用後にComboBoostManagerへ登録） */
+  comboBoosts?: ComboBoost[];
 }

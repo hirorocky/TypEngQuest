@@ -188,6 +188,18 @@
 - **効果発動条件**: HP閾値、敵の状態異常、自身のバフ状態等
 - **Combo Boost**: 次スキル強化（ダメージ+10%、回復量+10%等）
 
+### スキル柔軟性（10C）アップデート概要
+- **条件付き効果**: `SkillEffect.conditions` により発動条件を定義可能
+  - `typing_speed` / `typing_accuracy` / `hp_threshold(self|enemy, gte|lte, %)`
+  - `enemy_status(statusId)` / `self_buff(buffId)` / `agility_check(gte|lte, value)`
+- **潜在効果**: `Skill.potentialEffects` により `typingPerfect` や `exMode` で効果を追加
+- **コンボブースト**: `ComboBoostManager` が次回スキルに一時強化を適用し消費
+  - 種別: `damage`, `heal`, `skill_success`, `status_success`, `mp_cost_reduction`, `typing_difficulty`, `potential`
+- 実装ポイント:
+  - `BattleCalculator` に条件評価・潜在効果マージのヘルパーを実装
+  - `BattleActionExecutor` で「潜在→コンボ適用→条件フィルタ」の順に効果を確定
+  - 後方互換性: 既存スキルは条件未指定で従来通り動作
+
 ## タイピングチャレンジ
 - 指定された単語、文（お題）をタイピングする、リアルタイムなチャレンジ
 - チャレンジには難易度があり、難易度に応じて単語の長さや文の複雑さが変化

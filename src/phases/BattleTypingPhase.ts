@@ -8,6 +8,7 @@ import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { TypingResult, TypingDifficulty, TypingProgress } from '../typing/types';
 import { BattleTypingResult } from './types';
 import { TypingChallenge } from '../typing/TypingChallenge';
+import { ComboBoostManager } from '../battle/ComboBoostManager';
 import { WordDatabase } from '../typing/WordDatabase';
 import { Display } from '../ui/Display';
 import { green, red, gray } from '../ui/colors';
@@ -21,6 +22,7 @@ export class BattleTypingPhase extends Phase {
   private currentChallenge: TypingChallenge | null = null;
   private wordDatabase: WordDatabase;
   private isFirstInput: boolean = true;
+  private comboBoostManager: ComboBoostManager = new ComboBoostManager();
 
   // 結果サマリー
   private summary: {
@@ -249,7 +251,10 @@ export class BattleTypingPhase extends Phase {
       return;
     }
 
-    const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, typingResult);
+    const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
+      comboBoostManager: this.comboBoostManager,
+      typingResult,
+    });
 
     if (result.success) {
       result.message.forEach(msg => console.log(msg));

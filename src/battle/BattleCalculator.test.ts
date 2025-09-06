@@ -615,4 +615,89 @@ describe('BattleCalculator', () => {
       });
     });
   });
+
+  describe('10C: 柔軟性ヘルパー', () => {
+    it('条件評価: typing_accuracy と hp_threshold self/enemy', () => {
+      const ctx = BattleCalculator.createConditionContext({
+        attackerHP: { current: 100, max: 100 },
+        defenderHP: { current: 50, max: 100 },
+        attackerAgility: 50,
+        typing: { accuracy: 'Good' },
+      });
+
+      expect(
+        BattleCalculator.isEffectConditionsMet([{ type: 'typing_accuracy', value: 'Good' }], ctx)
+      ).toBe(true);
+      expect(
+        BattleCalculator.isEffectConditionsMet([{ type: 'typing_accuracy', value: 'Perfect' }], ctx)
+      ).toBe(false);
+      expect(
+        BattleCalculator.isEffectConditionsMet(
+          [{ type: 'typing_accuracy', value: 'Perfect', operator: 'ne' }],
+          ctx
+        )
+      ).toBe(true);
+
+      expect(
+        BattleCalculator.isEffectConditionsMet(
+          [{ type: 'hp_threshold', target: 'self', operator: 'gte', value: 80 }],
+          ctx
+        )
+      ).toBe(true);
+      expect(
+        BattleCalculator.isEffectConditionsMet(
+          [{ type: 'hp_threshold', target: 'self', operator: 'lte', value: 50 }],
+          ctx
+        )
+      ).toBe(false);
+      expect(
+        BattleCalculator.isEffectConditionsMet(
+          [{ type: 'hp_threshold', target: 'enemy', operator: 'lte', value: 50 }],
+          ctx
+        )
+      ).toBe(true);
+      expect(
+        BattleCalculator.isEffectConditionsMet(
+          [{ type: 'hp_threshold', target: 'enemy', operator: 'gte', value: 60 }],
+          ctx
+        )
+      ).toBe(false);
+    });
+
+    it('潜在効果のマージ: typingPerfect / exMode', () => {
+      const base = [{ type: 'damage', target: 'enemy', basePower: 5, successRate: 100 }];
+      const potentials = [
+        {
+          triggerCondition: { typingPerfect: true },
+          effect: { type: 'damage', target: 'enemy', basePower: 7, successRate: 100 },
+        },
+        {
+          triggerCondition: { exMode: true },
+          effect: { type: 'damage', target: 'enemy', basePower: 9, successRate: 100 },
+        },
+      ];
+
+      const ctxPerfect = BattleCalculator.createConditionContext({
+        attackerHP: { current: 100, max: 100 },
+        defenderHP: { current: 100, max: 100 },
+        attackerAgility: 50,
+        typing: { accuracy: 'Perfect', exMode: false },
+      });
+      const ctxEx = BattleCalculator.createConditionContext({
+        attackerHP: { current: 100, max: 100 },
+        defenderHP: { current: 100, max: 100 },
+        attackerAgility: 50,
+        typing: { accuracy: 'Good', exMode: true },
+      });
+
+      const rPerfect = BattleCalculator.mergePotentialEffects(
+        base as any,
+        potentials as any,
+        ctxPerfect
+      );
+      const rEx = BattleCalculator.mergePotentialEffects(base as any, potentials as any, ctxEx);
+      expect(rPerfect.length).toBe(2);
+      expect(rEx.length).toBe(2);
+    });
+  });
 });
