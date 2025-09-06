@@ -1,4 +1,4 @@
-import { calculateExPointGain, type AccuracyRating } from './expoints';
+import { calculateExPointGain } from './expoints';
 
 describe('EXポイント計算', () => {
   test('難易度5, Fast + Perfect = 20', () => {
@@ -9,11 +9,8 @@ describe('EXポイント計算', () => {
     expect(calculateExPointGain(3, 'Normal', 'Good')).toBe(4);
   });
 
-  test('Miss は常に0', () => {
-    const accuracies: AccuracyRating[] = ['Perfect', 'Good', 'Poor'];
-    for (const acc of accuracies) {
-      expect(calculateExPointGain(5, 'Miss', acc)).toBe(0);
-    }
+  test.each(['Perfect', 'Good', 'Poor'] as const)('Miss は常に0 (accuracy: %s)', acc => {
+    expect(calculateExPointGain(5, 'Miss', acc)).toBe(0);
   });
 
   test('Poor の倍率0.5が切り捨てられる', () => {

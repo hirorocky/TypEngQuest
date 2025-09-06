@@ -5,6 +5,19 @@
 export type SpeedRating = 'Fast' | 'Normal' | 'Slow' | 'Miss';
 export type AccuracyRating = 'Perfect' | 'Good' | 'Poor';
 
+const SPEED_MULTIPLIER: Record<SpeedRating, number> = {
+  Fast: 2.0,
+  Normal: 1.5,
+  Slow: 1.0,
+  Miss: 0.0,
+};
+
+const ACCURACY_MULTIPLIER: Record<AccuracyRating, number> = {
+  Perfect: 2.0,
+  Good: 1.0,
+  Poor: 0.5,
+};
+
 /**
  * EXポイントを計算する。
  * @param typingDifficulty タイピング難易度（1-5想定）
@@ -17,20 +30,7 @@ export function calculateExPointGain(
   speedRating: SpeedRating,
   accuracyRating: AccuracyRating
 ): number {
-  const speedMultiplier: Record<SpeedRating, number> = {
-    Fast: 2.0,
-    Normal: 1.5,
-    Slow: 1.0,
-    Miss: 0.0,
-  };
-
-  const accuracyMultiplier: Record<AccuracyRating, number> = {
-    Perfect: 2.0,
-    Good: 1.0,
-    Poor: 0.5,
-  };
-
   const basePoints = typingDifficulty;
-  const total = basePoints * speedMultiplier[speedRating] * accuracyMultiplier[accuracyRating];
+  const total = basePoints * SPEED_MULTIPLIER[speedRating] * ACCURACY_MULTIPLIER[accuracyRating];
   return Math.floor(total);
 }

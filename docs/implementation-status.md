@@ -394,7 +394,7 @@
 
 **品質基準**
 - `npm run check` 成功（format/lint/tests）
-- Jest カバレッジ 約94%以上（`src/index.ts`除外）
+- Jest カバレッジ 94%以上（`src/index.ts`除外）
 - 既存機能の後方互換性を維持
 
 **参照**

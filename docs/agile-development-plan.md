@@ -10,7 +10,7 @@
   - Focus Mode（行動コスト1/MP0/難易度最低、ミスで終了）の最小実装
   - Spark Mode（1スキル選択・1文字タイピング・成功数分連続発動）の最小実装
   - 既存システムとの後方互換性（未使用時の挙動は従来どおり）
-- 品質基準: `npm run check`成功、ESLint/Prettier準拠、Jest カバレッジ約94%以上（`src/index.ts`除外）。
+- 品質基準: `npm run check`成功、ESLint/Prettier準拠、Jest カバレッジ94%以上（`src/index.ts`除外）。
 - 参照: 本ドキュメント内「⭐ プロジェクト10D: EXポイントシステム」詳細設計、docs/game-systems.md（EX/Focus/Sparkのユーザー体験記述）、docs/implementation-status.md（進捗）
 
 マイルストーン（ドラフト）
