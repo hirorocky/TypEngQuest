@@ -51,48 +51,42 @@ export class BattleCalculator {
   /**
    * 条件配列の評価（全条件を満たす必要あり）
    */
-  static isEffectConditionsMet(conditions: SkillCondition[] | undefined, context: ReturnType<typeof BattleCalculator.createConditionContext>): boolean {
+  static isEffectConditionsMet(
+    conditions: SkillCondition[] | undefined,
+    context: ReturnType<typeof BattleCalculator.createConditionContext>
+  ): boolean {
     if (!conditions || conditions.length === 0) return true;
-    for (const cond of conditions) {
-      switch (cond.type) {
-        case 'typing_speed': {
-          const op = cond.operator ?? 'eq';
-          const val = context.attacker.typingSpeed;
-          const ok = op === 'eq' ? val === cond.value : val !== cond.value;
-          if (!ok) return false;
-          break;
-        }
-        case 'typing_accuracy': {
-          const op = cond.operator ?? 'eq';
-          const val = context.attacker.typingAccuracy;
-          const ok = op === 'eq' ? val === cond.value : val !== cond.value;
-          if (!ok) return false;
-          break;
-        }
-        case 'hp_threshold': {
-          const pct = cond.target === 'self' ? context.attacker.hpPercent : context.defender.hpPercent;
-          const ok = cond.operator === 'gte' ? pct >= cond.value : pct <= cond.value;
-          if (!ok) return false;
-          break;
-        }
-        case 'enemy_status': {
-          if (!context.defender.hasStatus(cond.statusId)) return false;
-          break;
-        }
-        case 'self_buff': {
-          if (!context.attacker.hasBuff(cond.buffId)) return false;
-          break;
-        }
-        case 'agility_check': {
-          const ok = cond.operator === 'gte' ? context.attacker.agility >= cond.value : context.attacker.agility <= cond.value;
-          if (!ok) return false;
-          break;
-        }
-        default:
-          return false;
-      }
-    }
-    return true;
+
+    const handlers = {
+      typing_speed: (cond: Extract<SkillCondition, { type: 'typing_speed' }>) => {
+        const op = cond.operator ?? 'eq';
+        const val = context.attacker.typingSpeed;
+        return op === 'eq' ? val === cond.value : val !== cond.value;
+      },
+      typing_accuracy: (cond: Extract<SkillCondition, { type: 'typing_accuracy' }>) => {
+        const op = cond.operator ?? 'eq';
+        const val = context.attacker.typingAccuracy;
+        return op === 'eq' ? val === cond.value : val !== cond.value;
+      },
+      hp_threshold: (cond: Extract<SkillCondition, { type: 'hp_threshold' }>) => {
+        const pct =
+          cond.target === 'self' ? context.attacker.hpPercent : context.defender.hpPercent;
+        return cond.operator === 'gte' ? pct >= cond.value : pct <= cond.value;
+      },
+      enemy_status: (cond: Extract<SkillCondition, { type: 'enemy_status' }>) => {
+        return context.defender.hasStatus(cond.statusId);
+      },
+      self_buff: (cond: Extract<SkillCondition, { type: 'self_buff' }>) => {
+        return context.attacker.hasBuff(cond.buffId);
+      },
+      agility_check: (cond: Extract<SkillCondition, { type: 'agility_check' }>) => {
+        return cond.operator === 'gte'
+          ? context.attacker.agility >= cond.value
+          : context.attacker.agility <= cond.value;
+      },
+    } as const;
+
+    return conditions.every(c => handlers[c.type](c as never));
   }
 
   /**
@@ -107,7 +101,9 @@ export class BattleCalculator {
     const extra: SkillEffect[] = [];
     for (const p of potentials) {
       const cond = p.triggerCondition;
-      const typingPerfectOk = cond.typingPerfect ? context.attacker.typingAccuracy === 'Perfect' : true;
+      const typingPerfectOk = cond.typingPerfect
+        ? context.attacker.typingAccuracy === 'Perfect'
+        : true;
       const exModeOk = cond.exMode ? context.attacker.exMode === true : true;
       if (typingPerfectOk && exModeOk) {
         extra.push({ ...p.effect });

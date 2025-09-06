@@ -36,6 +36,50 @@ export class BattleActionExecutor {
   static getComboBoostManager(): ComboBoostManager {
     return this.comboBoostManager;
   }
+
+  private static buildConditionContext(
+    player: Player,
+    enemy: Enemy,
+    typingResult: TypingResult | undefined,
+    playerStats: { agility: number }
+  ) {
+    const playerBodyStats = player.getBodyStats();
+    const attackerMaxHp =
+      typeof (playerBodyStats as unknown as { getMaxHP?: () => number }).getMaxHP === 'function'
+        ? (playerBodyStats as unknown as { getMaxHP: () => number }).getMaxHP()
+        : playerBodyStats.getCurrentHP();
+
+    return BattleCalculator.createConditionContext({
+      attackerHP: { current: playerBodyStats.getCurrentHP(), max: attackerMaxHp },
+      defenderHP: { current: enemy.currentHp, max: enemy.stats.maxHp },
+      attackerAgility: playerStats.agility,
+      typing: {
+        speed: typingResult?.speedRating,
+        accuracy: typingResult?.accuracyRating,
+        exMode: false,
+      },
+      hasSelfBuff: (id: string) => playerBodyStats.getTemporaryStatuses().some(s => s.id === id),
+      hasEnemyStatus: (_id: string) => false,
+    });
+  }
+
+  private static prepareEffectiveSkill(
+    baseSkill: Skill,
+    context: ReturnType<typeof BattleCalculator.createConditionContext>
+  ): Skill {
+    const effectsWithPotential = BattleCalculator.mergePotentialEffects(
+      baseSkill.effects,
+      baseSkill.potentialEffects,
+      context
+    );
+
+    const skillWithPotential: Skill = { ...baseSkill, effects: effectsWithPotential };
+    const { modified } = this.comboBoostManager.applyToSkill(skillWithPotential);
+    const filteredEffects = modified.effects.filter(e =>
+      BattleCalculator.isEffectConditionsMet(e.conditions, context)
+    );
+    return { ...modified, effects: filteredEffects };
+  }
   /**
    * プレイヤーのスキル実行
    * @param skill 使用するスキル
@@ -53,38 +97,8 @@ export class BattleActionExecutor {
     const playerBodyStats = player.getBodyStats();
     const playerStats = player.getTotalStats();
 
-    // 条件文脈を構築
-    const conditionContext = BattleCalculator.createConditionContext({
-      attackerHP: { current: playerBodyStats.getCurrentHP(), max: playerBodyStats.getMaxHP() },
-      defenderHP: { current: enemy.currentHp, max: enemy.stats.maxHp },
-      attackerAgility: playerStats.agility,
-      typing: {
-        speed: typingResult?.speedRating,
-        accuracy: typingResult?.accuracyRating,
-        exMode: false,
-      },
-      hasSelfBuff: (id: string) => playerBodyStats.getTemporaryStatuses().some(s => s.id === id),
-      // 現状、Enemyに状態管理はないため常にfalse
-      hasEnemyStatus: (_id: string) => false,
-    });
-
-    // 潜在効果をマージ
-    const effectsWithPotential = BattleCalculator.mergePotentialEffects(
-      skill.effects,
-      skill.potentialEffects,
-      conditionContext
-    );
-
-    const skillWithPotential: Skill = { ...skill, effects: effectsWithPotential };
-
-    // コンボブースト適用（MPコストやレート補正）
-    const { modified: modifiedSkill } = this.comboBoostManager.applyToSkill(skillWithPotential);
-
-    // 効果の条件を評価して絞り込み
-    const filteredEffects = modifiedSkill.effects.filter(e =>
-      BattleCalculator.isEffectConditionsMet(e.conditions, conditionContext)
-    );
-    const effectiveSkill: Skill = { ...modifiedSkill, effects: filteredEffects };
+    const conditionContext = this.buildConditionContext(player, enemy, typingResult, playerStats);
+    const effectiveSkill = this.prepareEffectiveSkill(skill, conditionContext);
 
     // MPチェックと消費（プレイヤーのみ）
     const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, effectiveSkill);

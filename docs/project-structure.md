@@ -541,12 +541,18 @@ TypingPhase
 - MP消費チェック
 - 技効果の定義
 - タイピング難易度の設定
+ - 10C拡張: SkillCondition/SkillPotentialEffect/ComboBoost 型を追加
 
 #### BattleCalculator.ts
 - ダメージ計算式の実装
 - 命中/回避判定
 - クリティカル判定
 - 状態異常の付与判定
+ - 10C拡張: 効果条件評価・潜在効果マージのヘルパー
+
+#### ComboBoostManager.ts
+- コンボブーストの登録/適用/消費を管理
+- 対応種別: damage, heal, skill_success, status_success, mp_cost_reduction, typing_difficulty, potential
 
 ### タイピングシステム (src/typing/)
 

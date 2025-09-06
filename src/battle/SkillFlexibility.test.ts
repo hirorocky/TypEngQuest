@@ -88,9 +88,7 @@ describe('Skill Flexibility System (10C)', () => {
       typingDifficulty: 1,
       skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
       criticalRate: { baseRate: 0, typingInfluence: 0 },
-      effects: [
-        { type: 'damage', target: 'enemy', basePower: 5, successRate: 100 },
-      ],
+      effects: [{ type: 'damage', target: 'enemy', basePower: 5, successRate: 100 }],
       potentialEffects: [
         {
           triggerCondition: { typingPerfect: true },
@@ -134,18 +132,14 @@ describe('Skill Flexibility System (10C)', () => {
       typingDifficulty: 1,
       skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
       criticalRate: { baseRate: 0, typingInfluence: 0 },
-      effects: [
-        { type: 'damage', target: 'enemy', basePower: 10, successRate: 100 },
-      ],
+      effects: [{ type: 'damage', target: 'enemy', basePower: 10, successRate: 100 }],
     };
 
     jest.spyOn(BattleCalculator, 'isEffectSuccess').mockReturnValue(true);
     jest.spyOn(BattleCalculator, 'isSkillEvaded').mockReturnValue(false);
 
     // 次の1回、ダメージ+50%
-    BattleActionExecutor.getComboBoostManager().register([
-      { boostType: 'damage', value: 0.5 },
-    ]);
+    BattleActionExecutor.getComboBoostManager().register([{ boostType: 'damage', value: 0.5 }]);
 
     const first = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
       speedRating: 'Normal',
@@ -168,4 +162,3 @@ describe('Skill Flexibility System (10C)', () => {
     expect(first.damage).toBeGreaterThan(second.damage);
   });
 });
-

@@ -25,7 +25,7 @@ export class ComboBoostManager {
     const modified: Skill = {
       ...skill,
       mpCost: skill.mpCost,
-      effects: skill.effects.map(e => ({ ...e } as SkillEffect)),
+      effects: skill.effects.map(e => ({ ...e }) as SkillEffect),
     };
 
     const applied: ComboBoost[] = [];
@@ -56,13 +56,17 @@ export class ComboBoostManager {
         }
         case 'damage': {
           modified.effects = modified.effects.map(e =>
-            e.type === 'damage' ? { ...e, basePower: Math.floor(e.basePower * (1 + boost.value)) } : e
+            e.type === 'damage'
+              ? { ...e, basePower: Math.floor(e.basePower * (1 + boost.value)) }
+              : e
           );
           break;
         }
         case 'heal': {
           modified.effects = modified.effects.map(e =>
-            e.type === 'hp_heal' ? { ...e, basePower: Math.floor(e.basePower * (1 + boost.value)) } : e
+            e.type === 'hp_heal'
+              ? { ...e, basePower: Math.floor(e.basePower * (1 + boost.value)) }
+              : e
           );
           break;
         }
@@ -98,4 +102,3 @@ export class ComboBoostManager {
     this.boosts = [];
   }
 }
-
