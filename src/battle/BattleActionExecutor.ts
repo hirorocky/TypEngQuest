@@ -31,12 +31,6 @@ export interface SkillExecutionResult {
  * - プレイヤー/敵へのダメージ適用
  */
 export class BattleActionExecutor {
-  private static comboBoostManager = new ComboBoostManager();
-
-  static getComboBoostManager(): ComboBoostManager {
-    return this.comboBoostManager;
-  }
-
   private static buildConditionContext(
     player: Player,
     enemy: Enemy,
@@ -47,7 +41,7 @@ export class BattleActionExecutor {
     const attackerMaxHp =
       typeof (playerBodyStats as unknown as { getMaxHP?: () => number }).getMaxHP === 'function'
         ? (playerBodyStats as unknown as { getMaxHP: () => number }).getMaxHP()
-        : playerBodyStats.getCurrentHP();
+        : 0;
 
     return BattleCalculator.createConditionContext({
       attackerHP: { current: playerBodyStats.getCurrentHP(), max: attackerMaxHp },
@@ -74,7 +68,8 @@ export class BattleActionExecutor {
     );
 
     const skillWithPotential: Skill = { ...baseSkill, effects: effectsWithPotential };
-    const { modified } = this.comboBoostManager.applyToSkill(skillWithPotential);
+    // ComboBoost の適用は呼び出し元のマネージャで行うため、ここでは未適用
+    const modified = skillWithPotential;
     const filteredEffects = modified.effects.filter(e =>
       BattleCalculator.isEffectConditionsMet(e.conditions, context)
     );
@@ -92,13 +87,16 @@ export class BattleActionExecutor {
     skill: Skill,
     player: Player,
     enemy: Enemy,
-    typingResult?: TypingResult
+    options: { comboBoostManager: ComboBoostManager; typingResult?: TypingResult }
   ): SkillExecutionResult {
     const playerBodyStats = player.getBodyStats();
     const playerStats = player.getTotalStats();
+    const typingResult = options?.typingResult;
 
     const conditionContext = this.buildConditionContext(player, enemy, typingResult, playerStats);
-    const effectiveSkill = this.prepareEffectiveSkill(skill, conditionContext);
+    const skillPrepared = this.prepareEffectiveSkill(skill, conditionContext);
+    // コンボブースト適用（MPコストやレート補正）
+    const { modified: effectiveSkill } = options.comboBoostManager.applyToSkill(skillPrepared);
 
     // MPチェックと消費（プレイヤーのみ）
     const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, effectiveSkill);
@@ -179,8 +177,8 @@ export class BattleActionExecutor {
     );
 
     // コンボ消費 + このスキルが新たに付与するコンボを登録
-    this.comboBoostManager.consumeOnce();
-    this.comboBoostManager.register(skill.comboBoosts);
+    options.comboBoostManager.consumeOnce();
+    options.comboBoostManager.register(skill.comboBoosts);
 
     return {
       success: true,

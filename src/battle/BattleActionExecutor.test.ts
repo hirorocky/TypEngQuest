@@ -72,7 +72,11 @@ describe('BattleActionExecutor', () => {
         .mockReturnValueOnce(0.01) // 効果成功（95%成功率）
         .mockReturnValueOnce(0.95); // クリティカル失敗（10%クリティカル率）
 
-      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy);
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
+        comboBoostManager: mgr,
+      });
 
       expect(result.success).toBe(true);
       expect(result.damage).toBeGreaterThan(0);
@@ -89,7 +93,11 @@ describe('BattleActionExecutor', () => {
         mpCost: currentMP + 1, // 現在MPより1多いコスト
       };
 
-      const result = BattleActionExecutor.executePlayerSkill(expensiveSkill, player, enemy);
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      const result = BattleActionExecutor.executePlayerSkill(expensiveSkill, player, enemy, {
+        comboBoostManager: mgr,
+      });
 
       expect(result.success).toBe(false);
       expect(result.message[0]).toContain('Not enough MP');
@@ -113,7 +121,12 @@ describe('BattleActionExecutor', () => {
         isSuccess: true,
       };
 
-      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, typingResult);
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
+        comboBoostManager: mgr,
+        typingResult,
+      });
 
       expect(result.success).toBe(true);
       expect(result.damage).toBeGreaterThan(0);
@@ -266,12 +279,12 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         accuracy: 95,
       };
 
-      const result = BattleActionExecutor.executePlayerSkill(
-        physicalSkill,
-        player,
-        enemy,
-        typingResult
-      );
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      const result = BattleActionExecutor.executePlayerSkill(physicalSkill, player, enemy, {
+        comboBoostManager: mgr,
+        typingResult,
+      });
 
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('damage');
@@ -293,12 +306,12 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         accuracy: 98,
       };
 
-      const result = BattleActionExecutor.executePlayerSkill(
-        magicalSkill,
-        player,
-        enemy,
-        typingResult
-      );
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      const result = BattleActionExecutor.executePlayerSkill(magicalSkill, player, enemy, {
+        comboBoostManager: mgr,
+        typingResult,
+      });
 
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('damage');
@@ -333,13 +346,18 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           isCritical: false,
         });
 
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
       const result = BattleActionExecutor.executePlayerSkill(physicalSkill, player, evadeEnemy, {
-        isSuccess: true,
-        accuracyRating: 'Good',
-        speedRating: 'Fast',
-        totalRating: 110,
-        timeTaken: 1600,
-        accuracy: 89,
+        comboBoostManager: mgr,
+        typingResult: {
+          isSuccess: true,
+          accuracyRating: 'Good',
+          speedRating: 'Fast',
+          totalRating: 110,
+          timeTaken: 1600,
+          accuracy: 89,
+        },
       });
 
       expect(result.success).toBe(true);
@@ -390,9 +408,17 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
         .mockReturnValue(false);
 
-      BattleActionExecutor.executePlayerSkill(comboSeed, player2, enemy);
-      const first = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy);
-      const second = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy);
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+      BattleActionExecutor.executePlayerSkill(comboSeed, player2, enemy, {
+        comboBoostManager: mgr,
+      });
+      const first = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy, {
+        comboBoostManager: mgr,
+      });
+      const second = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy, {
+        comboBoostManager: mgr,
+      });
 
       expect(first.damage).toBeGreaterThan(second.damage);
       jest.restoreAllMocks();
@@ -430,23 +456,31 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
         .mockReturnValue(false);
 
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
       const r1 = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
-        speedRating: 'Normal',
-        accuracyRating: 'Good',
-        totalRating: 100,
-        timeTaken: 1000,
-        accuracy: 95,
-        isSuccess: true,
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Normal',
+          accuracyRating: 'Good',
+          totalRating: 100,
+          timeTaken: 1000,
+          accuracy: 95,
+          isSuccess: true,
+        },
       });
       expect(r1.damage).toBe(0);
 
       const r2 = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
-        speedRating: 'Fast',
-        accuracyRating: 'Good',
-        totalRating: 120,
-        timeTaken: 800,
-        accuracy: 96,
-        isSuccess: true,
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Fast',
+          accuracyRating: 'Good',
+          totalRating: 120,
+          timeTaken: 800,
+          accuracy: 96,
+          isSuccess: true,
+        },
       });
       expect(r2.damage).toBeGreaterThan(0);
 
@@ -483,21 +517,29 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
         .mockReturnValue(false);
 
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
       const normal = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
-        speedRating: 'Normal',
-        accuracyRating: 'Good',
-        totalRating: 120,
-        timeTaken: 1200,
-        accuracy: 96,
-        isSuccess: true,
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Normal',
+          accuracyRating: 'Good',
+          totalRating: 120,
+          timeTaken: 1200,
+          accuracy: 96,
+          isSuccess: true,
+        },
       });
       const perfect = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
-        speedRating: 'Normal',
-        accuracyRating: 'Perfect',
-        totalRating: 150,
-        timeTaken: 900,
-        accuracy: 100,
-        isSuccess: true,
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Normal',
+          accuracyRating: 'Perfect',
+          totalRating: 150,
+          timeTaken: 900,
+          accuracy: 100,
+          isSuccess: true,
+        },
       });
       expect(perfect.damage).toBeGreaterThan(normal.damage);
 
