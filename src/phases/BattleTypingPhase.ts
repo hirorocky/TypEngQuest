@@ -9,6 +9,7 @@ import { TypingResult, TypingDifficulty, TypingProgress } from '../typing/types'
 import { BattleTypingResult } from './types';
 import { TypingChallenge } from '../typing/TypingChallenge';
 import { ComboBoostManager } from '../battle/ComboBoostManager';
+import { calculateExPointGain } from '../battle/expoints';
 import { WordDatabase } from '../typing/WordDatabase';
 import { Display } from '../ui/Display';
 import { green, red, gray } from '../ui/colors';
@@ -248,6 +249,7 @@ export class BattleTypingPhase extends Phase {
   /**
    * スキル効果をリアルタイムで適用
    */
+  // eslint-disable-next-line complexity
   private async applySkillEffect(skill: Skill, typingResult: TypingResult): Promise<void> {
     // BattleActionExecutorを使用して効果を適用
     const player = this.battle['player'];
@@ -265,6 +267,16 @@ export class BattleTypingPhase extends Phase {
 
     if (result.success) {
       result.message.forEach(msg => console.log(msg));
+      // EXポイント加算（M5統合）
+      const gained = calculateExPointGain(
+        skill.typingDifficulty,
+        typingResult.speedRating,
+        typingResult.accuracyRating
+      );
+      if (gained > 0 && typeof player.getExPoints === 'function') {
+        player.addExPoints(gained);
+        console.log(`+${gained} EX points`);
+      }
       // サマリーを更新
       if (result.damage) {
         this.summary.totalDamageDealt += result.damage;

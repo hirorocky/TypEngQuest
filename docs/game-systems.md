@@ -249,8 +249,20 @@
 
 ### EX Pointシステム
 - **EX Point獲得**: タイピング難易度 × タイピング評価で獲得
-- **Focus Mode**: 全スキルの行動コスト1、MPコスト0、タイピング難易度最低、1ミスでターン終了
-- **Spark Mode**: 1スキル選択、1文字ずつタイピング、成功数分だけ連続発動
+- **Focus Mode**: 全スキルの行動コスト1、MPコスト0、タイピング難易度最低、1ミスでターン終了（最小実装済）
+- **Spark Mode**: 1スキル選択、成功回数分だけ連続発動（現状は固定回数3の最小実装）
+
+### EXポイント計算（実装済み）
+タイピング結果から以下式でEXポイントを加算します。
+
+- ベース: `typingDifficulty (1-5)`
+- 速度倍率: `Fast=2.0, Normal=1.5, Slow=1.0, Miss=0.0`
+- 精度倍率: `Perfect=2.0, Good=1.0, Poor=0.5`
+- 計算: `floor(typingDifficulty × speedMultiplier × accuracyMultiplier)`
+
+例:
+- 難易度5・Fast+Perfect → 5 × 2.0 × 2.0 = 20
+- 難易度3・Normal+Good → 3 × 1.5 × 1.0 = 4
 
 ## ランダムイベントシステム
 発生時に良い事・悪い事がランダムで決定される

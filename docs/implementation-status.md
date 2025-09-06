@@ -390,7 +390,7 @@
 - [x] M2: Playerに`exPoints`追加・ステータス/バトル表示最小統合
 - [x] M3: Focus Mode最小実装（コマンド`focus`/AC=1/MP=0/難易度=1/失敗で終了）
 - [x] M4: Spark Mode最小実装（コマンド`spark`/1スキル選択→固定回数(3)実行）
-- [ ] M5: 統合テスト・ドキュメント同期
+- [x] M5: 統合（EX加算の適用）・テスト追加・ドキュメント同期
 
 **品質基準**
 - `npm run check` 成功（format/lint/tests）
