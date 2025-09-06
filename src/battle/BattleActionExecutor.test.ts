@@ -348,5 +348,54 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
 
       jest.restoreAllMocks();
     });
+
+    it('スキルAがコンボ付与し、スキルB1回目のみ強化される', () => {
+      const player2 = new (require('../player/Player').Player)('P2');
+      player2.getBodyStats().healMP(50);
+
+      const comboSeed: Skill = {
+        id: 'combo_seed',
+        name: 'Seed',
+        description: 'register combo',
+        skillType: 'physical',
+        mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
+        target: 'enemy',
+        typingDifficulty: 1,
+        skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
+        criticalRate: { baseRate: 0, typingInfluence: 0 },
+        effects: [{ type: 'damage', target: 'enemy', basePower: 1, successRate: 100 }],
+        comboBoosts: [{ boostType: 'damage', value: 1.0, duration: 1 }],
+      };
+      const finisher: Skill = {
+        id: 'finisher',
+        name: 'Finisher',
+        description: 'deal damage',
+        skillType: 'physical',
+        mpCost: 0,
+        mpCharge: 0,
+        actionCost: 1,
+        target: 'enemy',
+        typingDifficulty: 1,
+        skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
+        criticalRate: { baseRate: 0, typingInfluence: 0 },
+        effects: [{ type: 'damage', target: 'enemy', basePower: 10, successRate: 100 }],
+      };
+
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isEffectSuccess')
+        .mockReturnValue(true);
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
+        .mockReturnValue(false);
+
+      BattleActionExecutor.executePlayerSkill(comboSeed, player2, enemy);
+      const first = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy);
+      const second = BattleActionExecutor.executePlayerSkill(finisher, player2, enemy);
+
+      expect(first.damage).toBeGreaterThan(second.damage);
+      jest.restoreAllMocks();
+    });
   });
 });
