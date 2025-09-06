@@ -397,5 +397,111 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
       expect(first.damage).toBeGreaterThan(second.damage);
       jest.restoreAllMocks();
     });
+
+    it('条件: typing_speed=Fast のときのみ効果が発動する（統合）', () => {
+      const p = new (require('../player/Player').Player)('P');
+      p.getBodyStats().healMP(50);
+      const s: Skill = {
+        id: 'adaptive_strike',
+        name: 'Adaptive Strike',
+        description: '速度に反応して発動',
+        skillType: 'physical',
+        mpCost: 5,
+        mpCharge: 0,
+        actionCost: 1,
+        target: 'enemy',
+        typingDifficulty: 1,
+        skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
+        criticalRate: { baseRate: 0, typingInfluence: 0 },
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            basePower: 10,
+            successRate: 100,
+            conditions: [{ type: 'typing_speed', value: 'Fast' }],
+          },
+        ],
+      };
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isEffectSuccess')
+        .mockReturnValue(true);
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
+        .mockReturnValue(false);
+
+      const r1 = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        speedRating: 'Normal',
+        accuracyRating: 'Good',
+        totalRating: 100,
+        timeTaken: 1000,
+        accuracy: 95,
+        isSuccess: true,
+      });
+      expect(r1.damage).toBe(0);
+
+      const r2 = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        speedRating: 'Fast',
+        accuracyRating: 'Good',
+        totalRating: 120,
+        timeTaken: 800,
+        accuracy: 96,
+        isSuccess: true,
+      });
+      expect(r2.damage).toBeGreaterThan(0);
+
+      jest.restoreAllMocks();
+    });
+
+    it('潜在効果: Perfect時に追加効果がマージされる（統合）', () => {
+      const p = new (require('../player/Player').Player)('P');
+      p.getBodyStats().healMP(50);
+      const s: Skill = {
+        id: 'opportunistic_strike',
+        name: 'Opportunistic Strike',
+        description: 'Perfectで追加ダメージ',
+        skillType: 'physical',
+        mpCost: 3,
+        mpCharge: 0,
+        actionCost: 1,
+        target: 'enemy',
+        typingDifficulty: 1,
+        skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
+        criticalRate: { baseRate: 0, typingInfluence: 0 },
+        effects: [{ type: 'damage', target: 'enemy', basePower: 5, successRate: 100 }],
+        potentialEffects: [
+          {
+            triggerCondition: { typingPerfect: true },
+            effect: { type: 'damage', target: 'enemy', basePower: 7, successRate: 100 },
+          },
+        ],
+      };
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isEffectSuccess')
+        .mockReturnValue(true);
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
+        .mockReturnValue(false);
+
+      const normal = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        speedRating: 'Normal',
+        accuracyRating: 'Good',
+        totalRating: 120,
+        timeTaken: 1200,
+        accuracy: 96,
+        isSuccess: true,
+      });
+      const perfect = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        speedRating: 'Normal',
+        accuracyRating: 'Perfect',
+        totalRating: 150,
+        timeTaken: 900,
+        accuracy: 100,
+        isSuccess: true,
+      });
+      expect(perfect.damage).toBeGreaterThan(normal.damage);
+
+      jest.restoreAllMocks();
+    });
   });
 });
