@@ -4,6 +4,7 @@ import { Enemy } from './Enemy';
 import { Skill } from './Skill';
 import { BattleCalculator } from './BattleCalculator';
 import { TypingResult } from '../typing/types';
+import { ComboBoostManager } from './ComboBoostManager';
 
 /**
  * スキル実行結果の統一形式
@@ -30,6 +31,11 @@ export interface SkillExecutionResult {
  * - プレイヤー/敵へのダメージ適用
  */
 export class BattleActionExecutor {
+  private static comboBoostManager = new ComboBoostManager();
+
+  static getComboBoostManager(): ComboBoostManager {
+    return this.comboBoostManager;
+  }
   /**
    * プレイヤーのスキル実行
    * @param skill 使用するスキル
@@ -47,8 +53,41 @@ export class BattleActionExecutor {
     const playerBodyStats = player.getBodyStats();
     const playerStats = player.getTotalStats();
 
+    // 条件文脈を構築
+    const conditionContext = BattleCalculator.createConditionContext({
+      attackerHP: { current: playerBodyStats.getCurrentHP(), max: playerBodyStats.getMaxHP() },
+      defenderHP: { current: enemy.currentHp, max: enemy.stats.maxHp },
+      attackerAgility: playerStats.agility,
+      typing: {
+        speed: typingResult?.speedRating,
+        accuracy: typingResult?.accuracyRating,
+        exMode: false,
+      },
+      hasSelfBuff: (id: string) => playerBodyStats.getTemporaryStatuses().some(s => s.id === id),
+      // 現状、Enemyに状態管理はないため常にfalse
+      hasEnemyStatus: (_id: string) => false,
+    });
+
+    // 潜在効果をマージ
+    const effectsWithPotential = BattleCalculator.mergePotentialEffects(
+      skill.effects,
+      skill.potentialEffects,
+      conditionContext
+    );
+
+    const skillWithPotential: Skill = { ...skill, effects: effectsWithPotential };
+
+    // コンボブースト適用（MPコストやレート補正）
+    const { modified: modifiedSkill } = this.comboBoostManager.applyToSkill(skillWithPotential);
+
+    // 効果の条件を評価して絞り込み
+    const filteredEffects = modifiedSkill.effects.filter(e =>
+      BattleCalculator.isEffectConditionsMet(e.conditions, conditionContext)
+    );
+    const effectiveSkill: Skill = { ...modifiedSkill, effects: filteredEffects };
+
     // MPチェックと消費（プレイヤーのみ）
-    const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, skill);
+    const mpCheckResult = this.checkAndConsumeMp(playerBodyStats, effectiveSkill);
     if (mpCheckResult) {
       return mpCheckResult;
     }
@@ -65,7 +104,7 @@ export class BattleActionExecutor {
 
     // 新しい3層判定システムを使用
     const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
-      skill,
+      effectiveSkill,
       enemyTarget,
       {
         strength: playerStats.strength,
@@ -82,7 +121,7 @@ export class BattleActionExecutor {
     // スキル失敗の場合
     if (!judgmentResult.skillSuccess) {
       const message = this.generateSkillMessage(0, mpCharge, false, {
-        skillName: skill.name,
+        skillName: effectiveSkill.name,
         messageType: 'skill_failed',
       });
       return {
@@ -98,7 +137,7 @@ export class BattleActionExecutor {
     // 回避された場合
     if (judgmentResult.evaded) {
       const message = this.generateSkillMessage(0, mpCharge, false, {
-        skillName: skill.name,
+        skillName: effectiveSkill.name,
         messageType: 'evaded',
       });
       return {
@@ -122,8 +161,12 @@ export class BattleActionExecutor {
       judgmentResult.finalDamage,
       mpCharge,
       judgmentResult.isCritical,
-      { skillName: skill.name, messageType }
+      { skillName: effectiveSkill.name, messageType }
     );
+
+    // コンボ消費 + このスキルが新たに付与するコンボを登録
+    this.comboBoostManager.consumeOnce();
+    this.comboBoostManager.register(skill.comboBoosts);
 
     return {
       success: true,
