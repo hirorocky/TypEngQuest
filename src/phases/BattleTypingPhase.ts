@@ -217,7 +217,9 @@ export class BattleTypingPhase extends Phase {
     const skill =
       this.exMode === 'focus'
         ? { ...baseSkill, actionCost: 1, mpCost: 0, typingDifficulty: 1 }
-        : baseSkill;
+        : this.exMode === 'spark'
+          ? { ...baseSkill, actionCost: 0, mpCost: 0 }
+          : baseSkill;
 
     // スキル情報を表示
     Display.clear();
@@ -267,15 +269,17 @@ export class BattleTypingPhase extends Phase {
 
     if (result.success) {
       result.message.forEach(msg => console.log(msg));
-      // EXポイント加算（M5統合）
-      const gained = calculateExPointGain(
-        skill.typingDifficulty,
-        typingResult.speedRating,
-        typingResult.accuracyRating
-      );
-      if (gained > 0 && typeof player.getExPoints === 'function') {
-        player.addExPoints(gained);
-        console.log(`+${gained} EX points`);
+      // EXモード中はEX加算なし
+      if (!this.exMode) {
+        const gained = calculateExPointGain(
+          skill.typingDifficulty,
+          typingResult.speedRating,
+          typingResult.accuracyRating
+        );
+        if (gained > 0 && typeof player.getExPoints === 'function') {
+          player.addExPoints(gained);
+          console.log(`+${gained} EX points`);
+        }
       }
       // サマリーを更新
       if (result.damage) {

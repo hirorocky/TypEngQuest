@@ -67,7 +67,12 @@ export class SkillSelectionPhase extends Phase {
         }));
       }
       if (this.exMode === 'spark') {
-        // Spark: 1スキル選択のみを促す（UIメッセージのみ/検証はconfirmで）
+        // Spark: 1スキルのみ選択、AP/MPコスト0で表示
+        this.availableSkills = this.availableSkills.map(s => ({
+          ...s,
+          actionCost: 0,
+          mpCost: 0,
+        }));
       }
       this.renderUI();
     }
@@ -236,7 +241,7 @@ export class SkillSelectionPhase extends Phase {
     if (this.exMode === 'spark') {
       // 1スキルを複数回実行（最小実装: ヒント回数または3回）
       const repeat = Math.max(1, Math.min(10, this.sparkRepeatHint ?? 3));
-      skills = Array.from({ length: repeat }, () => ({ ...skills[0] }));
+      skills = Array.from({ length: repeat }, () => ({ ...skills[0], actionCost: 0, mpCost: 0 }));
     }
 
     return {
@@ -311,8 +316,14 @@ export class SkillSelectionPhase extends Phase {
   private renderPlayerStatus(): void {
     const stats = this.player.getBodyStats();
     const actionPoints = this.battle.calculatePlayerActionPoints();
-    const usedActionPoints = this.selectedSkills.reduce((sum, skill) => sum + skill.actionCost, 0);
-    const usedMP = this.selectedSkills.reduce((sum, skill) => sum + skill.mpCost, 0);
+    const usedActionPoints =
+      this.exMode === 'spark'
+        ? 0
+        : this.selectedSkills.reduce((sum, skill) => sum + skill.actionCost, 0);
+    const usedMP =
+      this.exMode === 'spark'
+        ? 0
+        : this.selectedSkills.reduce((sum, skill) => sum + skill.mpCost, 0);
 
     console.log(
       `📊 Status: MP ${stats.getCurrentMP() - usedMP}/${stats.getMaxMP()} | Action Points ${actionPoints - usedActionPoints}/${actionPoints}\n`
@@ -329,14 +340,16 @@ export class SkillSelectionPhase extends Phase {
       const isSelected = index === this.currentIndex;
       const cursor = isSelected ? '► ' : '  ';
       const currentMP = this.player.getBodyStats().getCurrentMP();
-      const usedMP = this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0);
+      const usedMP =
+        this.exMode === 'spark' ? 0 : this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0);
       const availableMP = currentMP - usedMP;
-      const canUseMP = skill.mpCost <= availableMP;
+      const canUseMP = this.exMode === 'spark' ? true : skill.mpCost <= availableMP;
 
       const actionPoints = this.battle.calculatePlayerActionPoints();
-      const usedActionPoints = this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0);
+      const usedActionPoints =
+        this.exMode === 'spark' ? 0 : this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0);
       const availableActionPoints = actionPoints - usedActionPoints;
-      const canUseAP = skill.actionCost <= availableActionPoints;
+      const canUseAP = this.exMode === 'spark' ? true : skill.actionCost <= availableActionPoints;
 
       const canUse = canUseMP && canUseAP;
       const statusIcon = canUse ? '✅' : '❌';

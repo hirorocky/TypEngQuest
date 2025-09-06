@@ -151,6 +151,7 @@ describe('BodyStats', () => {
         level: 3,
         currentHP: 110, // 130 - 20
         currentMP: 96, // 106 - 10
+        currentEX: 0,
         baseStrength: 10,
         baseWillpower: 10,
         baseAgility: 10,

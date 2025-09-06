@@ -57,6 +57,7 @@ describe('Player', () => {
           level: 0,
           currentHP: 100,
           currentMP: 100,
+          currentEX: 0,
           baseStrength: 10,
           baseWillpower: 10,
           baseAgility: 10,
@@ -84,7 +85,6 @@ describe('Player', () => {
         inventory: expect.objectContaining({
           items: [],
         }),
-        exPoints: 0,
       });
     });
   });

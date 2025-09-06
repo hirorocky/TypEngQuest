@@ -16,7 +16,6 @@ export interface PlayerData {
   bodyStats: BodyStatsData;
   equipmentStats: EquipmentStatsData;
   inventory: InventoryData;
-  exPoints?: number;
 }
 
 /**
@@ -40,7 +39,6 @@ export class Player {
   private equippedItems: (EquipmentItem | null)[] = [null, null, null, null, null]; // 装備スロット
   private readonly equipmentSlotSize: number = 5; // 最大スロット数
   private equipmentCalculator: EquipmentEffectCalculator;
-  private exPoints: number = 0;
 
   /**
    * プレイヤーを初期化する
@@ -221,7 +219,7 @@ export class Player {
    * @returns 現在のEXポイント
    */
   getExPoints(): number {
-    return this.exPoints;
+    return this.bodyStats.getCurrentEX();
   }
 
   /**
@@ -229,8 +227,7 @@ export class Player {
    * @param amount 加算量（負数で減算）
    */
   addExPoints(amount: number): void {
-    const next = this.exPoints + amount;
-    this.exPoints = Math.max(0, Math.floor(next));
+    this.bodyStats.addEX(amount);
   }
 
   /**
@@ -239,9 +236,7 @@ export class Player {
    * @returns 成功したらtrue
    */
   consumeExPoints(amount: number): boolean {
-    if (this.exPoints < amount) return false;
-    this.exPoints -= amount;
-    return true;
+    return this.bodyStats.consumeEX(amount);
   }
 
   /**
@@ -434,7 +429,6 @@ export class Player {
       bodyStats: this.bodyStats.toJSON(),
       equipmentStats: this.equipmentStats.toJSON(),
       inventory: this.inventory.toJSON(),
-      exPoints: this.exPoints,
     };
   }
 
@@ -448,13 +442,16 @@ export class Player {
   static fromJSON(data: any): Player {
     Player.validatePlayerData(data);
 
+    const legacyEx: unknown = (data as { exPoints?: unknown }).exPoints;
+
     const player = new Player(data.name);
     player.bodyStats = BodyStats.fromJSON(data.bodyStats);
     player.equipmentStats = EquipmentStats.fromJSON(data.equipmentStats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
-    if (typeof data.exPoints === 'number' && data.exPoints >= 0) {
-      player.addExPoints(Math.floor(data.exPoints));
+    // 互換性: 旧形式のexPointsがあればBodyStatsに反映
+    if (typeof legacyEx === 'number' && legacyEx >= 0) {
+      player.bodyStats.addEX(Math.floor(legacyEx));
     }
 
     return player;
@@ -486,6 +483,7 @@ export class Player {
     if (typeof data.inventory !== 'object' || data.inventory === null) {
       throw new Error('Invalid player data');
     }
+    // exPointsは旧形式の互換フィールドとして許容（型検証のみ）
     if (typeof data.exPoints !== 'undefined' && typeof data.exPoints !== 'number') {
       throw new Error('Invalid player data');
     }

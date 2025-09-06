@@ -15,17 +15,14 @@ describe('Player EXポイント', () => {
     expect(p.getExPoints()).toBe(2);
   });
 
-  test('toJSON/fromJSONでexPointsを保持する', () => {
+  test('fromJSON(legacy exPoints) を BodyStats に反映する', () => {
     const p = new Player('Hero');
-    p.addExPoints(12);
-    const data = p.toJSON();
-    expect(data.exPoints).toBe(12);
-
     const restored = Player.fromJSON({
-      ...data,
-      bodyStats: data.bodyStats,
-      equipmentStats: data.equipmentStats,
-      inventory: data.inventory,
+      name: 'Hero',
+      bodyStats: p.getBodyStats().toJSON(),
+      equipmentStats: p.getEquipmentStats().toJSON(),
+      inventory: p.getInventory().toJSON(),
+      exPoints: 12, // legacy field
     } as any);
     expect(restored.getExPoints()).toBe(12);
   });

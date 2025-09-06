@@ -11,6 +11,7 @@ import { BattleTypingResult } from './types';
 import { ConsumableItem } from '../items/ConsumableItem';
 import { delay } from '../utils/timer';
 import { createFractionBar } from '../ui/FractionBar';
+import { EX_COST_FOCUS, EX_COST_SPARK } from '../battle/const';
 
 /**
  * BattlePhaseクラス - 戦闘フェーズの制御を行う
@@ -222,7 +223,7 @@ export class BattlePhase extends Phase {
       return { success: false, message: "It's not your turn!" };
     }
     if (!this.battle) return { success: false, message: 'Battle not initialized' };
-    if (!this.player.consumeExPoints(10)) {
+    if (!this.player.consumeExPoints(EX_COST_FOCUS)) {
       return { success: false, message: 'not enough ex points' };
     }
 
@@ -245,7 +246,7 @@ export class BattlePhase extends Phase {
       return { success: false, message: "It's not your turn!" };
     }
     if (!this.battle) return { success: false, message: 'Battle not initialized' };
-    if (!this.player.consumeExPoints(15)) {
+    if (!this.player.consumeExPoints(EX_COST_SPARK)) {
       return { success: false, message: 'not enough ex points' };
     }
 
