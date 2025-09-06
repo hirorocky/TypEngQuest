@@ -141,6 +141,19 @@ export class BattlePhase extends Phase {
       description: 'Attempt to escape from battle',
       execute: async () => this.attemptEscape(),
     });
+
+    // EXモード（最小実装）
+    this.registerCommand({
+      name: 'focus',
+      description: 'Enter Focus Mode (cost 10 EX)',
+      execute: async () => this.enterFocusMode(),
+    });
+
+    this.registerCommand({
+      name: 'spark',
+      description: 'Enter Spark Mode (cost 15 EX)',
+      execute: async () => this.enterSparkMode(),
+    });
   }
 
   private async showHelp(): Promise<CommandResult> {
@@ -173,6 +186,10 @@ export class BattlePhase extends Phase {
     }
 
     const playerStats = this.player.getBodyStats();
+    const ex = this.player.getExPoints?.() ?? 0;
+    const exModes: string[] = [];
+    if (ex >= 10) exModes.push('Focus');
+    if (ex >= 15) exModes.push('Spark');
 
     const output = [
       `■ BATTLE STATUS`,
@@ -180,6 +197,7 @@ export class BattlePhase extends Phase {
       `🗡️ ${this.player.getName()}`,
       `  HP: ${createFractionBar(playerStats.getCurrentHP(), playerStats.getMaxHP())} ${playerStats.getCurrentHP()}/${playerStats.getMaxHP()}`,
       `  MP: ${createFractionBar(playerStats.getCurrentMP(), playerStats.getMaxMP())} ${playerStats.getCurrentMP()}/${playerStats.getMaxMP()}`,
+      `  EX: ${ex}` + (exModes.length ? ` (${exModes.join(', ')} Available)` : ''),
       '',
       `👹 ${this.enemy.name}`,
       `  HP: ${createFractionBar(this.enemy.currentHp, this.enemy.stats.maxHp)} ${this.enemy.currentHp}/${this.enemy.stats.maxHp}`,
@@ -193,6 +211,53 @@ export class BattlePhase extends Phase {
       success: true,
       message: '',
       output,
+    };
+  }
+
+  /**
+   * Focus Mode へ（最小実装: スキルコスト低下 + 失敗で終了）
+   */
+  private async enterFocusMode(): Promise<CommandResult> {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
+      return { success: false, message: "It's not your turn!" };
+    }
+    if (!this.battle) return { success: false, message: 'Battle not initialized' };
+    if (!this.player.consumeExPoints(10)) {
+      return { success: false, message: 'not enough ex points' };
+    }
+
+    return {
+      success: true,
+      message: 'Entering Focus Mode...',
+      nextPhase: 'skillSelection',
+      data: {
+        battle: this.battle,
+        exMode: 'focus',
+      },
+    };
+  }
+
+  /**
+   * Spark Mode へ（最小実装: 1スキル選択→固定3回実行）
+   */
+  private async enterSparkMode(): Promise<CommandResult> {
+    if (this.battle?.getCurrentTurnActor() !== 'player') {
+      return { success: false, message: "It's not your turn!" };
+    }
+    if (!this.battle) return { success: false, message: 'Battle not initialized' };
+    if (!this.player.consumeExPoints(15)) {
+      return { success: false, message: 'not enough ex points' };
+    }
+
+    return {
+      success: true,
+      message: 'Entering Spark Mode...',
+      nextPhase: 'skillSelection',
+      data: {
+        battle: this.battle,
+        exMode: 'spark',
+        sparkRepeatHint: 3,
+      },
     };
   }
 

@@ -36,6 +36,8 @@ export class StatusCommand extends BaseCommand {
       const maxHP = stats.getMaxHP();
       const currentMP = stats.getCurrentMP();
       const maxMP = stats.getMaxMP();
+      type MaybeExPoints = { getExPoints?: () => number };
+      const ex = (player as unknown as MaybeExPoints).getExPoints?.() ?? 0;
 
       // ステータス情報
       const strength = stats.getStrength();
@@ -48,12 +50,17 @@ export class StatusCommand extends BaseCommand {
       const mpBar = this.generateBar(currentMP, maxMP);
 
       // ステータス表示を構築
+      const exModes = [] as string[];
+      if (ex >= 10) exModes.push('Focus');
+      if (ex >= 15) exModes.push('Spark');
+
       const statusDisplay = [
         `=== ${name} ===`,
         `Level: ${level}`,
         '',
         `HP: ${currentHP}/${maxHP} ${hpBar}`,
         `MP: ${currentMP}/${maxMP} ${mpBar}`,
+        `EX: ${ex}` + (exModes.length ? ` (${exModes.join(', ')} available)` : ''),
         '',
         `Strength: ${strength}`,
         `Willpower: ${willpower}`,

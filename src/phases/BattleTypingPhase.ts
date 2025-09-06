@@ -23,6 +23,7 @@ export class BattleTypingPhase extends Phase {
   private wordDatabase: WordDatabase;
   private isFirstInput: boolean = true;
   private comboBoostManager: ComboBoostManager = new ComboBoostManager();
+  private exMode: 'focus' | 'spark' | undefined;
 
   // 結果サマリー
   private summary: {
@@ -39,12 +40,14 @@ export class BattleTypingPhase extends Phase {
     battle: Battle;
     world?: World;
     tabCompleter?: TabCompleter;
+    exMode?: 'focus' | 'spark';
   }) {
     super(options.world, options.tabCompleter);
 
     this.skills = options.skills;
     this.battle = options.battle;
     this.wordDatabase = new WordDatabase();
+    this.exMode = options.exMode;
 
     // サマリーを初期化
     this.summary = {
@@ -209,7 +212,11 @@ export class BattleTypingPhase extends Phase {
       return;
     }
 
-    const skill = this.skills[this.currentSkillIndex];
+    const baseSkill = this.skills[this.currentSkillIndex];
+    const skill =
+      this.exMode === 'focus'
+        ? { ...baseSkill, actionCost: 1, mpCost: 0, typingDifficulty: 1 }
+        : baseSkill;
 
     // スキル情報を表示
     Display.clear();
@@ -276,6 +283,10 @@ export class BattleTypingPhase extends Phase {
     } else {
       console.log(`❌ ${result.message}`);
       this.summary.misses++;
+      if (this.exMode === 'focus') {
+        // 失敗時は以降のスキルを打ち切る
+        this.currentSkillIndex = this.skills.length;
+      }
     }
 
     // 敵のHPが0になったらバトル終了フラグを立てる

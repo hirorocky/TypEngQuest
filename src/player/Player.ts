@@ -16,6 +16,7 @@ export interface PlayerData {
   bodyStats: BodyStatsData;
   equipmentStats: EquipmentStatsData;
   inventory: InventoryData;
+  exPoints?: number;
 }
 
 /**
@@ -39,6 +40,7 @@ export class Player {
   private equippedItems: (EquipmentItem | null)[] = [null, null, null, null, null]; // 装備スロット
   private readonly equipmentSlotSize: number = 5; // 最大スロット数
   private equipmentCalculator: EquipmentEffectCalculator;
+  private exPoints: number = 0;
 
   /**
    * プレイヤーを初期化する
@@ -212,6 +214,34 @@ export class Player {
    */
   getName(): string {
     return this.name;
+  }
+
+  /**
+   * EXポイントを取得する
+   * @returns 現在のEXポイント
+   */
+  getExPoints(): number {
+    return this.exPoints;
+  }
+
+  /**
+   * EXポイントを加算する（0未満にならない）
+   * @param amount 加算量（負数で減算）
+   */
+  addExPoints(amount: number): void {
+    const next = this.exPoints + amount;
+    this.exPoints = Math.max(0, Math.floor(next));
+  }
+
+  /**
+   * 指定量のEXポイントを消費する（不足時は何もしないでfalse）
+   * @param amount 消費量
+   * @returns 成功したらtrue
+   */
+  consumeExPoints(amount: number): boolean {
+    if (this.exPoints < amount) return false;
+    this.exPoints -= amount;
+    return true;
   }
 
   /**
@@ -404,6 +434,7 @@ export class Player {
       bodyStats: this.bodyStats.toJSON(),
       equipmentStats: this.equipmentStats.toJSON(),
       inventory: this.inventory.toJSON(),
+      exPoints: this.exPoints,
     };
   }
 
@@ -422,6 +453,9 @@ export class Player {
     player.equipmentStats = EquipmentStats.fromJSON(data.equipmentStats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
+    if (typeof data.exPoints === 'number' && data.exPoints >= 0) {
+      player.addExPoints(Math.floor(data.exPoints));
+    }
 
     return player;
   }
@@ -431,7 +465,7 @@ export class Player {
    * @param data - 検証するデータ
    * @throws {Error} データが不正な場合
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, complexity
   private static validatePlayerData(data: any): asserts data is PlayerData {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid player data');
@@ -450,6 +484,9 @@ export class Player {
     }
 
     if (typeof data.inventory !== 'object' || data.inventory === null) {
+      throw new Error('Invalid player data');
+    }
+    if (typeof data.exPoints !== 'undefined' && typeof data.exPoints !== 'number') {
       throw new Error('Invalid player data');
     }
   }
