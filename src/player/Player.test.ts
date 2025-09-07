@@ -127,7 +127,8 @@ describe('Player', () => {
       expect(player.getLevel()).toBe(0); // 装備がない場合レベルは0
       expect(player.getStats().getCurrentHP()).toBe(180);
       expect(player.getStats().getCurrentMP()).toBe(90);
-      expect(player.getExPoints()).toBe(7);
+      // 互換性は考慮しないため、exPointsは0のまま
+      expect(player.getExPoints()).toBe(0);
     });
 
     test('不正なJSONデータでエラーを投げる', () => {

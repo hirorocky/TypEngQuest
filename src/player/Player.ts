@@ -442,17 +442,12 @@ export class Player {
   static fromJSON(data: any): Player {
     Player.validatePlayerData(data);
 
-    const legacyEx: unknown = (data as { exPoints?: unknown }).exPoints;
-
     const player = new Player(data.name);
     player.bodyStats = BodyStats.fromJSON(data.bodyStats);
     player.equipmentStats = EquipmentStats.fromJSON(data.equipmentStats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
-    // 互換性: 旧形式のexPointsがあればBodyStatsに反映
-    if (typeof legacyEx === 'number' && legacyEx >= 0) {
-      player.bodyStats.addEX(Math.floor(legacyEx));
-    }
+    // 互換性考慮は無し（exPointsはJSONに含めない）
 
     return player;
   }
@@ -462,7 +457,7 @@ export class Player {
    * @param data - 検証するデータ
    * @throws {Error} データが不正な場合
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, complexity
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validatePlayerData(data: any): asserts data is PlayerData {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid player data');
@@ -483,9 +478,6 @@ export class Player {
     if (typeof data.inventory !== 'object' || data.inventory === null) {
       throw new Error('Invalid player data');
     }
-    // exPointsは旧形式の互換フィールドとして許容（型検証のみ）
-    if (typeof data.exPoints !== 'undefined' && typeof data.exPoints !== 'number') {
-      throw new Error('Invalid player data');
-    }
+    // 互換性フィールド(exPoints)は受け付けない（無視）
   }
 }
