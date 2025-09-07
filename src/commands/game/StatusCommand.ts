@@ -1,5 +1,6 @@
 import { BaseCommand, CommandContext } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
+import { EX_COST_FOCUS, EX_COST_SPARK } from '../../battle/const';
 
 /**
  * statusコマンド - プレイヤーのステータスとHP/MPを表示する
@@ -36,6 +37,8 @@ export class StatusCommand extends BaseCommand {
       const maxHP = stats.getMaxHP();
       const currentMP = stats.getCurrentMP();
       const maxMP = stats.getMaxMP();
+      type MaybeExPoints = { getExPoints?: () => number };
+      const ex = (player as unknown as MaybeExPoints).getExPoints?.() ?? 0;
 
       // ステータス情報
       const strength = stats.getStrength();
@@ -48,12 +51,17 @@ export class StatusCommand extends BaseCommand {
       const mpBar = this.generateBar(currentMP, maxMP);
 
       // ステータス表示を構築
+      const exModes = [] as string[];
+      if (ex >= EX_COST_FOCUS) exModes.push('Focus');
+      if (ex >= EX_COST_SPARK) exModes.push('Spark');
+
       const statusDisplay = [
         `=== ${name} ===`,
         `Level: ${level}`,
         '',
         `HP: ${currentHP}/${maxHP} ${hpBar}`,
         `MP: ${currentMP}/${maxMP} ${mpBar}`,
+        `EX: ${ex}` + (exModes.length ? ` (${exModes.join(', ')} available)` : ''),
         '',
         `Strength: ${strength}`,
         `Willpower: ${willpower}`,

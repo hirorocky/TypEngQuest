@@ -215,6 +215,31 @@ export class Player {
   }
 
   /**
+   * EXポイントを取得する
+   * @returns 現在のEXポイント
+   */
+  getExPoints(): number {
+    return this.bodyStats.getCurrentEX();
+  }
+
+  /**
+   * EXポイントを加算する（0未満にならない）
+   * @param amount 加算量（負数で減算）
+   */
+  addExPoints(amount: number): void {
+    this.bodyStats.addEX(amount);
+  }
+
+  /**
+   * 指定量のEXポイントを消費する（不足時は何もしないでfalse）
+   * @param amount 消費量
+   * @returns 成功したらtrue
+   */
+  consumeExPoints(amount: number): boolean {
+    return this.bodyStats.consumeEX(amount);
+  }
+
+  /**
    * プレイヤーのレベルを取得する（装備アイテムのグレード平均値）
    * @returns プレイヤーのレベル
    */
@@ -422,6 +447,7 @@ export class Player {
     player.equipmentStats = EquipmentStats.fromJSON(data.equipmentStats);
     player.inventory = Inventory.fromJSON(data.inventory);
     player.equipmentCalculator = new EquipmentEffectCalculator();
+    // 互換性考慮は無し（exPointsはJSONに含めない）
 
     return player;
   }
@@ -452,5 +478,6 @@ export class Player {
     if (typeof data.inventory !== 'object' || data.inventory === null) {
       throw new Error('Invalid player data');
     }
+    // 互換性フィールド(exPoints)は受け付けない（無視）
   }
 }

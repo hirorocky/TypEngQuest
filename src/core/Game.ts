@@ -43,6 +43,8 @@ interface PhaseTransitionData {
   // BattleTyping phase
   skills?: Skill[];
   typingResult?: import('../phases/types').BattleTypingResult;
+  exMode?: 'focus' | 'spark';
+  sparkRepeatHint?: number;
 
   // 遷移の詳細情報
   transitionReason?: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated';
@@ -230,6 +232,7 @@ export class Game {
           battle,
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
+          exMode: data?.exMode,
         });
 
         // フェーズ遷移ハンドラーを設定
@@ -246,6 +249,8 @@ export class Game {
           battle: battle,
           world: this.currentWorld!,
           tabCompleter: this.tabCompleter,
+          exMode: data?.exMode,
+          sparkRepeatHint: data?.sparkRepeatHint,
         });
 
         // フェーズ遷移ハンドラーを設定

@@ -11,10 +11,12 @@ export class BodyStats {
   private static readonly BASE_MP = 100;
   private static readonly MP_PER_LEVEL = 2;
   private static readonly BASE_STAT = 10;
+  public static readonly MAX_EX = 100;
 
   private level: number;
   private currentHP: number;
   private currentMP: number;
+  private currentEX: number = 0;
   private baseStrength: number;
   private baseWillpower: number;
   private baseAgility: number;
@@ -62,6 +64,7 @@ export class BodyStats {
     // HP/MPを最大値で初期化
     this.currentHP = this.calculateMaxHP();
     this.currentMP = this.calculateMaxMP();
+    this.currentEX = 0;
   }
 
   /**
@@ -120,6 +123,20 @@ export class BodyStats {
    */
   getMaxMP(): number {
     return this.calculateMaxMP();
+  }
+
+  /**
+   * 現在EXを取得する
+   */
+  getCurrentEX(): number {
+    return this.currentEX;
+  }
+
+  /**
+   * 最大EXを取得する
+   */
+  getMaxEX(): number {
+    return BodyStats.MAX_EX;
   }
 
   /**
@@ -268,6 +285,23 @@ export class BodyStats {
    */
   fullHealMP(): void {
     this.currentMP = this.getMaxMP();
+  }
+
+  /**
+   * EXを加算（0〜MAX_EXにクランプ）
+   */
+  addEX(amount: number): void {
+    const next = Math.max(0, this.currentEX + Math.floor(amount));
+    this.currentEX = Math.min(this.getMaxEX(), next);
+  }
+
+  /**
+   * EXを消費（不足時はfalse）
+   */
+  consumeEX(amount: number): boolean {
+    if (this.currentEX < amount) return false;
+    this.currentEX -= amount;
+    return true;
   }
 
   /**
@@ -566,6 +600,7 @@ export class BodyStats {
       level: this.level,
       currentHP: this.currentHP,
       currentMP: this.currentMP,
+      currentEX: this.currentEX,
       baseStrength: this.baseStrength,
       baseWillpower: this.baseWillpower,
       baseAgility: this.baseAgility,
@@ -605,6 +640,9 @@ export class BodyStats {
   private static restoreHPMP(bodyStats: BodyStats, data: any): void {
     bodyStats.currentHP = data.currentHP;
     bodyStats.currentMP = data.currentMP;
+    if (typeof data.currentEX === 'number') {
+      bodyStats.currentEX = Math.max(0, Math.min(BodyStats.MAX_EX, Math.floor(data.currentEX)));
+    }
   }
 
   /**
@@ -748,6 +786,7 @@ export interface BodyStatsData {
   level: number;
   currentHP: number;
   currentMP: number;
+  currentEX?: number;
   baseStrength: number;
   baseWillpower: number;
   baseAgility: number;

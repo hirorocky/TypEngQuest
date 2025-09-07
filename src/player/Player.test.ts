@@ -57,6 +57,7 @@ describe('Player', () => {
           level: 0,
           currentHP: 100,
           currentMP: 100,
+          currentEX: 0,
           baseStrength: 10,
           baseWillpower: 10,
           baseAgility: 10,
@@ -117,6 +118,7 @@ describe('Player', () => {
         inventory: {
           items: [],
         },
+        exPoints: 7,
       };
 
       const player = Player.fromJSON(jsonData);
@@ -125,6 +127,8 @@ describe('Player', () => {
       expect(player.getLevel()).toBe(0); // 装備がない場合レベルは0
       expect(player.getStats().getCurrentHP()).toBe(180);
       expect(player.getStats().getCurrentMP()).toBe(90);
+      // 互換性は考慮しないため、exPointsは0のまま
+      expect(player.getExPoints()).toBe(0);
     });
 
     test('不正なJSONデータでエラーを投げる', () => {

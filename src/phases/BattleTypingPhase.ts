@@ -9,6 +9,7 @@ import { TypingResult, TypingDifficulty, TypingProgress } from '../typing/types'
 import { BattleTypingResult } from './types';
 import { TypingChallenge } from '../typing/TypingChallenge';
 import { ComboBoostManager } from '../battle/ComboBoostManager';
+import { calculateExPointGain } from '../battle/expoints';
 import { WordDatabase } from '../typing/WordDatabase';
 import { Display } from '../ui/Display';
 import { green, red, gray } from '../ui/colors';
@@ -23,6 +24,7 @@ export class BattleTypingPhase extends Phase {
   private wordDatabase: WordDatabase;
   private isFirstInput: boolean = true;
   private comboBoostManager: ComboBoostManager = new ComboBoostManager();
+  private exMode: 'focus' | 'spark' | undefined;
 
   // 結果サマリー
   private summary: {
@@ -39,12 +41,14 @@ export class BattleTypingPhase extends Phase {
     battle: Battle;
     world?: World;
     tabCompleter?: TabCompleter;
+    exMode?: 'focus' | 'spark';
   }) {
     super(options.world, options.tabCompleter);
 
     this.skills = options.skills;
     this.battle = options.battle;
     this.wordDatabase = new WordDatabase();
+    this.exMode = options.exMode;
 
     // サマリーを初期化
     this.summary = {
@@ -209,7 +213,13 @@ export class BattleTypingPhase extends Phase {
       return;
     }
 
-    const skill = this.skills[this.currentSkillIndex];
+    const baseSkill = this.skills[this.currentSkillIndex];
+    const skill =
+      this.exMode === 'focus'
+        ? { ...baseSkill, actionCost: 1, mpCost: 0, typingDifficulty: 1 }
+        : this.exMode === 'spark'
+          ? { ...baseSkill, actionCost: 0, mpCost: 0 }
+          : baseSkill;
 
     // スキル情報を表示
     Display.clear();
@@ -241,6 +251,7 @@ export class BattleTypingPhase extends Phase {
   /**
    * スキル効果をリアルタイムで適用
    */
+  // eslint-disable-next-line complexity
   private async applySkillEffect(skill: Skill, typingResult: TypingResult): Promise<void> {
     // BattleActionExecutorを使用して効果を適用
     const player = this.battle['player'];
@@ -258,6 +269,18 @@ export class BattleTypingPhase extends Phase {
 
     if (result.success) {
       result.message.forEach(msg => console.log(msg));
+      // EXモード中はEX加算なし
+      if (!this.exMode) {
+        const gained = calculateExPointGain(
+          skill.typingDifficulty,
+          typingResult.speedRating,
+          typingResult.accuracyRating
+        );
+        if (gained > 0 && typeof player.getExPoints === 'function') {
+          player.addExPoints(gained);
+          console.log(`+${gained} EX points`);
+        }
+      }
       // サマリーを更新
       if (result.damage) {
         this.summary.totalDamageDealt += result.damage;
@@ -276,6 +299,10 @@ export class BattleTypingPhase extends Phase {
     } else {
       console.log(`❌ ${result.message}`);
       this.summary.misses++;
+      if (this.exMode === 'focus') {
+        // 失敗時は以降のスキルを打ち切る
+        this.currentSkillIndex = this.skills.length;
+      }
     }
 
     // 敵のHPが0になったらバトル終了フラグを立てる
