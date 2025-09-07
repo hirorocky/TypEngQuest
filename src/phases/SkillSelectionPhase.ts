@@ -339,19 +339,19 @@ export class SkillSelectionPhase extends Phase {
     this.availableSkills.forEach((skill, index) => {
       const isSelected = index === this.currentIndex;
       const cursor = isSelected ? '► ' : '  ';
-      const currentMP = this.player.getBodyStats().getCurrentMP();
-      const usedMP =
-        this.exMode === 'spark' ? 0 : this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0);
-      const availableMP = currentMP - usedMP;
-      const canUseMP = this.exMode === 'spark' ? true : skill.mpCost <= availableMP;
+      let canUse = true;
+      if (this.exMode !== 'spark') {
+        const currentMP = this.player.getBodyStats().getCurrentMP();
+        const usedMP = this.selectedSkills.reduce((sum, s) => sum + s.mpCost, 0);
+        const availableMP = currentMP - usedMP;
+        const canUseMP = skill.mpCost <= availableMP;
 
-      const actionPoints = this.battle.calculatePlayerActionPoints();
-      const usedActionPoints =
-        this.exMode === 'spark' ? 0 : this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0);
-      const availableActionPoints = actionPoints - usedActionPoints;
-      const canUseAP = this.exMode === 'spark' ? true : skill.actionCost <= availableActionPoints;
-
-      const canUse = canUseMP && canUseAP;
+        const actionPoints = this.battle.calculatePlayerActionPoints();
+        const usedActionPoints = this.selectedSkills.reduce((sum, s) => sum + s.actionCost, 0);
+        const availableActionPoints = actionPoints - usedActionPoints;
+        const canUseAP = skill.actionCost <= availableActionPoints;
+        canUse = canUseMP && canUseAP;
+      }
       const statusIcon = canUse ? '✅' : '❌';
 
       console.log(`${cursor}${statusIcon} ${skill.name}`);

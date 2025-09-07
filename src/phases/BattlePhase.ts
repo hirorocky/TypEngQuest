@@ -146,13 +146,13 @@ export class BattlePhase extends Phase {
     // EXモード（最小実装）
     this.registerCommand({
       name: 'focus',
-      description: 'Enter Focus Mode (cost 10 EX)',
+      description: `Enter Focus Mode (cost ${EX_COST_FOCUS} EX)`,
       execute: async () => this.enterFocusMode(),
     });
 
     this.registerCommand({
       name: 'spark',
-      description: 'Enter Spark Mode (cost 15 EX)',
+      description: `Enter Spark Mode (cost ${EX_COST_SPARK} EX)`,
       execute: async () => this.enterSparkMode(),
     });
   }
@@ -189,8 +189,8 @@ export class BattlePhase extends Phase {
     const playerStats = this.player.getBodyStats();
     const ex = this.player.getExPoints?.() ?? 0;
     const exModes: string[] = [];
-    if (ex >= 10) exModes.push('Focus');
-    if (ex >= 15) exModes.push('Spark');
+    if (ex >= EX_COST_FOCUS) exModes.push('Focus');
+    if (ex >= EX_COST_SPARK) exModes.push('Spark');
 
     const output = [
       `■ BATTLE STATUS`,

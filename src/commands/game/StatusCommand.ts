@@ -1,5 +1,6 @@
 import { BaseCommand, CommandContext } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
+import { EX_COST_FOCUS, EX_COST_SPARK } from '../../battle/const';
 
 /**
  * statusコマンド - プレイヤーのステータスとHP/MPを表示する
@@ -51,8 +52,8 @@ export class StatusCommand extends BaseCommand {
 
       // ステータス表示を構築
       const exModes = [] as string[];
-      if (ex >= 10) exModes.push('Focus');
-      if (ex >= 15) exModes.push('Spark');
+      if (ex >= EX_COST_FOCUS) exModes.push('Focus');
+      if (ex >= EX_COST_SPARK) exModes.push('Spark');
 
       const statusDisplay = [
         `=== ${name} ===`,
