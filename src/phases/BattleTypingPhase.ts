@@ -17,6 +17,12 @@ import * as readline from 'readline';
 import { delay } from '../utils/timer';
 
 export class BattleTypingPhase extends Phase {
+  // Spark Mode constants
+  private static readonly SPARK_MODE_CHAR_TIMEOUT_MS = 2000;
+  private static readonly SPARK_MODE_CHALLENGE_COUNT = 10;
+  private static readonly SPARK_MODE_CHARS =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
+  private static readonly KEY_ESCAPE = '\\x1b';
   private skills: Skill[];
   private battle: Battle;
   private currentSkillIndex: number = 0;
@@ -143,15 +149,15 @@ export class BattleTypingPhase extends Phase {
     for (let i = 0; i < total; i++) {
       const ch = this.sparkChars[i];
       process.stdout.write(`Type: ${ch}  `);
-      const ok = await this.singleCharTyping(ch, 2000); // 2秒制限
+      const ok = await this.singleCharTyping(ch, BattleTypingPhase.SPARK_MODE_CHAR_TIMEOUT_MS);
       console.log(ok ? '✔' : '✖');
       if (!ok) break;
       this.sparkSuccessCount++;
     }
 
     // 成功数分だけスキルを実行（コスト0/タイピングなし）
-    const player = this.battle['player'];
-    const enemy = this.battle['enemy'];
+    const player = this.battle.getPlayer();
+    const enemy = this.battle.getEnemy();
     for (let i = 0; i < this.sparkSuccessCount; i++) {
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
         comboBoostManager: this.comboBoostManager,
@@ -186,9 +192,9 @@ export class BattleTypingPhase extends Phase {
    * 単文字チャレンジを生成
    */
   private generateSingleCharChallenges(): string[] {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
+    const chars = BattleTypingPhase.SPARK_MODE_CHARS;
     const list: string[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < BattleTypingPhase.SPARK_MODE_CHALLENGE_COUNT; i++) {
       list.push(chars[Math.floor(Math.random() * chars.length)]);
     }
     return list;
@@ -203,7 +209,7 @@ export class BattleTypingPhase extends Phase {
       const onData = (data: Buffer) => {
         if (done) return;
         const c = data.toString();
-        if (c === '\x1b') {
+        if (c === BattleTypingPhase.KEY_ESCAPE) {
           cleanup();
           resolve({ success: false });
           return;
@@ -372,8 +378,8 @@ export class BattleTypingPhase extends Phase {
   // eslint-disable-next-line complexity
   private async applySkillEffect(skill: Skill, typingResult: TypingResult): Promise<void> {
     // BattleActionExecutorを使用して効果を適用
-    const player = this.battle['player'];
-    const enemy = this.battle['enemy'];
+    const player = this.battle.getPlayer();
+    const enemy = this.battle.getEnemy();
 
     if (!player || !enemy) {
       console.log('❌ Battle not properly initialized');
@@ -483,8 +489,8 @@ export class BattleTypingPhase extends Phase {
     this.displayFinalSummary();
 
     // バトル終了チェック
-    const enemy = this.battle['enemy'];
-    const player = this.battle['player'];
+    const enemy = this.battle.getEnemy();
+    const player = this.battle.getPlayer();
 
     let battleEnded = false;
 
