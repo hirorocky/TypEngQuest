@@ -239,9 +239,8 @@ export class SkillSelectionPhase extends Phase {
       skills = skills.map(s => ({ ...s, actionCost: 1, mpCost: 0, typingDifficulty: 1 }));
     }
     if (this.exMode === 'spark') {
-      // 1スキルを複数回実行（最小実装: ヒント回数または3回）
-      const repeat = Math.max(1, Math.min(10, this.sparkRepeatHint ?? 3));
-      skills = Array.from({ length: repeat }, () => ({ ...skills[0], actionCost: 0, mpCost: 0 }));
+      // Sparkでは1スキルのみ受け渡し（連続実行はBattleTyping側で成功回数に連動）
+      skills = [skills[0]];
     }
 
     return {

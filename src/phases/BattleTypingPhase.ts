@@ -25,6 +25,8 @@ export class BattleTypingPhase extends Phase {
   private isFirstInput: boolean = true;
   private comboBoostManager: ComboBoostManager = new ComboBoostManager();
   private exMode: 'focus' | 'spark' | undefined;
+  private sparkChars: string[] = [];
+  private sparkSuccessCount = 0;
 
   // 結果サマリー
   private summary: {
@@ -73,8 +75,15 @@ export class BattleTypingPhase extends Phase {
    * フェーズ初期化
    */
   async initialize(): Promise<void> {
-    // 最初のスキルチャレンジを開始
-    this.startNextSkillChallenge();
+    if (this.exMode === 'spark') {
+      // Spark: 単文字チャレンジ配列を用意
+      this.sparkChars = this.generateSingleCharChallenges();
+      console.log('\n⚡ Spark Mode: type the prompted single characters!');
+      console.log('Press ESC to cancel\n');
+    } else {
+      // 通常/Focus: 最初のスキルチャレンジを開始
+      this.startNextSkillChallenge();
+    }
   }
 
   /**
@@ -89,6 +98,9 @@ export class BattleTypingPhase extends Phase {
    * @returns Phase遷移が必要な場合はCommandResultを返す
    */
   async startInputLoop(): Promise<CommandResult | null> {
+    if (this.exMode === 'spark') {
+      return this.runSparkMode();
+    }
     return new Promise(resolve => {
       const rl = readline.createInterface({
         input: process.stdin,
@@ -116,6 +128,112 @@ export class BattleTypingPhase extends Phase {
       };
 
       process.stdin.on('data', handleData);
+    });
+  }
+
+  /**
+   * Spark Mode: 単文字タイピングモードを実行
+   */
+  private async runSparkMode(): Promise<CommandResult> {
+    // skillsは1つのみ想定
+    const skill = this.skills[0];
+    const total = this.sparkChars.length;
+    this.sparkSuccessCount = 0;
+
+    for (let i = 0; i < total; i++) {
+      const ch = this.sparkChars[i];
+      process.stdout.write(`Type: ${ch}  `);
+      const ok = await this.singleCharTyping(ch, 2000); // 2秒制限
+      console.log(ok ? '✔' : '✖');
+      if (!ok) break;
+      this.sparkSuccessCount++;
+    }
+
+    // 成功数分だけスキルを実行（コスト0/タイピングなし）
+    const player = this.battle['player'];
+    const enemy = this.battle['enemy'];
+    for (let i = 0; i < this.sparkSuccessCount; i++) {
+      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
+        comboBoostManager: this.comboBoostManager,
+      });
+      result.message.forEach(m => console.log(m));
+      if (result.damage) {
+        this.summary.totalDamageDealt += result.damage;
+        if (result.isCritical) this.summary.criticalHits++;
+      }
+      if (result.targetDefeated) break;
+    }
+
+    console.log(`\nSpark successes: ${this.sparkSuccessCount}/${total}`);
+
+    return {
+      success: true,
+      message: 'Spark mode complete',
+      nextPhase: PhaseTypes.BATTLE,
+      data: {
+        typingResult: {
+          completedSkills: this.sparkSuccessCount,
+          totalSkills: total,
+          summary: this.summary,
+          battleEnded: false,
+        },
+        battle: this.battle,
+      },
+    };
+  }
+
+  /**
+   * 単文字チャレンジを生成
+   */
+  private generateSingleCharChallenges(): string[] {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
+    const list: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      list.push(chars[Math.floor(Math.random() * chars.length)]);
+    }
+    return list;
+  }
+
+  /**
+   * 単文字タイピング（制限時間内に一致文字を入力できたらsuccess）
+   */
+  private singleCharTyping(expected: string, timeoutMs: number): Promise<{ success: boolean }> {
+    return new Promise(resolve => {
+      let done = false;
+      const onData = (data: Buffer) => {
+        if (done) return;
+        const c = data.toString();
+        if (c === '\x1b') {
+          cleanup();
+          resolve({ success: false });
+          return;
+        }
+        if (c === expected) {
+          cleanup();
+          resolve({ success: true });
+        } else {
+          // 1ミス即失敗
+          cleanup();
+          resolve({ success: false });
+        }
+      };
+      const cleanup = () => {
+        done = true;
+        process.stdin.removeListener('data', onData);
+      };
+      const t = global.setTimeout(() => {
+        if (!done) {
+          cleanup();
+          resolve({ success: false });
+        }
+      }, timeoutMs);
+      // ensure timer cleared in resolve path
+      const origResolve = resolve;
+      resolve = v => {
+        global.clearTimeout(t);
+        origResolve(v);
+      };
+      process.stdin.once('data', onData);
     });
   }
 
