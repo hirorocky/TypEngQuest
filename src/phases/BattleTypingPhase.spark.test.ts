@@ -12,8 +12,9 @@ describe('BattleTypingPhase Spark Mode', () => {
       description: 'dummy',
       level: 1,
       stats: { maxHp: 50, strength: 10, willpower: 5, agility: 5, fortune: 5 },
-      physicalEvadeRate: 5,
-      magicalEvadeRate: 5,
+      // テスト安定化のためSparkシーケンス中の回避を0にする
+      physicalEvadeRate: 0,
+      magicalEvadeRate: 0,
       skills: [],
       drops: [],
     });

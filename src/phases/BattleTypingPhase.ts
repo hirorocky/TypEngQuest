@@ -164,7 +164,6 @@ export class BattleTypingPhase extends Phase {
     for (let i = 0; i < this.sparkSuccessCount; i++) {
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
         comboBoostManager: this.comboBoostManager,
-        ignoreEvade: true,
       });
       result.message.forEach(m => console.log(m));
       if (result.damage) {
