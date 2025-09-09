@@ -22,7 +22,7 @@ export class BattleTypingPhase extends Phase {
   private static readonly SPARK_MODE_CHALLENGE_COUNT = 10;
   private static readonly SPARK_MODE_CHARS =
     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
-  private static readonly KEY_ESCAPE = '\\x1b';
+  private static readonly KEY_ESCAPE = '\x1b';
   private skills: Skill[];
   private battle: Battle;
   private currentSkillIndex: number = 0;
@@ -208,6 +208,22 @@ export class BattleTypingPhase extends Phase {
    */
   private singleCharTyping(expected: string, timeoutMs: number): Promise<{ success: boolean }> {
     return new Promise(resolve => {
+      // Sparkモードではraw modeで単キー入力を受け取る
+      const stdin = process.stdin as unknown as {
+        isTTY: boolean;
+        setRawMode: (mode: boolean) => void;
+        resume: () => void;
+        removeListener: (event: string, cb: (data: Buffer) => void) => void;
+        on?: (event: string, cb: (data: Buffer) => void) => void;
+        once?: (event: string, cb: (data: Buffer) => void) => void;
+        isRaw?: boolean;
+      };
+      const isTTY = stdin.isTTY;
+      const prevRaw = isTTY ? !!stdin.isRaw : false;
+      if (isTTY) {
+        stdin.setRawMode(true);
+        stdin.resume();
+      }
       let done = false;
       const onData = (data: Buffer) => {
         if (done) return;
@@ -229,6 +245,9 @@ export class BattleTypingPhase extends Phase {
       const cleanup = () => {
         done = true;
         process.stdin.removeListener('data', onData);
+        if (isTTY) {
+          stdin.setRawMode(prevRaw);
+        }
       };
       const t = global.setTimeout(() => {
         if (!done) {
