@@ -149,9 +149,12 @@ export class BattleTypingPhase extends Phase {
     for (let i = 0; i < total; i++) {
       const ch = this.sparkChars[i];
       process.stdout.write(`Type: ${ch}  `);
-      const ok = await this.singleCharTyping(ch, BattleTypingPhase.SPARK_MODE_CHAR_TIMEOUT_MS);
-      console.log(ok ? '✔' : '✖');
-      if (!ok) break;
+      const { success } = await this.singleCharTyping(
+        ch,
+        BattleTypingPhase.SPARK_MODE_CHAR_TIMEOUT_MS
+      );
+      console.log(success ? '✔' : '✖');
+      if (!success) break;
       this.sparkSuccessCount++;
     }
 
@@ -181,7 +184,7 @@ export class BattleTypingPhase extends Phase {
           completedSkills: this.sparkSuccessCount,
           totalSkills: total,
           summary: this.summary,
-          battleEnded: false,
+          battleEnded: enemy.isDefeated(),
         },
         battle: this.battle,
       },
