@@ -119,6 +119,7 @@ export class TypingChallenge {
     const speedRating = this.calculateSpeedRating(timeTaken);
     const accuracyRating = this.calculateAccuracyRating(accuracy);
     const totalRating = this.calculateTotalRating(speedRating, accuracyRating);
+    const forcedComplete = this.forcedComplete;
 
     return {
       speedRating,
@@ -127,6 +128,7 @@ export class TypingChallenge {
       timeTaken,
       accuracy,
       isSuccess: totalRating > 0,
+      forcedComplete,
     };
   }
 

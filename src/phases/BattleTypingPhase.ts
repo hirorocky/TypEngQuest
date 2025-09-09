@@ -33,7 +33,6 @@ export class BattleTypingPhase extends Phase {
   private exMode: 'focus' | 'spark' | undefined;
   private sparkChars: string[] = [];
   private sparkSuccessCount = 0;
-  private abortTurn: boolean = false;
 
   // 結果サマリー
   private summary: {
@@ -89,7 +88,6 @@ export class BattleTypingPhase extends Phase {
       console.log('Press ESC to cancel\n');
     } else {
       // 通常/Focus: 最初のスキルチャレンジを開始
-      this.abortTurn = false;
       this.startNextSkillChallenge();
     }
   }
@@ -319,14 +317,14 @@ export class BattleTypingPhase extends Phase {
 
       await this.displayResult(result);
 
+      // Focusモードのミス時はターン即終了
+      if (result.forcedComplete) {
+        return this.completeAllChallenges();
+      }
+
       // スキル効果を適用
       const skill = this.skills[this.currentSkillIndex];
       await this.applySkillEffect(skill, result);
-
-      // Focusモードのミス時はターン即終了
-      if (this.abortTurn) {
-        return this.completeAllChallenges();
-      }
 
       // 次のスキルへ
       this.currentSkillIndex++;
@@ -456,11 +454,6 @@ export class BattleTypingPhase extends Phase {
     } else {
       console.log(`❌ ${result.message}`);
       this.summary.misses++;
-      if (this.exMode === 'focus') {
-        // 失敗時は以降のスキルを打ち切る
-        this.currentSkillIndex = this.skills.length;
-        this.abortTurn = true;
-      }
     }
 
     // 敵のHPが0になったらバトル終了フラグを立てる
@@ -469,9 +462,7 @@ export class BattleTypingPhase extends Phase {
       // バトル終了を即座に処理せず、全スキル完了後に処理する
     }
 
-    if (!this.abortTurn) {
-      await this.waitForKeyPress();
-    }
+    await this.waitForKeyPress();
   }
 
   /**

@@ -7,7 +7,7 @@
       "skillType": "physical",
       "mpCost": 0,
       "mpCharge": 0,
-      "actionCost": 1,
+      "actionCost": 2,
       "target": "enemy",
       "typingDifficulty": 1,
       "skillSuccessRate": {
