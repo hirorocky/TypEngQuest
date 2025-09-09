@@ -87,6 +87,16 @@ export class Battle {
     return this._currentTurn;
   }
 
+  /** プレイヤーを取得する（外部公開用） */
+  public getPlayer(): Player {
+    return this.player;
+  }
+
+  /** 敵を取得する（外部公開用） */
+  public getEnemy(): Enemy {
+    return this.enemy;
+  }
+
   /**
    * 戦闘を開始する
    * @returns 開始メッセージ

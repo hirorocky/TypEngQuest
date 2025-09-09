@@ -119,6 +119,7 @@ describe('BattleActionExecutor', () => {
         timeTaken: 1000,
         accuracy: 100,
         isSuccess: true,
+        forcedComplete: false,
       };
 
       const { ComboBoostManager } = require('./ComboBoostManager');
@@ -277,6 +278,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         totalRating: 120,
         timeTaken: 1500,
         accuracy: 95,
+        forcedComplete: false,
       };
 
       const { ComboBoostManager } = require('./ComboBoostManager');
@@ -304,6 +306,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         totalRating: 135,
         timeTaken: 1200,
         accuracy: 98,
+        forcedComplete: false,
       };
 
       const { ComboBoostManager } = require('./ComboBoostManager');
@@ -357,6 +360,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           totalRating: 110,
           timeTaken: 1600,
           accuracy: 89,
+          forcedComplete: false,
         },
       });
 
@@ -467,6 +471,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           timeTaken: 1000,
           accuracy: 95,
           isSuccess: true,
+          forcedComplete: false,
         },
       });
       expect(r1.damage).toBe(0);
@@ -480,6 +485,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           timeTaken: 800,
           accuracy: 96,
           isSuccess: true,
+          forcedComplete: false,
         },
       });
       expect(r2.damage).toBeGreaterThan(0);
@@ -528,6 +534,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           timeTaken: 1200,
           accuracy: 96,
           isSuccess: true,
+          forcedComplete: false,
         },
       });
       const perfect = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
@@ -539,6 +546,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
           timeTaken: 900,
           accuracy: 100,
           isSuccess: true,
+          forcedComplete: false,
         },
       });
       expect(perfect.damage).toBeGreaterThan(normal.damage);

@@ -31,6 +31,13 @@ export interface SkillExecutionResult {
  * - プレイヤー/敵へのダメージ適用
  */
 export class BattleActionExecutor {
+  // 既定の敵ターゲット生成（回避は通常どおり適用）
+  private static buildEnemyTarget(enemy: Enemy) {
+    return {
+      physicalEvadeRate: enemy.physicalEvadeRate,
+      magicalEvadeRate: enemy.magicalEvadeRate,
+    } as const;
+  }
   private static buildConditionContext(
     player: Player,
     enemy: Enemy,
@@ -109,10 +116,7 @@ export class BattleActionExecutor {
     const accuracyRating = typingResult?.accuracyRating;
 
     // 敵をBattleTargetとして扱う
-    const enemyTarget = {
-      physicalEvadeRate: enemy.physicalEvadeRate,
-      magicalEvadeRate: enemy.magicalEvadeRate,
-    };
+    const enemyTarget = this.buildEnemyTarget(enemy);
 
     // 新しい3層判定システムを使用
     const judgmentResult = BattleCalculator.executeThreeLayerJudgment(

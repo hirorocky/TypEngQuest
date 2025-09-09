@@ -51,6 +51,7 @@ describe('BattleTypingPhase EXポイント統合', () => {
       timeTaken: 1000,
       accuracy: 100,
       isSuccess: true,
+      forcedComplete: false,
     };
 
     // プライベートメソッドを直接呼び出し（テスト用）

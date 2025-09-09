@@ -116,6 +116,7 @@ describe('TypingPhase', () => {
         timeTaken: 5000,
         accuracy: 100,
         isSuccess: true,
+        forcedComplete: false,
       };
 
       (mockChallenge.isComplete as jest.Mock).mockReturnValue(true);
