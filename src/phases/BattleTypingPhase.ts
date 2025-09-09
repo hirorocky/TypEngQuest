@@ -164,6 +164,7 @@ export class BattleTypingPhase extends Phase {
     for (let i = 0; i < this.sparkSuccessCount; i++) {
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
         comboBoostManager: this.comboBoostManager,
+        ignoreEvade: true,
       });
       result.message.forEach(m => console.log(m));
       if (result.damage) {
@@ -391,6 +392,9 @@ export class BattleTypingPhase extends Phase {
       challengeText,
       skill.typingDifficulty as TypingDifficulty
     );
+    if (this.exMode === 'focus') {
+      this.currentChallenge.enableStopOnFirstError();
+    }
     this.currentChallenge.start();
   }
 
