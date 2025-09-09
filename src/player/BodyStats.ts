@@ -61,7 +61,7 @@ export class BodyStats {
     this.temporaryStatuses = [];
     this.worldStatuses = [];
 
-    // HP/MPを最大値で初期化
+    // HP/MP/EXを初期化（EXは0開始）
     this.currentHP = this.calculateMaxHP();
     this.currentMP = this.calculateMaxMP();
     this.currentEX = 0;
