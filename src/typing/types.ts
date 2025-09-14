@@ -24,6 +24,8 @@ export interface TypingResult {
   accuracy: number;
   /** 成功かどうか */
   isSuccess: boolean;
+  /** 強制終了かどうか */
+  forcedComplete: boolean;
 }
 
 /**

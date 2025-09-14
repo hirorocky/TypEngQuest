@@ -18,6 +18,8 @@ export class TypingChallenge {
   private errors: Set<number> = new Set();
   private totalKeystrokes: number = 0;
   private incorrectKeystrokes: number = 0;
+  private stopOnFirstError: boolean = false;
+  private forcedComplete: boolean = false;
 
   /**
    * コンストラクタ
@@ -39,6 +41,7 @@ export class TypingChallenge {
     this.errors.clear();
     this.totalKeystrokes = 0;
     this.incorrectKeystrokes = 0;
+    this.forcedComplete = false;
   }
 
   /**
@@ -71,6 +74,11 @@ export class TypingChallenge {
     if (char !== expectedChar) {
       this.errors.add(currentIndex);
       this.incorrectKeystrokes++;
+      if (this.stopOnFirstError) {
+        // 1ミスで即終了（Focusモード想定）
+        this.forcedComplete = true;
+        this.endTime = Date.now();
+      }
     }
 
     this.input += char;
@@ -88,9 +96,17 @@ export class TypingChallenge {
   isComplete(): boolean {
     // 全文字入力したか、時間切れ
     return (
+      this.forcedComplete ||
       this.input.length === this.text.length ||
       (this.startTime !== null && this.getRemainingTime() <= 0)
     );
+  }
+
+  /**
+   * 1文字でも間違えたら即終了するモードを有効化
+   */
+  enableStopOnFirstError(): void {
+    this.stopOnFirstError = true;
   }
 
   /**
@@ -103,6 +119,7 @@ export class TypingChallenge {
     const speedRating = this.calculateSpeedRating(timeTaken);
     const accuracyRating = this.calculateAccuracyRating(accuracy);
     const totalRating = this.calculateTotalRating(speedRating, accuracyRating);
+    const forcedComplete = this.forcedComplete;
 
     return {
       speedRating,
@@ -111,6 +128,7 @@ export class TypingChallenge {
       timeTaken,
       accuracy,
       isSuccess: totalRating > 0,
+      forcedComplete,
     };
   }
 

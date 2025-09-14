@@ -17,6 +17,12 @@ import * as readline from 'readline';
 import { delay } from '../utils/timer';
 
 export class BattleTypingPhase extends Phase {
+  // Spark Mode constants
+  private static readonly SPARK_MODE_CHAR_TIMEOUT_MS = 2000;
+  private static readonly SPARK_MODE_CHALLENGE_COUNT = 10;
+  private static readonly SPARK_MODE_CHARS =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
+  private static readonly KEY_ESCAPE = '\x1b';
   private skills: Skill[];
   private battle: Battle;
   private currentSkillIndex: number = 0;
@@ -25,6 +31,8 @@ export class BattleTypingPhase extends Phase {
   private isFirstInput: boolean = true;
   private comboBoostManager: ComboBoostManager = new ComboBoostManager();
   private exMode: 'focus' | 'spark' | undefined;
+  private sparkChars: string[] = [];
+  private sparkSuccessCount = 0;
 
   // 結果サマリー
   private summary: {
@@ -73,8 +81,15 @@ export class BattleTypingPhase extends Phase {
    * フェーズ初期化
    */
   async initialize(): Promise<void> {
-    // 最初のスキルチャレンジを開始
-    this.startNextSkillChallenge();
+    if (this.exMode === 'spark') {
+      // Spark: 単文字チャレンジ配列を用意
+      this.sparkChars = this.generateSingleCharChallenges();
+      console.log('\n⚡ Spark Mode: type the prompted single characters!');
+      console.log('Press ESC to cancel\n');
+    } else {
+      // 通常/Focus: 最初のスキルチャレンジを開始
+      this.startNextSkillChallenge();
+    }
   }
 
   /**
@@ -89,6 +104,9 @@ export class BattleTypingPhase extends Phase {
    * @returns Phase遷移が必要な場合はCommandResultを返す
    */
   async startInputLoop(): Promise<CommandResult | null> {
+    if (this.exMode === 'spark') {
+      return this.runSparkMode();
+    }
     return new Promise(resolve => {
       const rl = readline.createInterface({
         input: process.stdin,
@@ -116,6 +134,134 @@ export class BattleTypingPhase extends Phase {
       };
 
       process.stdin.on('data', handleData);
+    });
+  }
+
+  /**
+   * Spark Mode: 単文字タイピングモードを実行
+   */
+  private async runSparkMode(): Promise<CommandResult> {
+    // skillsは1つのみ想定
+    const skill = this.skills[0];
+    const total = this.sparkChars.length;
+    this.sparkSuccessCount = 0;
+
+    for (let i = 0; i < total; i++) {
+      const ch = this.sparkChars[i];
+      process.stdout.write(`Type: ${ch}  `);
+      const { success } = await this.singleCharTyping(
+        ch,
+        BattleTypingPhase.SPARK_MODE_CHAR_TIMEOUT_MS
+      );
+      console.log(success ? '✔' : '✖');
+      if (!success) break;
+      this.sparkSuccessCount++;
+    }
+
+    // 成功数分だけスキルを実行（コスト0/タイピングなし）
+    const player = this.battle.getPlayer();
+    const enemy = this.battle.getEnemy();
+    for (let i = 0; i < this.sparkSuccessCount; i++) {
+      const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
+        comboBoostManager: this.comboBoostManager,
+      });
+      result.message.forEach(m => console.log(m));
+      if (result.damage) {
+        this.summary.totalDamageDealt += result.damage;
+        if (result.isCritical) this.summary.criticalHits++;
+      }
+      if (result.targetDefeated) break;
+    }
+
+    console.log(`\nSpark successes: ${this.sparkSuccessCount}/${total}`);
+
+    return {
+      success: true,
+      message: 'Spark mode complete',
+      nextPhase: PhaseTypes.BATTLE,
+      data: {
+        typingResult: {
+          completedSkills: this.sparkSuccessCount,
+          totalSkills: total,
+          summary: this.summary,
+          battleEnded: enemy.isDefeated(),
+        },
+        battle: this.battle,
+      },
+    };
+  }
+
+  /**
+   * 単文字チャレンジを生成
+   */
+  private generateSingleCharChallenges(): string[] {
+    const chars = BattleTypingPhase.SPARK_MODE_CHARS;
+    const list: string[] = [];
+    for (let i = 0; i < BattleTypingPhase.SPARK_MODE_CHALLENGE_COUNT; i++) {
+      list.push(chars[Math.floor(Math.random() * chars.length)]);
+    }
+    return list;
+  }
+
+  /**
+   * 単文字タイピング（制限時間内に一致文字を入力できたらsuccess）
+   */
+  private singleCharTyping(expected: string, timeoutMs: number): Promise<{ success: boolean }> {
+    return new Promise(resolve => {
+      // Sparkモードではraw modeで単キー入力を受け取る
+      const stdin = process.stdin as unknown as {
+        isTTY: boolean;
+        setRawMode: (mode: boolean) => void;
+        resume: () => void;
+        removeListener: (event: string, cb: (data: Buffer) => void) => void;
+        on?: (event: string, cb: (data: Buffer) => void) => void;
+        once?: (event: string, cb: (data: Buffer) => void) => void;
+        isRaw?: boolean;
+      };
+      const isTTY = stdin.isTTY;
+      const prevRaw = isTTY ? !!stdin.isRaw : false;
+      if (isTTY) {
+        stdin.setRawMode(true);
+        stdin.resume();
+      }
+      let done = false;
+      const onData = (data: Buffer) => {
+        if (done) return;
+        const c = data.toString();
+        if (c === BattleTypingPhase.KEY_ESCAPE) {
+          cleanup();
+          resolve({ success: false });
+          return;
+        }
+        if (c === expected) {
+          cleanup();
+          resolve({ success: true });
+        } else {
+          // 1ミス即失敗
+          cleanup();
+          resolve({ success: false });
+        }
+      };
+      const cleanup = () => {
+        done = true;
+        process.stdin.removeListener('data', onData);
+        if (isTTY) {
+          stdin.setRawMode(prevRaw);
+        }
+      };
+      const t = global.setTimeout(() => {
+        if (!done) {
+          cleanup();
+          resolve({ success: false });
+        }
+      }, timeoutMs);
+      // ensure timer cleared in resolve path
+      const origResolve = resolve;
+      resolve = v => {
+        global.clearTimeout(t);
+        origResolve(v);
+      };
+      process.stdin.once('data', onData);
     });
   }
 
@@ -169,6 +315,11 @@ export class BattleTypingPhase extends Phase {
       console.log(`⌛ Time remaining: ${this.currentChallenge.getRemainingTime().toFixed(1)}s`);
 
       await this.displayResult(result);
+
+      // Focusモードのミス時はターン即終了
+      if (result.forcedComplete) {
+        return this.completeAllChallenges();
+      }
 
       // スキル効果を適用
       const skill = this.skills[this.currentSkillIndex];
@@ -245,6 +396,9 @@ export class BattleTypingPhase extends Phase {
       challengeText,
       skill.typingDifficulty as TypingDifficulty
     );
+    if (this.exMode === 'focus') {
+      this.currentChallenge.enableStopOnFirstError();
+    }
     this.currentChallenge.start();
   }
 
@@ -254,8 +408,8 @@ export class BattleTypingPhase extends Phase {
   // eslint-disable-next-line complexity
   private async applySkillEffect(skill: Skill, typingResult: TypingResult): Promise<void> {
     // BattleActionExecutorを使用して効果を適用
-    const player = this.battle['player'];
-    const enemy = this.battle['enemy'];
+    const player = this.battle.getPlayer();
+    const enemy = this.battle.getEnemy();
 
     if (!player || !enemy) {
       console.log('❌ Battle not properly initialized');
@@ -299,10 +453,6 @@ export class BattleTypingPhase extends Phase {
     } else {
       console.log(`❌ ${result.message}`);
       this.summary.misses++;
-      if (this.exMode === 'focus') {
-        // 失敗時は以降のスキルを打ち切る
-        this.currentSkillIndex = this.skills.length;
-      }
     }
 
     // 敵のHPが0になったらバトル終了フラグを立てる
@@ -365,8 +515,8 @@ export class BattleTypingPhase extends Phase {
     this.displayFinalSummary();
 
     // バトル終了チェック
-    const enemy = this.battle['enemy'];
-    const player = this.battle['player'];
+    const enemy = this.battle.getEnemy();
+    const player = this.battle.getPlayer();
 
     let battleEnded = false;
 
