@@ -192,12 +192,16 @@
 - **条件付き効果**: `SkillEffect.conditions` により発動条件を定義可能
   - `typing_speed` / `typing_accuracy` / `hp_threshold(self|enemy, gte|lte, %)`
   - `enemy_status(statusId)` / `self_buff(buffId)` / `agility_check(gte|lte, value)`
-- **潜在効果**: `Skill.potentialEffects` により `typingPerfect` や `exMode` で効果を追加
+- **潜在効果**: `Skill.potentialEffects` により条件成立時に効果を追加
+  - `triggerCondition.typingPerfect: true`
+  - `triggerCondition.exMode: true | 'focus' | 'spark'`（trueは任意EXモード中）
+  - `triggerCondition.exThreshold: number`（現在EXが閾値以上）
+  - これらはAND条件で評価され、全て満たした場合に潜在効果を追加
 - **コンボブースト**: `ComboBoostManager` が次回スキルに一時強化を適用し消費
   - 種別: `damage`, `heal`, `skill_success`, `status_success`, `mp_cost_reduction`, `typing_difficulty`, `potential`
 - 実装ポイント:
   - `BattleCalculator` に条件評価・潜在効果マージのヘルパーを実装
-  - `BattleActionExecutor` で「潜在→コンボ適用→条件フィルタ」の順に効果を確定
+  - `BattleActionExecutor` で「潜在→コンボ適用→条件フィルタ」の順に効果を確定し、EXモード/EX値を判定文脈に注入
   - 後方互換性: 既存スキルは条件未指定で従来通り動作
 
 ## タイピングチャレンジ

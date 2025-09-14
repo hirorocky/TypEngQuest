@@ -62,6 +62,17 @@
           },
           "successRate": 90
         }
+      ],
+      "potentialEffects": [
+        {
+          "triggerCondition": { "exMode": "focus" },
+          "effect": {
+            "type": "damage",
+            "target": "enemy",
+            "basePower": 40,
+            "successRate": 100
+          }
+        }
       ]
     },
     {

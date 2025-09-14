@@ -553,5 +553,69 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
 
       jest.restoreAllMocks();
     });
+
+    it('潜在効果: EXモード(focus)指定で追加効果が発火する（統合）', () => {
+      const p = new (require('../player/Player').Player)('P');
+      p.getBodyStats().healMP(50);
+      const s: Skill = {
+        id: 'ex_focus_strike',
+        name: 'EX Focus Strike',
+        description: 'Focus中に追加ダメージ',
+        skillType: 'physical',
+        mpCost: 3,
+        mpCharge: 0,
+        actionCost: 1,
+        target: 'enemy',
+        typingDifficulty: 1,
+        skillSuccessRate: { baseRate: 100, typingInfluence: 0 },
+        criticalRate: { baseRate: 0, typingInfluence: 0 },
+        effects: [{ type: 'damage', target: 'enemy', basePower: 5, successRate: 100 }],
+        potentialEffects: [
+          {
+            triggerCondition: { exMode: 'focus' },
+            effect: { type: 'damage', target: 'enemy', basePower: 10, successRate: 100 },
+          },
+        ],
+      };
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isEffectSuccess')
+        .mockReturnValue(true);
+      jest
+        .spyOn(require('./BattleCalculator').BattleCalculator, 'isSkillEvaded')
+        .mockReturnValue(false);
+
+      const { ComboBoostManager } = require('./ComboBoostManager');
+      const mgr = new ComboBoostManager();
+
+      const normal = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Normal',
+          accuracyRating: 'Good',
+          totalRating: 120,
+          timeTaken: 1200,
+          accuracy: 96,
+          isSuccess: true,
+          forcedComplete: false,
+        },
+      });
+      const focus = BattleActionExecutor.executePlayerSkill(s, p, enemy, {
+        comboBoostManager: mgr,
+        typingResult: {
+          speedRating: 'Normal',
+          accuracyRating: 'Good',
+          totalRating: 120,
+          timeTaken: 1200,
+          accuracy: 96,
+          isSuccess: true,
+          forcedComplete: false,
+        },
+        exMode: 'focus',
+      });
+
+      expect(focus.damage).toBeGreaterThan(normal.damage);
+
+      jest.restoreAllMocks();
+    });
   });
 });

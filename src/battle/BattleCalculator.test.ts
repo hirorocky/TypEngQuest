@@ -699,5 +699,54 @@ describe('BattleCalculator', () => {
       expect(rPerfect.length).toBe(2);
       expect(rEx.length).toBe(2);
     });
+
+    it('潜在効果のマージ: exMode 指定(focus/spark) と exThreshold', () => {
+      const base = [{ type: 'damage', target: 'enemy', basePower: 5, successRate: 100 }];
+      const potentials = [
+        {
+          triggerCondition: { exMode: 'focus' },
+          effect: { type: 'damage', target: 'enemy', basePower: 6, successRate: 100 },
+        },
+        {
+          triggerCondition: { exMode: 'spark' },
+          effect: { type: 'damage', target: 'enemy', basePower: 7, successRate: 100 },
+        },
+        {
+          triggerCondition: { exThreshold: 20 },
+          effect: { type: 'damage', target: 'enemy', basePower: 8, successRate: 100 },
+        },
+      ];
+
+      const ctxFocus = BattleCalculator.createConditionContext({
+        attackerHP: { current: 100, max: 100 },
+        defenderHP: { current: 100, max: 100 },
+        attackerAgility: 50,
+        typing: { exMode: true, exModeType: 'focus' },
+        attackerEX: 25,
+      });
+      const ctxSparkLowEX = BattleCalculator.createConditionContext({
+        attackerHP: { current: 100, max: 100 },
+        defenderHP: { current: 100, max: 100 },
+        attackerAgility: 50,
+        typing: { exMode: true, exModeType: 'spark' },
+        attackerEX: 10,
+      });
+
+      const rFocus = BattleCalculator.mergePotentialEffects(
+        base as any,
+        potentials as any,
+        ctxFocus
+      );
+      const rSparkLowEX = BattleCalculator.mergePotentialEffects(
+        base as any,
+        potentials as any,
+        ctxSparkLowEX
+      );
+
+      // focus: focus用とexThreshold用が成立し、3つ中2つが追加
+      expect(rFocus.length).toBe(3);
+      // spark + EX不足: spark用のみ成立
+      expect(rSparkLowEX.length).toBe(2);
+    });
   });
 });
