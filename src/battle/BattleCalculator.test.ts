@@ -672,7 +672,7 @@ describe('BattleCalculator', () => {
           effect: { type: 'damage', target: 'enemy', basePower: 7, successRate: 100 },
         },
         {
-          triggerCondition: { exMode: true },
+          triggerCondition: { exMode: 'each' },
           effect: { type: 'damage', target: 'enemy', basePower: 9, successRate: 100 },
         },
       ];

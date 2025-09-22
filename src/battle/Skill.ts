@@ -111,10 +111,10 @@ export interface SkillPotentialEffect {
     typingPerfect?: boolean;
     /**
      * EXモード条件。
-     * - true: いずれかのEXモード中であれば成立
+     * - 'each': いずれかのEXモード中であれば成立
      * - 'focus' | 'spark': 指定モード中のみ成立
      */
-    exMode?: boolean | 'focus' | 'spark';
+    exMode?: 'each' | 'focus' | 'spark';
     /**
      * EXポイントしきい値（現在EXがこの値以上で成立）
      */

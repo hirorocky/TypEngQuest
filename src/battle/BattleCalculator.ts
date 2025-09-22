@@ -33,7 +33,7 @@ export class BattleCalculator {
     let exModeOk = true;
     if (cond.exMode !== undefined) {
       exModeOk =
-        cond.exMode === true
+        cond.exMode === 'each'
           ? context.attacker.exMode === true
           : context.attacker.exModeType === cond.exMode;
     }
