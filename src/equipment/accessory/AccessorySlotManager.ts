@@ -1,11 +1,12 @@
 import { Accessory } from './Accessory';
+import { AccessoryItem } from '../../items/AccessoryItem';
 import { AggregatedAccessoryEffects, AccessoryEffectSlot, AccessoryStat } from './types';
 
 const MAX_SLOTS = 3;
 const ACCESSORY_STATS: AccessoryStat[] = ['strength', 'willpower', 'agility', 'fortune'];
 
 interface SlotState {
-  accessory: Accessory | null;
+  accessoryItem: AccessoryItem | null;
   unlocked: boolean;
   unlockKeyItemId?: string;
 }
@@ -24,7 +25,7 @@ export class AccessorySlotManager {
     }
 
     this.slots = slotUnlockKeys.map((keyItemId, index) => ({
-      accessory: null,
+      accessoryItem: null,
       unlocked: index === 0,
       unlockKeyItemId: keyItemId,
     }));
@@ -53,39 +54,39 @@ export class AccessorySlotManager {
     return true;
   }
 
-  equip(slotIndex: number, accessory: Accessory): void {
+  equip(slotIndex: number, accessoryItem: AccessoryItem): void {
     this.assertSlotIndex(slotIndex);
     const slot = this.slots[slotIndex];
     if (!slot.unlocked) {
       throw new Error(`Slot ${slotIndex + 1} is not unlocked`);
     }
 
-    if (accessory.getGrade() > this.worldLevel) {
+    if (accessoryItem.getAccessory().getGrade() > this.worldLevel) {
       throw new Error('Accessory grade exceeds current world level');
     }
 
-    slot.accessory = accessory;
+    slot.accessoryItem = accessoryItem;
   }
 
   unequip(slotIndex: number): void {
     this.assertSlotIndex(slotIndex);
-    this.slots[slotIndex].accessory = null;
+    this.slots[slotIndex].accessoryItem = null;
   }
 
   clear(): void {
     this.slots.forEach(slot => {
-      slot.accessory = null;
+      slot.accessoryItem = null;
     });
   }
 
-  listEquipped(): Accessory[] {
+  listEquipped(): AccessoryItem[] {
     return this.slots
-      .map(slot => slot.accessory)
-      .filter((accessory): accessory is Accessory => accessory !== null);
+      .map(slot => slot.accessoryItem)
+      .filter((item): item is AccessoryItem => item !== null);
   }
 
-  getSlotState(): (Accessory | null)[] {
-    return this.slots.map(slot => slot.accessory);
+  getSlotState(): (AccessoryItem | null)[] {
+    return this.slots.map(slot => slot.accessoryItem);
   }
 
   getUnlockedSlotCount(): number {
@@ -105,7 +106,8 @@ export class AccessorySlotManager {
       subEffects: [],
     };
 
-    this.listEquipped().forEach(accessory => {
+    this.listEquipped().forEach(item => {
+      const accessory = item.getAccessory();
       const effect = accessory.getAggregatedEffect(baseStats);
       ACCESSORY_STATS.forEach(stat => {
         aggregate.boost[stat] += effect.boost[stat];

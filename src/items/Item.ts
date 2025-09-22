@@ -5,6 +5,7 @@ import { Player } from '../player/Player';
  */
 export enum ItemType {
   CONSUMABLE = 'consumable',
+  ACCESSORY = 'accessory',
   EQUIPMENT = 'equipment',
   KEY_ITEM = 'key_item',
 }

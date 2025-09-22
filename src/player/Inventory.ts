@@ -1,5 +1,6 @@
 import { Item, ItemType } from '../items/Item';
 import { ConsumableItem } from '../items/ConsumableItem';
+import { AccessoryItem } from '../items/AccessoryItem';
 
 /**
  * インベントリのデータ構造
@@ -150,6 +151,8 @@ export class Inventory {
       switch (itemData.type) {
         case ItemType.CONSUMABLE:
           return ConsumableItem.fromJSON(itemData);
+        case ItemType.ACCESSORY:
+          return AccessoryItem.fromJSON(itemData);
         default:
           return Item.fromJSON(itemData);
       }

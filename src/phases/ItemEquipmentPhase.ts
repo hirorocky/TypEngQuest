@@ -3,23 +3,22 @@ import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { EquipmentItem } from '../items/EquipmentItem';
+import { AccessoryItem } from '../items/AccessoryItem';
+import { AccessoryEffectSlot } from '../equipment/accessory';
 import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
-import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
 import { TabCompleter } from '../core/completion';
 import { EquipmentStatsData } from '../player/EquipmentStats';
 
 /**
- * 装備管理フェーズ - リッチなキー入力UIで装備管理
- * Tab: スロット切り替え, ↑↓: アイテム選択, e: 装備, w: 装備解除, q: 終了
+ * アクセサリ装備管理フェーズ
  */
 export class ItemEquipmentPhase extends Phase {
   private player: Player;
   private grammarChecker: EquipmentGrammarChecker;
-  private effectCalculator: EquipmentEffectCalculator;
   private currentSlot: number = 0;
   private selectedItemIndex: number = 0;
-  private equipmentItems: EquipmentItem[] = [];
+  private accessoryItems: AccessoryItem[] = [];
+  private readonly slotCount: number;
   private isActive: boolean = true;
 
   constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
@@ -35,10 +34,8 @@ export class ItemEquipmentPhase extends Phase {
     this.world = world;
     this.player = player;
     this.grammarChecker = new EquipmentGrammarChecker();
-    this.effectCalculator = new EquipmentEffectCalculator();
-
-    // 装備可能なアイテムを取得
-    this.updateEquipmentItems();
+    this.slotCount = this.player.getAccessorySlotCount();
+    this.updateAccessoryItems();
   }
 
   getType(): PhaseType {
@@ -46,29 +43,24 @@ export class ItemEquipmentPhase extends Phase {
   }
 
   getPrompt(): string {
-    return 'equipment> ';
+    return 'accessory> ';
   }
 
   async initialize(): Promise<void> {
     this.render();
   }
 
-  /**
-   * リッチUI用の入力処理ループ
-   */
   async startInputLoop(): Promise<CommandResult | null> {
-    // テスト環境では自動終了
     if (process.env.NODE_ENV === 'test' && process.env.DEBUG_UI !== 'true') {
       return {
         success: true,
-        message: 'Equipment management completed (test mode)',
+        message: 'Accessory management completed (test mode)',
         nextPhase: 'inventory',
       };
     }
 
     this.isActive = true;
 
-    // raw modeを有効にしてキー入力を直接取得
     if (typeof process.stdin.setRawMode === 'function') {
       process.stdin.setRawMode(true);
     }
@@ -82,21 +74,15 @@ export class ItemEquipmentPhase extends Phase {
         }
 
         const result = this.processKeyInput(key);
-
         if (result) {
-          // 終了処理
-          this.cleanup().then(() => {
-            resolve(result);
-          });
+          this.cleanup().then(() => resolve(result));
         } else {
-          // UIを更新
           this.render();
         }
       };
 
       process.stdin.on('data', handleKeyInput);
 
-      // 終了時のクリーンアップ
       const cleanup = () => {
         process.stdin.removeListener('data', handleKeyInput);
         if (typeof process.stdin.setRawMode === 'function') {
@@ -105,7 +91,6 @@ export class ItemEquipmentPhase extends Phase {
         process.stdin.pause();
       };
 
-      // resolveが呼ばれた時にクリーンアップ
       const originalResolve = resolve;
       resolve = result => {
         cleanup();
@@ -114,417 +99,252 @@ export class ItemEquipmentPhase extends Phase {
     });
   }
 
-  /**
-   * キー入力を処理する
-   * @returns 終了する場合はCommandResultを返す、継続する場合はnullを返す
-   */
   private processKeyInput(key: string): CommandResult | null {
     if (this.handleNavigationKeys(key)) return null;
     if (this.handleActionKeys(key)) return null;
     return this.handleExitKeys(key);
   }
 
-  /**
-   * ナビゲーションキーを処理
-   */
   private handleNavigationKeys(key: string): boolean {
     switch (key) {
-      case '\t': // Tab - スロット切り替え
-        this.currentSlot = (this.currentSlot + 1) % 5;
+      case '\t':
+        this.currentSlot = (this.currentSlot + 1) % this.slotCount;
         return true;
-
-      case '\u001b[A': // 上矢印 - 前のアイテム
-        if (this.equipmentItems.length > 0) {
+      case '\u001b[A':
+        if (this.accessoryItems.length > 0) {
           this.selectedItemIndex = Math.max(0, this.selectedItemIndex - 1);
         }
         return true;
-
-      case '\u001b[B': // 下矢印 - 次のアイテム
-        if (this.equipmentItems.length > 0) {
+      case '\u001b[B':
+        if (this.accessoryItems.length > 0) {
           this.selectedItemIndex = Math.min(
-            this.equipmentItems.length - 1,
+            this.accessoryItems.length - 1,
             this.selectedItemIndex + 1
           );
         }
         return true;
-
       default:
         return false;
     }
   }
 
-  /**
-   * アクションキーを処理
-   */
   private handleActionKeys(key: string): boolean {
     switch (key) {
       case 'e':
-      case 'E': // 装備
+      case 'E':
         this.equipSelectedItem();
         return true;
-
       case 'w':
-      case 'W': // 装備解除
+      case 'W':
         this.unequipCurrentSlot();
         return true;
-
       default:
         return false;
     }
   }
 
-  /**
-   * 終了キーを処理
-   */
   private handleExitKeys(key: string): CommandResult | null {
     if (key === 'q' || key === 'Q' || key === '\u0003') {
       this.isActive = false;
       return {
         success: true,
-        message: 'Equipment management completed',
+        message: 'Accessory management completed',
         nextPhase: 'inventory',
       };
     }
     return null;
   }
 
-  /**
-   * 画面を描画する
-   */
   private render(): void {
     Display.clear();
-    Display.printHeader('Equipment Management');
+    Display.printHeader('Accessory Management');
     Display.newLine();
 
-    // 装備スロット表示
     this.renderEquipmentSlots();
     Display.newLine();
-
-    // 利用可能なアイテム表示
-    this.renderAvailableItems();
+    this.renderInventoryAccessories();
     Display.newLine();
-
-    // ステータス情報表示
-    this.renderStatusInfo();
+    this.renderStatusSummary();
     Display.newLine();
-
-    // 操作説明表示
     this.renderControls();
     Display.newLine();
   }
 
-  /**
-   * 装備スロットを描画する
-   */
   private renderEquipmentSlots(): void {
-    Display.printInfo('Equipment Slots:');
+    Display.printInfo('Accessory Slots:');
     const slots = this.player.getEquipmentSlots();
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < slots.length; i++) {
       const isSelected = i === this.currentSlot;
-      const equipment = slots[i];
-      const slotDisplay = equipment ? equipment.getName() : '[empty]';
+      const accessory = slots[i];
       const prefix = isSelected ? '→ ' : '  ';
       const suffix = isSelected ? ' ←' : '';
-
-      Display.println(`${prefix}Slot ${i + 1}: ${slotDisplay}${suffix}`);
+      const status = this.player.isAccessorySlotUnlocked(i) ? '' : ' (locked)';
+      const displayName = accessory ? accessory.getDisplayName() : '[empty]';
+      Display.println(`${prefix}Slot ${i + 1}: ${displayName}${status}${suffix}`);
     }
   }
 
-  /**
-   * 利用可能なアイテムを描画する
-   */
-  private renderAvailableItems(): void {
-    Display.printInfo('Available Items:');
+  private renderInventoryAccessories(): void {
+    Display.printInfo('Inventory Accessories:');
 
-    if (this.equipmentItems.length === 0) {
-      Display.println('  No equipment items available');
+    if (this.accessoryItems.length === 0) {
+      Display.println('  No accessories available');
       return;
     }
 
-    for (let i = 0; i < this.equipmentItems.length; i++) {
+    for (let i = 0; i < this.accessoryItems.length; i++) {
       const isSelected = i === this.selectedItemIndex;
-      const item = this.equipmentItems[i];
+      const item = this.accessoryItems[i];
+      const accessory = item.getAccessory();
       const prefix = isSelected ? '→ ' : '  ';
       const suffix = isSelected ? ' ←' : '';
       const rarity = this.getRaritySymbol(item.getRarity());
 
       Display.println(
-        `${prefix}${i + 1}. ${item.getName()} ${rarity} (Grade: ${item.getGrade()})${suffix}`
+        `${prefix}${i + 1}. ${item.getDisplayName()} ${rarity} (Grade: ${accessory.getGrade()})${suffix}`
       );
 
       if (isSelected) {
         Display.println(`    ${item.getDescription()}`);
-        Display.println(`    Stats: ${this.formatItemStats(item)}`);
+        Display.println(
+          `    Main Effect: boost ${accessory.getMainEffect().boost} / penalty ${accessory.getMainEffect().penalty}`
+        );
+        Display.println(`    Sub Effects: ${this.formatSubEffects(accessory.getSubEffects())}`);
+        const restriction = this.getEquipRestrictionMessage(item);
+        const status = restriction ? `✗ Cannot equip (${restriction})` : '✓ Can equip';
+        Display.println(`    Equip Status: ${status}`);
       }
     }
   }
 
-  /**
-   * ステータス情報を描画する
-   */
-  private renderStatusInfo(): void {
-    Display.printInfo('Status Information:');
+  private renderStatusSummary(): void {
+    Display.printInfo('Status Summary:');
+    const worldLevel = this.player.getWorldLevel();
+    const averageGrade = this.player.getLevel();
+    const contribution = this.player.getEquipmentStats().toJSON();
+    const totalStats = this.player.getTotalStats();
 
-    // 現在のレベルとステータス
-    const currentLevel = this.player.getLevel();
-    const currentStats = this.player.getEquippedItemStats();
-    Display.println(`  Current Level: ${currentLevel}`);
-    Display.println(`  Current Stats: ${this.formatEquipmentStats(currentStats)}`);
+    Display.println(`  World Level: ${worldLevel}`);
+    Display.println(`  Average Grade: ${averageGrade}`);
+    Display.println(`  Accessory Contribution: ${this.formatEquipmentStats(contribution)}`);
+    Display.println(
+      `  Total Stats: STR ${totalStats.strength} / WIL ${totalStats.willpower} / AGI ${totalStats.agility} / LUK ${totalStats.fortune}`
+    );
 
-    // 選択されたアイテムの装備プレビュー
-    const selectedItem = this.getSelectedItem();
-    if (selectedItem) {
-      const previewLevel = this.calculatePreviewLevel(selectedItem);
-      const previewStats = this.calculatePreviewStats(selectedItem);
-      const levelDiff = previewLevel - currentLevel;
-      const statsDiff = this.calculateStatsDifference(currentStats, previewStats);
-
-      Display.println(
-        `  Preview Level: ${previewLevel} (${levelDiff >= 0 ? '+' : ''}${levelDiff})`
-      );
-      Display.println(`  Preview Stats: ${this.formatEquipmentStats(previewStats)}`);
-
-      if (statsDiff.length > 0) {
-        Display.println(`  Stats Change: ${statsDiff}`);
-      }
-
-      // 装備可能かチェック
-      const canEquip = this.canEquipItem(selectedItem);
-      const equipStatus = canEquip ? '✓ Can equip' : '✗ Cannot equip';
-      Display.println(`  Equip Status: ${equipStatus}`);
-
-      if (!canEquip) {
-        const reason = this.getEquipFailureReason(selectedItem);
-        Display.println(`    Reason: ${reason}`);
-      }
-    }
-
-    // 英文法チェック結果
-    const grammarResult = this.checkCurrentGrammar();
-    const grammarStatus = grammarResult.isValid ? '✓ Valid' : '✗ Invalid';
-    const grammarColor = grammarResult.isValid ? '' : '⚠️ ';
-    Display.println(`  Grammar Check: ${grammarColor}${grammarStatus}`);
+    const grammarResult = this.checkNamingGrammar();
+    const grammarLabel = grammarResult.isValid ? '✓ Valid' : '✗ Invalid';
+    const prefix = grammarResult.isValid ? '' : '⚠️ ';
+    Display.println(`  Naming Grammar: ${prefix}${grammarLabel}`);
     if (!grammarResult.isValid) {
       Display.println(`    ${grammarResult.message}`);
     }
   }
 
-  /**
-   * 操作説明を描画する
-   */
   private renderControls(): void {
     Display.printInfo('Controls:');
-    Display.println('  Tab    : Switch equipment slot');
-    Display.println('  ↑ ↓   : Select item');
-    Display.println('  e      : Equip selected item');
-    Display.println('  w      : Unequip from current slot');
+    Display.println('  Tab    : Switch accessory slot');
+    Display.println('  ↑ ↓   : Select accessory');
+    Display.println('  e      : Equip selected accessory');
+    Display.println('  w      : Unequip current slot');
     Display.println('  q      : Return to inventory');
   }
 
-  /**
-   * 選択されたアイテムを装備する
-   */
   private equipSelectedItem(): void {
     const selectedItem = this.getSelectedItem();
     if (!selectedItem) return;
 
     if (!this.canEquipItem(selectedItem)) {
-      // エラー音の代わりに何もしない（UIで表示済み）
       return;
     }
 
     try {
       this.player.equipToSlot(this.currentSlot, selectedItem);
-      this.updateEquipmentItems();
-
-      // 選択インデックスを調整
-      this.selectedItemIndex = Math.min(this.selectedItemIndex, this.equipmentItems.length - 1);
+      this.updateAccessoryItems();
+      this.selectedItemIndex = Math.min(this.selectedItemIndex, this.accessoryItems.length - 1);
     } catch (_error) {
-      // エラーは無視（UIで処理）
+      // UI側でメッセージ済みなので握りつぶす
     }
   }
 
-  /**
-   * 現在のスロットの装備を解除する
-   */
   private unequipCurrentSlot(): void {
+    if (!this.player.isAccessorySlotUnlocked(this.currentSlot)) {
+      return;
+    }
+
     const slots = this.player.getEquipmentSlots();
     if (!slots[this.currentSlot]) {
-      return; // 空のスロット
+      return;
     }
 
     try {
       this.player.equipToSlot(this.currentSlot, null);
-      this.updateEquipmentItems();
+      this.updateAccessoryItems();
     } catch (_error) {
-      // エラーは無視（UIで処理）
+      // noop
     }
   }
 
-  /**
-   * アイテムが装備可能かチェック
-   */
-  private canEquipItem(item: EquipmentItem): boolean {
-    // 基本的なチェック（必要に応じて拡張）
-    return item instanceof EquipmentItem;
-  }
-
-  /**
-   * 装備失敗の理由を取得
-   */
-  private getEquipFailureReason(item: EquipmentItem): string {
-    if (!(item instanceof EquipmentItem)) {
-      return 'Not an equipment item';
+  private canEquipItem(item: AccessoryItem): boolean {
+    if (!this.player.isAccessorySlotUnlocked(this.currentSlot)) {
+      return false;
     }
-    return 'Unknown reason';
+    return item.getAccessory().getGrade() <= this.player.getWorldLevel();
   }
 
-  /**
-   * ステータスの差分を計算
-   */
-  private calculateStatsDifference(
-    current: EquipmentStatsData,
-    preview: EquipmentStatsData
-  ): string {
-    const diffs: string[] = [];
-
-    const categories: (keyof EquipmentStatsData)[] = [
-      'strength',
-      'willpower',
-      'agility',
-      'fortune',
-    ];
-    const labels = ['STR', 'WIL', 'AGI', 'LUK'];
-
-    for (let i = 0; i < categories.length; i++) {
-      const category = categories[i];
-      const label = labels[i];
-      const diff = (preview[category] || 0) - (current[category] || 0);
-
-      if (diff !== 0) {
-        const sign = diff > 0 ? '+' : '';
-        diffs.push(`${label}${sign}${diff}`);
-      }
+  private getEquipRestrictionMessage(item: AccessoryItem): string | null {
+    if (!this.player.isAccessorySlotUnlocked(this.currentSlot)) {
+      return 'slot locked';
     }
-
-    return diffs.join(', ') || 'No change';
-  }
-
-  /**
-   * 装備可能なアイテムリストを更新する
-   */
-  private updateEquipmentItems(): void {
-    const allItems = this.player.getInventory().getItems();
-    this.equipmentItems = allItems.filter(item => item instanceof EquipmentItem) as EquipmentItem[];
-
-    // 選択インデックスを調整
-    if (this.selectedItemIndex >= this.equipmentItems.length) {
-      this.selectedItemIndex = Math.max(0, this.equipmentItems.length - 1);
+    if (item.getAccessory().getGrade() > this.player.getWorldLevel()) {
+      return `requires world level ≥ ${item.getAccessory().getGrade()}`;
     }
+    return null;
   }
 
-  /**
-   * 現在選択されているアイテムを取得する
-   */
-  private getSelectedItem(): EquipmentItem | null {
-    return this.equipmentItems[this.selectedItemIndex] || null;
-  }
-
-  /**
-   * レアリティシンボルを取得する
-   */
-  private getRaritySymbol(rarity: string): string {
-    switch (rarity.toLowerCase()) {
-      case 'common':
-        return '[C]';
-      case 'rare':
-        return '[R]';
-      case 'epic':
-        return '[E]';
-      case 'legendary':
-        return '[L]';
-      default:
-        return '[?]';
-    }
-  }
-
-  /**
-   * アイテムのステータスをフォーマットする
-   */
-  private formatItemStats(item: EquipmentItem): string {
-    const stats = item.getStats();
-    const parts: string[] = [];
-
-    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
-    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
-    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
-    if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
-
-    return parts.join(', ') || 'No bonus';
-  }
-
-  /**
-   * 装備ステータスをフォーマットする
-   */
-  private formatEquipmentStats(stats: EquipmentStatsData): string {
-    const parts: string[] = [];
-
-    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
-    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
-    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
-    if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
-
-    return parts.join(', ') || 'No bonus';
-  }
-
-  /**
-   * プレビューレベルを計算する
-   */
-  private calculatePreviewLevel(newItem: EquipmentItem): number {
-    const currentSlots = this.player.getEquipmentSlots();
-    const previewSlots = [...currentSlots];
-    previewSlots[this.currentSlot] = newItem;
-
-    const previewItems = previewSlots.filter(item => item !== null) as EquipmentItem[];
-    return this.effectCalculator.calculateAverageGradeBySlots(previewItems, 5);
-  }
-
-  /**
-   * プレビューステータスを計算する
-   */
-  private calculatePreviewStats(newItem: EquipmentItem): EquipmentStatsData {
-    const currentSlots = this.player.getEquipmentSlots();
-    const previewSlots = [...currentSlots];
-    previewSlots[this.currentSlot] = newItem;
-
-    const previewItems = previewSlots.filter(item => item !== null) as EquipmentItem[];
-    return this.effectCalculator.calculateTotalStats(previewItems);
-  }
-
-  /**
-   * 現在の装備の英文法をチェックする
-   */
-  private checkCurrentGrammar(): { isValid: boolean; message: string } {
+  private checkNamingGrammar(): { isValid: boolean; message: string } {
     const equippedNames = this.player.getEquippedItemNames().filter(name => name !== '');
+    if (equippedNames.length === 0) {
+      return { isValid: true, message: 'No accessories equipped' };
+    }
     return this.grammarChecker.isValidSentence(equippedNames)
-      ? { isValid: true, message: 'Valid English sentence' }
+      ? { isValid: true, message: 'valid sentence' }
       : { isValid: false, message: this.grammarChecker.getGrammarErrorMessage(equippedNames) };
   }
 
-  async cleanup(): Promise<void> {
-    this.isActive = false;
+  private getSelectedItem(): AccessoryItem | null {
+    return this.accessoryItems[this.selectedItemIndex] || null;
+  }
 
-    // raw modeを終了
-    if (typeof process.stdin.setRawMode === 'function') {
-      process.stdin.setRawMode(false);
+  private updateAccessoryItems(): void {
+    const allItems = this.player.getInventory().getItems();
+    this.accessoryItems = allItems.filter(
+      (item): item is AccessoryItem => item instanceof AccessoryItem
+    );
+
+    if (this.selectedItemIndex >= this.accessoryItems.length) {
+      this.selectedItemIndex = Math.max(0, this.accessoryItems.length - 1);
     }
-    process.stdin.pause();
+  }
 
-    // 少し待ってからstdinを再開
-    await new Promise(resolve => global.setTimeout(resolve, 50));
-    process.stdin.resume();
+  private getRaritySymbol(rarity: string): string {
+    switch (rarity.toLowerCase()) {
+      case 'legendary':
+        return '★';
+      case 'epic':
+        return '◆';
+      case 'rare':
+        return '◇';
+      default:
+        return '';
+    }
+  }
 
-    await super.cleanup();
+  private formatSubEffects(subEffects: AccessoryEffectSlot[]): string {
+    return subEffects.map(effect => effect.label).join(', ');
+  }
+
+  private formatEquipmentStats(stats: EquipmentStatsData): string {
+    return `STR ${stats.strength} / WIL ${stats.willpower} / AGI ${stats.agility} / LUK ${stats.fortune}`;
   }
 }

@@ -2,7 +2,7 @@ import { InventoryPhase } from './InventoryPhase';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { ConsumableItem, EffectType } from '../items/ConsumableItem';
-import { EquipmentItem } from '../items/EquipmentItem';
+import { AccessoryItem } from '../items/AccessoryItem';
 import { ItemType, ItemRarity } from '../items/Item';
 import { Display } from '../ui/Display';
 // ScrollableList import removed - no longer used in InventoryPhase tests
@@ -155,19 +155,19 @@ describe('InventoryPhase', () => {
   });
 
   describe('装備UI機能', () => {
-    describe('装備スロット管理システム', () => {
+    describe('アクセサリスロット管理システム', () => {
       test('equipコマンドでItemEquipmentフェーズに遷移する', async () => {
-        // 装備アイテムをインベントリに追加
-        const equipment = new EquipmentItem({
-          id: 'test-sword',
-          name: 'sword',
-          description: 'A sharp sword',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 10, willpower: 0, agility: 0, fortune: 0 },
-          grade: 10,
+        player.setWorldLevel(30);
+        const accessory = new AccessoryItem({
+          id: 'test-accessory',
+          name: 'Cronus',
+          description: 'Accessory for testing',
+          type: ItemType.ACCESSORY,
+          rarity: ItemRarity.RARE,
+          definitionId: 'cronus_glove',
+          grade: 20,
         });
-        player.getInventory().addItem(equipment);
+        player.getInventory().addItem(accessory);
 
         const result = await phase.processInput('equip');
 
@@ -175,7 +175,7 @@ describe('InventoryPhase', () => {
         expect(result.nextPhase).toBe('itemEquipment');
       });
 
-      test('装備アイテムが存在しない場合もItemEquipmentフェーズに遷移', async () => {
+      test('アクセサリが存在しない場合もItemEquipmentフェーズに遷移', async () => {
         const result = await phase.processInput('equip');
 
         expect(result.success).toBe(true);

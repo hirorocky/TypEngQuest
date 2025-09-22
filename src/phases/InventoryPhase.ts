@@ -4,9 +4,9 @@ import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Item } from '../items/Item';
-import { EquipmentItem } from '../items/EquipmentItem';
+import { AccessoryItem } from '../items/AccessoryItem';
 import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
-import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
+import { EquipmentStatsData } from '../player/EquipmentStats';
 import { TabCompleter } from '../core/completion';
 
 /**
@@ -16,7 +16,6 @@ export class InventoryPhase extends Phase {
   protected world: World;
   private player: Player;
   private grammarChecker: EquipmentGrammarChecker;
-  private effectCalculator: EquipmentEffectCalculator;
 
   constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
     super(world, tabCompleter);
@@ -30,7 +29,6 @@ export class InventoryPhase extends Phase {
     this.world = world;
     this.player = player;
     this.grammarChecker = new EquipmentGrammarChecker();
-    this.effectCalculator = new EquipmentEffectCalculator();
   }
 
   public getName(): string {
@@ -263,20 +261,20 @@ export class InventoryPhase extends Phase {
    */
   private async showEquipments(): Promise<CommandResult> {
     const equipmentSlots = this.player.getEquipmentSlots();
-    const equippedItems = equipmentSlots.filter(item => item !== null);
+    const equippedItems = equipmentSlots.filter((item): item is AccessoryItem => item !== null);
 
     Display.printInfo('Current Equipment:');
 
     if (equippedItems.length === 0) {
-      Display.println('  No equipment equipped');
+      Display.println('  No accessories equipped');
       return {
         success: true,
-        message: 'no equipment',
+        message: 'no accessories equipped',
       };
     }
 
     equipmentSlots.forEach((item, index) => {
-      const slotDisplay = item ? `${item.getName()} [${item.getRarity()}]` : '[empty]';
+      const slotDisplay = item ? `${item.getDisplayName()} [${item.getRarity()}]` : '[empty]';
       Display.println(`  Slot ${index + 1}: ${slotDisplay}`);
     });
 
@@ -290,10 +288,11 @@ export class InventoryPhase extends Phase {
     }
 
     // レベルとステータス表示
-    Display.println(`  Level: ${this.player.getLevel()}`);
-    const statsText = this.getStatusPreview([...equippedItems]);
+    Display.println(`  World Level: ${this.player.getWorldLevel()}`);
+    Display.println(`  Average Grade: ${this.player.getLevel()}`);
+    const statsText = this.getStatusPreview(this.player.getEquipmentStats().toJSON());
     if (statsText) {
-      Display.println(`  Total Stats: ${statsText}`);
+      Display.println(`  Accessory Contribution: ${statsText}`);
     }
 
     return {
@@ -305,16 +304,23 @@ export class InventoryPhase extends Phase {
   /**
    * ステータス変化のプレビューを取得する
    */
-  private getStatusPreview(equipments: EquipmentItem[]): string {
-    const stats = this.effectCalculator.calculateTotalStats(equipments);
+  private getStatusPreview(contribution: EquipmentStatsData): string {
     const lines: string[] = [];
 
-    if (stats.strength > 0) lines.push(`Strength: +${stats.strength}`);
-    if (stats.willpower > 0) lines.push(`Willpower: +${stats.willpower}`);
-    if (stats.agility > 0) lines.push(`Agility: +${stats.agility}`);
-    if (stats.fortune > 0) lines.push(`Fortune: +${stats.fortune}`);
+    if (contribution.strength !== 0)
+      lines.push(`Strength: ${this.formatSigned(contribution.strength)}`);
+    if (contribution.willpower !== 0)
+      lines.push(`Willpower: ${this.formatSigned(contribution.willpower)}`);
+    if (contribution.agility !== 0)
+      lines.push(`Agility: ${this.formatSigned(contribution.agility)}`);
+    if (contribution.fortune !== 0)
+      lines.push(`Fortune: ${this.formatSigned(contribution.fortune)}`);
 
     return lines.join(', ');
+  }
+
+  private formatSigned(value: number): string {
+    return value >= 0 ? `+${value}` : `${value}`;
   }
 
   /**
