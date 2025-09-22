@@ -62,10 +62,7 @@ export class BattleActionExecutor {
         exMode: !!exMode,
         exModeType: exMode,
       },
-      attackerEX:
-        typeof (player as unknown as { getExPoints?: () => number }).getExPoints === 'function'
-          ? (player as unknown as { getExPoints: () => number }).getExPoints()
-          : 0,
+      attackerEX: player.getExPoints(),
       hasSelfBuff: (id: string) => playerBodyStats.getTemporaryStatuses().some(s => s.id === id),
       hasEnemyStatus: (_id: string) => false,
     });

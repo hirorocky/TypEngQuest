@@ -172,6 +172,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
       healMP: jest.fn(),
       takeDamage: jest.fn(),
       heal: jest.fn(),
+      getTemporaryStatuses: jest.fn().mockReturnValue([]),
     };
 
     player = {
@@ -186,6 +187,7 @@ describe('BattleActionExecutor Phase 5: 新システム統合', () => {
         fortune: 80,
       }),
       isDefeated: jest.fn().mockReturnValue(false),
+      getExPoints: jest.fn().mockReturnValue(0),
     } as any;
 
     enemy = new Enemy({
