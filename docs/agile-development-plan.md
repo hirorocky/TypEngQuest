@@ -1123,231 +1123,78 @@ class BattleDisplay {
 
 ---
 
-### ⚔️ プロジェクト10E: 装備システム刷新
-**目標**: 装備システムを「形容詞+武器/アクセサリー」構成に変更する
+### ⚔️ プロジェクト10E: アクセサリ装備システム刷新
+**目標**: docs/game-systems.md 2.5章に定義されたアクセサリ装備システムを実装し、シンプルかつ戦略的なビルド構築体験を提供する。
 
 **成果物**:
-- 8スロット装備システム（形容詞+武器1、形容詞+武器2、形容詞+アクセサリー1、形容詞+アクセサリー2）
-- 3種類のアイテム種別（weapon, accessory, adjective）
-- レアリティ廃止、グレード1-100システム
-- 装備アイテムへの最大2スキル・コンボブースト付与
-- プレイヤーレベル＝装備グレード平均値計算
+- 最大3スロットのアクセサリ装備枠（初期1枠、キーアイテムで順次解放）と装備データモデル
+- アクセサリタイプごとのメイン効果（ステータス偏向）とサブ効果（特殊効果スロット3枠）を持つデータ設計
+- グレード1〜100とワールドレベル同期による解放ロジック、倍率・ペナルティカーブの実装
+- docs/game-systems.md §2.5に定義された命名規則（タイプ由来＋特殊効果ハイライト＋グレード表記）に従うアクセサリ名称生成と表示
+- 同名アクセサリ2個を消費する合成処理（グレード継承とサブ効果選択UI）
+- アクセサリ装備管理UI/ログの更新とテスト
 
 **詳細設計**:
 
-#### 新しい装備スロット構成（最大8スロット）
+#### 装備スロット構成
+- アクセサリスロット1: 初期解放、主要なビルド軸
+- アクセサリスロット2: 「だいじなもの」入手で解放
+- アクセサリスロット3: 最終キーアイテムで解放
+- 各スロットは同時装備最大3個、スロット数に応じて装備効果を集約する
+
+#### アクセサリデータモデル
 ```typescript
-enum EquipmentSlot {
-  ADJECTIVE_1 = 'adjective_1',
-  WEAPON_1 = 'weapon_1',
-  ADJECTIVE_2 = 'adjective_2',
-  WEAPON_2 = 'weapon_2',
-  ADJECTIVE_3 = 'adjective_3',
-  ACCESSORY_1 = 'accessory_1',
-  ADJECTIVE_4 = 'adjective_4',
-  ACCESSORY_2 = 'accessory_2' // キーアイテムで解放
-}
-
-// 装備構成例: "swift steel sword" + "magical crystal pendant"
-// slot1: swift(adjective) + slot2: steel(adjective) + slot3: sword(weapon)
-// slot4: magical(adjective) + slot5: crystal(adjective) + slot6: pendant(accessory)
-```
-
-#### アイテム種別の再定義
-```typescript
-enum EquipmentType {
-  WEAPON = 'weapon',        // strength, willpower寄り
-  ACCESSORY = 'accessory',  // agility, fortune寄り
-  ADJECTIVE = 'adjective'   // バランス型
-}
-
-interface EquipmentItem {
+interface Accessory {
   id: string;
   name: string;
-  type: EquipmentType;
-  grade: number; // 1-100（レアリティ廃止）
+  type: AccessoryArchetype; // 攻撃特化/支援特化/機動特化など
+  grade: number; // 1-100、ワールドレベル上限に同期
 
-  // ステータス
-  stats: {
-    strength: number;
-    willpower: number;
-    agility: number;
-    fortune: number;
+  mainEffect: {
+    boost: 'strength' | 'willpower' | 'agility' | 'fortune';
+    penalty: 'strength' | 'willpower' | 'agility' | 'fortune';
   };
 
-  // 新機能
-  skills: Skill[]; // 最大2個のスキル
-  comboBoosts: ComboBoost[]; // コンボブースト効果
+  subEffects: AccessoryEffectSlot[]; // 常時3枠、各枠に特殊効果1件
+}
+
+interface AccessoryEffectSlot {
+  id: string;
+  effectType: 'crit_mp_refund' | 'typing_window_bonus' | 'status_resist'; // これは例、他にも考えること
+  magnitude: number;
 }
 ```
 
-#### ステータス分布の特徴
-```typescript
-class EquipmentGenerator {
-  generateEquipmentStats(type: EquipmentType, grade: number): Stats {
-    const baseStatTotal = grade * 2; // グレード50なら合計100ポイント
+#### グレードとワールドレベル同期
+- ワールドレベルは1〜100、5刻みで上昇
+- ワールドレベル到達値以下のグレード帯がドロップ・合成対象として解禁
+- メイン効果倍率とペナルティは段階的に推移
+  - Grade 1: +10% / -10%
+  - Grade 25: +18% / -9%
+  - Grade 50: +24% / -8%
+  - Grade 75: +30% / -7%
+  - Grade 100: +35% / -5%
 
-    switch (type) {
-      case EquipmentType.WEAPON:
-        // strength 40%, willpower 30%, agility 20%, fortune 10%
-        return this.distributeStats(baseStatTotal, [0.4, 0.3, 0.2, 0.1]);
+#### 合成フロー
+1. 同名アクセサリ2個投入（ベース+素材）
+2. 合成後グレードは高い方を引き継ぐ
+3. 両アクセサリのサブ効果プールから任意の3枠を選択して固定
 
-      case EquipmentType.ACCESSORY:
-        // agility 40%, fortune 30%, strength 20%, willpower 10%
-        return this.distributeStats(baseStatTotal, [0.2, 0.1, 0.4, 0.3]);
-
-      case EquipmentType.ADJECTIVE:
-        // バランス型: 各25%
-        return this.distributeStats(baseStatTotal, [0.25, 0.25, 0.25, 0.25]);
-    }
-  }
-
-  private distributeStats(total: number, ratios: number[]): Stats {
-    return {
-      strength: Math.floor(total * ratios[0]),
-      willpower: Math.floor(total * ratios[1]),
-      agility: Math.floor(total * ratios[2]),
-      fortune: Math.floor(total * ratios[3])
-    };
-  }
-}
-```
-
-#### 装備スロット管理システム
-```typescript
-class EquipmentSlotManager {
-  private maxSlots = 8;
-  private unlockedSlots = 6; // 初期は6スロット、2つ目のアクセサリーで8スロット
-
-  /**
-   * 装備可能かチェック
-   */
-  canEquip(slot: EquipmentSlot, item: EquipmentItem): boolean {
-    // スロット解放チェック
-    if (!this.isSlotUnlocked(slot)) {
-      return false;
-    }
-
-    // 種別とスロットの適合性チェック
-    const expectedType = this.getExpectedTypeForSlot(slot);
-    return item.type === expectedType;
-  }
-
-  private getExpectedTypeForSlot(slot: EquipmentSlot): EquipmentType {
-    if (slot.includes('adjective')) return EquipmentType.ADJECTIVE;
-    if (slot.includes('weapon')) return EquipmentType.WEAPON;
-    if (slot.includes('accessory')) return EquipmentType.ACCESSORY;
-    throw new Error(`Unknown slot type: ${slot}`);
-  }
-
-  /**
-   * プレイヤーレベル計算（装備グレードの平均値）
-   */
-  calculatePlayerLevel(equippedItems: Map<EquipmentSlot, EquipmentItem>): number {
-    const grades = Array.from(equippedItems.values()).map(item => item.grade);
-
-    if (grades.length === 0) return 1;
-
-    const sum = grades.reduce((total, grade) => total + grade, 0);
-    return Math.floor(sum / this.maxSlots); // 最大スロット数で割る
-  }
-}
-```
-
-#### スキル・コンボブースト付与システム
-```typescript
-class EquipmentEnhancer {
-  /**
-   * 装備生成時にスキルとコンボブーストをランダム付与
-   */
-  generateEnhancements(item: EquipmentItem): void {
-    // スキル付与（最大2個）
-    const skillCount = Math.random() > 0.7 ? 2 : Math.random() > 0.3 ? 1 : 0;
-    item.skills = this.generateRandomSkills(skillCount, item.grade);
-
-    // コンボブースト付与（確率）
-    if (Math.random() > 0.6) {
-      item.comboBoosts = [this.generateRandomComboBoost()];
-    }
-  }
-
-  private generateRandomSkills(count: number, grade: number): Skill[] {
-    const availableSkills = this.getSkillsByGrade(grade);
-    const skills: Skill[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-      skills.push(randomSkill);
-    }
-
-    return skills;
-  }
-
-  private generateRandomComboBoost(): ComboBoost {
-    const boostTypes = ['damage', 'heal', 'skill_success', 'mp_cost_reduction'];
-    const randomType = boostTypes[Math.floor(Math.random() * boostTypes.length)];
-
-    return {
-      id: `boost_${Date.now()}`,
-      name: `${randomType} Boost`,
-      description: `次のスキルの${randomType}を10%向上`,
-      boostType: randomType as any,
-      value: 10,
-      duration: 1
-    };
-  }
-}
-```
-
-#### 装備UI更新（8スロット対応）
-```typescript
-class EquipmentUI {
-  displayEquipmentSlots(equippedItems: Map<EquipmentSlot, EquipmentItem>): string {
-    return `
-      Equipment Configuration:
-      ┌─────────────────────────────────────┐
-      │ Slot 1-2: ${this.formatEquipmentPair('adjective_1', 'weapon_1', equippedItems)}    │
-      │ Slot 3-4: ${this.formatEquipmentPair('adjective_2', 'weapon_2', equippedItems)}    │
-      │ Slot 5-6: ${this.formatEquipmentPair('adjective_3', 'accessory_1', equippedItems)} │
-      │ Slot 7-8: ${this.formatEquipmentPair('adjective_4', 'accessory_2', equippedItems)} │
-      └─────────────────────────────────────┘
-
-      Active Skills: ${this.getActiveSkills(equippedItems).length}
-      Active Combo Boosts: ${this.getActiveComboBoosts(equippedItems).length}
-    `;
-  }
-
-  private formatEquipmentPair(adjSlot: string, itemSlot: string, equipped: Map<EquipmentSlot, EquipmentItem>): string {
-    const adj = equipped.get(adjSlot as EquipmentSlot);
-    const item = equipped.get(itemSlot as EquipmentSlot);
-
-    const adjName = adj ? adj.name : '[empty]';
-    const itemName = item ? item.name : '[empty]';
-
-    return `${adjName} ${itemName}`.padEnd(20);
-  }
-}
-```
+#### 成長サイクルとUI要件
+- Grade1〜25帯でビルド方向性を把握、Grade50帯で主力確定、Grade75+で高難度向け最適化
+- 装備画面ではスロット状態、メイン効果倍率、選択中サブ効果を一覧表示
+- 合成UIはサブ効果のプレビューと選択確認モーダルを提供
 
 **タスク**:
-1. EquipmentType enum拡張（WEAPON, ACCESSORY, ADJECTIVE）
-2. EquipmentItemインターフェース更新
-   - type: EquipmentType追加
-   - skills: Skill[]（最大2個）
-   - comboBoosts: ComboBoost[]追加
-   - rarityプロパティ削除
-3. 装備スロット管理システム更新（8スロット対応）
-4. 装備アイテム生成システム更新
-   - 種別ごとのステータス傾向設定
-   - weapon: strength/willpower寄り
-   - accessory: agility/fortune寄り
-   - adjective: バランス型
-5. EquipmentEffectCalculator更新（8スロット対応）
-6. 装備UI更新（8スロット表示対応）
-7. アイテムデータ更新（新形式への変換）
-8. テストケース更新
+1. アクセサリスロット管理の実装（解放状態、装備上限、効果集約）
+2. アクセサリデータ構造を mainEffect/subEffects 二層構造へ再定義し、既存データを移行
+3. グレード計算ロジックとワールドレベル連動解禁処理の実装（倍率・ペナルティテーブル含む）
+4. 合成処理とUIフロー（素材選択、サブ効果選択、結果プレビュー）の実装
+5. 装備UI/ログ更新（3スロット表示、メイン効果とサブ効果の可視化）
+6. 既存装備関連テストの更新と新規テスト追加（グレード境界値・合成・解放条件）
+7. アクセサリ命名ロジックの実装と検証（タイプ名＋主要サブ効果タグ＋グレード数値の形式を自動適用）
 
-**チェックポイント**: 新しい装備システムで装備変更とステータス計算が正常に動作すること
+**チェックポイント**: 3スロットのアクセサリ装備と合成を通じて、メイン効果倍率・サブ効果選択・解放条件が仕様どおりに機能し、UI/ログでプレイヤーに正しく提示されること
 
 ---
 
@@ -1672,7 +1519,7 @@ enum UnlockableSystem {
   COMBO_BOOST,              // コンボブーストシステム
   FOCUS_MODE,               // フォーカスモード + EX Point
   SPARK_MODE,               // スパークモード
-  SECOND_ACCESSORY,         // 2個目のアクセサリ
+  THIRD_ACCESSORY,          // 3個目のアクセサリ
   SKILL_GRADE_2,            // スキルグレード2解放
   SKILL_GRADE_3,            // スキルグレード3解放（潜在効果付き）
   SKILL_GRADE_4,            // スキルグレード4解放
@@ -1712,8 +1559,8 @@ const keyItems: KeyItem[] = [
   {
     id: 'accessory_mastery_ring',
     name: 'Accessory Mastery Ring',
-    description: '2個目のアクセサリスロットを解放するリング',
-    unlocks: UnlockableSystem.SECOND_ACCESSORY
+    description: '3個目のアクセサリスロットを解放するリング',
+    unlocks: UnlockableSystem.THIRD_ACCESSORY
   },
   {
     id: 'skill_mastery_tome_2',
@@ -2037,6 +1884,7 @@ class SaveManager {
 2. DialogPhaseの実装
 3. タイピングによるイベント回避機能
 4. イベントシステム統合
+5. docs/game-systems.md §2.6準拠のスキル習得チャレンジイベント追加（正規表現デバッガーの導線と報酬連携）
 
 **チェックポイント**: 各種イベントが正常に動作すること
 

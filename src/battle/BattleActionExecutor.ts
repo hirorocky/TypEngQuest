@@ -38,12 +38,14 @@ export class BattleActionExecutor {
       magicalEvadeRate: enemy.magicalEvadeRate,
     } as const;
   }
-  private static buildConditionContext(
-    player: Player,
-    enemy: Enemy,
-    typingResult: TypingResult | undefined,
-    playerStats: { agility: number }
-  ) {
+  private static buildConditionContext(args: {
+    player: Player;
+    enemy: Enemy;
+    typingResult?: TypingResult;
+    playerStats: { agility: number };
+    exMode?: 'focus' | 'spark';
+  }) {
+    const { player, enemy, typingResult, playerStats, exMode } = args;
     const playerBodyStats = player.getBodyStats();
     const attackerMaxHp =
       typeof (playerBodyStats as unknown as { getMaxHP?: () => number }).getMaxHP === 'function'
@@ -57,8 +59,10 @@ export class BattleActionExecutor {
       typing: {
         speed: typingResult?.speedRating,
         accuracy: typingResult?.accuracyRating,
-        exMode: false,
+        exMode: !!exMode,
+        exModeType: exMode,
       },
+      attackerEX: player.getExPoints(),
       hasSelfBuff: (id: string) => playerBodyStats.getTemporaryStatuses().some(s => s.id === id),
       hasEnemyStatus: (_id: string) => false,
     });
@@ -94,13 +98,24 @@ export class BattleActionExecutor {
     skill: Skill,
     player: Player,
     enemy: Enemy,
-    options: { comboBoostManager: ComboBoostManager; typingResult?: TypingResult }
+    options: {
+      comboBoostManager: ComboBoostManager;
+      typingResult?: TypingResult;
+      /** EXモード（focus/spark）。未指定なら通常 */
+      exMode?: 'focus' | 'spark';
+    }
   ): SkillExecutionResult {
     const playerBodyStats = player.getBodyStats();
     const playerStats = player.getTotalStats();
     const typingResult = options?.typingResult;
 
-    const conditionContext = this.buildConditionContext(player, enemy, typingResult, playerStats);
+    const conditionContext = this.buildConditionContext({
+      player,
+      enemy,
+      typingResult,
+      playerStats,
+      exMode: options?.exMode,
+    });
     const skillPrepared = this.prepareEffectiveSkill(skill, conditionContext);
     // コンボブースト適用（MPコストやレート補正）
     const { modified: effectiveSkill } = options.comboBoostManager.applyToSkill(skillPrepared);

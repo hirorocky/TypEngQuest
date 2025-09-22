@@ -22,14 +22,48 @@ export interface BattleTarget {
 }
 
 export class BattleCalculator {
+  private static evaluatePotentialTrigger(
+    cond: SkillPotentialEffect['triggerCondition'],
+    context: ReturnType<typeof BattleCalculator.createConditionContext>
+  ): boolean {
+    const typingPerfectOk = cond.typingPerfect
+      ? context.attacker.typingAccuracy === 'Perfect'
+      : true;
+
+    let exModeOk = true;
+    if (cond.exMode !== undefined) {
+      exModeOk =
+        cond.exMode === 'each'
+          ? context.attacker.exMode === true
+          : context.attacker.exModeType === cond.exMode;
+    }
+
+    const exThresholdOk =
+      typeof cond.exThreshold === 'number'
+        ? context.attacker.exPoints >= Math.floor(cond.exThreshold)
+        : true;
+
+    return typingPerfectOk && exModeOk && exThresholdOk;
+  }
   // 条件評価用の文脈
   static createConditionContext(args: {
     attackerHP: { current: number; max: number };
     defenderHP: { current: number; max: number };
     attackerAgility: number;
-    typing?: { speed?: SpeedRating; accuracy?: AccuracyRating; exMode?: boolean };
+    /**
+     * タイピング/EX関連の文脈
+     * exModeはtrue/false、exModeTypeは具体的なモード種別
+     */
+    typing?: {
+      speed?: SpeedRating;
+      accuracy?: AccuracyRating;
+      exMode?: boolean;
+      exModeType?: 'focus' | 'spark';
+    };
     hasSelfBuff?: (id: string) => boolean;
     hasEnemyStatus?: (id: string) => boolean;
+    /** 攻撃側の現在EX（0-100） */
+    attackerEX?: number;
   }) {
     const hpPct = (c: number, m: number) => (m <= 0 ? 0 : Math.floor((c / m) * 100));
     return {
@@ -39,6 +73,8 @@ export class BattleCalculator {
         typingSpeed: args.typing?.speed,
         typingAccuracy: args.typing?.accuracy,
         exMode: args.typing?.exMode ?? false,
+        exModeType: args.typing?.exModeType,
+        exPoints: Math.max(0, Math.min(100, Math.floor(args.attackerEX ?? 0))),
         hasBuff: (id: string) => !!args.hasSelfBuff?.(id),
       },
       defender: {
@@ -100,12 +136,7 @@ export class BattleCalculator {
     if (!potentials || potentials.length === 0) return baseEffects;
     const extra: SkillEffect[] = [];
     for (const p of potentials) {
-      const cond = p.triggerCondition;
-      const typingPerfectOk = cond.typingPerfect
-        ? context.attacker.typingAccuracy === 'Perfect'
-        : true;
-      const exModeOk = cond.exMode ? context.attacker.exMode === true : true;
-      if (typingPerfectOk && exModeOk) {
+      if (this.evaluatePotentialTrigger(p.triggerCondition, context)) {
         extra.push({ ...p.effect });
       }
     }

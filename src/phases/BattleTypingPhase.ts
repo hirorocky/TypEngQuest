@@ -164,6 +164,7 @@ export class BattleTypingPhase extends Phase {
     for (let i = 0; i < this.sparkSuccessCount; i++) {
       const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
         comboBoostManager: this.comboBoostManager,
+        exMode: 'spark',
       });
       result.message.forEach(m => console.log(m));
       if (result.damage) {
@@ -419,6 +420,7 @@ export class BattleTypingPhase extends Phase {
     const result = BattleActionExecutor.executePlayerSkill(skill, player, enemy, {
       comboBoostManager: this.comboBoostManager,
       typingResult,
+      exMode: this.exMode === 'focus' ? 'focus' : undefined,
     });
 
     if (result.success) {
