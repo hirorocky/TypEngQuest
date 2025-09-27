@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Accessory } from './Accessory';
 import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
 import {
@@ -9,8 +10,15 @@ import {
   AccessorySnapshot,
 } from './types';
 
+const moduleDir = path.dirname(
+  fileURLToPath(
+    // @ts-ignore: NodeランタイムではESMとして評価されるためimport.metaが利用できる
+    import.meta.url
+  )
+);
+
 const DEFAULT_DATA_PATH = path.join(
-  __dirname,
+  moduleDir,
   '..',
   '..',
   '..',

@@ -1,5 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const moduleDir = path.dirname(
+  fileURLToPath(
+    // @ts-ignore: NodeランタイムでESMとして評価されるためimport.metaが有効
+    import.meta.url
+  )
+);
 
 /**
  * 一時ステータスの種別
@@ -114,7 +122,7 @@ let temporaryStatusData: TemporaryStatusData | null = null;
 
 function loadTemporaryStatusData() {
   if (!temporaryStatusData) {
-    const dataPath = path.join(__dirname, '../../data/temporary-status.json');
+    const dataPath = path.join(moduleDir, '../../data/temporary-status.json');
     temporaryStatusData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
   }
   return temporaryStatusData;

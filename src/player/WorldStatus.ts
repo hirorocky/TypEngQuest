@@ -1,5 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const moduleDir = path.dirname(
+  fileURLToPath(
+    // @ts-ignore: NodeランタイムでESMとして評価されるためimport.metaが利用可能
+    import.meta.url
+  )
+);
 
 /**
  * ワールドステータスの種別
@@ -119,7 +127,7 @@ let worldStatusData: WorldStatusData | null = null;
 
 function loadWorldStatusData() {
   if (!worldStatusData) {
-    const dataPath = path.join(__dirname, '../../data/world-status.json');
+    const dataPath = path.join(moduleDir, '../../data/world-status.json');
     worldStatusData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
   }
   return worldStatusData;
