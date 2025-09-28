@@ -1126,7 +1126,7 @@ class BattleDisplay {
 - アクセサリタイプごとのメイン効果（ステータス偏向）とサブ効果（最大3枠まで装着可能）を持つデータ設計
 - グレード1〜100とワールドレベル同期による解放ロジック、倍率・ペナルティカーブの実装
 - docs/game-systems.md §2.5に定義された命名規則（サブ効果名の並び＋メイン効果名＋グレード表記）に従うアクセサリ名称生成と表示
-- 同名アクセサリ2個を消費する合成処理（グレード継承とサブ効果選択UI）
+- メイン効果が同じアクセサリ2個を消費する合成処理（グレード継承とサブ効果選択UI）
 - アクセサリ装備管理UI/ログの更新とテスト
 
 **詳細設計**:
@@ -1171,7 +1171,7 @@ interface AccessorySubEffect {
   - Grade 100: +35% / -5%
 
 #### 合成フロー
-1. 同名アクセサリ2個投入（ベース+素材）
+1. メイン効果が一致するアクセサリ2個を投入（ベース+素材）
 2. 合成後グレードは高い方を引き継ぐ
 3. 両アクセサリのサブ効果プールから任意の0〜3枠を選択して固定
 
@@ -1517,13 +1517,16 @@ class ItemUsageManager {
 ```typescript
 enum UnlockableSystem {
   COMBO_BOOST,              // コンボブーストシステム
+  SKILL_GRADE_2,            // スキルグレード2解放
   FOCUS_MODE,               // フォーカスモード + EX Point
   SPARK_MODE,               // スパークモード
-  THIRD_ACCESSORY,          // 3個目のアクセサリ
-  SKILL_GRADE_2,            // スキルグレード2解放
+  SECOND_ACCESSORY,         // 2個目のアクセサリ
+  POTION_INVENTORY_EXPAND,  // ポーション所持数拡張
+  ACCESSORY_INVENTORY_EXPAND,  // アクセサリ所持数拡張
   SKILL_GRADE_3,            // スキルグレード3解放（潜在効果付き）
   SKILL_GRADE_4,            // スキルグレード4解放
   SKILL_GRADE_5             // スキルグレード5解放
+  THIRD_ACCESSORY,          // 3個目のアクセサリ
 }
 ```
 

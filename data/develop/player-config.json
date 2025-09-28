@@ -165,6 +165,95 @@
         }
       },
       {
+        "id": "dev-acc-hermes-02",
+        "name": "Hermes Support Ring",
+        "description": "Additional Hermes ring for synthesis pairing.",
+        "type": "accessory",
+        "accessory": {
+          "id": "ring",
+          "name": "ring",
+          "grade": 28,
+          "mainEffect": {
+            "boost": "willpower",
+            "penalty": "strength",
+            "id": "ring"
+          },
+          "subEffects": [
+            {
+              "id": "aegis",
+              "effectType": "status_resist",
+              "name": "Aegis",
+              "magnitude": 35,
+              "description": "状態異常耐性を35%向上"
+            },
+            {
+              "id": "prism",
+              "effectType": "spark_chain_bonus",
+              "name": "Prism",
+              "magnitude": 1,
+              "description": "スパークモードの連鎖上限を1増やす"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dev-acc-cronus-02",
+        "name": "Cronus Training Glove",
+        "description": "Spare Cronus glove for synthesis testing.",
+        "type": "accessory",
+        "accessory": {
+          "id": "glove",
+          "name": "glove",
+          "grade": 18,
+          "mainEffect": {
+            "boost": "strength",
+            "penalty": "willpower",
+            "id": "glove"
+          },
+          "subEffects": [
+            {
+              "id": "tempo",
+              "effectType": "typing_window_bonus",
+              "name": "Tempo",
+              "magnitude": 1,
+              "description": "タイピング制限時間を1秒延長する"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dev-acc-cronus-03",
+        "name": "Cronus Assault Glove",
+        "description": "Backup Cronus glove emphasizing offensive play.",
+        "type": "accessory",
+        "accessory": {
+          "id": "glove",
+          "name": "glove",
+          "grade": 24,
+          "mainEffect": {
+            "boost": "strength",
+            "penalty": "willpower",
+            "id": "glove"
+          },
+          "subEffects": [
+            {
+              "id": "flare",
+              "effectType": "crit_mp_refund",
+              "name": "Flare",
+              "magnitude": 6,
+              "description": "クリティカル発生時にMPを6回復"
+            },
+            {
+              "id": "poise",
+              "effectType": "focus_stability",
+              "name": "Poise",
+              "magnitude": 6,
+              "description": "フォーカスモードの入力猶予を6%拡張"
+            }
+          ]
+        }
+      },
+      {
         "id": "dev-acc-iris-01",
         "name": "Iris Agile Charm",
         "description": "Dev sample Iris necklace for agility builds.",
@@ -192,6 +281,38 @@
               "name": "Drift",
               "magnitude": 15,
               "description": "フォーカスモードの初期充填値+15"
+            },
+            {
+              "id": "pulse",
+              "effectType": "dash_cooldown_reduction",
+              "name": "Pulse",
+              "magnitude": 0.5,
+              "description": "移動系スキルのクールダウンを0.5秒短縮"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dev-acc-iris-02",
+        "name": "Iris Swift Charm",
+        "description": "Additional Iris necklace to support synthesis.",
+        "type": "accessory",
+        "accessory": {
+          "id": "necklace",
+          "name": "necklace",
+          "grade": 20,
+          "mainEffect": {
+            "boost": "agility",
+            "penalty": "fortune",
+            "id": "necklace"
+          },
+          "subEffects": [
+            {
+              "id": "wisp",
+              "effectType": "dodge_window_bonus",
+              "name": "Wisp",
+              "magnitude": 10,
+              "description": "敵攻撃の回避猶予を10%延長"
             },
             {
               "id": "pulse",

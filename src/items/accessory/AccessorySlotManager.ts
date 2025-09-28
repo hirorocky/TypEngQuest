@@ -123,8 +123,8 @@ export class AccessorySlotManager {
   }
 
   getSynthesisOptions(baseAccessory: Accessory, materialAccessory: Accessory): AccessorySubEffect[] {
-    if (baseAccessory.getDefinitionId() !== materialAccessory.getDefinitionId()) {
-      throw new Error('Accessories must originate from the same definition for synthesis');
+    if (!baseAccessory.hasSameMainEffect(materialAccessory)) {
+      throw new Error('Accessories must share the same main effect for synthesis');
     }
 
     const map = new Map<string, AccessorySubEffect>();

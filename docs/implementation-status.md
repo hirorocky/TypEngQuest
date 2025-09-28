@@ -402,18 +402,18 @@
 ### 🚧 プロジェクト10E: アクセサリ装備システム刷新（進行中 / Issue #64）
 **目標**: アクセサリ3スロット制と合成フローを導入し、ビルド多様性を支える装備システムへ刷新する。
 
-**進捗（2025-09-27）**
+**進捗（2025-09-28）**
 - [x] アクセサリドメイン基盤実装（Catalog / GradeTable / SlotManager / SynthesisService / 命名ロジック）
 - [x] アクセサリデータ初期セット（`data/accessories/main-effects.json` / `sub-effects.json`）整備
 - [x] Playerをアクセサリ前提へ移行（ワールドレベル制御・装備集約・シリアライズ更新）
 - [x] InventoryPhase / ItemEquipmentPhase をアクセサリUIに刷新（装備可否表示・スロットロック表示）
 - [x] ユニットテスト更新（Player / InventoryPhase / AccessorySlotManager）
 - [x] DEV_MODE 起動時にアクセサリ試用データを自動ロード（`npm run dev:test` でサンプル所持状態を再現）
-- [ ] 合成UIフローの結合テスト追加
-- [ ] ログ表示とドキュメント（開発コマンド含む）最終反映
+- [x] 合成UIフローの結合テスト追加（`src/phases/ItemEquipmentPhase.synthesis.test.ts`）
+- [x] 合成UIログ表示とドキュメント更新（操作ガイド追補・進捗反映）
 
 **品質**
-- `npm test -- --runTestsByPath src/player/Player.test.ts src/phases/InventoryPhase.test.ts src/items/accessory/AccessorySlotManager.test.ts` GREEN（2025-09-22）
+- `npm test -- --runTestsByPath src/player/Player.test.ts src/phases/InventoryPhase.test.ts src/items/accessory/AccessorySlotManager.test.ts src/phases/ItemEquipmentPhase.synthesis.test.ts` GREEN（2025-09-28）
 - フォーマット／Lint自動実行（pretest）でエラーなし
 
 **参照**

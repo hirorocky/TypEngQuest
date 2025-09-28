@@ -12,8 +12,8 @@ export class AccessorySynthesisService {
   }
 
   synthesize(base: Accessory, material: Accessory, selectedEffects: AccessorySubEffect[]): Accessory {
-    if (base.getId() !== material.getId()) {
-      throw new Error('Accessories must be of the same type to synthesize');
+    if (!base.hasSameMainEffect(material)) {
+      throw new Error('Accessories must share the same main effect to synthesize');
     }
 
     if (selectedEffects.length > MAX_SYNTHESIS_SLOTS) {
@@ -29,7 +29,13 @@ export class AccessorySynthesisService {
     });
 
     const resultingGrade = Math.max(base.getGrade(), material.getGrade());
-    return this.catalog.createAccessory(base.getId(), resultingGrade, selectedEffects);
+    const baseData = base.toJSON();
+
+    return this.catalog.createAccessory(base.getDefinitionId(), resultingGrade, selectedEffects, {
+      itemId: baseData.id,
+      itemName: baseData.name,
+      description: baseData.description,
+    });
   }
 
   private isSameEffect(a: AccessorySubEffect, b: AccessorySubEffect): boolean {

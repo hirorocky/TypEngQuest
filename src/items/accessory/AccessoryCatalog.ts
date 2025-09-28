@@ -34,6 +34,12 @@ type AccessorySubEffectCatalog = Readonly<{
   subEffects: AccessorySubEffect[];
 }>;
 
+type AccessoryCreateOptions = {
+  itemId?: string;
+  itemName?: string;
+  description?: string;
+};
+
 export class AccessoryCatalog {
   private readonly definitions: Map<string, AccessoryDefinition> = new Map();
   private readonly subEffects: Map<string, AccessorySubEffect> = new Map();
@@ -91,7 +97,12 @@ export class AccessoryCatalog {
     return { ...effect };
   }
 
-  createAccessory(definitionId: string, grade: number, subEffects?: AccessorySubEffect[]): Accessory {
+  createAccessory(
+    definitionId: string,
+    grade: number,
+    subEffects: AccessorySubEffect[] = [],
+    options: AccessoryCreateOptions = {}
+  ): Accessory {
     const definition = this.getDefinition(definitionId);
     const effectiveSubEffects = subEffects ?? [];
 
@@ -103,12 +114,12 @@ export class AccessoryCatalog {
       subEffects: effectiveSubEffects.map(effect => ({ ...effect })),
     };
 
-    return new Accessory(snapshot, this.gradeTable);
+    return new Accessory(snapshot, this.gradeTable, options);
   }
 
   collectSynthesisPool(accessoryA: Accessory, accessoryB: Accessory): AccessorySubEffect[] {
-    if (accessoryA.getId() !== accessoryB.getId()) {
-      throw new Error('Accessories must share the same definition for synthesis');
+    if (!accessoryA.hasSameMainEffect(accessoryB)) {
+      throw new Error('Accessories must share the same main effect for synthesis');
     }
 
     const merged: Map<string, AccessorySubEffect> = new Map();

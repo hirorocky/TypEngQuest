@@ -85,6 +85,13 @@ export class Accessory implements InventoryItem {
     return this.mainEffect.id;
   }
 
+  hasSameMainEffect(other: Accessory): boolean {
+    return (
+      this.mainEffect.boost === other.mainEffect.boost &&
+      this.mainEffect.penalty === other.mainEffect.penalty
+    );
+  }
+
   getGrade(): number {
     return this.grade;
   }

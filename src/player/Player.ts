@@ -2,11 +2,18 @@ import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats } from './EquipmentStats';
 import { InventoryData, PotionInventory, AccessoryInventory } from './Inventory';
 import { Accessory, Potion, EffectType, ItemType } from '../items';
-import { AccessoryItemData, AccessorySnapshot } from '../items/accessory/types';
+import {
+  AccessoryCatalog,
+  AccessoryItemData,
+  AccessorySlotManager,
+  AccessorySubEffect,
+  AccessorySynthesisService,
+  AccessorySnapshot,
+  AggregateResult,
+} from '../items/accessory';
 import { Skill } from '../battle/Skill';
 import { Battle } from '../battle/Battle';
 import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
-import { AccessorySlotManager, AggregateResult } from '../items/accessory';
 
 export interface PlayerData {
   name: string;
@@ -30,6 +37,7 @@ export class Player {
   private potionInventory: PotionInventory;
   private accessoryInventory: AccessoryInventory;
   private accessoryManager: AccessorySlotManager;
+  private synthesisService: AccessorySynthesisService;
   private worldLevel: number;
 
   constructor(name: string, isDevMode: boolean = false) {
@@ -38,6 +46,8 @@ export class Player {
     this.potionInventory = new PotionInventory();
     this.accessoryInventory = new AccessoryInventory();
     this.accessoryManager = new AccessorySlotManager();
+    const catalog = AccessoryCatalog.load();
+    this.synthesisService = new AccessorySynthesisService(catalog);
     this.worldLevel = 1;
     this.accessoryManager.setWorldLevel(this.worldLevel);
 
@@ -259,6 +269,50 @@ export class Player {
    */
   getAccessoryInventory(): AccessoryInventory {
     return this.accessoryInventory;
+  }
+
+  /**
+   * アクセサリ合成の候補となるサブ効果一覧を取得する
+   * @param base ベースアクセサリ
+   * @param material 素材アクセサリ
+   * @returns 合成で選択可能なサブ効果の配列
+   */
+  getAccessorySynthesisPool(base: Accessory, material: Accessory): AccessorySubEffect[] {
+    if (!this.accessoryInventory.hasItem(base) || !this.accessoryInventory.hasItem(material)) {
+      throw new Error('Synthesis requires both accessories to be stored in inventory');
+    }
+
+    return this.accessoryManager.getSynthesisOptions(base, material);
+  }
+
+  /**
+   * アクセサリ合成を実行し、結果のアクセサリをインベントリへ追加する
+   * @param base ベースアクセサリ
+   * @param material 素材アクセサリ
+   * @param selectedEffects 固定したいサブ効果一覧
+   * @returns 合成後のアクセサリ
+   */
+  synthesizeAccessories(
+    base: Accessory,
+    material: Accessory,
+    selectedEffects: AccessorySubEffect[]
+  ): Accessory {
+    if (!this.accessoryInventory.hasItem(base) || !this.accessoryInventory.hasItem(material)) {
+      throw new Error('Cannot synthesize accessories that are not present in inventory');
+    }
+
+    const effects = selectedEffects.map(effect => ({ ...effect }));
+    const result = this.synthesisService.synthesize(base, material, effects);
+
+    if (!this.accessoryInventory.removeItem(base)) {
+      throw new Error('Failed to consume base accessory during synthesis');
+    }
+    if (!this.accessoryInventory.removeItem(material)) {
+      throw new Error('Failed to consume material accessory during synthesis');
+    }
+
+    this.accessoryInventory.addItem(result);
+    return result;
   }
 
   /**
