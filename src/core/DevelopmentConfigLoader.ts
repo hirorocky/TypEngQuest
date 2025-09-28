@@ -8,7 +8,7 @@ import { DomainType } from '../world/domains';
 import { Player } from '../player/Player';
 import { FileSystem } from '../world/FileSystem';
 import { FileNode, NodeType } from '../world/FileNode';
-import { AccessoryItemData } from '../items/AccessoryItem';
+import { AccessoryItemData } from '../items/accessory/types';
 import { Enemy, EnemyParams } from '../battle/Enemy';
 // import { Skill } from '../battle/Skill'; // 現在未使用だがコメントアウトで保持
 

@@ -1,8 +1,7 @@
 import { Player } from './Player';
-import { AccessoryItem, AccessoryItemData } from '../items/AccessoryItem';
 import { ItemType } from '../items/types';
-import { AccessoryCatalog } from '../items/accessory';
-import { AccessorySnapshot } from '../items/accessory/types';
+import { Accessory, AccessoryCatalog } from '../items/accessory';
+import { AccessoryItemData, AccessorySnapshot } from '../items/accessory/types';
 
 const catalog = AccessoryCatalog.load();
 
@@ -32,7 +31,7 @@ const buildSnapshot = (
   };
 };
 
-const createAccessoryItem = (options: AccessoryItemOptions = {}): AccessoryItem => {
+const createAccessory = (options: AccessoryItemOptions = {}): Accessory => {
   const definitionId = options.definitionId ?? 'glove';
   const grade = options.grade ?? 25;
   const snapshot = buildSnapshot(definitionId, grade, options.subEffectIds);
@@ -45,7 +44,7 @@ const createAccessoryItem = (options: AccessoryItemOptions = {}): AccessoryItem 
     accessory: snapshot,
   };
 
-  return AccessoryItem.fromJSON(data);
+  return Accessory.fromJSON(data);
 };
 
 describe('Player (accessory system)', () => {
@@ -66,7 +65,7 @@ describe('Player (accessory system)', () => {
     const player = new Player('Hero');
     player.setWorldLevel(50);
 
-    const accessory = createAccessoryItem({ id: 'acc-boost', grade: 25 });
+    const accessory = createAccessory({ id: 'acc-boost', grade: 25 });
     player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 
@@ -81,7 +80,7 @@ describe('Player (accessory system)', () => {
   it('serializes and restores accessory state', () => {
     const player = new Player('Hero');
     player.setWorldLevel(60);
-    const accessory = createAccessoryItem({ id: 'acc-save', grade: 40 });
+    const accessory = createAccessory({ id: 'acc-save', grade: 40 });
     player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 

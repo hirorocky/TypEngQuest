@@ -3,7 +3,7 @@ import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { AccessoryItem } from '../items/AccessoryItem';
+import { Accessory } from '../items/accessory';
 import { Potion } from '../items/Potion';
 import { EquipmentStatsData } from '../player/EquipmentStats';
 import { TabCompleter } from '../core/completion';
@@ -70,7 +70,7 @@ export class InventoryPhase extends Phase {
   /**
    * アイテム情報をフォーマットする
    */
-  private formatItemInfo(item: Potion | AccessoryItem): string {
+  private formatItemInfo(item: Potion | Accessory): string {
     return item.getDisplayName();
   }
 
@@ -237,7 +237,7 @@ export class InventoryPhase extends Phase {
    */
   private async showEquipments(): Promise<CommandResult> {
     const equipmentSlots = this.player.getEquipmentSlots();
-    const equippedItems = equipmentSlots.filter((item): item is AccessoryItem => item !== null);
+    const equippedItems = equipmentSlots.filter((item): item is Accessory => item !== null);
 
     Display.printInfo('Current Equipment:');
 

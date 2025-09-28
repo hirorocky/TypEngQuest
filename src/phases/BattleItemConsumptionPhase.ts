@@ -51,9 +51,7 @@ export class BattleItemConsumptionPhase extends Phase {
     if (this.player) {
       const allItems = this.player.getInventory().getItems();
       // 消費アイテムのみをフィルタ
-      this.availableItems = allItems.filter(
-        item => item.getType() === ItemType.POTION
-      ) as Potion[];
+      this.availableItems = allItems.filter(item => item.getType() === ItemType.POTION) as Potion[];
     }
     this.registerItemCommands();
   }

@@ -1,5 +1,4 @@
 import { AccessoryCatalog } from './AccessoryCatalog';
-import { AccessoryNameGenerator } from './AccessoryNameGenerator';
 
 describe('AccessoryCatalog', () => {
   const catalog = AccessoryCatalog.load();
@@ -17,7 +16,7 @@ describe('AccessoryCatalog', () => {
     expect(accessory.getId()).toBe('glove');
     expect(accessory.getSubEffects()).toHaveLength(0);
 
-    const name = AccessoryNameGenerator.generate(accessory);
+    const name = accessory.getDisplayName();
     expect(name).toBe('glove G25');
   });
 
@@ -31,7 +30,7 @@ describe('AccessoryCatalog', () => {
     expect(effects).toHaveLength(3);
     expect(effects.map(effect => effect.id)).toEqual(['tempo', 'prism', 'drift']);
 
-    const name = AccessoryNameGenerator.generate(accessory);
+    const name = accessory.getDisplayName();
     expect(name.startsWith('Tempo Prism Drift')).toBe(true);
     expect(name.endsWith('glove G40')).toBe(true);
   });

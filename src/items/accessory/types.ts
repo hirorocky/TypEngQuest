@@ -1,3 +1,5 @@
+import { ItemType } from '../types';
+
 export type AccessoryStat = 'strength' | 'willpower' | 'agility' | 'fortune';
 
 export interface AccessoryMainEffect {
@@ -38,4 +40,12 @@ export interface AggregatedAccessoryEffects {
   penalty: Record<AccessoryStat, number>;
   signatureBonus: number;
   subEffects: AccessorySubEffect[];
+}
+
+export interface AccessoryItemData {
+  id: string;
+  name: string;
+  description: string;
+  type: ItemType.ACCESSORY;
+  accessory: AccessorySnapshot;
 }

@@ -1,8 +1,8 @@
 import { AccessoryCatalog } from './AccessoryCatalog';
 import { AccessorySlotManager } from './AccessorySlotManager';
-import { AccessoryItem, AccessoryItemData } from '../../items/AccessoryItem';
+import { Accessory } from './Accessory';
 import { ItemType } from '../../items/types';
-import { AccessorySnapshot } from './types';
+import { AccessoryItemData, AccessorySnapshot } from './types';
 
 const BASE_STATS = {
   strength: 100,
@@ -13,12 +13,12 @@ const BASE_STATS = {
 
 const catalog = AccessoryCatalog.load();
 
-const createAccessoryItem = (
+const createAccessory = (
   id: string,
   definitionId: string,
   grade: number,
   subEffectIds: string[] = []
-): AccessoryItem => {
+): Accessory => {
   const definition = catalog.getDefinition(definitionId);
   const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
   const accessorySnapshot: AccessorySnapshot = {
@@ -37,14 +37,14 @@ const createAccessoryItem = (
     accessory: accessorySnapshot,
   };
 
-  return new AccessoryItem(data);
+  return Accessory.fromJSON(data);
 };
 
 describe('AccessorySlotManager', () => {
   it('allows equipping accessories within unlocked slots and aggregates stats', () => {
     const manager = new AccessorySlotManager();
     manager.setWorldLevel(50);
-    const accessory = createAccessoryItem('glove-25', 'glove', 25, ['tempo', 'flare']);
+    const accessory = createAccessory('glove-25', 'glove', 25, ['tempo', 'flare']);
 
     manager.equip(0, accessory);
 

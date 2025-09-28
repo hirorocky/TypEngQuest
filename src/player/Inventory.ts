@@ -1,6 +1,6 @@
 import { InventoryItem, ItemType } from '../items/types';
 import { Potion } from '../items/Potion';
-import { AccessoryItem } from '../items/AccessoryItem';
+import { Accessory } from '../items/accessory';
 
 /**
  * インベントリのデータ構造
@@ -175,7 +175,7 @@ export class PotionInventory extends BaseInventory<Potion> {
 /**
  * アクセサリアイテム専用インベントリ
  */
-export class AccessoryInventory extends BaseInventory<AccessoryItem> {
+export class AccessoryInventory extends BaseInventory<Accessory> {
   /**
    * JSONデータからAccessoryInventoryを復元する
    * @param data - JSONデータ
@@ -193,7 +193,7 @@ export class AccessoryInventory extends BaseInventory<AccessoryItem> {
       if (itemData.type !== ItemType.ACCESSORY) {
         throw new Error(`Expected accessory item, got: ${itemData.type}`);
       }
-      return AccessoryItem.fromJSON(itemData);
+      return Accessory.fromJSON(itemData);
     });
 
     return new AccessoryInventory(items);

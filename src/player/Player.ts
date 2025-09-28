@@ -1,12 +1,12 @@
 import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats } from './EquipmentStats';
 import { InventoryData, PotionInventory, AccessoryInventory } from './Inventory';
-import { AccessoryItem, AccessoryItemData, Potion, EffectType, ItemType } from '../items';
+import { Accessory, Potion, EffectType, ItemType } from '../items';
+import { AccessoryItemData, AccessorySnapshot } from '../items/accessory/types';
 import { Skill } from '../battle/Skill';
 import { Battle } from '../battle/Battle';
 import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
 import { AccessorySlotManager, AggregateResult } from '../items/accessory';
-import { AccessorySnapshot } from '../items/accessory/types';
 
 export interface PlayerData {
   name: string;
@@ -98,12 +98,9 @@ export class Player {
       }
 
       const existing = this.accessoryInventory.findItemById(itemData.id);
-      let accessoryItem: AccessoryItem;
+      const accessoryItem = existing ?? Accessory.fromJSON(itemData);
 
-      if (existing instanceof AccessoryItem) {
-        accessoryItem = existing;
-      } else {
-        accessoryItem = AccessoryItem.fromJSON(itemData);
+      if (!existing) {
         this.accessoryInventory.addItem(accessoryItem);
       }
 
@@ -167,7 +164,7 @@ export class Player {
           accessory: config.accessory,
         };
 
-        const item = AccessoryItem.fromJSON(data);
+        const item = Accessory.fromJSON(data);
         this.accessoryInventory.addItem(item);
       } catch (error) {
         console.warn(`Failed to load accessory item ${(itemConfig as { id: string }).id}:`, error);
@@ -220,7 +217,7 @@ export class Player {
       return 0;
     }
     const divisor = Math.max(1, this.accessoryManager.getUnlockedSlotCount());
-    const totalGrade = equipped.reduce((sum, item) => sum + item.getAccessory().getGrade(), 0);
+    const totalGrade = equipped.reduce((sum, item) => sum + item.getGrade(), 0);
     return Math.floor(totalGrade / divisor);
   }
 
@@ -294,11 +291,11 @@ export class Player {
     return this.accessoryManager.isSlotUnlocked(index);
   }
 
-  getEquipmentSlots(): (AccessoryItem | null)[] {
+  getEquipmentSlots(): (Accessory | null)[] {
     return this.accessoryManager.getSlotState().map(item => item ?? null);
   }
 
-  equipToSlot(slotIndex: number, accessoryItem: AccessoryItem | null): void {
+  equipToSlot(slotIndex: number, accessoryItem: Accessory | null): void {
     if (slotIndex < 0 || slotIndex >= this.getAccessorySlotCount()) {
       throw new Error(`Invalid slot index: ${slotIndex}`);
     }
@@ -371,7 +368,7 @@ export class Player {
         if (item.getType() === ItemType.POTION) {
           player.potionInventory.addItem(item as unknown as Potion);
         } else if (item.getType() === ItemType.ACCESSORY) {
-          player.accessoryInventory.addItem(item as unknown as AccessoryItem);
+          player.accessoryInventory.addItem(item as unknown as Accessory);
         }
       });
     }
@@ -382,7 +379,7 @@ export class Player {
       if (!slotData) {
         return;
       }
-      const accessoryItem = AccessoryItem.fromJSON(slotData);
+      const accessoryItem = Accessory.fromJSON(slotData);
       player.accessoryManager.equip(index, accessoryItem);
       player.accessoryInventory.removeItem(accessoryItem);
     });

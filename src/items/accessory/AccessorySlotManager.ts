@@ -1,12 +1,11 @@
 import { Accessory } from './Accessory';
-import { AccessoryItem } from '../../items/AccessoryItem';
 import { AggregatedAccessoryEffects, AccessorySubEffect, AccessoryStat } from './types';
 
 const MAX_SLOTS = 3;
 const ACCESSORY_STATS: AccessoryStat[] = ['strength', 'willpower', 'agility', 'fortune'];
 
 interface SlotState {
-  accessoryItem: AccessoryItem | null;
+  accessoryItem: Accessory | null;
   unlocked: boolean;
   unlockKeyItemId?: string;
 }
@@ -54,7 +53,7 @@ export class AccessorySlotManager {
     return true;
   }
 
-  equip(slotIndex: number, accessoryItem: AccessoryItem): void {
+  equip(slotIndex: number, accessoryItem: Accessory): void {
     this.assertSlotIndex(slotIndex);
     const slot = this.slots[slotIndex];
     if (!slot.unlocked) {
@@ -75,13 +74,13 @@ export class AccessorySlotManager {
     });
   }
 
-  listEquipped(): AccessoryItem[] {
+  listEquipped(): Accessory[] {
     return this.slots
       .map(slot => slot.accessoryItem)
-      .filter((item): item is AccessoryItem => item !== null);
+      .filter((item): item is Accessory => item !== null);
   }
 
-  getSlotState(): (AccessoryItem | null)[] {
+  getSlotState(): (Accessory | null)[] {
     return this.slots.map(slot => slot.accessoryItem);
   }
 
@@ -102,8 +101,7 @@ export class AccessorySlotManager {
       subEffects: [],
     };
 
-    this.listEquipped().forEach(item => {
-      const accessory = item.getAccessory();
+    this.listEquipped().forEach(accessory => {
       const effect = accessory.getAggregatedEffect(baseStats);
       ACCESSORY_STATS.forEach(stat => {
         aggregate.boost[stat] += effect.boost[stat];
@@ -125,7 +123,7 @@ export class AccessorySlotManager {
   }
 
   getSynthesisOptions(baseAccessory: Accessory, materialAccessory: Accessory): AccessorySubEffect[] {
-    if (baseAccessory.getId() !== materialAccessory.getId()) {
+    if (baseAccessory.getDefinitionId() !== materialAccessory.getDefinitionId()) {
       throw new Error('Accessories must originate from the same definition for synthesis');
     }
 

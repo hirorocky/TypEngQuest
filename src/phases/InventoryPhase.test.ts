@@ -2,9 +2,8 @@ import { InventoryPhase } from './InventoryPhase';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
 import { Potion, EffectType } from '../items/Potion';
-import { AccessoryItem } from '../items/AccessoryItem';
 import { ItemType } from '../items/types';
-import { AccessoryCatalog } from '../items/accessory';
+import { Accessory, AccessoryCatalog } from '../items/accessory';
 import { Display } from '../ui/Display';
 // ScrollableList import removed - no longer used in InventoryPhase tests
 import { PhaseTypes } from '../core/types';
@@ -159,7 +158,7 @@ describe('InventoryPhase', () => {
         player.setWorldLevel(30);
         const catalog = AccessoryCatalog.load();
         const definition = catalog.getDefinition('glove');
-        const accessory = new AccessoryItem({
+        const accessory = Accessory.fromJSON({
           id: 'test-accessory',
           name: 'glove',
           description: 'Accessory for testing',

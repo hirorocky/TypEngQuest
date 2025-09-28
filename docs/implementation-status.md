@@ -426,7 +426,7 @@
 **完了タスク**:
 - [x] MainEffectとSubEffectのIDカタログ化（最大3件のサブ効果を許可）
 - [x] AccessorySubEffect型のリネームと単語ベースID/名称への整理
-- [x] AccessoryNameGeneratorで「サブ効果名 最大3件 + メイン効果 + グレード」形式の名称生成を実装
+- [x] Accessoryクラス内で「サブ効果名 最大3件 + メイン効果 + グレード」形式の名称生成を実装
 - [x] highlightEffectIdおよび関連ロジックを全削除
 - [x] data/accessories/catalog.json廃止とMainEffect（旧archetype）定義への統合
 

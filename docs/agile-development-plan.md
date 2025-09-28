@@ -196,14 +196,14 @@
 **目標**: アクセサリ装備の基礎構造を整備する（旧EquipmentItem計画の代替）
 
 **成果物**:
-- AccessoryItemの実装とAccessoryCatalog/MainEffect/SubEffect連携
+- Accessoryクラス統合とAccessoryCatalog/MainEffect/SubEffect連携
 - AccessorySlotManagerによる装備スロット管理
 - グレード／サブ効果バリデーションとJSONシリアライズ
 
 **タスク**:
-1. AccessoryItemの実装（定義ID・サブ効果の紐付け）
+1. Accessory統合実装（インベントリIDと定義ID・サブ効果の一元化）
 2. AccessorySlotManagerの導入とPlayer連携
-3. AccessoryNameGeneratorによる名称生成ルール整備
+3. Accessoryクラスによる名称生成ルール整備
 4. アクセサリデータ構成（カタログ・初期サブ効果）
 
 **チェックポイント**: アクセサリがインベントリ／装備スロット間で一貫して扱えること

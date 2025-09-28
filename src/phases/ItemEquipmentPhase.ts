@@ -3,8 +3,7 @@ import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { AccessoryItem } from '../items/AccessoryItem';
-import { AccessorySubEffect } from '../items/accessory';
+import { Accessory, AccessorySubEffect } from '../items/accessory';
 import { TabCompleter } from '../core/completion';
 import { EquipmentStatsData } from '../player/EquipmentStats';
 
@@ -15,7 +14,7 @@ export class ItemEquipmentPhase extends Phase {
   private player: Player;
   private currentSlot: number = 0;
   private selectedItemIndex: number = 0;
-  private accessoryItems: AccessoryItem[] = [];
+  private accessoryItems: Accessory[] = [];
   private readonly slotCount: number;
   private isActive: boolean = true;
 
@@ -177,7 +176,7 @@ export class ItemEquipmentPhase extends Phase {
       const prefix = isSelected ? '→ ' : '  ';
       const suffix = isSelected ? ' ←' : '';
       const status = this.player.isAccessorySlotUnlocked(i) ? '' : ' (locked)';
-      const displayName = accessory ? accessory.getName() : '[empty]';
+      const displayName = accessory ? accessory.getDisplayName() : '[empty]';
       Display.println(`${prefix}Slot ${i + 1}: ${displayName}${status}${suffix}`);
     }
   }
@@ -193,20 +192,19 @@ export class ItemEquipmentPhase extends Phase {
     for (let i = 0; i < this.accessoryItems.length; i++) {
       const isSelected = i === this.selectedItemIndex;
       const item = this.accessoryItems[i];
-      const accessory = item.getAccessory();
       const prefix = isSelected ? '→ ' : '  ';
       const suffix = isSelected ? ' ←' : '';
 
       Display.println(
-        `${prefix}${i + 1}. ${item.getDisplayName()} (Grade: ${accessory.getGrade()})${suffix}`
+        `${prefix}${i + 1}. ${item.getDisplayName()} (Grade: ${item.getGrade()})${suffix}`
       );
 
       if (isSelected) {
         Display.println(`    ${item.getDescription()}`);
         Display.println(
-          `    Main Effect: boost ${accessory.getMainEffect().boost} / penalty ${accessory.getMainEffect().penalty}`
+          `    Main Effect: boost ${item.getMainEffect().boost} / penalty ${item.getMainEffect().penalty}`
         );
-        Display.println(`    Sub Effects: ${this.formatSubEffects(accessory.getSubEffects())}`);
+        Display.println(`    Sub Effects: ${this.formatSubEffects(item.getSubEffects())}`);
       }
     }
   }
@@ -272,7 +270,7 @@ export class ItemEquipmentPhase extends Phase {
     }
   }
 
-  private getSelectedItem(): AccessoryItem | null {
+  private getSelectedItem(): Accessory | null {
     return this.accessoryItems[this.selectedItemIndex] || null;
   }
 

@@ -57,14 +57,17 @@ TypEngQuest/
 │   │   └── WorldStatusFactory.ts   # ワールドステータス生成
 │   │
 │   ├── items/                      # アイテムシステム [部分実装 3/4]
-│   │   ├── types.ts               # アイテム共通ユーティリティ・列挙
+│   │   ├── types.ts                # アイテム共通ユーティリティ・列挙
 │   │   ├── Item.test.ts            # Itemのテスト
-│   │   ├── Potion.ts       # 消費アイテムクラス
-│   │   ├── Potion.test.ts  # Potionのテスト
-│   │   ├── AccessoryItem.ts        # アクセサリアイテムクラス
+│   │   ├── Potion.ts               # 消費アイテムクラス
+│   │   ├── Potion.test.ts          # Potionのテスト
+│   │   ├── accessory/              # アクセサリ関連モジュール
+│   │   │   ├── Accessory.ts        # アクセサリ本体（InventoryItem実装）
+│   │   │   ├── AccessoryCatalog.ts # アクセサリ定義と生成
+│   │   │   ├── AccessorySlotManager.ts # 装備スロット管理
+│   │   │   └── ...                 # 名前生成・合成・型定義 等
 │   │   └── index.ts                # 統合エクスポート
 │   │   # 以下未実装:
-│   │   # ├── AccessoryItem.test.ts  # AccessoryItemのテスト
 │   │   # ├── KeyItem.ts             # だいじなものクラス
 │   │   # └── KeyItem.test.ts        # KeyItemのテスト
 │   │
@@ -189,7 +192,7 @@ TypEngQuest/
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase、InventoryPhase（部分実装）
 - **Player**: Player、BodyStats、EquipmentStats、Stats、Inventory、TemporaryStatus、WorldStatus（完全実装）
-- **Items**: Item、Potion、AccessoryItem（部分実装）
+- **Items**: Item、Potion、Accessory（部分実装）
 - **Battle**: Battle、Enemy、BattleCalculator、Skill（完全実装）
 - **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（2つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
@@ -282,7 +285,7 @@ TypEngQuest/
    - Random, FileUtils, StringUtils, Logger, colors
 
 2. **Domain層** - Utils層のみに依存
-   - Item, Potion, AccessoryItem, KeyItem
+   - Item, Potion, Accessory, KeyItem
    - FileNode, domains
    - Skill, Enemy
    - SaveData
@@ -338,10 +341,10 @@ Game
 │   ├─→ Stats
 │   ├─→ EquipmentStats
 │   ├─→ AccessorySlotManager
-│   │   └─→ AccessoryItem
+│   │   └─→ Accessory
 │   └─→ Inventory
 │       ├─→ Potion
-│       ├─→ AccessoryItem
+│       ├─→ Accessory
 │       └─→ KeyItem
 └─→ SaveManager
     ├─→ SaveData
@@ -588,11 +591,11 @@ TypingPhase
 - バフ/デバフ付与
 - 状態異常の回復/付与
 
-#### AccessoryItem.ts
-- アクセサリ定義ID・グレード・サブ効果の一元管理
-- AccessoryCatalogとAccessoryNameGeneratorによるインスタンス生成／名称決定
-- JSONシリアライズ／デシリアライズ時にサブ効果（最大3件）を保持
-- アイテム種別`accessory`のバリデーションと定義整合性チェック
+#### accessory/Accessory.ts
+- インベントリIDとアクセサリ定義IDの同居管理
+- グレード・サブ効果・名称生成を単一クラスで提供
+- AccessoryCatalog連携によるスナップショット生成と整合性検証
+- JSONシリアライズ／デシリアライズ時にメタデータとスナップショットを保持
 
 #### KeyItem.ts
 - だいじなものの管理
