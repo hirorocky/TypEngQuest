@@ -4,7 +4,7 @@ import { FileSystem } from '../../world/FileSystem';
 import { FileNode, NodeType } from '../../world/FileNode';
 import { PhaseTypes } from '../../core/types';
 import { Player } from '../../player/Player';
-import { ItemType } from '../../items/Item';
+import { ItemType } from '../../items/types';
 
 describe('OpenCommand', () => {
   let command: OpenCommand;
@@ -115,7 +115,7 @@ describe('OpenCommand', () => {
       const inventory = player.getInventory();
       expect(inventory.getItemCount()).toBe(1);
       
-      const items = inventory.findItemsByType(ItemType.CONSUMABLE);
+      const items = inventory.getItems().filter(item => item.getType() === ItemType.POTION);
       expect(items).toHaveLength(1);
       expect(items[0].getName()).toMatch(/potion/i);
     });

@@ -1,8 +1,8 @@
 import { BaseCommand, CommandContext, ValidationResult } from '../BaseCommand';
 import { CommandResult } from '../../core/types';
 import { FileType } from '../../world/FileNode';
-import { ConsumableItem, EffectType } from '../../items/ConsumableItem';
-import { ItemType, ItemRarity } from '../../items/Item';
+import { Potion, EffectType } from '../../items/Potion';
+import { ItemType } from '../../items/types';
 
 /**
  * openコマンド - 宝箱ファイルを開く
@@ -12,9 +12,6 @@ export class OpenCommand extends BaseCommand {
   public description = 'open treasure chest file';
 
   // アイテム生成用定数
-  private static readonly RARITY_COMMON_THRESHOLD = 0.6;
-  private static readonly RARITY_RARE_THRESHOLD = 0.85;
-  private static readonly RARITY_EPIC_THRESHOLD = 0.95;
   private static readonly HEAL_VALUE_MIN = 25;
   private static readonly HEAL_VALUE_MAX = 74;
   private static readonly HP_POTION_PROBABILITY = 0.5;
@@ -98,7 +95,7 @@ export class OpenCommand extends BaseCommand {
    * @param item 生成されたアイテム
    * @returns 出力の配列
    */
-  private generateOpenOutput(fileName: string, item: ConsumableItem): string[] {
+  private generateOpenOutput(fileName: string, item: Potion): string[] {
     const lines: string[] = [];
     
     lines.push(`Opening treasure chest: ${fileName}...`);
@@ -119,7 +116,7 @@ export class OpenCommand extends BaseCommand {
    * @param fileName ファイル名
    * @returns 生成されたアイテム
    */
-  private generateItem(_fileName: string): ConsumableItem {
+  private generateItem(_fileName: string): Potion {
     const itemId = `treasure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const isHPPotion = Math.random() < OpenCommand.HP_POTION_PROBABILITY;
 
@@ -129,26 +126,13 @@ export class OpenCommand extends BaseCommand {
       : 'Restores MP when consumed';
     const effectType = isHPPotion ? EffectType.HEAL_HP : EffectType.HEAL_MP;
 
-    return new ConsumableItem({
+    return new Potion({
       id: itemId,
       name,
       description,
-      type: ItemType.CONSUMABLE,
-      rarity: this.getRandomRarity(),
+      type: ItemType.POTION,
       effects: [{ type: effectType, value: this.getRandomHealValue() }],
     });
-  }
-
-  /**
-   * ランダムなレアリティを取得する
-   * @returns レアリティ
-   */
-  private getRandomRarity(): ItemRarity {
-    const rand = Math.random();
-    if (rand < OpenCommand.RARITY_COMMON_THRESHOLD) return ItemRarity.COMMON;
-    if (rand < OpenCommand.RARITY_RARE_THRESHOLD) return ItemRarity.RARE;
-    if (rand < OpenCommand.RARITY_EPIC_THRESHOLD) return ItemRarity.EPIC;
-    return ItemRarity.LEGENDARY;
   }
 
   /**

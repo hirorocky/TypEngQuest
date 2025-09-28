@@ -1,13 +1,13 @@
 import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
 import {
-  AccessoryEffectSlot,
+  AccessorySubEffect,
   AccessoryMainEffect,
   AccessorySnapshot,
   AccessoryStat,
   AggregatedAccessoryEffects,
 } from './types';
 
-const SUB_EFFECT_SLOT_COUNT = 3;
+const SUB_EFFECT_SLOT_CAP = 3;
 
 type StatMap = Record<AccessoryStat, number>;
 
@@ -20,24 +20,18 @@ const ZERO_STAT_MAP: StatMap = {
 
 export class Accessory {
   private readonly id: string;
-  private readonly archetypeId: string;
-  private readonly displayName: string;
-  private readonly itemType: string;
+  private readonly name: string;
   private grade: number;
   private readonly mainEffect: AccessoryMainEffect;
-  private subEffects: AccessoryEffectSlot[];
+  private subEffects: AccessorySubEffect[];
   private readonly gradeTable: AccessoryGradeTable;
-  private readonly highlightEffectId?: string;
 
   constructor(snapshot: AccessorySnapshot, gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable) {
     this.id = snapshot.id;
-    this.archetypeId = snapshot.archetypeId;
-    this.displayName = snapshot.displayName;
-    this.itemType = snapshot.itemType;
+    this.name = snapshot.name;
     this.grade = snapshot.grade;
     this.mainEffect = snapshot.mainEffect;
     this.subEffects = [...snapshot.subEffects];
-    this.highlightEffectId = snapshot.highlightEffectId;
     this.gradeTable = gradeTable;
 
     this.assertValidGrade(this.grade);
@@ -48,32 +42,24 @@ export class Accessory {
     return this.id;
   }
 
-  getArchetypeId(): string {
-    return this.archetypeId;
+  getMainEffectId(): string {
+    return this.mainEffect.id;
   }
 
   getGrade(): number {
     return this.grade;
   }
 
-  getDisplayName(): string {
-    return this.displayName;
-  }
-
-  getItemType(): string {
-    return this.itemType;
+  getName(): string {
+    return this.name;
   }
 
   getMainEffect(): AccessoryMainEffect {
     return { ...this.mainEffect };
   }
 
-  getSubEffects(): AccessoryEffectSlot[] {
+  getSubEffects(): AccessorySubEffect[] {
     return this.subEffects.map(effect => ({ ...effect }));
-  }
-
-  getHighlightEffectId(): string | undefined {
-    return this.highlightEffectId;
   }
 
   getAggregatedEffect(baseStats: StatMap): AggregatedAccessoryEffects {
@@ -99,7 +85,7 @@ export class Accessory {
     this.grade = newGrade;
   }
 
-  updateSubEffects(newSubEffects: AccessoryEffectSlot[]): void {
+  updateSubEffects(newSubEffects: AccessorySubEffect[]): void {
     this.assertValidSubEffects(newSubEffects);
     this.subEffects = newSubEffects.map(effect => ({ ...effect }));
   }
@@ -107,13 +93,10 @@ export class Accessory {
   toSnapshot(): AccessorySnapshot {
     return {
       id: this.id,
-      archetypeId: this.archetypeId,
-      displayName: this.displayName,
-      itemType: this.itemType,
+      name: this.name,
       grade: this.grade,
       mainEffect: { ...this.mainEffect },
       subEffects: this.getSubEffects(),
-      highlightEffectId: this.highlightEffectId,
     };
   }
 
@@ -129,9 +112,9 @@ export class Accessory {
     }
   }
 
-  private assertValidSubEffects(effects: AccessoryEffectSlot[]): void {
-    if (effects.length !== SUB_EFFECT_SLOT_COUNT) {
-      throw new Error(`Accessory must have exactly ${SUB_EFFECT_SLOT_COUNT} sub effects`);
+  private assertValidSubEffects(effects: AccessorySubEffect[]): void {
+    if (effects.length > SUB_EFFECT_SLOT_CAP) {
+      throw new Error(`Accessory cannot exceed ${SUB_EFFECT_SLOT_CAP} sub effects`);
     }
   }
 }

@@ -62,12 +62,11 @@ export interface PlayerConfig {
   worldLevel?: number;
   equippedAccessories?: (AccessoryItemData | null)[];
   inventory: {
-    consumableItems: Array<{
+    potionItems: Array<{
       id: string;
       name: string;
       description: string;
       type: string;
-      rarity: string;
       effects: Array<{ type: string; value: number }>;
     }>;
     accessoryItems: AccessoryItemData[];

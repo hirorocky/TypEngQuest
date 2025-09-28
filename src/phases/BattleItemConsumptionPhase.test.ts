@@ -1,6 +1,6 @@
 import { BattleItemConsumptionPhase } from './BattleItemConsumptionPhase';
 import { PhaseTypes } from '../core/types';
-import { ItemType } from '../items/Item';
+import { ItemType } from '../items/types';
 
 describe('BattleItemConsumptionPhase', () => {
   let battleItemPhase: BattleItemConsumptionPhase;
@@ -14,29 +14,29 @@ describe('BattleItemConsumptionPhase', () => {
         getItems: jest.fn().mockReturnValue([
           {
             name: 'Health Potion',
-            type: 'consumable',
+            type: 'potion',
             effects: [{ type: 'heal', value: 50 }],
             use: jest.fn().mockResolvedValue({ success: true }),
-            getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+            getType: jest.fn().mockReturnValue(ItemType.POTION),
             getName: jest.fn().mockReturnValue('Health Potion'),
             getEffects: jest.fn().mockReturnValue([{ type: 'heal', value: 50 }]),
           },
           {
             name: 'Mana Potion',
-            type: 'consumable',
+            type: 'potion',
             effects: [{ type: 'restore_mp', value: 30 }],
             use: jest.fn().mockResolvedValue({ success: true }),
-            getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+            getType: jest.fn().mockReturnValue(ItemType.POTION),
             getName: jest.fn().mockReturnValue('Mana Potion'),
             getEffects: jest.fn().mockReturnValue([{ type: 'restore_mp', value: 30 }]),
           },
           {
-            name: 'Sword',
-            type: 'equipment',
-            effects: [{ type: 'damage', value: 10 }],
-            getType: jest.fn().mockReturnValue(ItemType.EQUIPMENT),
-            getName: jest.fn().mockReturnValue('Sword'),
-            getEffects: jest.fn().mockReturnValue([{ type: 'damage', value: 10 }]),
+            name: 'Charm',
+            type: 'accessory',
+            effects: [{ type: 'fortune', value: 10 }],
+            getType: jest.fn().mockReturnValue(ItemType.ACCESSORY),
+            getName: jest.fn().mockReturnValue('Charm'),
+            getEffects: jest.fn().mockReturnValue([{ type: 'fortune', value: 10 }]),
           },
         ]),
         removeItem: jest.fn(),
@@ -85,7 +85,7 @@ describe('BattleItemConsumptionPhase', () => {
       expect(result.message).toContain('Available items');
       expect(result.output).toContain('  1. Health Potion (heal: 50)');
       expect(result.output).toContain('  2. Mana Potion (restore_mp: 30)');
-      expect(result.output).not.toContain('Sword'); // 装備アイテムは除外
+      expect(result.output).not.toContain('Charm'); // 非消費アイテムは除外
     });
 
     it('アイテム番号選択で正しいアイテムを使用', async () => {
@@ -163,12 +163,12 @@ describe('BattleItemConsumptionPhase', () => {
     it('消費アイテムが存在しない場合の処理', async () => {
       mockPlayer.getInventory().getItems.mockReturnValue([
         {
-          name: 'Sword',
-          type: 'equipment',
-          effects: [{ type: 'damage', value: 10 }],
-          getType: jest.fn().mockReturnValue(ItemType.EQUIPMENT),
-          getName: jest.fn().mockReturnValue('Sword'),
-          getEffects: jest.fn().mockReturnValue([{ type: 'damage', value: 10 }]),
+          name: 'Charm',
+          type: 'accessory',
+          effects: [{ type: 'fortune', value: 10 }],
+          getType: jest.fn().mockReturnValue(ItemType.ACCESSORY),
+          getName: jest.fn().mockReturnValue('Charm'),
+          getEffects: jest.fn().mockReturnValue([{ type: 'fortune', value: 10 }]),
         },
       ]);
       const emptyItemPhase = new BattleItemConsumptionPhase({
@@ -181,7 +181,7 @@ describe('BattleItemConsumptionPhase', () => {
       const result = await emptyItemPhase.processInput('list');
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('No consumable items');
+      expect(result.message).toContain('No potions available');
     });
 
     it('プレイヤーが存在しない場合の処理', async () => {
@@ -201,10 +201,10 @@ describe('BattleItemConsumptionPhase', () => {
     it('アイテム使用失敗時の処理', async () => {
       const failingItem = {
         name: 'Broken Potion',
-        type: 'consumable',
+        type: 'potion',
         effects: [{ type: 'heal', value: 50 }],
         use: jest.fn().mockRejectedValue(new Error('Item is broken')),
-        getType: jest.fn().mockReturnValue(ItemType.CONSUMABLE),
+        getType: jest.fn().mockReturnValue(ItemType.POTION),
         getName: jest.fn().mockReturnValue('Broken Potion'),
         getEffects: jest.fn().mockReturnValue([{ type: 'heal', value: 50 }]),
       };

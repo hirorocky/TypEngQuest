@@ -1,28 +1,18 @@
 import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats } from './EquipmentStats';
-import { Inventory, InventoryData } from './Inventory';
-import {
-  AccessoryItem,
-  AccessoryItemData,
-  ConsumableItem,
-  EffectType,
-  ItemRarity,
-  ItemType,
-} from '../items';
+import { InventoryData, PotionInventory, AccessoryInventory } from './Inventory';
+import { AccessoryItem, AccessoryItemData, Potion, EffectType, ItemType } from '../items';
 import { Skill } from '../battle/Skill';
 import { Battle } from '../battle/Battle';
 import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
-import {
-  AccessoryCatalog,
-  AccessoryEffectSlot,
-  AccessorySlotManager,
-  AggregateResult,
-} from '../equipment/accessory';
+import { AccessorySlotManager, AggregateResult } from '../items/accessory';
+import { AccessorySnapshot } from '../items/accessory/types';
 
 export interface PlayerData {
   name: string;
   bodyStats: BodyStatsData;
-  inventory: InventoryData;
+  potionInventory: InventoryData;
+  accessoryInventory: InventoryData;
   accessorySlots: (AccessoryItemData | null)[];
   worldLevel: number;
 }
@@ -37,16 +27,16 @@ export interface TotalStatsResult {
 export class Player {
   public readonly name: string;
   private bodyStats: BodyStats;
-  private inventory: Inventory;
-  private accessoryCatalog: AccessoryCatalog;
+  private potionInventory: PotionInventory;
+  private accessoryInventory: AccessoryInventory;
   private accessoryManager: AccessorySlotManager;
   private worldLevel: number;
 
   constructor(name: string, isDevMode: boolean = false) {
     this.name = name;
     this.bodyStats = new BodyStats(0);
-    this.inventory = new Inventory();
-    this.accessoryCatalog = AccessoryCatalog.load();
+    this.potionInventory = new PotionInventory();
+    this.accessoryInventory = new AccessoryInventory();
     this.accessoryManager = new AccessorySlotManager();
     this.worldLevel = 1;
     this.accessoryManager.setWorldLevel(this.worldLevel);
@@ -107,14 +97,14 @@ export class Player {
         return;
       }
 
-      const existing = this.inventory.findItemById(itemData.id);
+      const existing = this.accessoryInventory.findItemById(itemData.id);
       let accessoryItem: AccessoryItem;
 
       if (existing instanceof AccessoryItem) {
         accessoryItem = existing;
       } else {
-        accessoryItem = AccessoryItem.fromJSON(itemData, this.accessoryCatalog);
-        this.inventory.addItem(accessoryItem);
+        accessoryItem = AccessoryItem.fromJSON(itemData);
+        this.accessoryInventory.addItem(accessoryItem);
       }
 
       this.equipToSlot(slotIndex, accessoryItem);
@@ -122,34 +112,32 @@ export class Player {
   }
 
   private loadInventoryFromConfig(inventory: {
-    consumableItems?: unknown[];
+    potionItems?: unknown[];
     accessoryItems?: unknown[];
   }): void {
-    for (const itemConfig of inventory.consumableItems || []) {
+    for (const itemConfig of inventory.potionItems || []) {
       try {
         const config = itemConfig as {
           id: string;
           name: string;
           description: string;
           type: string;
-          rarity: string;
           effects: { type: string; value: number }[];
         };
-        const item = new ConsumableItem({
+        const item = new Potion({
           id: config.id,
           name: config.name,
           description: config.description,
           type: this.parseItemType(config.type),
-          rarity: this.parseItemRarity(config.rarity),
           effects: config.effects.map(effect => ({
             type: this.parseEffectType(effect.type),
             value: effect.value,
           })),
         });
-        this.inventory.addItem(item);
+        this.potionInventory.addItem(item);
       } catch (error) {
-        console.warn(`Failed to load consumable item ${(itemConfig as { id: string }).id}:`, error);
-        throw new Error(`Invalid consumable item config: ${(itemConfig as { id: string }).id}`);
+        console.warn(`Failed to load potion ${(itemConfig as { id: string }).id}:`, error);
+        throw new Error(`Invalid potion config: ${(itemConfig as { id: string }).id}`);
       }
     }
 
@@ -160,25 +148,27 @@ export class Player {
           name: string;
           description: string;
           type: string;
-          rarity: string;
-          definitionId: string;
-          grade: number;
-          subEffects?: AccessoryEffectSlot[];
+          accessory: AccessorySnapshot;
         };
+
+        const itemType = this.parseItemType(config.type);
+        if (itemType !== ItemType.ACCESSORY) {
+          throw new Error(`Expected accessory item, got: ${config.type}`);
+        }
+        if (!config.accessory) {
+          throw new Error('Accessory config requires accessory snapshot');
+        }
 
         const data: AccessoryItemData = {
           id: config.id,
           name: config.name,
           description: config.description,
-          type: this.parseItemType(config.type),
-          rarity: this.parseItemRarity(config.rarity),
-          definitionId: config.definitionId,
-          grade: config.grade,
-          subEffects: config.subEffects,
+          type: ItemType.ACCESSORY,
+          accessory: config.accessory,
         };
 
-        const item = AccessoryItem.fromJSON(data, this.accessoryCatalog);
-        this.inventory.addItem(item);
+        const item = AccessoryItem.fromJSON(data);
+        this.accessoryInventory.addItem(item);
       } catch (error) {
         console.warn(`Failed to load accessory item ${(itemConfig as { id: string }).id}:`, error);
         throw new Error(`Invalid accessory item config: ${(itemConfig as { id: string }).id}`);
@@ -188,27 +178,12 @@ export class Player {
 
   private parseItemType(type: string): ItemType {
     switch (type.toLowerCase()) {
-      case 'consumable':
-        return ItemType.CONSUMABLE;
+      case 'potion':
+        return ItemType.POTION;
       case 'accessory':
         return ItemType.ACCESSORY;
       default:
         throw new Error(`Unknown item type: ${type}`);
-    }
-  }
-
-  private parseItemRarity(rarity: string): ItemRarity {
-    switch (rarity.toLowerCase()) {
-      case 'common':
-        return ItemRarity.COMMON;
-      case 'rare':
-        return ItemRarity.RARE;
-      case 'epic':
-        return ItemRarity.EPIC;
-      case 'legendary':
-        return ItemRarity.LEGENDARY;
-      default:
-        throw new Error(`Unknown item rarity: ${rarity}`);
     }
   }
 
@@ -277,8 +252,25 @@ export class Player {
     return aggregate.total;
   }
 
-  getInventory(): Inventory {
-    return this.inventory;
+  getPotionInventory(): PotionInventory {
+    return this.potionInventory;
+  }
+
+  /**
+   * アクセサリインベントリを取得する
+   * @returns アクセサリインベントリ
+   */
+  getAccessoryInventory(): AccessoryInventory {
+    return this.accessoryInventory;
+  }
+
+  /**
+   * 後方互換性のためのメソッド - 消耗品インベントリを返す
+   * @deprecated Use getPotionInventory() instead
+   * @returns 消耗品インベントリ
+   */
+  getInventory(): PotionInventory {
+    return this.potionInventory;
   }
 
   setWorldLevel(level: number): void {
@@ -314,12 +306,12 @@ export class Player {
     const current = this.accessoryManager.getSlotState()[slotIndex];
     if (current) {
       this.accessoryManager.unequip(slotIndex);
-      this.inventory.addItem(current);
+      this.accessoryInventory.addItem(current);
     }
 
     if (accessoryItem) {
       this.accessoryManager.equip(slotIndex, accessoryItem);
-      this.inventory.removeItem(accessoryItem);
+      this.accessoryInventory.removeItem(accessoryItem);
     }
 
     this.bodyStats.updateLevel(this.getLevel());
@@ -346,7 +338,8 @@ export class Player {
     return {
       name: this.name,
       bodyStats: this.bodyStats.toJSON(),
-      inventory: this.inventory.toJSON(),
+      potionInventory: this.potionInventory.toJSON(),
+      accessoryInventory: this.accessoryInventory.toJSON(),
       accessorySlots: this.accessoryManager
         .getSlotState()
         .map(item => (item ? (item.toJSON() as AccessoryItemData) : null)),
@@ -360,16 +353,38 @@ export class Player {
 
     const player = new Player(data.name);
     player.bodyStats = BodyStats.fromJSON(data.bodyStats);
-    player.inventory = Inventory.fromJSON(data.inventory);
+
+    // 新しいインベントリ構造の場合
+    if (data.potionInventory && data.accessoryInventory) {
+      player.potionInventory = PotionInventory.fromJSON(data.potionInventory);
+      player.accessoryInventory = AccessoryInventory.fromJSON(data.accessoryInventory);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } else if ((data as any).inventory) {
+      // 後方互換性: 古いInventoryデータの場合
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const oldInventory = PotionInventory.fromJSON((data as any).inventory);
+      player.potionInventory = new PotionInventory();
+      player.accessoryInventory = new AccessoryInventory();
+
+      // 既存のアイテムを適切なインベントリに分配
+      oldInventory.getItems().forEach(item => {
+        if (item.getType() === ItemType.POTION) {
+          player.potionInventory.addItem(item as unknown as Potion);
+        } else if (item.getType() === ItemType.ACCESSORY) {
+          player.accessoryInventory.addItem(item as unknown as AccessoryItem);
+        }
+      });
+    }
+
     player.setWorldLevel(data.worldLevel);
 
     data.accessorySlots.forEach((slotData: AccessoryItemData | null, index: number) => {
       if (!slotData) {
         return;
       }
-      const accessoryItem = AccessoryItem.fromJSON(slotData, player.accessoryCatalog);
+      const accessoryItem = AccessoryItem.fromJSON(slotData);
       player.accessoryManager.equip(index, accessoryItem);
-      player.inventory.removeItem(accessoryItem);
+      player.accessoryInventory.removeItem(accessoryItem);
     });
 
     player.bodyStats.updateLevel(player.getLevel());
@@ -378,6 +393,13 @@ export class Player {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validatePlayerData(data: any): asserts data is PlayerData {
+    Player.validateBasicFields(data);
+    Player.validateInventoryFields(data);
+    Player.validateOtherFields(data);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateBasicFields(data: any): void {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid player data');
     }
@@ -387,9 +409,38 @@ export class Player {
     if (typeof data.bodyStats !== 'object' || data.bodyStats === null) {
       throw new Error('Invalid player data');
     }
-    if (typeof data.inventory !== 'object' || data.inventory === null) {
-      throw new Error('Invalid player data');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateInventoryFields(data: any): void {
+    const hasNewInventoryStructure = data.potionInventory && data.accessoryInventory;
+    const hasOldInventoryStructure = data.inventory;
+
+    if (!hasNewInventoryStructure && !hasOldInventoryStructure) {
+      throw new Error('Invalid player data: missing inventory data');
     }
+
+    if (hasNewInventoryStructure) {
+      Player.validateNewInventoryStructure(data);
+    }
+
+    if (hasOldInventoryStructure && typeof data.inventory !== 'object') {
+      throw new Error('Invalid player data: invalid inventory');
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateNewInventoryStructure(data: any): void {
+    if (typeof data.potionInventory !== 'object' || data.potionInventory === null) {
+      throw new Error('Invalid player data: invalid potion inventory');
+    }
+    if (typeof data.accessoryInventory !== 'object' || data.accessoryInventory === null) {
+      throw new Error('Invalid player data: invalid accessory inventory');
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateOtherFields(data: any): void {
     if (!Array.isArray(data.accessorySlots)) {
       throw new Error('Invalid player data');
     }

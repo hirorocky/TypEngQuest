@@ -1,32 +1,31 @@
-import { Inventory } from './Inventory';
-import { ConsumableItem, EffectType } from '../items/ConsumableItem';
-import { ItemType, ItemRarity } from '../items/Item';
+import { PotionInventory } from './Inventory';
+import { Potion, EffectType } from '../items/Potion';
+import { ItemType } from '../items/types';
 
 describe('Inventory', () => {
-  let inventory: Inventory;
-  let testItem: ConsumableItem;
+  let inventory: PotionInventory;
+  let testItem: Potion;
 
   beforeEach(() => {
-    inventory = new Inventory();
-    testItem = new ConsumableItem({
+    inventory = new PotionInventory();
+    testItem = new Potion({
       id: 'test-item',
       name: 'Test Item',
       description: 'Test item description',
-      type: ItemType.CONSUMABLE,
-      rarity: ItemRarity.COMMON,
+      type: ItemType.POTION,
       effects: [{ type: EffectType.HEAL_HP, value: 50 }],
     });
   });
 
   describe('constructor', () => {
     it('空のインベントリを作成する', () => {
-      const newInventory = new Inventory();
+      const newInventory = new PotionInventory();
       expect(newInventory.getItems()).toEqual([]);
       expect(newInventory.getItemCount()).toBe(0);
     });
 
     it('アイテムを指定してインベントリを作成する', () => {
-      const newInventory = new Inventory([testItem]);
+      const newInventory = new PotionInventory([testItem]);
       expect(newInventory.getItems()).toHaveLength(1);
       expect(newInventory.getItems()[0]).toBe(testItem);
     });
@@ -43,12 +42,11 @@ describe('Inventory', () => {
     it('最大数を超えるアイテムは追加できない', () => {
       // 最大数まで追加
       for (let i = 0; i < 100; i++) {
-        const item = new ConsumableItem({
+        const item = new Potion({
           id: `item-${i}`,
           name: `Item ${i}`,
           description: 'Test item',
-          type: ItemType.CONSUMABLE,
-          rarity: ItemRarity.COMMON,
+          type: ItemType.POTION,
           effects: [{ type: EffectType.HEAL_HP, value: 10 }],
         });
         inventory.addItem(item);
@@ -107,20 +105,6 @@ describe('Inventory', () => {
     });
   });
 
-  describe('findItemsByType', () => {
-    it('タイプでアイテムをフィルタリングできる', () => {
-      inventory.addItem(testItem);
-      const items = inventory.findItemsByType(ItemType.CONSUMABLE);
-      expect(items).toHaveLength(1);
-      expect(items[0]).toBe(testItem);
-    });
-
-    it('該当するタイプのアイテムがない場合は空配列を返す', () => {
-      const items = inventory.findItemsByType(ItemType.EQUIPMENT);
-      expect(items).toEqual([]);
-    });
-  });
-
   describe('clear', () => {
     it('全アイテムを削除する', () => {
       inventory.addItem(testItem);
@@ -146,12 +130,11 @@ describe('Inventory', () => {
     it('満杯の場合trueを返す', () => {
       // 最大数まで追加
       for (let i = 0; i < 100; i++) {
-        const item = new ConsumableItem({
+        const item = new Potion({
           id: `item-${i}`,
           name: `Item ${i}`,
           description: 'Test item',
-          type: ItemType.CONSUMABLE,
-          rarity: ItemRarity.COMMON,
+          type: ItemType.POTION,
           effects: [{ type: EffectType.HEAL_HP, value: 10 }],
         });
         inventory.addItem(item);
@@ -172,18 +155,20 @@ describe('Inventory', () => {
 
   describe('fromJSON', () => {
     it('JSONデータから復元できる', () => {
-      const originalInventory = new Inventory([testItem]);
+      const originalInventory = new PotionInventory([testItem]);
       const json = originalInventory.toJSON();
-      const restoredInventory = Inventory.fromJSON(json);
+      const restoredInventory = PotionInventory.fromJSON(json);
 
       expect(restoredInventory.getItemCount()).toBe(1);
       expect(restoredInventory.getItems()[0].getId()).toBe(testItem.getId());
     });
 
     it('不正なJSONデータの場合はエラーを投げる', () => {
-      expect(() => Inventory.fromJSON(null)).toThrow('Invalid inventory data');
-      expect(() => Inventory.fromJSON({})).toThrow('Invalid inventory data');
-      expect(() => Inventory.fromJSON({ items: 'invalid' })).toThrow('Invalid inventory data');
+      expect(() => PotionInventory.fromJSON(null)).toThrow('Invalid potion inventory data');
+      expect(() => PotionInventory.fromJSON({})).toThrow('Invalid potion inventory data');
+      expect(() => PotionInventory.fromJSON({ items: 'invalid' })).toThrow(
+        'Invalid potion inventory data'
+      );
     });
   });
 });

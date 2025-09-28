@@ -57,14 +57,14 @@ TypEngQuest/
 │   │   └── WorldStatusFactory.ts   # ワールドステータス生成
 │   │
 │   ├── items/                      # アイテムシステム [部分実装 3/4]
-│   │   ├── Item.ts                 # アイテム基底クラス
+│   │   ├── types.ts               # アイテム共通ユーティリティ・列挙
 │   │   ├── Item.test.ts            # Itemのテスト
-│   │   ├── ConsumableItem.ts       # 消費アイテムクラス
-│   │   ├── ConsumableItem.test.ts  # ConsumableItemのテスト
-│   │   ├── EquipmentItem.ts        # 装備アイテムクラス
-│   │   ├── EquipmentItem.test.ts   # EquipmentItemのテスト
+│   │   ├── Potion.ts       # 消費アイテムクラス
+│   │   ├── Potion.test.ts  # Potionのテスト
+│   │   ├── AccessoryItem.ts        # アクセサリアイテムクラス
 │   │   └── index.ts                # 統合エクスポート
 │   │   # 以下未実装:
+│   │   # ├── AccessoryItem.test.ts  # AccessoryItemのテスト
 │   │   # ├── KeyItem.ts             # だいじなものクラス
 │   │   # └── KeyItem.test.ts        # KeyItemのテスト
 │   │
@@ -171,7 +171,7 @@ TypEngQuest/
 # 未実装のデータファイル（設計のみ）:
 # data/
 # ├── items/                      # アイテムデータ
-# │   ├── consumables.json        # 消費アイテム定義
+# │   ├── potions.json           # ポーション定義
 # │   └── equipment.json          # 装備アイテム定義
 # ├── enemies/                    # 敵データ
 # │   └── enemies.json            # 敵定義
@@ -189,7 +189,7 @@ TypEngQuest/
 - **World**: FileNode、FileSystem、World、WorldGenerator、domains（完全実装）
 - **Phases**: TitlePhase、ExplorationPhase、InventoryPhase（部分実装）
 - **Player**: Player、BodyStats、EquipmentStats、Stats、Inventory、TemporaryStatus、WorldStatus（完全実装）
-- **Items**: Item、ConsumableItem、EquipmentItem（部分実装）
+- **Items**: Item、Potion、AccessoryItem（部分実装）
 - **Battle**: Battle、Enemy、BattleCalculator、Skill（完全実装）
 - **Commands**: BaseCommand、title/（3つ）、exploration/（5つ）、interaction/（5つ）、game/（2つ）（部分実装）
 - **Tests**: 統合テスト、テストヘルパー（完全実装）
@@ -220,7 +220,7 @@ TypEngQuest/
 ### Player（プレイヤーシステム）
 - **Player.ts**: プレイヤーの基本情報管理（名前、レベル、JSON対応）
 - **Stats.ts**: HP/MP管理、ステータス計算、一時的能力値変化、レベルベース自動計算
-- **Equipment.ts**: 装備の文法チェックと効果計算
+- **Equipment.ts**: 装備効果計算
 
 ### Battle（戦闘システム）
 - **Battle.ts**: ターン制バトルの進行管理
@@ -282,7 +282,7 @@ TypEngQuest/
    - Random, FileUtils, StringUtils, Logger, colors
 
 2. **Domain層** - Utils層のみに依存
-   - Item, ConsumableItem, EquipmentItem, KeyItem
+   - Item, Potion, AccessoryItem, KeyItem
    - FileNode, domains
    - Skill, Enemy
    - SaveData
@@ -336,11 +336,12 @@ Game
 │       └─→ FileNode
 ├─→ Player
 │   ├─→ Stats
-│   ├─→ Equipment
-│   │   └─→ EquipmentItem
+│   ├─→ EquipmentStats
+│   ├─→ AccessorySlotManager
+│   │   └─→ AccessoryItem
 │   └─→ Inventory
-│       ├─→ ConsumableItem
-│       ├─→ EquipmentItem
+│       ├─→ Potion
+│       ├─→ AccessoryItem
 │       └─→ KeyItem
 └─→ SaveManager
     ├─→ SaveData
@@ -436,7 +437,7 @@ TypingPhase
 #### InventoryPhase.ts
 - アイテム一覧表示
 - 消費アイテムの使用処理
-- 装備の変更と文法チェック
+- 装備の変更と効果反映
 - 装備効果の計算と反映
 
 #### BattlePhase.ts
@@ -512,7 +513,7 @@ TypingPhase
 
 #### Equipment.ts
 - 装備スロット管理（最大5個）
-- 英文法チェック機能
+- （廃止済み）英文法チェック機能
 - 装備効果の集計
 - 使用可能技の取得
 
@@ -576,24 +577,22 @@ TypingPhase
 
 ### アイテムシステム (src/items/)
 
-#### Item.ts
-- アイテム基底クラス
-- 共通プロパティの定義
-- アイテム使用インターフェース
-- アイテム説明文の管理
+#### types.ts
+- アイテム列挙・共通データ型の定義
+- インベントリアイテム用インターフェース提供
+- 表示名生成やID/名前バリデーションのユーティリティ
 
-#### ConsumableItem.ts
+#### Potion.ts
 - 消費アイテムの効果実装
 - HP/MP回復処理
 - バフ/デバフ付与
 - 状態異常の回復/付与
 
-#### EquipmentItem.ts
-- 装備アイテムのステータス管理
-- グレードシステムの実装（1-5）
-- 単一技の保持と管理（1装備1技）
-- スキル効果の型定義（damage/heal/temporary_status）
-- equals()メソッドによる詳細な比較実装
+#### AccessoryItem.ts
+- アクセサリ定義ID・グレード・サブ効果の一元管理
+- AccessoryCatalogとAccessoryNameGeneratorによるインスタンス生成／名称決定
+- JSONシリアライズ／デシリアライズ時にサブ効果（最大3件）を保持
+- アイテム種別`accessory`のバリデーションと定義整合性チェック
 
 #### KeyItem.ts
 - だいじなものの管理

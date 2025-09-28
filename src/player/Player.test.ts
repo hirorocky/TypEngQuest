@@ -1,20 +1,51 @@
 import { Player } from './Player';
 import { AccessoryItem, AccessoryItemData } from '../items/AccessoryItem';
-import { ItemType, ItemRarity } from '../items/Item';
+import { ItemType } from '../items/types';
+import { AccessoryCatalog } from '../items/accessory';
+import { AccessorySnapshot } from '../items/accessory/types';
 
-const createAccessoryItem = (overrides: Partial<AccessoryItemData> = {}): AccessoryItem => {
+const catalog = AccessoryCatalog.load();
+
+interface AccessoryItemOptions {
+  id?: string;
+  name?: string;
+  description?: string;
+  definitionId?: string;
+  grade?: number;
+  subEffectIds?: string[];
+}
+
+const buildSnapshot = (
+  definitionId: string,
+  grade: number,
+  subEffectIds: string[] = []
+): AccessorySnapshot => {
+  const definition = catalog.getDefinition(definitionId);
+  const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
+
+  return {
+    id: definition.id,
+    name: definition.name,
+    grade,
+    mainEffect: { ...definition.mainEffect },
+    subEffects,
+  };
+};
+
+const createAccessoryItem = (options: AccessoryItemOptions = {}): AccessoryItem => {
+  const definitionId = options.definitionId ?? 'glove';
+  const grade = options.grade ?? 25;
+  const snapshot = buildSnapshot(definitionId, grade, options.subEffectIds);
+
   const data: AccessoryItemData = {
-    id: overrides.id ?? 'acc-1',
-    name: overrides.name ?? 'Cronus',
-    description: overrides.description ?? 'test accessory',
+    id: options.id ?? 'acc-1',
+    name: options.name ?? definitionId,
+    description: options.description ?? 'test accessory',
     type: ItemType.ACCESSORY,
-    rarity: overrides.rarity ?? ItemRarity.RARE,
-    definitionId: overrides.definitionId ?? 'cronus_glove',
-    grade: overrides.grade ?? 25,
-    subEffects: overrides.subEffects,
+    accessory: snapshot,
   };
 
-  return new AccessoryItem(data);
+  return AccessoryItem.fromJSON(data);
 };
 
 describe('Player (accessory system)', () => {
@@ -36,34 +67,22 @@ describe('Player (accessory system)', () => {
     player.setWorldLevel(50);
 
     const accessory = createAccessoryItem({ id: 'acc-boost', grade: 25 });
-    player.getInventory().addItem(accessory);
+    player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 
     expect(player.getLevel()).toBe(25);
     const stats = player.getEquipmentStats().toJSON();
     expect(stats.strength).toBeGreaterThanOrEqual(1);
     expect(stats.willpower).toBeLessThanOrEqual(0);
-    expect(player.getInventory().findItemById('acc-boost')).toBeUndefined();
+    expect(player.getAccessoryInventory().findItemById('acc-boost')).toBeUndefined();
     expect(player.getEquipmentSlots()[0]?.getId()).toBe('acc-boost');
-  });
-
-  it('rejects accessories above current world level', () => {
-    const player = new Player('Hero');
-    player.setWorldLevel(10);
-
-    const accessory = createAccessoryItem({ id: 'acc-high', grade: 30 });
-    player.getInventory().addItem(accessory);
-
-    expect(() => player.equipToSlot(0, accessory)).toThrow(
-      'Accessory grade exceeds current world level'
-    );
   });
 
   it('serializes and restores accessory state', () => {
     const player = new Player('Hero');
     player.setWorldLevel(60);
     const accessory = createAccessoryItem({ id: 'acc-save', grade: 40 });
-    player.getInventory().addItem(accessory);
+    player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 
     const json = player.toJSON();

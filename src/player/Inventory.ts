@@ -1,5 +1,5 @@
-import { Item, ItemType } from '../items/Item';
-import { ConsumableItem } from '../items/ConsumableItem';
+import { InventoryItem, ItemType } from '../items/types';
+import { Potion } from '../items/Potion';
 import { AccessoryItem } from '../items/AccessoryItem';
 
 /**
@@ -10,18 +10,17 @@ export interface InventoryData {
 }
 
 /**
- * インベントリクラス
- * プレイヤーのアイテム管理を行う
+ * インベントリの基底クラス
  */
-export class Inventory {
-  private static readonly MAX_ITEMS: number = 100;
-  private items: Item[] = [];
+abstract class BaseInventory<T extends InventoryItem> {
+  protected static readonly MAX_ITEMS: number = 100;
+  protected items: T[] = [];
 
   /**
    * インベントリを初期化する
    * @param items - 初期アイテム配列（オプション）
    */
-  constructor(items?: Item[]) {
+  constructor(items?: T[]) {
     if (items) {
       this.items = [...items];
     }
@@ -33,12 +32,12 @@ export class Inventory {
    * @returns 追加に成功した場合true
    * @throws {Error} アイテムがnullの場合
    */
-  addItem(item: Item): boolean {
+  addItem(item: T): boolean {
     if (!item) {
       throw new Error('Item cannot be null');
     }
 
-    if (this.items.length >= Inventory.MAX_ITEMS) {
+    if (this.items.length >= BaseInventory.MAX_ITEMS) {
       return false;
     }
 
@@ -52,12 +51,12 @@ export class Inventory {
    * @returns 削除に成功した場合true
    * @throws {Error} アイテムがnullの場合
    */
-  removeItem(item: Item): boolean {
+  removeItem(item: T): boolean {
     if (!item) {
       throw new Error('Item cannot be null');
     }
 
-    const index = this.items.findIndex(i => i.equals(item));
+    const index = this.items.indexOf(item);
     if (index === -1) {
       return false;
     }
@@ -71,8 +70,8 @@ export class Inventory {
    * @param item - チェックするアイテム
    * @returns 所持している場合true
    */
-  hasItem(item: Item): boolean {
-    return this.items.some(i => i.equals(item));
+  hasItem(item: T): boolean {
+    return this.items.includes(item);
   }
 
   /**
@@ -80,17 +79,8 @@ export class Inventory {
    * @param id - 検索するアイテムのID
    * @returns 見つかったアイテム、見つからない場合undefined
    */
-  findItemById(id: string): Item | undefined {
+  findItemById(id: string): T | undefined {
     return this.items.find(item => item.getId() === id);
-  }
-
-  /**
-   * タイプでアイテムをフィルタリングする
-   * @param type - フィルタリングするタイプ
-   * @returns 該当するアイテムの配列
-   */
-  findItemsByType(type: ItemType): Item[] {
-    return this.items.filter(item => item.getType() === type);
   }
 
   /**
@@ -104,7 +94,7 @@ export class Inventory {
    * 全アイテムを取得する
    * @returns アイテムの配列（コピー）
    */
-  getItems(): Item[] {
+  getItems(): T[] {
     return [...this.items];
   }
 
@@ -121,7 +111,7 @@ export class Inventory {
    * @returns 満杯の場合true
    */
   isFull(): boolean {
-    return this.items.length >= Inventory.MAX_ITEMS;
+    return this.items.length >= BaseInventory.MAX_ITEMS;
   }
 
   /**
@@ -133,32 +123,80 @@ export class Inventory {
       items: this.items.map(item => item.toJSON()),
     };
   }
+}
+
+/**
+ * ポーション専用インベントリ
+ */
+export class PotionInventory extends BaseInventory<Potion> {
+  /**
+   * 効果タイプでアイテムをフィルタリングする
+   * @param effectType - フィルタリングする効果タイプ
+   * @returns 該当するアイテムの配列
+   */
+  findItemsByEffectType(effectType: string): Potion[] {
+    return this.items.filter(item => item.getEffects().some(effect => effect.type === effectType));
+  }
 
   /**
-   * JSONデータからインベントリを復元する
+   * JSONデータからPotionInventoryを復元する
    * @param data - JSONデータ
-   * @returns インベントリインスタンス
+   * @returns PotionInventoryインスタンス
    * @throws {Error} 不正なデータの場合
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static fromJSON(data: any): Inventory {
-    if (!Inventory.validateInventoryData(data)) {
-      throw new Error('Invalid inventory data');
+  static fromJSON(data: any): PotionInventory {
+    if (!PotionInventory.validateInventoryData(data)) {
+      throw new Error('Invalid potion inventory data');
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = data.items.map((itemData: any) => {
-      switch (itemData.type) {
-        case ItemType.CONSUMABLE:
-          return ConsumableItem.fromJSON(itemData);
-        case ItemType.ACCESSORY:
-          return AccessoryItem.fromJSON(itemData);
-        default:
-          return Item.fromJSON(itemData);
+      if (itemData.type !== ItemType.POTION) {
+        throw new Error(`Expected potion item, got: ${itemData.type}`);
       }
+      return Potion.fromJSON(itemData);
     });
 
-    return new Inventory(items);
+    return new PotionInventory(items);
+  }
+
+  /**
+   * インベントリデータの形式を検証する
+   * @param data - 検証するデータ
+   * @returns 有効な場合true
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static validateInventoryData(data: any): data is InventoryData {
+    return typeof data === 'object' && data !== null && Array.isArray(data.items);
+  }
+}
+
+/**
+ * アクセサリアイテム専用インベントリ
+ */
+export class AccessoryInventory extends BaseInventory<AccessoryItem> {
+  /**
+   * JSONデータからAccessoryInventoryを復元する
+   * @param data - JSONデータ
+   * @returns AccessoryInventoryインスタンス
+   * @throws {Error} 不正なデータの場合
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static fromJSON(data: any): AccessoryInventory {
+    if (!AccessoryInventory.validateInventoryData(data)) {
+      throw new Error('Invalid accessory inventory data');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = data.items.map((itemData: any) => {
+      if (itemData.type !== ItemType.ACCESSORY) {
+        throw new Error(`Expected accessory item, got: ${itemData.type}`);
+      }
+      return AccessoryItem.fromJSON(itemData);
+    });
+
+    return new AccessoryInventory(items);
   }
 
   /**

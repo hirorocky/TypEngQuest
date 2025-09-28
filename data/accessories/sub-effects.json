@@ -1,0 +1,67 @@
+{
+  "subEffects": [
+    {
+      "id": "tempo",
+      "effectType": "typing_window_bonus",
+      "name": "Tempo",
+      "magnitude": 1,
+      "description": "タイピング制限時間を1秒延長する"
+    },
+    {
+      "id": "flare",
+      "effectType": "crit_mp_refund",
+      "name": "Flare",
+      "magnitude": 6,
+      "description": "クリティカル発生時にMPを6回復"
+    },
+    {
+      "id": "poise",
+      "effectType": "focus_stability",
+      "name": "Poise",
+      "magnitude": 8,
+      "description": "フォーカスモードの入力猶予を8%拡張"
+    },
+    {
+      "id": "aegis",
+      "effectType": "status_resist",
+      "name": "Aegis",
+      "magnitude": 40,
+      "description": "状態異常耐性を40%向上"
+    },
+    {
+      "id": "thrift",
+      "effectType": "mp_cost_reduction",
+      "name": "Thrift",
+      "magnitude": 12,
+      "description": "MP消費を12%軽減"
+    },
+    {
+      "id": "prism",
+      "effectType": "spark_chain_bonus",
+      "name": "Prism",
+      "magnitude": 1,
+      "description": "スパークモードの連鎖上限を1増やす"
+    },
+    {
+      "id": "wisp",
+      "effectType": "dodge_window_bonus",
+      "name": "Wisp",
+      "magnitude": 12,
+      "description": "敵攻撃の回避猶予を12%延長"
+    },
+    {
+      "id": "drift",
+      "effectType": "focus_charge_bonus",
+      "name": "Drift",
+      "magnitude": 15,
+      "description": "フォーカスモードの初期充填値+15"
+    },
+    {
+      "id": "pulse",
+      "effectType": "dash_cooldown_reduction",
+      "name": "Pulse",
+      "magnitude": 0.5,
+      "description": "移動系スキルのクールダウンを0.5秒短縮"
+    }
+  ]
+}

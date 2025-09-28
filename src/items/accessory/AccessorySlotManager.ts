@@ -1,6 +1,6 @@
 import { Accessory } from './Accessory';
 import { AccessoryItem } from '../../items/AccessoryItem';
-import { AggregatedAccessoryEffects, AccessoryEffectSlot, AccessoryStat } from './types';
+import { AggregatedAccessoryEffects, AccessorySubEffect, AccessoryStat } from './types';
 
 const MAX_SLOTS = 3;
 const ACCESSORY_STATS: AccessoryStat[] = ['strength', 'willpower', 'agility', 'fortune'];
@@ -59,10 +59,6 @@ export class AccessorySlotManager {
     const slot = this.slots[slotIndex];
     if (!slot.unlocked) {
       throw new Error(`Slot ${slotIndex + 1} is not unlocked`);
-    }
-
-    if (accessoryItem.getAccessory().getGrade() > this.worldLevel) {
-      throw new Error('Accessory grade exceeds current world level');
     }
 
     slot.accessoryItem = accessoryItem;
@@ -128,14 +124,14 @@ export class AccessorySlotManager {
     };
   }
 
-  getSynthesisOptions(baseAccessory: Accessory, materialAccessory: Accessory): AccessoryEffectSlot[] {
+  getSynthesisOptions(baseAccessory: Accessory, materialAccessory: Accessory): AccessorySubEffect[] {
     if (baseAccessory.getId() !== materialAccessory.getId()) {
       throw new Error('Accessories must originate from the same definition for synthesis');
     }
 
-    const map = new Map<string, AccessoryEffectSlot>();
+    const map = new Map<string, AccessorySubEffect>();
     [...baseAccessory.getSubEffects(), ...materialAccessory.getSubEffects()].forEach(effect => {
-      map.set(`${effect.effectType}:${effect.label}:${effect.magnitude}`, effect);
+      map.set(`${effect.effectType}:${effect.name}:${effect.magnitude}`, effect);
     });
 
     return Array.from(map.values()).map(effect => ({ ...effect }));

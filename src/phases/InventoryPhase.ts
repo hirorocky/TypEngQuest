@@ -3,9 +3,8 @@ import { PhaseResult, PhaseTypes, PhaseType, CommandResult } from '../core/types
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { Item } from '../items/Item';
 import { AccessoryItem } from '../items/AccessoryItem';
-import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
+import { Potion } from '../items/Potion';
 import { EquipmentStatsData } from '../player/EquipmentStats';
 import { TabCompleter } from '../core/completion';
 
@@ -15,7 +14,6 @@ import { TabCompleter } from '../core/completion';
 export class InventoryPhase extends Phase {
   protected world: World;
   private player: Player;
-  private grammarChecker: EquipmentGrammarChecker;
 
   constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
     super(world, tabCompleter);
@@ -28,7 +26,6 @@ export class InventoryPhase extends Phase {
     }
     this.world = world;
     this.player = player;
-    this.grammarChecker = new EquipmentGrammarChecker();
   }
 
   public getName(): string {
@@ -73,29 +70,8 @@ export class InventoryPhase extends Phase {
   /**
    * アイテム情報をフォーマットする
    */
-  private formatItemInfo(item: Item): string {
-    const name = item.getDisplayName();
-    const rarity = item.getRarity();
-    const rarityColor = this.getRarityColor(rarity);
-    return `${name} [${rarityColor}${rarity}]`;
-  }
-
-  /**
-   * レアリティに応じた色を取得する
-   */
-  private getRarityColor(rarity: string): string {
-    switch (rarity.toLowerCase()) {
-      case 'common':
-        return '';
-      case 'rare':
-        return '🟦';
-      case 'epic':
-        return '🟪';
-      case 'legendary':
-        return '🟨';
-      default:
-        return '';
-    }
+  private formatItemInfo(item: Potion | AccessoryItem): string {
+    return item.getDisplayName();
   }
 
   /**
@@ -274,18 +250,9 @@ export class InventoryPhase extends Phase {
     }
 
     equipmentSlots.forEach((item, index) => {
-      const slotDisplay = item ? `${item.getDisplayName()} [${item.getRarity()}]` : '[empty]';
+      const slotDisplay = item ? item.getDisplayName() : '[empty]';
       Display.println(`  Slot ${index + 1}: ${slotDisplay}`);
     });
-
-    // 英文構成チェック
-    const equippedNames = this.getCurrentEquipmentWords().filter(name => name !== '');
-    const grammarResult = this.checkGrammarValidity(equippedNames);
-    const grammarStatus = grammarResult.isValid ? '✓ Valid English' : '✗ Invalid Grammar';
-    Display.println(`  Grammar: ${grammarStatus}`);
-    if (!grammarResult.isValid) {
-      Display.println(`    ${grammarResult.message}`);
-    }
 
     // レベルとステータス表示
     Display.println(`  World Level: ${this.player.getWorldLevel()}`);
@@ -321,24 +288,5 @@ export class InventoryPhase extends Phase {
 
   private formatSigned(value: number): string {
     return value >= 0 ? `+${value}` : `${value}`;
-  }
-
-  /**
-   * 英文法の妥当性をチェックする
-   */
-  private checkGrammarValidity(words: string[]): { isValid: boolean; message: string } {
-    const isValid = this.grammarChecker.isValidSentence(words);
-    const message = isValid
-      ? 'valid english sentence'
-      : this.grammarChecker.getGrammarErrorMessage(words);
-
-    return { isValid, message };
-  }
-
-  /**
-   * 現在の装備単語を取得する
-   */
-  private getCurrentEquipmentWords(): string[] {
-    return this.player.getEquippedItemNames();
   }
 }

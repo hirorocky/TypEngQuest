@@ -1,7 +1,8 @@
 import { AccessoryCatalog } from './AccessoryCatalog';
 import { AccessorySlotManager } from './AccessorySlotManager';
 import { AccessoryItem, AccessoryItemData } from '../../items/AccessoryItem';
-import { ItemRarity, ItemType } from '../../items/Item';
+import { ItemType } from '../../items/types';
+import { AccessorySnapshot } from './types';
 
 const BASE_STATS = {
   strength: 100,
@@ -12,38 +13,45 @@ const BASE_STATS = {
 
 const catalog = AccessoryCatalog.load();
 
-const createAccessoryItem = (id: string, definitionId: string, grade: number): AccessoryItem => {
+const createAccessoryItem = (
+  id: string,
+  definitionId: string,
+  grade: number,
+  subEffectIds: string[] = []
+): AccessoryItem => {
+  const definition = catalog.getDefinition(definitionId);
+  const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
+  const accessorySnapshot: AccessorySnapshot = {
+    id: definition.id,
+    name: definition.name,
+    grade,
+    mainEffect: { ...definition.mainEffect },
+    subEffects,
+  };
+
   const data: AccessoryItemData = {
     id,
     name: definitionId,
     description: 'test accessory',
     type: ItemType.ACCESSORY,
-    rarity: ItemRarity.RARE,
-    definitionId,
-    grade,
+    accessory: accessorySnapshot,
   };
-  return new AccessoryItem(data, catalog);
+
+  return new AccessoryItem(data);
 };
 
 describe('AccessorySlotManager', () => {
   it('allows equipping accessories within unlocked slots and aggregates stats', () => {
     const manager = new AccessorySlotManager();
     manager.setWorldLevel(50);
-    const accessory = createAccessoryItem('cronus-25', 'cronus_glove', 25);
+    const accessory = createAccessoryItem('glove-25', 'glove', 25, ['tempo', 'flare']);
 
     manager.equip(0, accessory);
 
     const aggregate = manager.aggregate(BASE_STATS);
     expect(aggregate.total.strength).toBeGreaterThan(BASE_STATS.strength);
     expect(aggregate.total.willpower).toBeLessThan(BASE_STATS.willpower);
-    expect(aggregate.subEffects).toHaveLength(3);
-  });
-
-  it('prevents equipping accessories above world level', () => {
-    const manager = new AccessorySlotManager();
-    manager.setWorldLevel(10);
-    const accessory = createAccessoryItem('cronus-20', 'cronus_glove', 20);
-    expect(() => manager.equip(0, accessory)).toThrow('Accessory grade exceeds current world level');
+    expect(aggregate.subEffects).toHaveLength(2);
   });
 
   it('unlocks slots via key items', () => {

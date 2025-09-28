@@ -2,13 +2,13 @@ import { Phase } from '../core/Phase';
 import { World } from '../world/World';
 import { PhaseType, PhaseTypes, CommandResult } from '../core/types';
 import { Player } from '../player/Player';
-import { ConsumableItem, ItemEffect } from '../items/ConsumableItem';
-import { ItemType } from '../items/Item';
+import { Potion, ItemEffect } from '../items/Potion';
+import { ItemType } from '../items/types';
 import { TabCompleter } from '../core/completion';
 
 interface BattleItemConsumptionOptions {
   player: Player;
-  onItemUsed: (item: ConsumableItem) => void;
+  onItemUsed: (item: Potion) => void;
   onBack: () => void;
   world?: World;
   tabCompleter?: TabCompleter;
@@ -19,9 +19,9 @@ interface BattleItemConsumptionOptions {
  */
 export class BattleItemConsumptionPhase extends Phase {
   private player: Player;
-  private onItemUsed: (item: ConsumableItem) => void;
+  private onItemUsed: (item: Potion) => void;
   private onBack: () => void;
-  private availableItems: ConsumableItem[] = [];
+  private availableItems: Potion[] = [];
 
   constructor(options: BattleItemConsumptionOptions) {
     super(options.world, options.tabCompleter);
@@ -52,8 +52,8 @@ export class BattleItemConsumptionPhase extends Phase {
       const allItems = this.player.getInventory().getItems();
       // 消費アイテムのみをフィルタ
       this.availableItems = allItems.filter(
-        item => item.getType() === ItemType.CONSUMABLE
-      ) as ConsumableItem[];
+        item => item.getType() === ItemType.POTION
+      ) as Potion[];
     }
     this.registerItemCommands();
   }
@@ -148,7 +148,7 @@ export class BattleItemConsumptionPhase extends Phase {
     if (this.availableItems.length === 0) {
       return {
         success: true,
-        message: 'No consumable items available',
+        message: 'No potions available',
       };
     }
 
@@ -220,7 +220,7 @@ export class BattleItemConsumptionPhase extends Phase {
   /**
    * アイテムを使用
    */
-  private async useItem(item: ConsumableItem): Promise<CommandResult> {
+  private async useItem(item: Potion): Promise<CommandResult> {
     if (!this.player) {
       return {
         success: false,

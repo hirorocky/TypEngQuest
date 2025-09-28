@@ -1,41 +1,25 @@
 export type AccessoryStat = 'strength' | 'willpower' | 'agility' | 'fortune';
 
 export interface AccessoryMainEffect {
+  id: string;
   boost: AccessoryStat;
   penalty: AccessoryStat;
 }
 
-export interface AccessoryEffectSlot {
+export interface AccessorySubEffect {
   id: string;
   effectType: string;
-  label: string;
+  name: string;
   magnitude: number;
   description?: string;
 }
 
 export interface AccessorySnapshot {
   id: string;
-  archetypeId: string;
-  displayName: string;
-  itemType: string;
+  name: string;
   grade: number;
   mainEffect: AccessoryMainEffect;
-  subEffects: AccessoryEffectSlot[];
-  highlightEffectId?: string;
-}
-
-export interface AccessoryDefinition {
-  id: string;
-  archetypeId: string;
-  displayName: string;
-  itemType: string;
-  mainEffect: AccessoryMainEffect;
-  highlightEffectId?: string;
-  defaultSubEffects: AccessoryEffectSlot[];
-}
-
-export interface AccessoryCatalogData {
-  archetypes: AccessoryDefinition[];
+  subEffects: AccessorySubEffect[];
 }
 
 export interface AccessoryGradeBreakpoint {
@@ -53,5 +37,5 @@ export interface AggregatedAccessoryEffects {
   boost: Record<AccessoryStat, number>;
   penalty: Record<AccessoryStat, number>;
   signatureBonus: number;
-  subEffects: AccessoryEffectSlot[];
+  subEffects: AccessorySubEffect[];
 }

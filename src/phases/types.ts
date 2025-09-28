@@ -52,7 +52,7 @@ export interface SkillSelectionResult {
  * アイテム使用フェーズの結果
  */
 export interface ItemUsageResult {
-  itemUsed?: import('../items/ConsumableItem').ConsumableItem;
+  itemUsed?: import('../items/Potion').Potion;
 }
 
 /**

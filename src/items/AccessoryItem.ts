@@ -1,41 +1,101 @@
-import { Item, ItemData, ItemType } from './Item';
-import {
-  Accessory,
-  AccessoryCatalog,
-  AccessoryEffectSlot,
-  AccessoryNameGenerator,
-} from '../equipment/accessory';
+import { ItemType, InventoryItem } from './types';
+import { Accessory, AccessoryNameGenerator } from './accessory';
+import { AccessorySnapshot } from './accessory/types';
 
-export interface AccessoryItemData extends ItemData {
-  definitionId: string;
-  grade: number;
-  subEffects?: AccessoryEffectSlot[];
+export interface AccessoryItemData {
+  id: string;
+  name: string;
+  description: string;
+  type: ItemType.ACCESSORY;
+  accessory: AccessorySnapshot;
 }
 
-export class AccessoryItem extends Item {
-  private static defaultCatalog: AccessoryCatalog | null = null;
-
-  private readonly definitionId: string;
+export class AccessoryItem {
+  private readonly id: string;
+  private readonly name: string;
+  private readonly description: string;
   private accessory: Accessory;
 
-  constructor(data: AccessoryItemData, catalog?: AccessoryCatalog) {
-    const resolvedCatalog = catalog ?? AccessoryItem.getCatalog();
-    const accessory = resolvedCatalog.createAccessory(
-      data.definitionId,
-      data.grade,
-      data.subEffects
-    );
+  constructor(data: AccessoryItemData) {
+    if (data.type !== ItemType.ACCESSORY) {
+      throw new Error('Accessory item must have type "accessory"');
+    }
+    this.assertIdentity(data.id, data.name);
 
-    super({
-      id: data.id,
-      name: AccessoryNameGenerator.generate(accessory),
-      description: data.description,
-      type: ItemType.ACCESSORY,
-      rarity: data.rarity,
-    });
+    this.id = data.id;
+    this.name = data.name;
+    this.description = data.description;
+    this.accessory = new Accessory(AccessoryItem.cloneSnapshot(data.accessory));
+  }
 
-    this.definitionId = data.definitionId;
-    this.accessory = accessory;
+  static fromJSON(data: AccessoryItemData): AccessoryItem {
+    AccessoryItem.validateData(data);
+    return new AccessoryItem(data);
+  }
+
+  private static validateData(data: AccessoryItemData): void {
+    if (data.type !== ItemType.ACCESSORY) {
+      throw new Error('Accessory item must have type "accessory"');
+    }
+    AccessoryItem.validateSnapshot(data.accessory);
+  }
+
+  private static validateSnapshot(snapshot: AccessorySnapshot): void {
+    AccessoryItem.assertSnapshotObject(snapshot);
+    AccessoryItem.assertNonEmptyString(snapshot.id, 'id');
+    AccessoryItem.assertNonEmptyString(snapshot.name, 'name');
+    AccessoryItem.assertValidGrade(snapshot.grade);
+    AccessoryItem.assertMainEffect(snapshot.mainEffect);
+    AccessoryItem.assertSubEffects(snapshot.subEffects);
+  }
+
+  private static assertSnapshotObject(snapshot: AccessorySnapshot): void {
+    if (typeof snapshot !== 'object' || snapshot === null) {
+      throw new Error('Accessory item requires accessory snapshot data');
+    }
+  }
+
+  private static assertNonEmptyString(value: unknown, field: string): void {
+    if (typeof value !== 'string' || value.trim() === '') {
+      throw new Error(`Accessory snapshot requires ${field}`);
+    }
+  }
+
+  private static assertValidGrade(value: unknown): void {
+    if (typeof value !== 'number') {
+      throw new Error('Accessory snapshot requires grade');
+    }
+  }
+
+  private static assertMainEffect(mainEffect: AccessorySnapshot['mainEffect']): void {
+    if (!mainEffect) {
+      throw new Error('Accessory snapshot requires mainEffect');
+    }
+    if (typeof mainEffect.id !== 'string' || mainEffect.id.trim() === '') {
+      throw new Error('Accessory mainEffect requires id');
+    }
+    if (!mainEffect.boost || !mainEffect.penalty) {
+      throw new Error('Accessory mainEffect requires boost and penalty stats');
+    }
+  }
+
+  private static assertSubEffects(subEffects: AccessorySnapshot['subEffects']): void {
+    if (!Array.isArray(subEffects)) {
+      throw new Error('Accessory snapshot requires subEffects array');
+    }
+    if (subEffects.length > 3) {
+      throw new Error('Accessory item cannot exceed three sub effects');
+    }
+  }
+
+  private static cloneSnapshot(snapshot: AccessorySnapshot): AccessorySnapshot {
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      grade: snapshot.grade,
+      mainEffect: { ...snapshot.mainEffect },
+      subEffects: snapshot.subEffects.map(effect => ({ ...effect })),
+    };
   }
 
   getAccessory(): Accessory {
@@ -43,57 +103,57 @@ export class AccessoryItem extends Item {
   }
 
   updateAccessory(accessory: Accessory): void {
-    if (accessory.getId() !== this.definitionId) {
+    if (accessory.getId() !== this.accessory.getId()) {
       throw new Error('Accessory definition mismatch');
     }
     this.accessory = accessory;
   }
 
-  getDefinitionId(): string {
-    return this.definitionId;
+  getId(): string {
+    return this.id;
   }
 
-  override getDisplayName(): string {
+  getName(): string {
     return AccessoryNameGenerator.generate(this.accessory);
   }
 
-  override toJSON(): AccessoryItemData {
+  getDescription(): string {
+    return this.description;
+  }
+
+  getType(): ItemType {
+    return ItemType.ACCESSORY;
+  }
+
+  getDisplayName(): string {
+    return AccessoryNameGenerator.generate(this.accessory);
+  }
+
+  /**
+   * 他のアイテムと等しいかチェックする
+   * @param other - 比較するアイテム
+   * @returns 等しい場合true
+   */
+  equals(other: InventoryItem): boolean {
+    return this.getId() === other.getId();
+  }
+
+  toJSON(): AccessoryItemData {
     return {
-      id: this.getId(),
-      name: this.getName(),
-      description: this.getDescription(),
+      id: this.id,
+      name: this.name,
+      description: this.description,
       type: ItemType.ACCESSORY,
-      rarity: this.getRarity(),
-      definitionId: this.definitionId,
-      grade: this.accessory.getGrade(),
-      subEffects: this.accessory.getSubEffects().map(effect => ({ ...effect })),
+      accessory: this.accessory.toSnapshot(),
     };
   }
 
-  static fromJSON(data: AccessoryItemData, catalog?: AccessoryCatalog): AccessoryItem {
-    AccessoryItem.validateData(data);
-    return new AccessoryItem(data, catalog);
-  }
-
-  private static getCatalog(): AccessoryCatalog {
-    if (!this.defaultCatalog) {
-      this.defaultCatalog = AccessoryCatalog.load();
+  private assertIdentity(id: string, name: string): void {
+    if (!id || id.trim() === '') {
+      throw new Error('Item ID cannot be empty');
     }
-    return this.defaultCatalog;
-  }
-
-  private static validateData(data: AccessoryItemData): void {
-    if (data.type !== ItemType.ACCESSORY) {
-      throw new Error('Accessory item must have type "accessory"');
-    }
-    if (typeof data.definitionId !== 'string') {
-      throw new Error('Accessory item requires definitionId');
-    }
-    if (typeof data.grade !== 'number') {
-      throw new Error('Accessory item requires grade');
-    }
-    if (data.subEffects && data.subEffects.length !== 3) {
-      throw new Error('Accessory item must provide exactly three sub effects');
+    if (!name || name.trim() === '') {
+      throw new Error('Item name cannot be empty');
     }
   }
 }

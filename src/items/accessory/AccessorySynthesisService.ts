@@ -1,8 +1,8 @@
 import { Accessory } from './Accessory';
 import { AccessoryCatalog } from './AccessoryCatalog';
-import { AccessoryEffectSlot } from './types';
+import { AccessorySubEffect } from './types';
 
-const REQUIRED_SLOT_COUNT = 3;
+const MAX_SYNTHESIS_SLOTS = 3;
 
 export class AccessorySynthesisService {
   private readonly catalog: AccessoryCatalog;
@@ -11,13 +11,13 @@ export class AccessorySynthesisService {
     this.catalog = catalog;
   }
 
-  synthesize(base: Accessory, material: Accessory, selectedEffects: AccessoryEffectSlot[]): Accessory {
+  synthesize(base: Accessory, material: Accessory, selectedEffects: AccessorySubEffect[]): Accessory {
     if (base.getId() !== material.getId()) {
       throw new Error('Accessories must be of the same type to synthesize');
     }
 
-    if (selectedEffects.length !== REQUIRED_SLOT_COUNT) {
-      throw new Error(`Exactly ${REQUIRED_SLOT_COUNT} sub effects must be selected`);
+    if (selectedEffects.length > MAX_SYNTHESIS_SLOTS) {
+      throw new Error(`Cannot select more than ${MAX_SYNTHESIS_SLOTS} sub effects`);
     }
 
     const pool = this.catalog.collectSynthesisPool(base, material);
@@ -32,7 +32,7 @@ export class AccessorySynthesisService {
     return this.catalog.createAccessory(base.getId(), resultingGrade, selectedEffects);
   }
 
-  private isSameEffect(a: AccessoryEffectSlot, b: AccessoryEffectSlot): boolean {
-    return a.effectType === b.effectType && a.label === b.label && a.magnitude === b.magnitude;
+  private isSameEffect(a: AccessorySubEffect, b: AccessorySubEffect): boolean {
+    return a.effectType === b.effectType && a.name === b.name && a.magnitude === b.magnitude;
   }
 }

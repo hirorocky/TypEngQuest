@@ -162,12 +162,12 @@
 **目標**: アイテムの基本構造を実装する
 
 **成果物**:
-- Item基底クラスの実装
-- ConsumableItemの実装
+- アイテム共通ユーティリティ（列挙・バリデーション）の整備
+- Potionの実装
 
 **タスク**:
-1. Item基底クラスの実装
-2. ConsumableItemの実装
+1. アイテム共通ユーティリティの整備
+2. Potionの実装
 3. アイテム効果システム
 4. アイテムデータ構造
 
@@ -192,62 +192,57 @@
 
 ---
 
-### ⚔️ プロジェクト7A: 装備アイテム基礎
-**目標**: 装備アイテムの基本構造を実装する
+### ⚔️ プロジェクト7A: アクセサリアイテム基礎 ✅
+**目標**: アクセサリ装備の基礎構造を整備する（旧EquipmentItem計画の代替）
 
 **成果物**:
-- EquipmentItemの実装
-- 装備スロットシステム
+- AccessoryItemの実装とAccessoryCatalog/MainEffect/SubEffect連携
+- AccessorySlotManagerによる装備スロット管理
+- グレード／サブ効果バリデーションとJSONシリアライズ
 
 **タスク**:
-1. EquipmentItemの実装
-2. 装備スロットシステム
-3. 装備効果の基礎実装
-4. 装備データ構造
+1. AccessoryItemの実装（定義ID・サブ効果の紐付け）
+2. AccessorySlotManagerの導入とPlayer連携
+3. AccessoryNameGeneratorによる名称生成ルール整備
+4. アクセサリデータ構成（カタログ・初期サブ効果）
 
-**チェックポイント**: 装備アイテムの基本構造が動作すること
+**チェックポイント**: アクセサリがインベントリ／装備スロット間で一貫して扱えること
 
 ---
 
-### ⚔️ プロジェクト7B: 装備システム完成 ✅
-**目標**: 装備システムと英文法チェック機能を実装する
+### ⚔️ プロジェクト7B: アクセサリシステム運用 ✅
+**目標**: アクセサリ体験を完成させ、旧EquipmentItem関連資産を撤廃する
 
 **成果物**:
-- 装備グレード範囲を1-20に拡張
-- グレード = ステータス合計値のバリデーション
-- 5単語英文の文法チェック機能
-- 装備効果計算システム
-- プレイヤーレベルの装備グレード平均値計算
+- highlightEffectIdやEquipmentEffectCalculator等の旧ロジック削除
+- ItemEquipmentPhaseをアクセサリ専用UIに刷新
+- サブ効果最大3件＋メイン効果＋グレードの名称生成ルール実装
+- メイン効果／サブ効果のIDカタログ化とデータ整備
 
 **タスク**:
-1. EquipmentItemのグレードシステム拡張 ✅
-2. EquipmentGrammarCheckerの実装 ✅
-3. EquipmentEffectCalculatorの実装 ✅
-4. Playerクラスの装備システム統合 ✅
+1. 旧EquipmentItem系コードの削除
+2. アクセサリUIおよび装備フローの最新仕様反映
+3. 名称生成とカタログ参照をルールベース化
+4. テストおよびドキュメント更新
 
-**チェックポイント**: 装備グレードシステムと英文法チェックが動作すること ✅
+**チェックポイント**: アクセサリ装備フローが旧仕様に依存せず稼働し、テストが緑であること
 
----
-
-### ⚔️ プロジェクト7C: インベントリ装備システム品質向上 ✅
-**目標**: 装備システムのPRコメント対応と品質向上
+### ⚔️ プロジェクト7C: 装備資産整理 ✅
+**目標**: EquipmentItem由来の資産をリタイアし、アクセサリ主体の開発ラインへ移行する
 
 **成果物**:
-- HP/MP/一時効果を保持した装備変更システム
-- compromiseライブラリによる高度な英文法チェック
-- スロット数ベースのレベル計算システム
-- グレード100対応による拡張性向上
+- src/items/EquipmentItem.ts および関連テストの削除
+- ItemType列挙から'equipment'を除去したシンプルなアイテム体系
+- バトル／インベントリ周辺テストのアクセサリ仕様への更新
+- プロジェクトドキュメントの最新化
 
 **タスク**:
-1. Player.tsのsetEquippedItemsでstats全体が初期化される問題修正 ✅
-2. EquipmentEffectCalculatorのリファクタリング（reduce、map+filter使用） ✅
-3. 装備がない場合のグレード平均値を0に変更 ✅
-4. グレード平均値を最大スロット数5で計算 ✅
-5. compromiseライブラリによる5単語未満の文法チェック対応 ✅
-6. グレードの最大値を20から100に変更 ✅
-7. Playerレベルを毎回装備から計算するよう修正 ✅
+1. EquipmentItem関連コードとデータの削除
+2. ItemType列挙とテストの修正
+3. BattleItemConsumptionPhase / Inventory テストの更新
+4. ドキュメント（project-structure / agile-development-plan / implementation-status）調整
 
-**チェックポイント**: PRコメント対応が完了し、装備システムの品質が向上すること ✅
+**チェックポイント**: 装備系コードが残存しない状態で `npm run build` と `npm test` が通ること
 
 ---
 
@@ -259,7 +254,7 @@
 - 装備スロット表示（5スロット）と現在の装備状況確認
 - ScrollableListを活用した使いやすい装備UI
 - 装備変更時のリアルタイムレベル計算表示
-- 英文法チェックによる装備組み合わせ検証
+- （旧仕様）英文法チェックによる装備組み合わせ検証
 
 **タスク**:
 1. EquipmentPhase（またはInventoryPhase拡張）の実装
@@ -275,7 +270,7 @@
    - ステータス変化のプレビュー表示
    - 英文構成の妥当性チェック結果表示
 4. 装備組み合わせ検証
-   - 5単語での英文法チェック
+   - （旧仕様）5単語での英文法チェック
    - 不適切な組み合わせ時の警告表示
    - 代替案の提示機能
 
@@ -1128,9 +1123,9 @@ class BattleDisplay {
 
 **成果物**:
 - 最大3スロットのアクセサリ装備枠（初期1枠、キーアイテムで順次解放）と装備データモデル
-- アクセサリタイプごとのメイン効果（ステータス偏向）とサブ効果（特殊効果スロット3枠）を持つデータ設計
+- アクセサリタイプごとのメイン効果（ステータス偏向）とサブ効果（最大3枠まで装着可能）を持つデータ設計
 - グレード1〜100とワールドレベル同期による解放ロジック、倍率・ペナルティカーブの実装
-- docs/game-systems.md §2.5に定義された命名規則（タイプ由来＋特殊効果ハイライト＋グレード表記）に従うアクセサリ名称生成と表示
+- docs/game-systems.md §2.5に定義された命名規則（サブ効果名の並び＋メイン効果名＋グレード表記）に従うアクセサリ名称生成と表示
 - 同名アクセサリ2個を消費する合成処理（グレード継承とサブ効果選択UI）
 - アクセサリ装備管理UI/ログの更新とテスト
 
@@ -1147,18 +1142,18 @@ class BattleDisplay {
 interface Accessory {
   id: string;
   name: string;
-  type: AccessoryArchetype; // 攻撃特化/支援特化/機動特化など
   grade: number; // 1-100、ワールドレベル上限に同期
 
   mainEffect: {
+    id: string; // glove などMainEffect固有ID
     boost: 'strength' | 'willpower' | 'agility' | 'fortune';
     penalty: 'strength' | 'willpower' | 'agility' | 'fortune';
   };
 
-  subEffects: AccessoryEffectSlot[]; // 常時3枠、各枠に特殊効果1件
+  subEffects: AccessorySubEffect[]; // 0〜3枠、各枠に特殊効果1件
 }
 
-interface AccessoryEffectSlot {
+interface AccessorySubEffect {
   id: string;
   effectType: 'crit_mp_refund' | 'typing_window_bonus' | 'status_resist'; // これは例、他にも考えること
   magnitude: number;
@@ -1178,7 +1173,7 @@ interface AccessoryEffectSlot {
 #### 合成フロー
 1. 同名アクセサリ2個投入（ベース+素材）
 2. 合成後グレードは高い方を引き継ぐ
-3. 両アクセサリのサブ効果プールから任意の3枠を選択して固定
+3. 両アクセサリのサブ効果プールから任意の0〜3枠を選択して固定
 
 #### 成長サイクルとUI要件
 - Grade1〜25帯でビルド方向性を把握、Grade50帯で主力確定、Grade75+で高難度向け最適化
@@ -1197,7 +1192,7 @@ interface AccessoryEffectSlot {
 **チェックポイント**: 3スロットのアクセサリ装備と合成を通じて、メイン効果倍率・サブ効果選択・解放条件が仕様どおりに機能し、UI/ログでプレイヤーに正しく提示されること
 
 **進捗メモ（2025-09-22）**
-- アクセサリデータモデルとグレードテーブル、合成基盤を `src/equipment/accessory/**` として実装済み。
+- アクセサリデータモデルとグレードテーブル、合成基盤を `src/items/accessory/**` として実装済み。
 - プレイヤー／インベントリ／装備フェーズをアクセサリ仕様へ移行し、ワールドレベル制御・スロットUI・命名ロジックを反映。
 - 既存の装備コマンドとQAテストはアクセサリ前提へ更新、Jestカバレッジのベースラインを維持。
 
@@ -1251,7 +1246,7 @@ interface ItemEffect {
 
 ```typescript
 // オーバーヒール系
-const overHealPotion: ConsumableItem = {
+const overHealPotion: Potion = {
   id: 'overheal_potion',
   name: 'Over Heal Potion',
   description: 'HP最大値を超えて回復するポーション',
@@ -1269,7 +1264,7 @@ const overHealPotion: ConsumableItem = {
 };
 
 // バフ系
-const strengthElixir: ConsumableItem = {
+const strengthElixir: Potion = {
   id: 'strength_elixir',
   name: 'Strength Elixir',
   description: '5ターンの間攻撃力を20アップ',
@@ -1288,7 +1283,7 @@ const strengthElixir: ConsumableItem = {
 };
 
 // 状態回復系
-const panacea: ConsumableItem = {
+const panacea: Potion = {
   id: 'panacea',
   name: 'Panacea',
   description: '全ての状態異常を回復する万能薬',
@@ -1306,7 +1301,7 @@ const panacea: ConsumableItem = {
 };
 
 // 特殊系
-const focusStone: ConsumableItem = {
+const focusStone: Potion = {
   id: 'focus_stone',
   name: 'Focus Stone',
   description: 'EXポイントを10回復する石',
@@ -1332,7 +1327,7 @@ class ItemEffectSystem {
    * アイテム効果を実行
    */
   async executeItemEffect(
-    item: ConsumableItem,
+    item: Potion,
     user: Player,
     target?: Player | Enemy
   ): Promise<ItemEffectResult> {
@@ -1459,7 +1454,7 @@ class ItemEffectSystem {
 
 ```typescript
 class ItemUsageManager {
-  canUseItem(item: ConsumableItem, player: Player): boolean {
+  canUseItem(item: Potion, player: Player): boolean {
     const inBattle = player.isInBattle();
 
     for (const effect of item.effects) {
@@ -1475,7 +1470,7 @@ class ItemUsageManager {
     return true;
   }
 
-  getUsageRestrictionMessage(item: ConsumableItem, player: Player): string {
+  getUsageRestrictionMessage(item: Potion, player: Player): string {
     const inBattle = player.isInBattle();
 
     if (inBattle) {
