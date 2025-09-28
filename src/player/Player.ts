@@ -405,27 +405,8 @@ export class Player {
     const player = new Player(data.name);
     player.bodyStats = BodyStats.fromJSON(data.bodyStats);
 
-    // 新しいインベントリ構造の場合
-    if (data.potionInventory && data.accessoryInventory) {
-      player.potionInventory = PotionInventory.fromJSON(data.potionInventory);
-      player.accessoryInventory = AccessoryInventory.fromJSON(data.accessoryInventory);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } else if ((data as any).inventory) {
-      // 後方互換性: 古いInventoryデータの場合
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const oldInventory = PotionInventory.fromJSON((data as any).inventory);
-      player.potionInventory = new PotionInventory();
-      player.accessoryInventory = new AccessoryInventory();
-
-      // 既存のアイテムを適切なインベントリに分配
-      oldInventory.getItems().forEach(item => {
-        if (item.getType() === ItemType.POTION) {
-          player.potionInventory.addItem(item as unknown as Potion);
-        } else if (item.getType() === ItemType.ACCESSORY) {
-          player.accessoryInventory.addItem(item as unknown as Accessory);
-        }
-      });
-    }
+    player.potionInventory = PotionInventory.fromJSON(data.potionInventory);
+    player.accessoryInventory = AccessoryInventory.fromJSON(data.accessoryInventory);
 
     player.setWorldLevel(data.worldLevel);
 
@@ -464,20 +445,11 @@ export class Player {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateInventoryFields(data: any): void {
-    const hasNewInventoryStructure = data.potionInventory && data.accessoryInventory;
-    const hasOldInventoryStructure = data.inventory;
-
-    if (!hasNewInventoryStructure && !hasOldInventoryStructure) {
+    if (!data.potionInventory || !data.accessoryInventory) {
       throw new Error('Invalid player data: missing inventory data');
     }
 
-    if (hasNewInventoryStructure) {
-      Player.validateNewInventoryStructure(data);
-    }
-
-    if (hasOldInventoryStructure && typeof data.inventory !== 'object') {
-      throw new Error('Invalid player data: invalid inventory');
-    }
+    Player.validateNewInventoryStructure(data);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
