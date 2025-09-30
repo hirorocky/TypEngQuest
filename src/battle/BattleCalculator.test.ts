@@ -749,4 +749,250 @@ describe('BattleCalculator', () => {
       expect(rSparkLowEX.length).toBe(2);
     });
   });
+
+  describe('敵の次回行動予告計算', () => {
+    let player: any;
+    let enemy: Enemy;
+
+    beforeEach(() => {
+      player = {
+        level: 5,
+        bodyStats: {
+          stats: {
+            strength: 20,
+            willpower: 15,
+            agility: 80,
+            fortune: 10,
+          },
+          currentHp: 100,
+          maxHp: 100,
+        },
+      };
+
+      enemy = new Enemy({
+        id: 'test_enemy',
+        name: 'Test Enemy',
+        description: 'Test enemy for action prediction',
+        level: 5,
+        stats: { maxHp: 100, strength: 25, willpower: 20, agility: 70, fortune: 8 },
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 10,
+        skills: [],
+      });
+    });
+
+    describe('calculateEffectDamageRange', () => {
+      it('damage効果のダメージ範囲を計算できる（物理）', () => {
+        const effect = {
+          type: 'damage' as const,
+          target: 'enemy' as const,
+          basePower: 100,
+          powerInfluence: { stat: 'strength' as const, rate: 1.5 },
+          successRate: 95,
+        };
+
+        const skill: Skill = {
+          id: 'test_skill',
+          name: 'Test Skill',
+          description: 'Test',
+          skillType: 'physical',
+          mpCost: 10,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 2,
+          skillSuccessRate: { baseRate: 90, typingInfluence: 1.2 },
+          criticalRate: { baseRate: 10, typingInfluence: 0.5 },
+          effects: [effect],
+        };
+
+        const range = BattleCalculator.calculateEffectDamageRange(effect, enemy, player, skill);
+
+        expect(range).toHaveProperty('min');
+        expect(range).toHaveProperty('max');
+        expect(range.min).toBeGreaterThan(0);
+        expect(range.max).toBeGreaterThanOrEqual(range.min);
+        // クリティカルを考慮するため、maxはminの1.2倍程度になるはず
+        expect(range.max).toBeGreaterThanOrEqual(range.min * 1.15);
+      });
+
+      it('damage効果のダメージ範囲を計算できる（魔法）', () => {
+        const effect = {
+          type: 'damage' as const,
+          target: 'enemy' as const,
+          basePower: 120,
+          powerInfluence: { stat: 'willpower' as const, rate: 1.8 },
+          successRate: 90,
+        };
+
+        const skill: Skill = {
+          id: 'magic_skill',
+          name: 'Magic Skill',
+          description: 'Test',
+          skillType: 'magical',
+          mpCost: 15,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 3,
+          skillSuccessRate: { baseRate: 85, typingInfluence: 1.3 },
+          criticalRate: { baseRate: 12, typingInfluence: 0.6 },
+          effects: [effect],
+        };
+
+        const range = BattleCalculator.calculateEffectDamageRange(effect, enemy, player, skill);
+
+        expect(range).toHaveProperty('min');
+        expect(range).toHaveProperty('max');
+        expect(range.min).toBeGreaterThan(0);
+        expect(range.max).toBeGreaterThanOrEqual(range.min);
+      });
+
+      it('powerInfluenceがない場合のダメージ範囲を計算できる', () => {
+        const effect = {
+          type: 'damage' as const,
+          target: 'enemy' as const,
+          basePower: 50,
+          successRate: 100,
+        };
+
+        const skill: Skill = {
+          id: 'simple_skill',
+          name: 'Simple Skill',
+          description: 'Test',
+          skillType: 'physical',
+          mpCost: 5,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 1,
+          skillSuccessRate: { baseRate: 100, typingInfluence: 1.0 },
+          criticalRate: { baseRate: 5, typingInfluence: 0.3 },
+          effects: [effect],
+        };
+
+        const range = BattleCalculator.calculateEffectDamageRange(effect, enemy, player, skill);
+
+        expect(range).toHaveProperty('min');
+        expect(range).toHaveProperty('max');
+        expect(range.min).toBeGreaterThan(0);
+        expect(range.max).toBeGreaterThanOrEqual(range.min);
+      });
+
+      it('heal効果の回復量範囲を計算できる', () => {
+        const effect = {
+          type: 'hp_heal' as const,
+          target: 'self' as const,
+          basePower: 80,
+          powerInfluence: { stat: 'willpower' as const, rate: 1.2 },
+          successRate: 100,
+        };
+
+        const skill: Skill = {
+          id: 'heal_skill',
+          name: 'Heal Skill',
+          description: 'Test',
+          skillType: 'magical',
+          mpCost: 12,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'self',
+          typingDifficulty: 2,
+          skillSuccessRate: { baseRate: 100, typingInfluence: 1.0 },
+          criticalRate: { baseRate: 8, typingInfluence: 0.4 },
+          effects: [effect],
+        };
+
+        const range = BattleCalculator.calculateEffectDamageRange(effect, enemy, player, skill);
+
+        expect(range).toHaveProperty('min');
+        expect(range).toHaveProperty('max');
+        expect(range.min).toBeGreaterThan(0);
+        expect(range.max).toBeGreaterThanOrEqual(range.min);
+      });
+    });
+
+    describe('calculateEffectSuccessRate', () => {
+      it('効果の成功率を取得できる', () => {
+        const effect = {
+          type: 'damage' as const,
+          target: 'enemy' as const,
+          basePower: 100,
+          successRate: 95,
+        };
+
+        const rate = BattleCalculator.calculateEffectSuccessRate(effect);
+        expect(rate).toBe(95);
+      });
+
+      it('成功率100%の効果を正しく取得できる', () => {
+        const effect = {
+          type: 'hp_heal' as const,
+          target: 'self' as const,
+          basePower: 50,
+          successRate: 100,
+        };
+
+        const rate = BattleCalculator.calculateEffectSuccessRate(effect);
+        expect(rate).toBe(100);
+      });
+
+      it('成功率0%の効果を正しく取得できる', () => {
+        const effect = {
+          type: 'add_status' as const,
+          target: 'enemy' as const,
+          basePower: 0,
+          successRate: 0,
+          statusType: 'burn',
+          duration: 3,
+          statusPower: 10,
+        };
+
+        const rate = BattleCalculator.calculateEffectSuccessRate(effect);
+        expect(rate).toBe(0);
+      });
+    });
+
+    describe('getEffectType', () => {
+      it('物理スキルの効果タイプを取得できる', () => {
+        const skill: Skill = {
+          id: 'physical_skill',
+          name: 'Physical Skill',
+          description: 'Test',
+          skillType: 'physical',
+          mpCost: 10,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 2,
+          skillSuccessRate: { baseRate: 90, typingInfluence: 1.2 },
+          criticalRate: { baseRate: 10, typingInfluence: 0.5 },
+          effects: [],
+        };
+
+        const type = BattleCalculator.getEffectType(skill);
+        expect(type).toBe('physical');
+      });
+
+      it('魔法スキルの効果タイプを取得できる', () => {
+        const skill: Skill = {
+          id: 'magical_skill',
+          name: 'Magical Skill',
+          description: 'Test',
+          skillType: 'magical',
+          mpCost: 15,
+          mpCharge: 0,
+          actionCost: 1,
+          target: 'enemy',
+          typingDifficulty: 3,
+          skillSuccessRate: { baseRate: 85, typingInfluence: 1.3 },
+          criticalRate: { baseRate: 12, typingInfluence: 0.6 },
+          effects: [],
+        };
+
+        const type = BattleCalculator.getEffectType(skill);
+        expect(type).toBe('magical');
+      });
+    });
+  });
 });

@@ -9,6 +9,8 @@ import {
   SkillPotentialEffect,
   SkillEffect,
 } from './Skill';
+import { Player } from '../player/Player';
+import { Enemy } from './Enemy';
 
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
@@ -568,5 +570,131 @@ export class BattleCalculator {
     result.isCritical = anyEffectCritical;
 
     return result;
+  }
+
+  /**
+   * Player/Enemyからステータスを抽出する（内部ヘルパー）
+   * @param target プレイヤーまたは敵
+   * @returns ステータスオブジェクト
+   */
+  private static extractStats(
+    target:
+      | Player
+      | Enemy
+      | { bodyStats?: { stats?: Record<string, number> }; stats?: Record<string, number> }
+  ): { strength: number; willpower: number; agility: number; fortune: number } {
+    // Playerインスタンスの場合
+    if (target instanceof Player) {
+      const stats = target.getStats();
+      return {
+        strength: stats.getStrength(),
+        willpower: stats.getWillpower(),
+        agility: stats.getAgility(),
+        fortune: stats.getFortune(),
+      };
+    }
+
+    // Enemyインスタンスの場合
+    if (target instanceof Enemy) {
+      return {
+        strength: target.stats.strength,
+        willpower: target.stats.willpower,
+        agility: target.stats.agility,
+        fortune: target.stats.fortune,
+      };
+    }
+
+    // モックオブジェクトの場合（テスト用）
+    // bodyStats.stats または stats プロパティから取得
+    if (target.bodyStats?.stats) {
+      return {
+        strength: target.bodyStats.stats.strength,
+        willpower: target.bodyStats.stats.willpower,
+        agility: target.bodyStats.stats.agility,
+        fortune: target.bodyStats.stats.fortune,
+      };
+    }
+
+    if (target.stats) {
+      return {
+        strength: target.stats.strength,
+        willpower: target.stats.willpower,
+        agility: target.stats.agility,
+        fortune: target.stats.fortune,
+      };
+    }
+
+    // デフォルト値（エラー回避用）
+    return { strength: 0, willpower: 0, agility: 0, fortune: 0 };
+  }
+
+  /**
+   * 効果のダメージ・回復範囲を計算する（敵の次回行動予告用）
+   * @param effect スキル効果
+   * @param attacker 攻撃者
+   * @param defender 防御者
+   * @param skill スキル情報（クリティカル率計算に使用）
+   * @returns ダメージ・回復の最小値と最大値
+   */
+  static calculateEffectDamageRange(
+    effect: SkillEffect,
+    attacker: Player | Enemy,
+    defender: Player | Enemy,
+    skill: Skill
+  ): { min: number; max: number } {
+    // 攻撃者のステータスを取得
+    const attackerStats = this.extractStats(attacker);
+
+    // 防御者のステータスを取得
+    const defenderStats = this.extractStats(defender);
+
+    // 効果の威力を計算
+    const effectPower = this.calculateEffectPower(
+      effect.basePower,
+      attackerStats,
+      effect.powerInfluence
+    );
+
+    // スキルタイプに応じて攻撃力・防御力を取得
+    let attackPower: number;
+    let defensePower: number;
+
+    if (skill.skillType === 'physical') {
+      attackPower = attackerStats.strength;
+      defensePower = defenderStats.strength;
+    } else {
+      // magical
+      attackPower = attackerStats.willpower;
+      defensePower = defenderStats.willpower;
+    }
+
+    // スキル倍率を計算（effectPower / attackPower）
+    const skillPower = attackPower > 0 ? effectPower / attackPower : 1.0;
+
+    // 通常ダメージ（クリティカルなし）
+    const minDamage = this.calculateDamage(attackPower, defensePower, skillPower, false);
+
+    // クリティカルダメージ
+    const maxDamage = this.calculateDamage(attackPower, defensePower, skillPower, true);
+
+    return { min: minDamage, max: maxDamage };
+  }
+
+  /**
+   * 効果の成功率を取得する
+   * @param effect スキル効果
+   * @returns 成功率（%）
+   */
+  static calculateEffectSuccessRate(effect: SkillEffect): number {
+    return effect.successRate;
+  }
+
+  /**
+   * スキルの属性タイプを取得する
+   * @param skill スキル情報
+   * @returns 物理または魔法
+   */
+  static getEffectType(skill: Skill): 'physical' | 'magical' {
+    return skill.skillType;
   }
 }
