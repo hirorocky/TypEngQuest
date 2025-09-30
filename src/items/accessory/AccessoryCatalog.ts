@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Accessory } from './Accessory';
-import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
+import { AccessoryGradeTable, defaultAccessoryGradeTable } from './AccessoryGradeTable';
 import { AccessoryMainEffect, AccessorySubEffect, AccessorySnapshot } from './types';
 
 const PROJECT_ROOT = path.resolve(process.cwd());

@@ -1,4 +1,4 @@
-import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
+import { AccessoryGradeTable, defaultAccessoryGradeTable } from './AccessoryGradeTable';
 import {
   AccessoryMainEffect,
   AccessorySnapshot,

@@ -1,4 +1,4 @@
-import { AccessoryGradeTable } from './gradeTable';
+import { AccessoryGradeTable } from './AccessoryGradeTable';
 
 describe('AccessoryGradeTable', () => {
   it('returns exact breakpoint multipliers', () => {
