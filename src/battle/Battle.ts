@@ -114,6 +114,9 @@ export class Battle {
     // 最初のターンアクターを決定
     this._currentTurnActor = this.decideFirstTurnActor();
 
+    // 敵の次回行動を選択
+    this.enemy.selectNextSkill();
+
     return `${this.enemy.name} appeared!`;
   }
 
@@ -133,6 +136,11 @@ export class Battle {
    * 次のターンに進める
    */
   nextTurn(): void {
+    // 敵ターン終了後に次回行動を選択
+    if (this._currentTurnActor === 'enemy') {
+      this.enemy.selectNextSkill();
+    }
+
     this._currentTurn++;
     // ターンアクターを交代
     this._currentTurnActor = this._currentTurnActor === 'player' ? 'enemy' : 'player';
