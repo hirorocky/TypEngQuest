@@ -257,4 +257,183 @@ describe('BattlePhase', () => {
       expect(result.nextPhase).toBe('skillSelection');
     });
   });
+
+  describe('敵の次回行動予告表示', () => {
+    it('敵がスキルを持つ場合、次回行動を表示できる', () => {
+      const enemyWithSkills = new Enemy({
+        id: 'skilled_enemy',
+        name: 'Skilled Enemy',
+        description: 'Enemy with skills',
+        level: 3,
+        stats: { maxHp: 80, strength: 15, willpower: 12, agility: 70, fortune: 8 },
+        physicalEvadeRate: 12,
+        magicalEvadeRate: 8,
+        skills: [
+          {
+            id: 'power_strike',
+            name: 'Power Strike',
+            description: 'A powerful physical attack',
+            skillType: 'physical',
+            mpCost: 0,
+            mpCharge: 0,
+            actionCost: 1,
+            target: 'enemy',
+            typingDifficulty: 2,
+            skillSuccessRate: { baseRate: 90, typingInfluence: 1.0 },
+            criticalRate: { baseRate: 10, typingInfluence: 0.5 },
+            effects: [
+              {
+                type: 'damage',
+                target: 'enemy',
+                basePower: 50,
+                successRate: 95,
+                powerInfluence: { stat: 'strength', rate: 1.5 },
+              },
+            ],
+          },
+        ],
+      });
+
+      const Battle = require('../battle/Battle').Battle;
+      const battle = new Battle(testPlayer, enemyWithSkills);
+      battle.start();
+
+      const battlePhaseWithSkills = new BattlePhase(mockWorld, mockTabCompleter, testPlayer);
+      battlePhaseWithSkills.setBattle(battle);
+
+      const displayOutput = battlePhaseWithSkills.displayEnemyNextAction();
+
+      expect(displayOutput).toBeDefined();
+      expect(displayOutput.join('\n')).toContain("Enemy's Next Action");
+      expect(displayOutput.join('\n')).toContain('Power Strike');
+      expect(displayOutput.join('\n')).toContain('Damage');
+      expect(displayOutput.join('\n')).toContain('Physical');
+      expect(displayOutput.join('\n')).toContain('Estimated Damage');
+      expect(displayOutput.join('\n')).toContain('Success Rate: 95%');
+    });
+
+    it('敵がスキルを持たない場合、通常攻撃を表示する', () => {
+      const Battle = require('../battle/Battle').Battle;
+      const battle = new Battle(testPlayer, mockEnemy);
+      battle.start();
+
+      battlePhase.setBattle(battle);
+
+      const displayOutput = battlePhase.displayEnemyNextAction();
+
+      expect(displayOutput).toBeDefined();
+      expect(displayOutput.join('\n')).toContain("Enemy's Next Action");
+      expect(displayOutput.join('\n')).toContain('Basic Attack');
+      expect(displayOutput.join('\n')).toContain('Damage');
+    });
+
+    it('複数の効果を持つスキルを正しく表示できる', () => {
+      const enemyWithMultiEffectSkill = new Enemy({
+        id: 'multi_effect_enemy',
+        name: 'Multi Effect Enemy',
+        description: 'Enemy with multi-effect skill',
+        level: 5,
+        stats: { maxHp: 100, strength: 20, willpower: 18, agility: 50, fortune: 10 },
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 12,
+        skills: [
+          {
+            id: 'combo_attack',
+            name: 'Combo Attack',
+            description: 'Multiple attacks',
+            skillType: 'physical',
+            mpCost: 0,
+            mpCharge: 0,
+            actionCost: 2,
+            target: 'enemy',
+            typingDifficulty: 3,
+            skillSuccessRate: { baseRate: 85, typingInfluence: 1.0 },
+            criticalRate: { baseRate: 15, typingInfluence: 0.5 },
+            effects: [
+              {
+                type: 'damage',
+                target: 'enemy',
+                basePower: 30,
+                successRate: 90,
+                powerInfluence: { stat: 'strength', rate: 1.2 },
+              },
+              {
+                type: 'damage',
+                target: 'enemy',
+                basePower: 40,
+                successRate: 85,
+                powerInfluence: { stat: 'strength', rate: 1.3 },
+              },
+            ],
+          },
+        ],
+      });
+
+      const Battle = require('../battle/Battle').Battle;
+      const battle = new Battle(testPlayer, enemyWithMultiEffectSkill);
+      battle.start();
+
+      const battlePhaseWithMultiEffect = new BattlePhase(mockWorld, mockTabCompleter, testPlayer);
+      battlePhaseWithMultiEffect.setBattle(battle);
+
+      const displayOutput = battlePhaseWithMultiEffect.displayEnemyNextAction();
+
+      expect(displayOutput).toBeDefined();
+      expect(displayOutput.join('\n')).toContain('Combo Attack');
+      expect(displayOutput.join('\n')).toContain('Effect 1');
+      expect(displayOutput.join('\n')).toContain('Effect 2');
+      expect(displayOutput.join('\n')).toContain('Success Rate: 90%');
+      expect(displayOutput.join('\n')).toContain('Success Rate: 85%');
+    });
+
+    it('魔法スキルの場合、属性がMagicalと表示される', () => {
+      const enemyWithMagicSkill = new Enemy({
+        id: 'magic_enemy',
+        name: 'Magic Enemy',
+        description: 'Enemy with magic skill',
+        level: 4,
+        stats: { maxHp: 70, strength: 10, willpower: 25, agility: 40, fortune: 12 },
+        physicalEvadeRate: 10,
+        magicalEvadeRate: 5,
+        skills: [
+          {
+            id: 'fireball',
+            name: 'Fireball',
+            description: 'A magical fire attack',
+            skillType: 'magical',
+            mpCost: 0,
+            mpCharge: 0,
+            actionCost: 1,
+            target: 'enemy',
+            typingDifficulty: 3,
+            skillSuccessRate: { baseRate: 85, typingInfluence: 1.0 },
+            criticalRate: { baseRate: 12, typingInfluence: 0.5 },
+            effects: [
+              {
+                type: 'damage',
+                target: 'enemy',
+                basePower: 60,
+                successRate: 88,
+                powerInfluence: { stat: 'willpower', rate: 1.8 },
+              },
+            ],
+          },
+        ],
+      });
+
+      const Battle = require('../battle/Battle').Battle;
+      const battle = new Battle(testPlayer, enemyWithMagicSkill);
+      battle.start();
+
+      const battlePhaseWithMagic = new BattlePhase(mockWorld, mockTabCompleter, testPlayer);
+      battlePhaseWithMagic.setBattle(battle);
+
+      const displayOutput = battlePhaseWithMagic.displayEnemyNextAction();
+
+      expect(displayOutput).toBeDefined();
+      expect(displayOutput.join('\n')).toContain('Fireball');
+      expect(displayOutput.join('\n')).toContain('Magical');
+      expect(displayOutput.join('\n')).toContain('Estimated Damage');
+    });
+  });
 });
