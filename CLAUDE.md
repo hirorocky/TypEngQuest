@@ -19,7 +19,7 @@
 プロジェクトに分割し、各プロジェクト完了時にステークホルダーのチェックを受けます。
 
 タスクは@docs/development-guidelines.mdに従って、進めてください。
-タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdを更新してください。
+タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdや@docs/game-systems.mdを更新してください。
 各プロジェクト完了時または、きりの良い単位で作業を完了したら、`git commit`してください。
 
 ### コミュニケーション

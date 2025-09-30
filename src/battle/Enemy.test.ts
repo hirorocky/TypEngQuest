@@ -494,6 +494,7 @@ describe('Enemy', () => {
           },
         ],
         drops: [{ itemId: 'orc_fang', dropRate: 30 }],
+        nextSkillId: null,
       });
     });
 
@@ -515,6 +516,7 @@ describe('Enemy', () => {
         magicalEvadeRate: 8,
         skills: [],
         drops: [{ itemId: 'bone', dropRate: 60 }],
+        nextSkillId: null,
       };
 
       const enemy = Enemy.fromJSON(json);
@@ -650,6 +652,144 @@ describe('Enemy', () => {
         expect(enemy.isDefeated()).toBe(false);
         enemy.takeDamage(80);
         expect(enemy.isDefeated()).toBe(true);
+      });
+    });
+  });
+
+  describe('次回行動予告システム', () => {
+    let enemyWithSkills: Enemy;
+    const mockSkill1: Skill = {
+      id: 'skill_001',
+      name: 'Test Skill 1',
+      description: 'Test skill 1',
+      skillType: 'physical',
+      mpCost: 10,
+      mpCharge: 0,
+      actionCost: 1,
+      target: 'enemy',
+      typingDifficulty: 2,
+      skillSuccessRate: { baseRate: 90, typingInfluence: 1.2 },
+      criticalRate: { baseRate: 10, typingInfluence: 0.5 },
+      effects: [
+        {
+          type: 'damage',
+          target: 'enemy',
+          basePower: 100,
+          powerInfluence: { stat: 'strength', rate: 1.5 },
+          successRate: 95,
+        },
+      ],
+    };
+    const mockSkill2: Skill = {
+      id: 'skill_002',
+      name: 'Test Skill 2',
+      description: 'Test skill 2',
+      skillType: 'magical',
+      mpCost: 15,
+      mpCharge: 0,
+      actionCost: 1,
+      target: 'enemy',
+      typingDifficulty: 3,
+      skillSuccessRate: { baseRate: 85, typingInfluence: 1.3 },
+      criticalRate: { baseRate: 12, typingInfluence: 0.6 },
+      effects: [
+        {
+          type: 'damage',
+          target: 'enemy',
+          basePower: 120,
+          powerInfluence: { stat: 'willpower', rate: 1.8 },
+          successRate: 90,
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      enemyWithSkills = new Enemy({
+        id: 'test_enemy',
+        name: 'Test Enemy',
+        description: 'Enemy for testing next action',
+        level: 5,
+        stats: { maxHp: 100, strength: 20, willpower: 15, agility: 80, fortune: 10 },
+        physicalEvadeRate: 15,
+        magicalEvadeRate: 10,
+        skills: [mockSkill1, mockSkill2],
+      });
+    });
+
+    describe('nextSkillId プロパティ', () => {
+      it('初期状態ではnextSkillIdがnullである', () => {
+        expect(enemyWithSkills.nextSkillId).toBeNull();
+      });
+
+      it('selectNextSkill()を呼び出すとnextSkillIdが設定される', () => {
+        enemyWithSkills.selectNextSkill();
+        expect(enemyWithSkills.nextSkillId).not.toBeNull();
+        expect(['skill_001', 'skill_002']).toContain(enemyWithSkills.nextSkillId);
+      });
+    });
+
+    describe('selectNextSkill() メソッド', () => {
+      it('スキルを持つ敵は次のスキルIDを選択する', () => {
+        enemyWithSkills.selectNextSkill();
+        expect(enemyWithSkills.nextSkillId).toBeTruthy();
+        expect(['skill_001', 'skill_002']).toContain(enemyWithSkills.nextSkillId);
+      });
+
+      it('スキルを持たない敵はnullを設定する', () => {
+        const noSkillEnemy = new Enemy({
+          id: 'no_skill',
+          name: 'No Skill Enemy',
+          description: 'Has no skills',
+          level: 1,
+          stats: { maxHp: 50, strength: 10, willpower: 5, agility: 60, fortune: 5 },
+          physicalEvadeRate: 10,
+          magicalEvadeRate: 5,
+        });
+
+        noSkillEnemy.selectNextSkill();
+        expect(noSkillEnemy.nextSkillId).toBeNull();
+      });
+
+      it('複数回呼び出すとスキルIDが変わる可能性がある（ランダム選択）', () => {
+        const results = new Set<string | null>();
+        for (let i = 0; i < 20; i++) {
+          enemyWithSkills.selectNextSkill();
+          results.add(enemyWithSkills.nextSkillId);
+        }
+        // 20回実行すれば両方のスキルが選ばれる可能性が高い
+        expect(results.size).toBeGreaterThan(1);
+      });
+    });
+
+    describe('JSON シリアライゼーション', () => {
+      it('nextSkillIdがJSONに含まれる', () => {
+        enemyWithSkills.selectNextSkill();
+        const json = enemyWithSkills.toJSON();
+        expect(json).toHaveProperty('nextSkillId');
+        expect(['skill_001', 'skill_002', null]).toContain(json.nextSkillId);
+      });
+
+      it('nextSkillIdがnullの場合もJSONに含まれる', () => {
+        const json = enemyWithSkills.toJSON();
+        expect(json).toHaveProperty('nextSkillId');
+        expect(json.nextSkillId).toBeNull();
+      });
+
+      it('fromJSON()でnextSkillIdが復元される', () => {
+        enemyWithSkills.selectNextSkill();
+        const skillId = enemyWithSkills.nextSkillId;
+        const json = enemyWithSkills.toJSON();
+
+        const restored = Enemy.fromJSON(json);
+        expect(restored.nextSkillId).toBe(skillId);
+      });
+
+      it('fromJSON()でnextSkillIdがnullの場合も正しく復元される', () => {
+        const json = enemyWithSkills.toJSON();
+        expect(json.nextSkillId).toBeNull();
+
+        const restored = Enemy.fromJSON(json);
+        expect(restored.nextSkillId).toBeNull();
       });
     });
   });
