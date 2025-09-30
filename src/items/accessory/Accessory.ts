@@ -30,7 +30,6 @@ export class Accessory implements InventoryItem {
   private readonly itemId: string;
   private readonly itemName: string;
   private readonly description: string;
-  private readonly definitionId: string;
   private readonly baseName: string;
   private grade: number;
   private readonly mainEffect: AccessoryMainEffect;
@@ -44,7 +43,6 @@ export class Accessory implements InventoryItem {
   ) {
     Accessory.assertSnapshot(snapshot);
 
-    this.definitionId = snapshot.id;
     this.baseName = snapshot.name;
     this.itemId = options.itemId ?? snapshot.id;
     this.itemName = options.itemName ?? snapshot.name;
@@ -75,10 +73,6 @@ export class Accessory implements InventoryItem {
 
   getId(): string {
     return this.itemId;
-  }
-
-  getDefinitionId(): string {
-    return this.definitionId;
   }
 
   getMainEffectId(): string {
@@ -172,7 +166,7 @@ export class Accessory implements InventoryItem {
 
   toSnapshot(): AccessorySnapshot {
     return {
-      id: this.definitionId,
+      id: this.mainEffect.id,
       name: this.baseName,
       grade: this.grade,
       mainEffect: { ...this.mainEffect },

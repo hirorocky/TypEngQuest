@@ -147,7 +147,7 @@ docs/story.mdを参照
 #### データ構造の概要
 
 * **ポーション (Potion)**: `id`, `name`, `description`, `type: "potion"`, `effects` の配列で構成される。レアリティの概念は排除されており、表示名は常に`name`をそのまま利用する。
-* **アクセサリ (Accessory)**: インベントリIDとベース定義IDを併せ持つ単一クラスで管理する。`id`, `name`, `description`, `type: "accessory"` の基本情報と、ベース定義を `accessory` スナップショットとして保持する構造は維持しつつ、名称生成・効果計算・シリアライズをAccessoyが直接担当する。スナップショットには `id` / `name` / `grade` / `mainEffect` / `subEffects` が含まれ、`mainEffect` 内に固有ID（`mainEffect.id`）を格納して旧来の `definitionId` / `mainEffectId` 参照を置き換える。
+* **アクセサリ (Accessory)**: インベントリIDとベース定義IDを併せ持つ単一クラスで管理する。`id`, `name`, `description`, `type: "accessory"` の基本情報と、ベース定義を `accessory` スナップショットとして保持する構造は維持しつつ、名称生成・効果計算・シリアライズをAccessoyが直接担当する。スナップショットには `id` / `name` / `grade` / `mainEffect` / `subEffects` が含まれ、`mainEffect` 内に固有ID（`mainEffect.id`）を格納して旧来の `definitionId` / `mainEffectId` 参照を置き換える。アクセサリインスタンス自体は `definitionId` プロパティを保持せず、必要に応じて `mainEffect.id` を参照してベース定義を決定する。
 
 ### **2.4.2. 消費アイテム**
 

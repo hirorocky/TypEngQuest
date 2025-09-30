@@ -31,7 +31,7 @@ export class AccessorySynthesisService {
     const resultingGrade = Math.max(base.getGrade(), material.getGrade());
     const baseData = base.toJSON();
 
-    return this.catalog.createAccessory(base.getDefinitionId(), resultingGrade, selectedEffects, {
+    return this.catalog.createAccessory(base.getMainEffectId(), resultingGrade, selectedEffects, {
       itemId: baseData.id,
       itemName: baseData.name,
       description: baseData.description,
