@@ -66,15 +66,6 @@ export class AccessoryInventory {
   }
 
   /**
-   * IDでアイテムを検索する
-   * @param id - 検索するアイテムのID
-   * @returns 見つかったアイテム、見つからない場合undefined
-   */
-  findItemById(id: string): Accessory | undefined {
-    return this.items.find(item => item.getId() === id);
-  }
-
-  /**
    * 全アイテムを削除する
    */
   clear(): void {

@@ -13,7 +13,7 @@ describe('AccessoryCatalog', () => {
 
   it('creates accessory instances without sub effects by default', () => {
     const accessory = catalog.createAccessory('glove', 25);
-    expect(accessory.getId()).toBe('glove');
+    expect(accessory.getMainEffectId()).toBe('glove');
     expect(accessory.getSubEffects()).toHaveLength(0);
 
     const name = accessory.getDisplayName();

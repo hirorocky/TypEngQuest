@@ -44,14 +44,8 @@ describe('ItemEquipmentPhase synthesis UI', () => {
 
     const tempo = catalog.getSubEffect('tempo');
     const flare = catalog.getSubEffect('flare');
-    const baseAccessory = catalog.createAccessory('glove', 10, [tempo], {
-      itemId: 'glove-base-unique',
-      itemName: 'Base Combat Glove',
-    });
-    const materialAccessory = catalog.createAccessory('glove', 15, [flare], {
-      itemId: 'glove-material-unique',
-      itemName: 'Material Combat Glove',
-    });
+    const baseAccessory = catalog.createAccessory('glove', 10, [tempo]);
+    const materialAccessory = catalog.createAccessory('glove', 15, [flare]);
 
     player.getAccessoryInventory().addItem(baseAccessory);
     player.getAccessoryInventory().addItem(materialAccessory);
@@ -99,9 +93,7 @@ describe('ItemEquipmentPhase synthesis UI', () => {
     const player = new Player('hero');
     const catalog = AccessoryCatalog.load();
 
-    const soloAccessory = catalog.createAccessory('glove', 10, [], {
-      itemId: 'solo-glove-unique',
-    });
+    const soloAccessory = catalog.createAccessory('glove', 10, []);
     player.getAccessoryInventory().addItem(soloAccessory);
 
     const phase = new ItemEquipmentPhase(world, player);

@@ -71,7 +71,11 @@ export class InventoryPhase extends Phase {
    * アイテム情報をフォーマットする
    */
   private formatItemInfo(item: Potion | Accessory): string {
-    return item.getDisplayName();
+    if (item instanceof Potion) {
+      return item.getDisplayName();
+    } else {
+      return item.getDisplayName();
+    }
   }
 
   /**

@@ -159,9 +159,6 @@ describe('InventoryPhase', () => {
         const catalog = AccessoryCatalog.load();
         const definition = catalog.getDefinition('glove');
         const accessory = Accessory.fromJSON({
-          itemId: 'test-accessory',
-          id: definition.id,
-          name: definition.name,
           grade: 20,
           mainEffect: { ...definition.mainEffect },
           subEffects: [],

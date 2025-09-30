@@ -60,7 +60,7 @@ export interface PlayerConfig {
     mpConsumption?: number;
   };
   worldLevel?: number;
-  equippedAccessories?: ((AccessorySnapshot & { itemId: string }) | null)[];
+  equippedAccessories?: (AccessorySnapshot | null)[];
   inventory: {
     potionItems: Array<{
       id: string;
@@ -70,9 +70,6 @@ export interface PlayerConfig {
       effects: Array<{ type: string; value: number }>;
     }>;
     accessoryItems: Array<{
-      id: string;
-      name: string;
-      description: string;
       type: string;
       accessory: AccessorySnapshot;
     }>;

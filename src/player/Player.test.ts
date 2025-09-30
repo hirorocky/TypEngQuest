@@ -22,8 +22,6 @@ const buildSnapshot = (
   const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
 
   return {
-    id: definition.id,
-    name: definition.name,
     grade,
     mainEffect: { ...definition.mainEffect },
     subEffects,
@@ -35,12 +33,7 @@ const createAccessory = (options: AccessoryItemOptions = {}): Accessory => {
   const grade = options.grade ?? 25;
   const snapshot = buildSnapshot(definitionId, grade, options.subEffectIds);
 
-  const data = {
-    ...snapshot,
-    itemId: options.id ?? 'acc-1',
-  };
-
-  return Accessory.fromJSON(data);
+  return Accessory.fromJSON(snapshot);
 };
 
 describe('Player (accessory system)', () => {
@@ -61,7 +54,7 @@ describe('Player (accessory system)', () => {
     const player = new Player('Hero');
     player.setWorldLevel(50);
 
-    const accessory = createAccessory({ id: 'acc-boost', grade: 25 });
+    const accessory = createAccessory({ grade: 25 });
     player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 
@@ -69,14 +62,14 @@ describe('Player (accessory system)', () => {
     const stats = player.getEquipmentStats().toJSON();
     expect(stats.strength).toBeGreaterThanOrEqual(1);
     expect(stats.willpower).toBeLessThanOrEqual(0);
-    expect(player.getAccessoryInventory().findItemById('acc-boost')).toBeUndefined();
-    expect(player.getEquipmentSlots()[0]?.getId()).toBe('acc-boost');
+    expect(player.getAccessoryInventory().hasItem(accessory)).toBe(false);
+    expect(player.getEquipmentSlots()[0]).toBe(accessory);
   });
 
   it('serializes and restores accessory state', () => {
     const player = new Player('Hero');
     player.setWorldLevel(60);
-    const accessory = createAccessory({ id: 'acc-save', grade: 40 });
+    const accessory = createAccessory({ grade: 40 });
     player.getAccessoryInventory().addItem(accessory);
     player.equipToSlot(0, accessory);
 
@@ -85,7 +78,7 @@ describe('Player (accessory system)', () => {
 
     expect(restored.getName()).toBe('Hero');
     expect(restored.getWorldLevel()).toBe(60);
-    expect(restored.getEquipmentSlots()[0]?.getId()).toBe('acc-save');
+    expect(restored.getEquipmentSlots()[0]?.getMainEffectId()).toBe('glove');
     expect(restored.getLevel()).toBe(40);
   });
 });

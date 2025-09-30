@@ -29,13 +29,8 @@ export class AccessorySynthesisService {
     });
 
     const resultingGrade = Math.max(base.getGrade(), material.getGrade());
-    const baseData = base.toJSON();
 
-    return this.catalog.createAccessory(base.getMainEffectId(), resultingGrade, selectedEffects, {
-      itemId: baseData.itemId,
-      itemName: baseData.name,
-      description: `Synthesized ${baseData.name}`,
-    });
+    return this.catalog.createAccessory(base.getMainEffectId(), resultingGrade, selectedEffects);
   }
 
   private isSameEffect(a: AccessorySubEffect, b: AccessorySubEffect): boolean {

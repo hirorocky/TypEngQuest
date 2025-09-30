@@ -20,10 +20,16 @@ const DEFAULT_SUB_EFFECTS_PATH = path.join(
   'sub-effects.json'
 );
 
-type AccessoryDefinition = Pick<AccessorySnapshot, 'id' | 'name' | 'mainEffect'>;
+type AccessoryDefinition = {
+  id: string;
+  name: string;
+  mainEffect: AccessoryMainEffect;
+};
 
-type AccessoryMainEffectEntry = Pick<AccessorySnapshot, 'id' | 'name'> & {
-  mainEffect: Omit<AccessoryMainEffect, 'id'>;
+type AccessoryMainEffectEntry = {
+  id: string;
+  name: string;
+  mainEffect: Omit<AccessoryMainEffect, 'id' | 'name'>;
 };
 
 type AccessoryMainEffectCatalog = Readonly<{
@@ -33,12 +39,6 @@ type AccessoryMainEffectCatalog = Readonly<{
 type AccessorySubEffectCatalog = Readonly<{
   subEffects: AccessorySubEffect[];
 }>;
-
-type AccessoryCreateOptions = {
-  itemId?: string;
-  itemName?: string;
-  description?: string;
-};
 
 export class AccessoryCatalog {
   private readonly definitions: Map<string, AccessoryDefinition> = new Map();
@@ -100,21 +100,18 @@ export class AccessoryCatalog {
   createAccessory(
     definitionId: string,
     grade: number,
-    subEffects: AccessorySubEffect[] = [],
-    options: AccessoryCreateOptions = {}
+    subEffects: AccessorySubEffect[] = []
   ): Accessory {
     const definition = this.getDefinition(definitionId);
     const effectiveSubEffects = subEffects ?? [];
 
     const snapshot: AccessorySnapshot = {
-      id: definition.id,
-      name: definition.name,
       grade,
       mainEffect: { ...definition.mainEffect },
       subEffects: effectiveSubEffects.map(effect => ({ ...effect })),
     };
 
-    return new Accessory(snapshot, this.gradeTable, options);
+    return new Accessory(snapshot, this.gradeTable);
   }
 
   collectSynthesisPool(accessoryA: Accessory, accessoryB: Accessory): AccessorySubEffect[] {
@@ -171,6 +168,7 @@ export class AccessoryCatalog {
         name: mainEffect.name,
         mainEffect: {
           id: mainEffect.id,
+          name: mainEffect.name,
           boost: mainEffect.mainEffect.boost,
           penalty: mainEffect.mainEffect.penalty,
         },

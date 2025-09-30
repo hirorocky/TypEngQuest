@@ -19,7 +19,7 @@ export interface PlayerData {
   bodyStats: BodyStatsData;
   potionInventory: { items: unknown[] };
   accessoryInventory: { items: unknown[] };
-  accessorySlots: ((AccessorySnapshot & { itemId: string }) | null)[];
+  accessorySlots: (AccessorySnapshot | null)[];
   worldLevel: number;
 }
 
@@ -94,9 +94,7 @@ export class Player {
     }
   }
 
-  private applyDevModeEquippedAccessories(
-    equipped?: ((AccessorySnapshot & { itemId: string }) | null)[]
-  ): void {
+  private applyDevModeEquippedAccessories(equipped?: (AccessorySnapshot | null)[]): void {
     if (!equipped || equipped.length === 0) {
       return;
     }
@@ -109,13 +107,8 @@ export class Player {
         return;
       }
 
-      const existing = this.accessoryInventory.findItemById(itemData.itemId);
-      const accessoryItem = existing ?? Accessory.fromJSON(itemData);
-
-      if (!existing) {
-        this.accessoryInventory.addItem(accessoryItem);
-      }
-
+      const accessoryItem = Accessory.fromJSON(itemData);
+      this.accessoryInventory.addItem(accessoryItem);
       this.equipToSlot(slotIndex, accessoryItem);
     });
   }
@@ -153,9 +146,6 @@ export class Player {
     for (const itemConfig of inventory.accessoryItems || []) {
       try {
         const config = itemConfig as {
-          id: string;
-          name: string;
-          description: string;
           type: string;
           accessory: AccessorySnapshot;
         };
@@ -168,16 +158,11 @@ export class Player {
           throw new Error('Accessory config requires accessory snapshot');
         }
 
-        const data = {
-          ...config.accessory,
-          itemId: config.id,
-        };
-
-        const item = Accessory.fromJSON(data);
+        const item = Accessory.fromJSON(config.accessory as AccessorySnapshot);
         this.accessoryInventory.addItem(item);
       } catch (error) {
-        console.warn(`Failed to load accessory item ${(itemConfig as { id: string }).id}:`, error);
-        throw new Error(`Invalid accessory item config: ${(itemConfig as { id: string }).id}`);
+        console.warn(`Failed to load accessory item:`, error);
+        throw new Error(`Invalid accessory item config`);
       }
     }
   }
@@ -409,7 +394,7 @@ export class Player {
 
     player.setWorldLevel(data.worldLevel);
 
-    data.accessorySlots.forEach((slotData, index: number) => {
+    data.accessorySlots.forEach((slotData: AccessorySnapshot | null, index: number) => {
       if (!slotData) {
         return;
       }

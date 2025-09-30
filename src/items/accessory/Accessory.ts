@@ -1,4 +1,3 @@
-import { validateItemIdentity } from '../types';
 import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
 import {
   AccessoryMainEffect,
@@ -19,29 +18,18 @@ const ZERO_STAT_MAP: StatMap = {
   fortune: 0,
 };
 
-interface AccessoryOptions {
-  itemId?: string;
-}
-
 export class Accessory {
-  private readonly itemId: string;
-  private readonly baseName: string;
   private grade: number;
   private readonly mainEffect: AccessoryMainEffect;
   private subEffects: AccessorySubEffect[];
   private readonly gradeTable: AccessoryGradeTable;
+  private displayName: string;
 
   constructor(
     snapshot: AccessorySnapshot,
-    gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable,
-    options: AccessoryOptions = {}
+    gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable
   ) {
     Accessory.assertSnapshot(snapshot);
-
-    this.baseName = snapshot.name;
-    this.itemId = options.itemId ?? snapshot.id;
-
-    validateItemIdentity({ id: this.itemId, name: this.baseName });
 
     this.grade = snapshot.grade;
     this.mainEffect = { ...snapshot.mainEffect };
@@ -50,20 +38,37 @@ export class Accessory {
 
     this.assertValidGrade(this.grade);
     this.assertValidSubEffects(this.subEffects);
+    this.displayName = this.generateDisplayName();
+  }
+
+  private generateDisplayName(): string {
+    const subEffectNames = this.subEffects
+      .slice(0, 3)
+      .map(effect => effect.name)
+      .filter((name): name is string => Boolean(name && name.trim()));
+
+    const segments: string[] = [];
+
+    if (subEffectNames.length > 0) {
+      segments.push(subEffectNames.join(' '));
+    }
+
+    segments.push(this.mainEffect.name);
+    segments.push(`G${this.grade}`);
+
+    return segments.join(' ');
+  }
+
+  getDisplayName(): string {
+    return this.displayName;
   }
 
   static fromJSON(
-    data: AccessorySnapshot & { itemId?: string },
+    data: AccessorySnapshot,
     gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable
   ): Accessory {
     Accessory.assertSnapshot(data);
-    return new Accessory(Accessory.cloneSnapshot(data), gradeTable, {
-      itemId: data.itemId,
-    });
-  }
-
-  getId(): string {
-    return this.itemId;
+    return new Accessory(Accessory.cloneSnapshot(data), gradeTable);
   }
 
   getMainEffectId(): string {
@@ -79,32 +84,6 @@ export class Accessory {
 
   getGrade(): number {
     return this.grade;
-  }
-
-  getBaseName(): string {
-    return this.baseName;
-  }
-
-  getDisplayName(): string {
-    const subEffectNames = this.subEffects
-      .slice(0, 3)
-      .map(effect => effect.name)
-      .filter((name): name is string => Boolean(name && name.trim()));
-
-    const segments: string[] = [];
-
-    if (subEffectNames.length > 0) {
-      segments.push(subEffectNames.join(' '));
-    }
-
-    segments.push(this.baseName);
-    segments.push(`G${this.grade}`);
-
-    return segments.join(' ');
-  }
-
-  equals(other: Accessory): boolean {
-    return this.getId() === other.getId();
   }
 
   getMainEffect(): AccessoryMainEffect {
@@ -141,13 +120,11 @@ export class Accessory {
   updateSubEffects(newSubEffects: AccessorySubEffect[]): void {
     this.assertValidSubEffects(newSubEffects);
     this.subEffects = newSubEffects.map(effect => ({ ...effect }));
+    this.displayName = this.generateDisplayName();
   }
 
-  toJSON(): AccessorySnapshot & { itemId: string } {
+  toJSON(): AccessorySnapshot {
     return {
-      itemId: this.itemId,
-      id: this.mainEffect.id,
-      name: this.baseName,
       grade: this.grade,
       mainEffect: { ...this.mainEffect },
       subEffects: this.getSubEffects(),
@@ -159,17 +136,9 @@ export class Accessory {
       throw new Error('Accessory item requires accessory snapshot data');
     }
     const partial = snapshot as Partial<AccessorySnapshot>;
-    Accessory.assertNonEmptyString(partial.id, 'id');
-    Accessory.assertNonEmptyString(partial.name, 'name');
     Accessory.assertValidGradeValue(partial.grade);
     Accessory.assertMainEffect(partial.mainEffect);
     Accessory.assertSubEffects(partial.subEffects);
-  }
-
-  private static assertNonEmptyString(value: unknown, field: string): void {
-    if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error(`Accessory snapshot requires ${field}`);
-    }
   }
 
   private static assertValidGradeValue(value: unknown): void {
@@ -201,8 +170,6 @@ export class Accessory {
 
   private static cloneSnapshot(snapshot: AccessorySnapshot): AccessorySnapshot {
     return {
-      id: snapshot.id,
-      name: snapshot.name,
       grade: snapshot.grade,
       mainEffect: { ...snapshot.mainEffect },
       subEffects: snapshot.subEffects.map(effect => ({ ...effect })),

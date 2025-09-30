@@ -21,19 +21,12 @@ const createAccessory = (
   const definition = catalog.getDefinition(definitionId);
   const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
   const accessorySnapshot: AccessorySnapshot = {
-    id: definition.id,
-    name: definition.name,
     grade,
     mainEffect: { ...definition.mainEffect },
     subEffects,
   };
 
-  const data = {
-    ...accessorySnapshot,
-    itemId: id,
-  };
-
-  return Accessory.fromJSON(data);
+  return Accessory.fromJSON(accessorySnapshot);
 };
 
 describe('AccessorySlotManager', () => {

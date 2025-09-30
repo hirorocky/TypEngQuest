@@ -2,6 +2,7 @@ export type AccessoryStat = 'strength' | 'willpower' | 'agility' | 'fortune';
 
 export interface AccessoryMainEffect {
   id: string;
+  name: string;
   boost: AccessoryStat;
   penalty: AccessoryStat;
 }
@@ -15,8 +16,6 @@ export interface AccessorySubEffect {
 }
 
 export interface AccessorySnapshot {
-  id: string;
-  name: string;
   grade: number;
   mainEffect: AccessoryMainEffect;
   subEffects: AccessorySubEffect[];
