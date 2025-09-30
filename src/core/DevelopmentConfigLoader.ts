@@ -8,7 +8,7 @@ import { DomainType } from '../world/domains';
 import { Player } from '../player/Player';
 import { FileSystem } from '../world/FileSystem';
 import { FileNode, NodeType } from '../world/FileNode';
-import { AccessoryItemData } from '../items/accessory/types';
+import { AccessorySnapshot } from '../items/accessory/types';
 import { Enemy, EnemyParams } from '../battle/Enemy';
 // import { Skill } from '../battle/Skill'; // 現在未使用だがコメントアウトで保持
 
@@ -60,7 +60,7 @@ export interface PlayerConfig {
     mpConsumption?: number;
   };
   worldLevel?: number;
-  equippedAccessories?: (AccessoryItemData | null)[];
+  equippedAccessories?: ((AccessorySnapshot & { itemId: string }) | null)[];
   inventory: {
     potionItems: Array<{
       id: string;
@@ -69,7 +69,13 @@ export interface PlayerConfig {
       type: string;
       effects: Array<{ type: string; value: number }>;
     }>;
-    accessoryItems: AccessoryItemData[];
+    accessoryItems: Array<{
+      id: string;
+      name: string;
+      description: string;
+      type: string;
+      accessory: AccessorySnapshot;
+    }>;
   };
   description?: string;
 }

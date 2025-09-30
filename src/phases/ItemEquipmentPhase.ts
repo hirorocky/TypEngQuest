@@ -556,7 +556,6 @@ export class ItemEquipmentPhase extends Phase {
       );
 
       if (isSelected) {
-        Display.println(`    ${item.getDescription()}`);
         Display.println(
           `    Main Effect: boost ${item.getMainEffect().boost} / penalty ${item.getMainEffect().penalty}`
         );

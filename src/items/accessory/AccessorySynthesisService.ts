@@ -32,9 +32,9 @@ export class AccessorySynthesisService {
     const baseData = base.toJSON();
 
     return this.catalog.createAccessory(base.getMainEffectId(), resultingGrade, selectedEffects, {
-      itemId: baseData.id,
+      itemId: baseData.itemId,
       itemName: baseData.name,
-      description: baseData.description,
+      description: `Synthesized ${baseData.name}`,
     });
   }
 

@@ -1,4 +1,4 @@
-import { ItemData, ItemType, isItemData, InventoryItem } from './types';
+import { ItemData, ItemType, isItemData } from './types';
 import { Player } from '../player/Player';
 
 /**
@@ -81,7 +81,7 @@ export class Potion {
    * @param other - 比較するアイテム
    * @returns 等しい場合true
    */
-  equals(other: InventoryItem): boolean {
+  equals(other: Potion): boolean {
     return this.getId() === other.getId();
   }
 

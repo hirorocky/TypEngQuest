@@ -1,10 +1,9 @@
 import { BodyStats, BodyStatsData } from './BodyStats';
 import { EquipmentStats } from './EquipmentStats';
-import { InventoryData, PotionInventory, AccessoryInventory } from './Inventory';
+import { PotionInventory, AccessoryInventory } from './Inventory';
 import { Accessory, Potion, EffectType, ItemType } from '../items';
 import {
   AccessoryCatalog,
-  AccessoryItemData,
   AccessorySlotManager,
   AccessorySubEffect,
   AccessorySynthesisService,
@@ -18,9 +17,9 @@ import { DevelopmentConfigLoader } from '../core/DevelopmentConfigLoader';
 export interface PlayerData {
   name: string;
   bodyStats: BodyStatsData;
-  potionInventory: InventoryData;
-  accessoryInventory: InventoryData;
-  accessorySlots: (AccessoryItemData | null)[];
+  potionInventory: { items: unknown[] };
+  accessoryInventory: { items: unknown[] };
+  accessorySlots: ((AccessorySnapshot & { itemId: string }) | null)[];
   worldLevel: number;
 }
 
@@ -60,6 +59,7 @@ export class Player {
     try {
       const configData = DevelopmentConfigLoader.loadPlayerConfigData();
       if (!configData) {
+        console.info('No dev mode config found, using default initialization');
         return;
       }
 
@@ -72,8 +72,8 @@ export class Player {
 
       this.applyDevModeEquippedAccessories(configData.equippedAccessories);
     } catch (error) {
-      console.warn('Failed to load dev mode config, using fallback data:', error);
-      throw new Error('Failed to load development mode config');
+      console.warn('Failed to load dev mode config, using default initialization:', error);
+      // エラーをスローせず、デフォルト初期化を続行
     }
   }
 
@@ -94,7 +94,9 @@ export class Player {
     }
   }
 
-  private applyDevModeEquippedAccessories(equipped?: (AccessoryItemData | null)[]): void {
+  private applyDevModeEquippedAccessories(
+    equipped?: ((AccessorySnapshot & { itemId: string }) | null)[]
+  ): void {
     if (!equipped || equipped.length === 0) {
       return;
     }
@@ -107,7 +109,7 @@ export class Player {
         return;
       }
 
-      const existing = this.accessoryInventory.findItemById(itemData.id);
+      const existing = this.accessoryInventory.findItemById(itemData.itemId);
       const accessoryItem = existing ?? Accessory.fromJSON(itemData);
 
       if (!existing) {
@@ -166,12 +168,9 @@ export class Player {
           throw new Error('Accessory config requires accessory snapshot');
         }
 
-        const data: AccessoryItemData = {
-          id: config.id,
-          name: config.name,
-          description: config.description,
-          type: ItemType.ACCESSORY,
-          accessory: config.accessory,
+        const data = {
+          ...config.accessory,
+          itemId: config.id,
         };
 
         const item = Accessory.fromJSON(data);
@@ -393,7 +392,7 @@ export class Player {
       accessoryInventory: this.accessoryInventory.toJSON(),
       accessorySlots: this.accessoryManager
         .getSlotState()
-        .map(item => (item ? (item.toJSON() as AccessoryItemData) : null)),
+        .map(item => (item ? item.toJSON() : null)),
       worldLevel: this.worldLevel,
     };
   }
@@ -410,7 +409,7 @@ export class Player {
 
     player.setWorldLevel(data.worldLevel);
 
-    data.accessorySlots.forEach((slotData: AccessoryItemData | null, index: number) => {
+    data.accessorySlots.forEach((slotData, index: number) => {
       if (!slotData) {
         return;
       }

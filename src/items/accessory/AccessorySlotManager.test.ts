@@ -1,8 +1,7 @@
 import { AccessoryCatalog } from './AccessoryCatalog';
 import { AccessorySlotManager } from './AccessorySlotManager';
 import { Accessory } from './Accessory';
-import { ItemType } from '../../items/types';
-import { AccessoryItemData, AccessorySnapshot } from './types';
+import { AccessorySnapshot } from './types';
 
 const BASE_STATS = {
   strength: 100,
@@ -29,12 +28,9 @@ const createAccessory = (
     subEffects,
   };
 
-  const data: AccessoryItemData = {
-    id,
-    name: definitionId,
-    description: 'test accessory',
-    type: ItemType.ACCESSORY,
-    accessory: accessorySnapshot,
+  const data = {
+    ...accessorySnapshot,
+    itemId: id,
   };
 
   return Accessory.fromJSON(data);

@@ -16,16 +16,6 @@ export interface ItemData {
   type: ItemType;
 }
 
-export interface InventoryItem {
-  getId(): string;
-  getName(): string;
-  getDescription(): string;
-  getType(): ItemType;
-  getDisplayName(): string;
-  equals(other: InventoryItem): boolean;
-  toJSON(): unknown;
-}
-
 export function validateItemIdentity(data: Pick<ItemData, 'id' | 'name'>): void {
   if (!data.id || data.id.trim() === '') {
     throw new Error('Item ID cannot be empty');

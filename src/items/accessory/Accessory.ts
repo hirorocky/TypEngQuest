@@ -1,7 +1,6 @@
-import { InventoryItem, ItemType, validateItemIdentity } from '../types';
+import { validateItemIdentity } from '../types';
 import { AccessoryGradeTable, defaultAccessoryGradeTable } from './gradeTable';
 import {
-  AccessoryItemData,
   AccessoryMainEffect,
   AccessorySnapshot,
   AccessoryStat,
@@ -22,14 +21,10 @@ const ZERO_STAT_MAP: StatMap = {
 
 interface AccessoryOptions {
   itemId?: string;
-  itemName?: string;
-  description?: string;
 }
 
-export class Accessory implements InventoryItem {
+export class Accessory {
   private readonly itemId: string;
-  private readonly itemName: string;
-  private readonly description: string;
   private readonly baseName: string;
   private grade: number;
   private readonly mainEffect: AccessoryMainEffect;
@@ -45,10 +40,8 @@ export class Accessory implements InventoryItem {
 
     this.baseName = snapshot.name;
     this.itemId = options.itemId ?? snapshot.id;
-    this.itemName = options.itemName ?? snapshot.name;
-    this.description = options.description ?? '';
 
-    validateItemIdentity({ id: this.itemId, name: this.itemName });
+    validateItemIdentity({ id: this.itemId, name: this.baseName });
 
     this.grade = snapshot.grade;
     this.mainEffect = { ...snapshot.mainEffect };
@@ -60,14 +53,12 @@ export class Accessory implements InventoryItem {
   }
 
   static fromJSON(
-    data: AccessoryItemData,
+    data: AccessorySnapshot & { itemId?: string },
     gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable
   ): Accessory {
-    Accessory.validateItemData(data);
-    return new Accessory(Accessory.cloneSnapshot(data.accessory), gradeTable, {
-      itemId: data.id,
-      itemName: data.name,
-      description: data.description,
+    Accessory.assertSnapshot(data);
+    return new Accessory(Accessory.cloneSnapshot(data), gradeTable, {
+      itemId: data.itemId,
     });
   }
 
@@ -90,20 +81,8 @@ export class Accessory implements InventoryItem {
     return this.grade;
   }
 
-  getName(): string {
-    return this.getDisplayName();
-  }
-
   getBaseName(): string {
     return this.baseName;
-  }
-
-  getDescription(): string {
-    return this.description;
-  }
-
-  getType(): ItemType {
-    return ItemType.ACCESSORY;
   }
 
   getDisplayName(): string {
@@ -124,7 +103,7 @@ export class Accessory implements InventoryItem {
     return segments.join(' ');
   }
 
-  equals(other: InventoryItem): boolean {
+  equals(other: Accessory): boolean {
     return this.getId() === other.getId();
   }
 
@@ -164,8 +143,9 @@ export class Accessory implements InventoryItem {
     this.subEffects = newSubEffects.map(effect => ({ ...effect }));
   }
 
-  toSnapshot(): AccessorySnapshot {
+  toJSON(): AccessorySnapshot & { itemId: string } {
     return {
+      itemId: this.itemId,
       id: this.mainEffect.id,
       name: this.baseName,
       grade: this.grade,
@@ -174,33 +154,16 @@ export class Accessory implements InventoryItem {
     };
   }
 
-  toJSON(): AccessoryItemData {
-    return {
-      id: this.itemId,
-      name: this.itemName,
-      description: this.description,
-      type: ItemType.ACCESSORY,
-      accessory: this.toSnapshot(),
-    };
-  }
-
-  private static validateItemData(data: AccessoryItemData): void {
-    if (data.type !== ItemType.ACCESSORY) {
-      throw new Error('Accessory item must have type "accessory"');
-    }
-    validateItemIdentity({ id: data.id, name: data.name });
-    Accessory.assertSnapshot(data.accessory);
-  }
-
-  private static assertSnapshot(snapshot: AccessorySnapshot): void {
+  private static assertSnapshot(snapshot: unknown): asserts snapshot is AccessorySnapshot {
     if (typeof snapshot !== 'object' || snapshot === null) {
       throw new Error('Accessory item requires accessory snapshot data');
     }
-    Accessory.assertNonEmptyString(snapshot.id, 'id');
-    Accessory.assertNonEmptyString(snapshot.name, 'name');
-    Accessory.assertValidGradeValue(snapshot.grade);
-    Accessory.assertMainEffect(snapshot.mainEffect);
-    Accessory.assertSubEffects(snapshot.subEffects);
+    const partial = snapshot as Partial<AccessorySnapshot>;
+    Accessory.assertNonEmptyString(partial.id, 'id');
+    Accessory.assertNonEmptyString(partial.name, 'name');
+    Accessory.assertValidGradeValue(partial.grade);
+    Accessory.assertMainEffect(partial.mainEffect);
+    Accessory.assertSubEffects(partial.subEffects);
   }
 
   private static assertNonEmptyString(value: unknown, field: string): void {
@@ -215,7 +178,7 @@ export class Accessory implements InventoryItem {
     }
   }
 
-  private static assertMainEffect(mainEffect: AccessorySnapshot['mainEffect']): void {
+  private static assertMainEffect(mainEffect: AccessoryMainEffect | undefined): void {
     if (!mainEffect) {
       throw new Error('Accessory snapshot requires mainEffect');
     }
@@ -227,7 +190,7 @@ export class Accessory implements InventoryItem {
     }
   }
 
-  private static assertSubEffects(subEffects: AccessorySnapshot['subEffects']): void {
+  private static assertSubEffects(subEffects: AccessorySubEffect[] | undefined): void {
     if (!Array.isArray(subEffects)) {
       throw new Error('Accessory snapshot requires subEffects array');
     }

@@ -1,7 +1,6 @@
 import { Player } from './Player';
-import { ItemType } from '../items/types';
 import { Accessory, AccessoryCatalog } from '../items/accessory';
-import { AccessoryItemData, AccessorySnapshot } from '../items/accessory/types';
+import { AccessorySnapshot } from '../items/accessory/types';
 
 const catalog = AccessoryCatalog.load();
 
@@ -36,12 +35,9 @@ const createAccessory = (options: AccessoryItemOptions = {}): Accessory => {
   const grade = options.grade ?? 25;
   const snapshot = buildSnapshot(definitionId, grade, options.subEffectIds);
 
-  const data: AccessoryItemData = {
-    id: options.id ?? 'acc-1',
-    name: options.name ?? definitionId,
-    description: options.description ?? 'test accessory',
-    type: ItemType.ACCESSORY,
-    accessory: snapshot,
+  const data = {
+    ...snapshot,
+    itemId: options.id ?? 'acc-1',
   };
 
   return Accessory.fromJSON(data);
