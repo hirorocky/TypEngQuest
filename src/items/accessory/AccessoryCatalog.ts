@@ -20,12 +20,6 @@ const DEFAULT_SUB_EFFECTS_PATH = path.join(
   'sub-effects.json'
 );
 
-type AccessoryDefinition = {
-  id: string;
-  name: string;
-  mainEffect: AccessoryMainEffect;
-};
-
 type AccessoryMainEffectEntry = {
   id: string;
   name: string;
@@ -41,21 +35,20 @@ type AccessorySubEffectCatalog = Readonly<{
 }>;
 
 export class AccessoryCatalog {
-  private readonly definitions: Map<string, AccessoryDefinition> = new Map();
+  private readonly mainEffects: Map<string, AccessoryMainEffect> = new Map();
   private readonly subEffects: Map<string, AccessorySubEffect> = new Map();
   private readonly gradeTable: AccessoryGradeTable;
 
   constructor(
-    definitions: AccessoryDefinition[],
+    mainEffects: AccessoryMainEffect[],
     subEffects: Map<string, AccessorySubEffect>,
     gradeTable: AccessoryGradeTable = defaultAccessoryGradeTable
   ) {
-    if (definitions.length === 0) {
-      throw new Error('AccessoryCatalog requires at least one definition');
+    if (mainEffects.length === 0) {
+      throw new Error('AccessoryCatalog requires at least one main effect');
     }
-    definitions.forEach(definition => {
-      const cloned = AccessoryCatalog.cloneDefinition(definition);
-      this.definitions.set(cloned.id, cloned);
+    mainEffects.forEach(effect => {
+      this.mainEffects.set(effect.id, { ...effect });
     });
     subEffects.forEach(effect => {
       this.subEffects.set(effect.id, { ...effect });
@@ -68,25 +61,23 @@ export class AccessoryCatalog {
       mainEffectPath: options.mainEffectPath ?? DEFAULT_MAIN_EFFECTS_PATH,
       subEffectPath: options.subEffectPath ?? DEFAULT_SUB_EFFECTS_PATH,
     });
-    return new AccessoryCatalog(catalogData.definitions, catalogData.subEffects);
+    return new AccessoryCatalog(catalogData.mainEffects, catalogData.subEffects);
   }
 
-  listDefinitions(): AccessoryDefinition[] {
-    return Array.from(this.definitions.values()).map(definition =>
-      AccessoryCatalog.cloneDefinition(definition)
-    );
+  listMainEffects(): AccessoryMainEffect[] {
+    return Array.from(this.mainEffects.values()).map(effect => ({ ...effect }));
   }
 
   listSubEffects(): AccessorySubEffect[] {
     return Array.from(this.subEffects.values()).map(effect => ({ ...effect }));
   }
 
-  getDefinition(id: string): AccessoryDefinition {
-    const definition = this.definitions.get(id);
-    if (!definition) {
-      throw new Error(`Accessory definition not found: ${id}`);
+  getMainEffect(id: string): AccessoryMainEffect {
+    const effect = this.mainEffects.get(id);
+    if (!effect) {
+      throw new Error(`Accessory main effect not found: ${id}`);
     }
-    return AccessoryCatalog.cloneDefinition(definition);
+    return { ...effect };
   }
 
   getSubEffect(id: string): AccessorySubEffect {
@@ -98,16 +89,16 @@ export class AccessoryCatalog {
   }
 
   createAccessory(
-    definitionId: string,
+    mainEffectId: string,
     grade: number,
     subEffects: AccessorySubEffect[] = []
   ): Accessory {
-    const definition = this.getDefinition(definitionId);
+    const mainEffect = this.getMainEffect(mainEffectId);
     const effectiveSubEffects = subEffects ?? [];
 
     const snapshot: AccessorySnapshot = {
       grade,
-      mainEffect: { ...definition.mainEffect },
+      mainEffect: { ...mainEffect },
       subEffects: effectiveSubEffects.map(effect => ({ ...effect })),
     };
 
@@ -130,7 +121,7 @@ export class AccessoryCatalog {
   private static buildCatalog(paths: {
     mainEffectPath: string;
     subEffectPath: string;
-  }): { definitions: AccessoryDefinition[]; subEffects: Map<string, AccessorySubEffect> } {
+  }): { mainEffects: AccessoryMainEffect[]; subEffects: Map<string, AccessorySubEffect> } {
     const mainEffectData = this.readJson<AccessoryMainEffectCatalog>(
       paths.mainEffectPath,
       'accessory main-effect catalog'
@@ -155,27 +146,23 @@ export class AccessoryCatalog {
       subEffectMap.set(subEffect.id, { ...subEffect });
     });
 
-    const seenDefinitionIds = new Set<string>();
+    const seenMainEffectIds = new Set<string>();
 
-    const definitions = mainEffectData.mainEffects.map(mainEffect => {
-      if (seenDefinitionIds.has(mainEffect.id)) {
-        throw new Error(`Duplicate main-effect id detected: ${mainEffect.id}`);
+    const mainEffects = mainEffectData.mainEffects.map(entry => {
+      if (seenMainEffectIds.has(entry.id)) {
+        throw new Error(`Duplicate main-effect id detected: ${entry.id}`);
       }
-      seenDefinitionIds.add(mainEffect.id);
+      seenMainEffectIds.add(entry.id);
 
       return {
-        id: mainEffect.id,
-        name: mainEffect.name,
-        mainEffect: {
-          id: mainEffect.id,
-          name: mainEffect.name,
-          boost: mainEffect.mainEffect.boost,
-          penalty: mainEffect.mainEffect.penalty,
-        },
+        id: entry.id,
+        name: entry.name,
+        boost: entry.mainEffect.boost,
+        penalty: entry.mainEffect.penalty,
       };
     });
 
-    return { definitions, subEffects: subEffectMap };
+    return { mainEffects, subEffects: subEffectMap };
   }
 
   private static readJson<T>(filePath: string, label: string): T {
@@ -185,12 +172,5 @@ export class AccessoryCatalog {
     } catch (error) {
       throw new Error(`Failed to read ${label} file at ${filePath}: ${String(error)}`);
     }
-  }
-
-  private static cloneDefinition(definition: AccessoryDefinition): AccessoryDefinition {
-    return {
-      ...definition,
-      mainEffect: { ...definition.mainEffect },
-    };
   }
 }

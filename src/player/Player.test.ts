@@ -14,24 +14,24 @@ interface AccessoryItemOptions {
 }
 
 const buildSnapshot = (
-  definitionId: string,
+  mainEffectId: string,
   grade: number,
   subEffectIds: string[] = []
 ): AccessorySnapshot => {
-  const definition = catalog.getDefinition(definitionId);
+  const mainEffect = catalog.getMainEffect(mainEffectId);
   const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
 
   return {
     grade,
-    mainEffect: { ...definition.mainEffect },
+    mainEffect: { ...mainEffect },
     subEffects,
   };
 };
 
 const createAccessory = (options: AccessoryItemOptions = {}): Accessory => {
-  const definitionId = options.definitionId ?? 'glove';
+  const mainEffectId = options.definitionId ?? 'glove';
   const grade = options.grade ?? 25;
-  const snapshot = buildSnapshot(definitionId, grade, options.subEffectIds);
+  const snapshot = buildSnapshot(mainEffectId, grade, options.subEffectIds);
 
   return Accessory.fromJSON(snapshot);
 };

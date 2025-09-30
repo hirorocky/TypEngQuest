@@ -3,12 +3,12 @@ import { AccessoryCatalog } from './AccessoryCatalog';
 describe('AccessoryCatalog', () => {
   const catalog = AccessoryCatalog.load();
 
-  it('loads accessory definitions from JSON', () => {
-    const definitions = catalog.listDefinitions();
-    expect(definitions).toHaveLength(3);
-    const glove = definitions.find(def => def.id === 'glove');
+  it('loads accessory main effects from JSON', () => {
+    const mainEffects = catalog.listMainEffects();
+    expect(mainEffects).toHaveLength(3);
+    const glove = mainEffects.find(effect => effect.id === 'glove');
     expect(glove).toBeDefined();
-    expect(glove?.mainEffect.boost).toBe('strength');
+    expect(glove?.boost).toBe('strength');
   });
 
   it('creates accessory instances without sub effects by default', () => {

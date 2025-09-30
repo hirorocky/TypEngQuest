@@ -157,10 +157,10 @@ describe('InventoryPhase', () => {
       test('equipコマンドでItemEquipmentフェーズに遷移する', async () => {
         player.setWorldLevel(30);
         const catalog = AccessoryCatalog.load();
-        const definition = catalog.getDefinition('glove');
+        const mainEffect = catalog.getMainEffect('glove');
         const accessory = Accessory.fromJSON({
           grade: 20,
-          mainEffect: { ...definition.mainEffect },
+          mainEffect: { ...mainEffect },
           subEffects: [],
         });
         player.getAccessoryInventory().addItem(accessory);

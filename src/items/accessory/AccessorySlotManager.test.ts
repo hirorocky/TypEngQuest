@@ -13,16 +13,15 @@ const BASE_STATS = {
 const catalog = AccessoryCatalog.load();
 
 const createAccessory = (
-  id: string,
-  definitionId: string,
+  mainEffectId: string,
   grade: number,
   subEffectIds: string[] = []
 ): Accessory => {
-  const definition = catalog.getDefinition(definitionId);
+  const mainEffect = catalog.getMainEffect(mainEffectId);
   const subEffects = subEffectIds.map(effectId => catalog.getSubEffect(effectId));
   const accessorySnapshot: AccessorySnapshot = {
     grade,
-    mainEffect: { ...definition.mainEffect },
+    mainEffect: { ...mainEffect },
     subEffects,
   };
 
@@ -33,7 +32,7 @@ describe('AccessorySlotManager', () => {
   it('allows equipping accessories within unlocked slots and aggregates stats', () => {
     const manager = new AccessorySlotManager();
     manager.setWorldLevel(50);
-    const accessory = createAccessory('glove-25', 'glove', 25, ['tempo', 'flare']);
+    const accessory = createAccessory('glove', 25, ['tempo', 'flare']);
 
     manager.equip(0, accessory);
 
