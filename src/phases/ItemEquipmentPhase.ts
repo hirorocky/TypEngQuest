@@ -3,24 +3,43 @@ import { PhaseType, CommandResult } from '../core/types';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { EquipmentItem } from '../items/EquipmentItem';
-import { EquipmentGrammarChecker } from '../equipment/EquipmentGrammarChecker';
-import { EquipmentEffectCalculator } from '../equipment/EquipmentEffectCalculator';
+import { Accessory, AccessorySubEffect } from '../items/accessory';
 import { TabCompleter } from '../core/completion';
 import { EquipmentStatsData } from '../player/EquipmentStats';
 
+type SynthesisMode = 'manage' | 'selectBase' | 'selectMaterial' | 'selectEffects' | 'result';
+
+const MAX_SYNTHESIS_SELECTION = 3;
+
+type StatusMessageVariant = 'info' | 'success' | 'warning' | 'error';
+
+interface StatusMessage {
+  variant: StatusMessageVariant;
+  text: string;
+}
+
 /**
- * 装備管理フェーズ - リッチなキー入力UIで装備管理
- * Tab: スロット切り替え, ↑↓: アイテム選択, e: 装備, w: 装備解除, q: 終了
+ * アクセサリ装備管理フェーズ
  */
 export class ItemEquipmentPhase extends Phase {
   private player: Player;
-  private grammarChecker: EquipmentGrammarChecker;
-  private effectCalculator: EquipmentEffectCalculator;
   private currentSlot: number = 0;
   private selectedItemIndex: number = 0;
-  private equipmentItems: EquipmentItem[] = [];
+  private accessoryItems: Accessory[] = [];
+  private readonly slotCount: number;
   private isActive: boolean = true;
+  private mode: SynthesisMode = 'manage';
+  private synthesisBaseCandidates: Accessory[] = [];
+  private synthesisMaterialCandidates: Accessory[] = [];
+  private synthesisEffectPool: AccessorySubEffect[] = [];
+  private synthesisSelectedEffectIndices: number[] = [];
+  private synthesisBaseIndex: number = 0;
+  private synthesisMaterialIndex: number = 0;
+  private synthesisEffectIndex: number = 0;
+  private synthesisBaseAccessory: Accessory | null = null;
+  private synthesisMaterialAccessory: Accessory | null = null;
+  private synthesisResultAccessory: Accessory | null = null;
+  private statusMessage: StatusMessage | null = null;
 
   constructor(world: World, player: Player, tabCompleter?: TabCompleter) {
     super(world, tabCompleter);
@@ -34,11 +53,8 @@ export class ItemEquipmentPhase extends Phase {
 
     this.world = world;
     this.player = player;
-    this.grammarChecker = new EquipmentGrammarChecker();
-    this.effectCalculator = new EquipmentEffectCalculator();
-
-    // 装備可能なアイテムを取得
-    this.updateEquipmentItems();
+    this.slotCount = this.player.getAccessorySlotCount();
+    this.updateAccessoryItems();
   }
 
   getType(): PhaseType {
@@ -46,29 +62,24 @@ export class ItemEquipmentPhase extends Phase {
   }
 
   getPrompt(): string {
-    return 'equipment> ';
+    return 'accessory> ';
   }
 
   async initialize(): Promise<void> {
     this.render();
   }
 
-  /**
-   * リッチUI用の入力処理ループ
-   */
   async startInputLoop(): Promise<CommandResult | null> {
-    // テスト環境では自動終了
     if (process.env.NODE_ENV === 'test' && process.env.DEBUG_UI !== 'true') {
       return {
         success: true,
-        message: 'Equipment management completed (test mode)',
+        message: 'Accessory management completed (test mode)',
         nextPhase: 'inventory',
       };
     }
 
     this.isActive = true;
 
-    // raw modeを有効にしてキー入力を直接取得
     if (typeof process.stdin.setRawMode === 'function') {
       process.stdin.setRawMode(true);
     }
@@ -82,21 +93,15 @@ export class ItemEquipmentPhase extends Phase {
         }
 
         const result = this.processKeyInput(key);
-
         if (result) {
-          // 終了処理
-          this.cleanup().then(() => {
-            resolve(result);
-          });
+          this.cleanup().then(() => resolve(result));
         } else {
-          // UIを更新
           this.render();
         }
       };
 
       process.stdin.on('data', handleKeyInput);
 
-      // 終了時のクリーンアップ
       const cleanup = () => {
         process.stdin.removeListener('data', handleKeyInput);
         if (typeof process.stdin.setRawMode === 'function') {
@@ -105,7 +110,6 @@ export class ItemEquipmentPhase extends Phase {
         process.stdin.pause();
       };
 
-      // resolveが呼ばれた時にクリーンアップ
       const originalResolve = resolve;
       resolve = result => {
         cleanup();
@@ -114,417 +118,713 @@ export class ItemEquipmentPhase extends Phase {
     });
   }
 
-  /**
-   * キー入力を処理する
-   * @returns 終了する場合はCommandResultを返す、継続する場合はnullを返す
-   */
   private processKeyInput(key: string): CommandResult | null {
+    if (this.mode !== 'manage') {
+      return this.processSynthesisInput(key);
+    }
+
     if (this.handleNavigationKeys(key)) return null;
     if (this.handleActionKeys(key)) return null;
     return this.handleExitKeys(key);
   }
 
-  /**
-   * ナビゲーションキーを処理
-   */
   private handleNavigationKeys(key: string): boolean {
     switch (key) {
-      case '\t': // Tab - スロット切り替え
-        this.currentSlot = (this.currentSlot + 1) % 5;
+      case '\t':
+        this.currentSlot = (this.currentSlot + 1) % this.slotCount;
         return true;
-
-      case '\u001b[A': // 上矢印 - 前のアイテム
-        if (this.equipmentItems.length > 0) {
+      case '\u001b[A':
+        if (this.accessoryItems.length > 0) {
           this.selectedItemIndex = Math.max(0, this.selectedItemIndex - 1);
         }
         return true;
-
-      case '\u001b[B': // 下矢印 - 次のアイテム
-        if (this.equipmentItems.length > 0) {
+      case '\u001b[B':
+        if (this.accessoryItems.length > 0) {
           this.selectedItemIndex = Math.min(
-            this.equipmentItems.length - 1,
+            this.accessoryItems.length - 1,
             this.selectedItemIndex + 1
           );
         }
         return true;
-
       default:
         return false;
     }
   }
 
-  /**
-   * アクションキーを処理
-   */
   private handleActionKeys(key: string): boolean {
     switch (key) {
       case 'e':
-      case 'E': // 装備
+      case 'E':
         this.equipSelectedItem();
         return true;
-
       case 'w':
-      case 'W': // 装備解除
+      case 'W':
         this.unequipCurrentSlot();
         return true;
-
+      case 's':
+      case 'S':
+        this.startSynthesisFlow();
+        return true;
       default:
         return false;
     }
   }
 
-  /**
-   * 終了キーを処理
-   */
   private handleExitKeys(key: string): CommandResult | null {
     if (key === 'q' || key === 'Q' || key === '\u0003') {
       this.isActive = false;
       return {
         success: true,
-        message: 'Equipment management completed',
+        message: 'Accessory management completed',
         nextPhase: 'inventory',
       };
     }
     return null;
   }
 
-  /**
-   * 画面を描画する
-   */
-  private render(): void {
-    Display.clear();
-    Display.printHeader('Equipment Management');
-    Display.newLine();
-
-    // 装備スロット表示
-    this.renderEquipmentSlots();
-    Display.newLine();
-
-    // 利用可能なアイテム表示
-    this.renderAvailableItems();
-    Display.newLine();
-
-    // ステータス情報表示
-    this.renderStatusInfo();
-    Display.newLine();
-
-    // 操作説明表示
-    this.renderControls();
-    Display.newLine();
-  }
-
-  /**
-   * 装備スロットを描画する
-   */
-  private renderEquipmentSlots(): void {
-    Display.printInfo('Equipment Slots:');
-    const slots = this.player.getEquipmentSlots();
-
-    for (let i = 0; i < 5; i++) {
-      const isSelected = i === this.currentSlot;
-      const equipment = slots[i];
-      const slotDisplay = equipment ? equipment.getName() : '[empty]';
-      const prefix = isSelected ? '→ ' : '  ';
-      const suffix = isSelected ? ' ←' : '';
-
-      Display.println(`${prefix}Slot ${i + 1}: ${slotDisplay}${suffix}`);
-    }
-  }
-
-  /**
-   * 利用可能なアイテムを描画する
-   */
-  private renderAvailableItems(): void {
-    Display.printInfo('Available Items:');
-
-    if (this.equipmentItems.length === 0) {
-      Display.println('  No equipment items available');
+  private startSynthesisFlow(): void {
+    this.clearStatusMessage();
+    const candidates = this.buildSynthesisBaseCandidates();
+    if (candidates.length === 0) {
+      this.showStatusMessage(
+        'warning',
+        'synthesis requires at least two accessories sharing the same main effect'
+      );
       return;
     }
 
-    for (let i = 0; i < this.equipmentItems.length; i++) {
-      const isSelected = i === this.selectedItemIndex;
-      const item = this.equipmentItems[i];
+    this.mode = 'selectBase';
+    this.synthesisBaseCandidates = candidates;
+    this.synthesisMaterialCandidates = [];
+    this.synthesisEffectPool = [];
+    this.synthesisSelectedEffectIndices = [];
+    this.synthesisBaseIndex = 0;
+    this.synthesisMaterialIndex = 0;
+    this.synthesisEffectIndex = 0;
+    this.synthesisBaseAccessory = null;
+    this.synthesisMaterialAccessory = null;
+    this.synthesisResultAccessory = null;
+  }
+
+  private processSynthesisInput(key: string): CommandResult | null {
+    if (key === 'q' || key === 'Q' || key === '\u0003') {
+      this.exitSynthesisFlow();
+      return null;
+    }
+
+    switch (this.mode) {
+      case 'selectBase':
+        return this.handleSynthesisBaseInput(key);
+      case 'selectMaterial':
+        return this.handleSynthesisMaterialInput(key);
+      case 'selectEffects':
+        return this.handleSynthesisEffectInput(key);
+      case 'result':
+        return this.handleSynthesisResultInput(key);
+      default:
+        return null;
+    }
+  }
+
+  private handleSynthesisBaseInput(key: string): CommandResult | null {
+    if (this.synthesisBaseCandidates.length === 0) {
+      this.exitSynthesisFlow();
+      return null;
+    }
+
+    switch (key) {
+      case '\u001b[A':
+        this.synthesisBaseIndex = Math.max(0, this.synthesisBaseIndex - 1);
+        return null;
+      case '\u001b[B':
+        this.synthesisBaseIndex = Math.min(
+          this.synthesisBaseCandidates.length - 1,
+          this.synthesisBaseIndex + 1
+        );
+        return null;
+      case ' ':
+      case '\r': {
+        this.synthesisBaseIndex = Math.min(
+          this.synthesisBaseIndex,
+          this.synthesisBaseCandidates.length - 1
+        );
+        const base = this.synthesisBaseCandidates[this.synthesisBaseIndex];
+        if (!base) {
+          this.showStatusMessage('warning', 'no base accessory selected');
+          return null;
+        }
+        const materials = this.buildMaterialCandidates(base);
+        if (materials.length === 0) {
+          this.showStatusMessage('warning', 'no matching accessory available for synthesis');
+          return null;
+        }
+        this.clearStatusMessage();
+        this.synthesisBaseAccessory = base;
+        this.synthesisMaterialCandidates = materials;
+        this.synthesisMaterialIndex = 0;
+        this.mode = 'selectMaterial';
+        return null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  private handleSynthesisMaterialInput(key: string): CommandResult | null {
+    if (!this.synthesisBaseAccessory || this.synthesisMaterialCandidates.length === 0) {
+      this.mode = 'selectBase';
+      return null;
+    }
+
+    if (key === '\u001b[A') {
+      this.adjustMaterialIndex(-1);
+      return null;
+    }
+
+    if (key === '\u001b[B') {
+      this.adjustMaterialIndex(1);
+      return null;
+    }
+
+    if (key === 'w' || key === 'W') {
+      this.mode = 'selectBase';
+      this.synthesisMaterialCandidates = [];
+      this.synthesisMaterialAccessory = null;
+      return null;
+    }
+
+    if (key === ' ' || key === '\r') {
+      this.confirmMaterialSelection();
+      return null;
+    }
+
+    return null;
+  }
+
+  private handleSynthesisEffectInput(key: string): CommandResult | null {
+    if (!this.synthesisBaseAccessory || !this.synthesisMaterialAccessory) {
+      this.mode = 'selectBase';
+      return null;
+    }
+
+    const handlers: Record<string, () => void> = {
+      '\u001b[A': () => this.adjustEffectIndex(-1),
+      '\u001b[B': () => this.adjustEffectIndex(1),
+      w: () => this.returnToMaterialSelection(),
+      W: () => this.returnToMaterialSelection(),
+      ' ': () => this.toggleCurrentEffectSelection(),
+      s: () => this.completeSynthesis(),
+      S: () => this.completeSynthesis(),
+      '\r': () => this.completeSynthesis(),
+    };
+
+    const handler = handlers[key];
+    if (handler) {
+      handler();
+    }
+
+    return null;
+  }
+
+  private handleSynthesisResultInput(key: string): CommandResult | null {
+    switch (key) {
+      case ' ':
+      case '\r':
+      case 's':
+      case 'S':
+        this.exitSynthesisFlow();
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  private exitSynthesisFlow(): void {
+    this.mode = 'manage';
+    this.synthesisBaseCandidates = [];
+    this.synthesisMaterialCandidates = [];
+    this.synthesisEffectPool = [];
+    this.synthesisSelectedEffectIndices = [];
+    this.synthesisBaseIndex = 0;
+    this.synthesisMaterialIndex = 0;
+    this.synthesisEffectIndex = 0;
+    this.synthesisBaseAccessory = null;
+    this.synthesisMaterialAccessory = null;
+    this.synthesisResultAccessory = null;
+  }
+
+  private buildSynthesisBaseCandidates(): Accessory[] {
+    const counts = new Map<string, number>();
+    this.accessoryItems.forEach(item => {
+      const key = this.getMainEffectKey(item);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+
+    return this.accessoryItems.filter(item => (counts.get(this.getMainEffectKey(item)) ?? 0) > 1);
+  }
+
+  private buildMaterialCandidates(base: Accessory): Accessory[] {
+    return this.accessoryItems.filter(item => item !== base && base.hasSameMainEffect(item));
+  }
+
+  private adjustMaterialIndex(delta: number): void {
+    if (this.synthesisMaterialCandidates.length === 0) {
+      return;
+    }
+
+    const maxIndex = this.synthesisMaterialCandidates.length - 1;
+    const nextIndex = this.synthesisMaterialIndex + delta;
+    this.synthesisMaterialIndex = Math.min(maxIndex, Math.max(0, nextIndex));
+  }
+
+  private confirmMaterialSelection(): void {
+    if (!this.synthesisBaseAccessory) {
+      this.mode = 'selectBase';
+      return;
+    }
+
+    if (this.synthesisMaterialCandidates.length === 0) {
+      this.showStatusMessage('warning', 'no material accessory selected');
+      return;
+    }
+
+    const maxIndex = this.synthesisMaterialCandidates.length - 1;
+    this.synthesisMaterialIndex = Math.min(this.synthesisMaterialIndex, maxIndex);
+    const material = this.synthesisMaterialCandidates[this.synthesisMaterialIndex];
+    if (!material) {
+      this.showStatusMessage('warning', 'no material accessory selected');
+      return;
+    }
+
+    try {
+      this.synthesisMaterialAccessory = material;
+      this.synthesisEffectPool = this.player.getAccessorySynthesisPool(
+        this.synthesisBaseAccessory,
+        material
+      );
+      this.synthesisEffectIndex = 0;
+      this.synthesisSelectedEffectIndices = [];
+      this.mode = 'selectEffects';
+      this.clearStatusMessage();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.showStatusMessage('error', `Synthesis setup failed: ${message}`);
+    }
+  }
+
+  private adjustEffectIndex(delta: number): void {
+    if (this.synthesisEffectPool.length === 0) {
+      return;
+    }
+
+    const maxIndex = this.synthesisEffectPool.length - 1;
+    const nextIndex = this.synthesisEffectIndex + delta;
+    this.synthesisEffectIndex = Math.min(maxIndex, Math.max(0, nextIndex));
+  }
+
+  private toggleCurrentEffectSelection(): void {
+    if (this.synthesisEffectPool.length === 0) {
+      return;
+    }
+
+    this.toggleEffectSelection(this.synthesisEffectIndex);
+  }
+
+  private returnToMaterialSelection(): void {
+    this.mode = 'selectMaterial';
+    this.synthesisSelectedEffectIndices = [];
+  }
+
+  private toggleEffectSelection(index: number): void {
+    if (this.synthesisSelectedEffectIndices.includes(index)) {
+      this.synthesisSelectedEffectIndices = this.synthesisSelectedEffectIndices.filter(
+        candidate => candidate !== index
+      );
+      return;
+    }
+
+    if (this.synthesisSelectedEffectIndices.length >= MAX_SYNTHESIS_SELECTION) {
+      this.showStatusMessage(
+        'warning',
+        `cannot select more than ${MAX_SYNTHESIS_SELECTION} sub effects`
+      );
+      return;
+    }
+
+    this.synthesisSelectedEffectIndices = [...this.synthesisSelectedEffectIndices, index];
+  }
+
+  private completeSynthesis(): void {
+    if (!this.synthesisBaseAccessory || !this.synthesisMaterialAccessory) {
+      this.showStatusMessage('warning', 'synthesis requires both base and material accessories');
+      return;
+    }
+
+    try {
+      const selectedEffects = this.synthesisSelectedEffectIndices
+        .sort((a, b) => a - b)
+        .map(idx => this.synthesisEffectPool[idx])
+        .filter((effect): effect is AccessorySubEffect => Boolean(effect))
+        .map(effect => ({ ...effect }));
+
+      const result = this.player.synthesizeAccessories(
+        this.synthesisBaseAccessory,
+        this.synthesisMaterialAccessory,
+        selectedEffects
+      );
+
+      this.synthesisResultAccessory = result;
+      this.updateAccessoryItems();
+
+      const resultIndex = this.accessoryItems.indexOf(result);
+      this.selectedItemIndex = resultIndex >= 0 ? resultIndex : 0;
+
+      this.mode = 'result';
+      this.clearStatusMessage();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.showStatusMessage('error', `Synthesis failed: ${message}`);
+    }
+  }
+
+  private render(): void {
+    Display.clear();
+    Display.printHeader('Accessory Management');
+    Display.newLine();
+    this.renderStatusMessage();
+
+    switch (this.mode) {
+      case 'manage':
+        this.renderEquipmentSlots();
+        Display.newLine();
+        this.renderInventoryAccessories();
+        Display.newLine();
+        this.renderStatusSummary();
+        Display.newLine();
+        this.renderControls();
+        Display.newLine();
+        break;
+      case 'selectBase':
+        this.renderSynthesisBaseSelection();
+        break;
+      case 'selectMaterial':
+        this.renderSynthesisMaterialSelection();
+        break;
+      case 'selectEffects':
+        this.renderSynthesisEffectSelection();
+        break;
+      case 'result':
+        this.renderSynthesisResult();
+        break;
+      default:
+        this.mode = 'manage';
+        break;
+    }
+  }
+
+  private renderEquipmentSlots(): void {
+    Display.printInfo('Accessory Slots:');
+    const slots = this.player.getEquipmentSlots();
+
+    for (let i = 0; i < slots.length; i++) {
+      const isSelected = i === this.currentSlot;
+      const accessory = slots[i];
       const prefix = isSelected ? '→ ' : '  ';
       const suffix = isSelected ? ' ←' : '';
-      const rarity = this.getRaritySymbol(item.getRarity());
+      const status = this.player.isAccessorySlotUnlocked(i) ? '' : ' (locked)';
+      const displayName = accessory ? accessory.getDisplayName() : '[empty]';
+      Display.println(`${prefix}Slot ${i + 1}: ${displayName}${status}${suffix}`);
+    }
+  }
+
+  private renderInventoryAccessories(): void {
+    Display.printInfo('Inventory Accessories:');
+
+    if (this.accessoryItems.length === 0) {
+      Display.println('  No accessories available');
+      return;
+    }
+
+    for (let i = 0; i < this.accessoryItems.length; i++) {
+      const isSelected = i === this.selectedItemIndex;
+      const item = this.accessoryItems[i];
+      const prefix = isSelected ? '→ ' : '  ';
+      const suffix = isSelected ? ' ←' : '';
 
       Display.println(
-        `${prefix}${i + 1}. ${item.getName()} ${rarity} (Grade: ${item.getGrade()})${suffix}`
+        `${prefix}${i + 1}. ${item.getDisplayName()} (Grade: ${item.getGrade()})${suffix}`
       );
 
       if (isSelected) {
-        Display.println(`    ${item.getDescription()}`);
-        Display.println(`    Stats: ${this.formatItemStats(item)}`);
+        Display.println(
+          `    Main Effect: boost ${item.getMainEffect().boost} / penalty ${item.getMainEffect().penalty}`
+        );
+        Display.println(`    Sub Effects: ${this.formatSubEffects(item.getSubEffects())}`);
       }
     }
   }
 
-  /**
-   * ステータス情報を描画する
-   */
-  private renderStatusInfo(): void {
-    Display.printInfo('Status Information:');
+  private renderSynthesisBaseSelection(): void {
+    Display.printInfo('Accessory synthesis: select base accessory');
+    Display.newLine();
 
-    // 現在のレベルとステータス
-    const currentLevel = this.player.getLevel();
-    const currentStats = this.player.getEquippedItemStats();
-    Display.println(`  Current Level: ${currentLevel}`);
-    Display.println(`  Current Stats: ${this.formatEquipmentStats(currentStats)}`);
+    if (this.synthesisBaseCandidates.length === 0) {
+      Display.println('  No valid accessories. Press q to cancel.');
+      Display.newLine();
+      Display.printInfo('Controls:');
+      Display.println('  q      : Cancel synthesis');
+      return;
+    }
 
-    // 選択されたアイテムの装備プレビュー
-    const selectedItem = this.getSelectedItem();
-    if (selectedItem) {
-      const previewLevel = this.calculatePreviewLevel(selectedItem);
-      const previewStats = this.calculatePreviewStats(selectedItem);
-      const levelDiff = previewLevel - currentLevel;
-      const statsDiff = this.calculateStatsDifference(currentStats, previewStats);
+    this.synthesisBaseCandidates.forEach((item, index) => {
+      const isSelected = index === this.synthesisBaseIndex;
+      const prefix = isSelected ? '→ ' : '  ';
+      const suffix = isSelected ? ' ←' : '';
+      Display.println(`${prefix}${item.getDisplayName()} (Grade: ${item.getGrade()})${suffix}`);
+      Display.println(`    Sub Effects: ${this.formatSubEffects(item.getSubEffects())}`);
+    });
 
+    Display.newLine();
+    Display.printInfo('Controls:');
+    Display.println('  ↑ ↓   : Select accessory');
+    Display.println('  space/enter : Confirm base');
+    Display.println('  q      : Cancel synthesis');
+  }
+
+  private renderSynthesisMaterialSelection(): void {
+    if (!this.synthesisBaseAccessory) {
+      this.renderSynthesisBaseSelection();
+      return;
+    }
+
+    Display.printInfo('Accessory synthesis: select material accessory');
+    Display.println(
+      `Base: ${this.synthesisBaseAccessory.getDisplayName()} (Grade: ${this.synthesisBaseAccessory.getGrade()})`
+    );
+    Display.println(
+      `  Sub Effects: ${this.formatSubEffects(this.synthesisBaseAccessory.getSubEffects())}`
+    );
+    Display.newLine();
+
+    if (this.synthesisMaterialCandidates.length === 0) {
+      Display.println('  No matching accessories. Press w to go back.');
+      Display.newLine();
+      Display.printInfo('Controls:');
+      Display.println('  w      : Back to base selection');
+      Display.println('  q      : Cancel synthesis');
+      return;
+    }
+
+    this.synthesisMaterialCandidates.forEach((item, index) => {
+      const isSelected = index === this.synthesisMaterialIndex;
+      const prefix = isSelected ? '→ ' : '  ';
+      const suffix = isSelected ? ' ←' : '';
+      Display.println(`${prefix}${item.getDisplayName()} (Grade: ${item.getGrade()})${suffix}`);
+      Display.println(`    Sub Effects: ${this.formatSubEffects(item.getSubEffects())}`);
+    });
+
+    Display.newLine();
+    Display.printInfo('Controls:');
+    Display.println('  ↑ ↓   : Select accessory');
+    Display.println('  space/enter : Confirm material');
+    Display.println('  w      : Back to base selection');
+    Display.println('  q      : Cancel synthesis');
+  }
+
+  private renderSynthesisEffectSelection(): void {
+    if (!this.synthesisBaseAccessory || !this.synthesisMaterialAccessory) {
+      this.renderSynthesisBaseSelection();
+      return;
+    }
+
+    Display.printInfo('Accessory synthesis: choose sub effects (0-3)');
+    Display.println(
+      `Base    : ${this.synthesisBaseAccessory.getDisplayName()} (Grade: ${this.synthesisBaseAccessory.getGrade()})`
+    );
+    Display.println(
+      `Material: ${this.synthesisMaterialAccessory.getDisplayName()} (Grade: ${this.synthesisMaterialAccessory.getGrade()})`
+    );
+    Display.newLine();
+
+    if (this.synthesisEffectPool.length === 0) {
+      Display.println('  No additional sub effects available. Confirm to keep current effects.');
+    } else {
+      this.synthesisEffectPool.forEach((effect, index) => {
+        const isSelected = this.synthesisSelectedEffectIndices.includes(index);
+        const isCursor = index === this.synthesisEffectIndex;
+        const cursor = isCursor ? '→' : ' ';
+        const checkbox = isSelected ? '[x]' : '[ ]';
+        Display.println(` ${cursor} ${checkbox} ${this.describeSubEffect(effect)}`);
+      });
+    }
+
+    Display.newLine();
+    Display.printInfo('Controls:');
+    Display.println('  ↑ ↓   : Move cursor');
+    Display.println('  space : Toggle selection');
+    Display.println('  s/enter : Synthesize accessory');
+    Display.println('  w      : Back to material selection');
+    Display.println('  q      : Cancel synthesis');
+  }
+
+  private describeSubEffect(effect: AccessorySubEffect): string {
+    return `${effect.name} (${effect.effectType}: ${effect.magnitude})`;
+  }
+
+  private renderSynthesisResult(): void {
+    Display.printSuccess('Accessory synthesis complete');
+    Display.newLine();
+
+    if (this.synthesisResultAccessory) {
       Display.println(
-        `  Preview Level: ${previewLevel} (${levelDiff >= 0 ? '+' : ''}${levelDiff})`
+        `Result : ${this.synthesisResultAccessory.getDisplayName()} (Grade: ${this.synthesisResultAccessory.getGrade()})`
       );
-      Display.println(`  Preview Stats: ${this.formatEquipmentStats(previewStats)}`);
-
-      if (statsDiff.length > 0) {
-        Display.println(`  Stats Change: ${statsDiff}`);
-      }
-
-      // 装備可能かチェック
-      const canEquip = this.canEquipItem(selectedItem);
-      const equipStatus = canEquip ? '✓ Can equip' : '✗ Cannot equip';
-      Display.println(`  Equip Status: ${equipStatus}`);
-
-      if (!canEquip) {
-        const reason = this.getEquipFailureReason(selectedItem);
-        Display.println(`    Reason: ${reason}`);
-      }
+      Display.println(
+        `  Sub Effects: ${this.formatSubEffects(this.synthesisResultAccessory.getSubEffects())}`
+      );
+    } else {
+      Display.printWarning('Synthesis result unavailable');
     }
 
-    // 英文法チェック結果
-    const grammarResult = this.checkCurrentGrammar();
-    const grammarStatus = grammarResult.isValid ? '✓ Valid' : '✗ Invalid';
-    const grammarColor = grammarResult.isValid ? '' : '⚠️ ';
-    Display.println(`  Grammar Check: ${grammarColor}${grammarStatus}`);
-    if (!grammarResult.isValid) {
-      Display.println(`    ${grammarResult.message}`);
+    if (this.synthesisBaseAccessory && this.synthesisMaterialAccessory) {
+      Display.newLine();
+      Display.println(
+        `Consumed base    : ${this.synthesisBaseAccessory.getDisplayName()} (Grade: ${this.synthesisBaseAccessory.getGrade()})`
+      );
+      Display.println(
+        `Consumed material: ${this.synthesisMaterialAccessory.getDisplayName()} (Grade: ${this.synthesisMaterialAccessory.getGrade()})`
+      );
     }
+
+    Display.newLine();
+    Display.printInfo('Controls:');
+    Display.println('  space/enter : Return to accessory management');
+    Display.println('  q      : Return to accessory management');
   }
 
-  /**
-   * 操作説明を描画する
-   */
+  private renderStatusSummary(): void {
+    Display.printInfo('Status Summary:');
+    const worldLevel = this.player.getWorldLevel();
+    const averageGrade = this.player.getLevel();
+    const contribution = this.player.getEquipmentStats().toJSON();
+    const totalStats = this.player.getTotalStats();
+
+    Display.println(`  World Level: ${worldLevel}`);
+    Display.println(`  Average Grade: ${averageGrade}`);
+    Display.println(`  Accessory Contribution: ${this.formatEquipmentStats(contribution)}`);
+    Display.println(
+      `  Total Stats: STR ${totalStats.strength} / WIL ${totalStats.willpower} / AGI ${totalStats.agility} / LUK ${totalStats.fortune}`
+    );
+  }
+
   private renderControls(): void {
     Display.printInfo('Controls:');
-    Display.println('  Tab    : Switch equipment slot');
-    Display.println('  ↑ ↓   : Select item');
-    Display.println('  e      : Equip selected item');
-    Display.println('  w      : Unequip from current slot');
+    Display.println('  Tab    : Switch accessory slot');
+    Display.println('  ↑ ↓   : Select accessory');
+    Display.println('  e      : Equip selected accessory');
+    Display.println('  w      : Unequip current slot');
+    Display.println('  s      : Start accessory synthesis');
     Display.println('  q      : Return to inventory');
   }
 
-  /**
-   * 選択されたアイテムを装備する
-   */
   private equipSelectedItem(): void {
     const selectedItem = this.getSelectedItem();
-    if (!selectedItem) return;
-
-    if (!this.canEquipItem(selectedItem)) {
-      // エラー音の代わりに何もしない（UIで表示済み）
+    if (!selectedItem) {
       return;
     }
 
     try {
       this.player.equipToSlot(this.currentSlot, selectedItem);
-      this.updateEquipmentItems();
-
-      // 選択インデックスを調整
-      this.selectedItemIndex = Math.min(this.selectedItemIndex, this.equipmentItems.length - 1);
-    } catch (_error) {
-      // エラーは無視（UIで処理）
+      this.updateAccessoryItems();
+      this.selectedItemIndex = Math.min(this.selectedItemIndex, this.accessoryItems.length - 1);
+      this.showStatusMessage(
+        'info',
+        `Equipped ${selectedItem.getDisplayName()} to slot ${this.currentSlot + 1}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.showStatusMessage('warning', `Equip failed: ${message}`);
     }
   }
 
-  /**
-   * 現在のスロットの装備を解除する
-   */
   private unequipCurrentSlot(): void {
+    if (!this.player.isAccessorySlotUnlocked(this.currentSlot)) {
+      return;
+    }
+
     const slots = this.player.getEquipmentSlots();
     if (!slots[this.currentSlot]) {
-      return; // 空のスロット
+      return;
     }
 
     try {
       this.player.equipToSlot(this.currentSlot, null);
-      this.updateEquipmentItems();
+      this.updateAccessoryItems();
     } catch (_error) {
-      // エラーは無視（UIで処理）
+      // noop
     }
   }
 
-  /**
-   * アイテムが装備可能かチェック
-   */
-  private canEquipItem(item: EquipmentItem): boolean {
-    // 基本的なチェック（必要に応じて拡張）
-    return item instanceof EquipmentItem;
+  private getSelectedItem(): Accessory | null {
+    return this.accessoryItems[this.selectedItemIndex] || null;
   }
 
-  /**
-   * 装備失敗の理由を取得
-   */
-  private getEquipFailureReason(item: EquipmentItem): string {
-    if (!(item instanceof EquipmentItem)) {
-      return 'Not an equipment item';
-    }
-    return 'Unknown reason';
-  }
+  private updateAccessoryItems(): void {
+    this.accessoryItems = this.player.getAccessoryInventory().getItems();
 
-  /**
-   * ステータスの差分を計算
-   */
-  private calculateStatsDifference(
-    current: EquipmentStatsData,
-    preview: EquipmentStatsData
-  ): string {
-    const diffs: string[] = [];
-
-    const categories: (keyof EquipmentStatsData)[] = [
-      'strength',
-      'willpower',
-      'agility',
-      'fortune',
-    ];
-    const labels = ['STR', 'WIL', 'AGI', 'LUK'];
-
-    for (let i = 0; i < categories.length; i++) {
-      const category = categories[i];
-      const label = labels[i];
-      const diff = (preview[category] || 0) - (current[category] || 0);
-
-      if (diff !== 0) {
-        const sign = diff > 0 ? '+' : '';
-        diffs.push(`${label}${sign}${diff}`);
-      }
-    }
-
-    return diffs.join(', ') || 'No change';
-  }
-
-  /**
-   * 装備可能なアイテムリストを更新する
-   */
-  private updateEquipmentItems(): void {
-    const allItems = this.player.getInventory().getItems();
-    this.equipmentItems = allItems.filter(item => item instanceof EquipmentItem) as EquipmentItem[];
-
-    // 選択インデックスを調整
-    if (this.selectedItemIndex >= this.equipmentItems.length) {
-      this.selectedItemIndex = Math.max(0, this.equipmentItems.length - 1);
+    if (this.selectedItemIndex >= this.accessoryItems.length) {
+      this.selectedItemIndex = Math.max(0, this.accessoryItems.length - 1);
     }
   }
 
-  /**
-   * 現在選択されているアイテムを取得する
-   */
-  private getSelectedItem(): EquipmentItem | null {
-    return this.equipmentItems[this.selectedItemIndex] || null;
-  }
-
-  /**
-   * レアリティシンボルを取得する
-   */
-  private getRaritySymbol(rarity: string): string {
-    switch (rarity.toLowerCase()) {
-      case 'common':
-        return '[C]';
-      case 'rare':
-        return '[R]';
-      case 'epic':
-        return '[E]';
-      case 'legendary':
-        return '[L]';
-      default:
-        return '[?]';
+  private formatSubEffects(subEffects: AccessorySubEffect[]): string {
+    if (subEffects.length === 0) {
+      return 'none';
     }
+
+    return subEffects.map(effect => effect.name).join(', ');
   }
 
-  /**
-   * アイテムのステータスをフォーマットする
-   */
-  private formatItemStats(item: EquipmentItem): string {
-    const stats = item.getStats();
-    const parts: string[] = [];
-
-    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
-    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
-    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
-    if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
-
-    return parts.join(', ') || 'No bonus';
-  }
-
-  /**
-   * 装備ステータスをフォーマットする
-   */
   private formatEquipmentStats(stats: EquipmentStatsData): string {
-    const parts: string[] = [];
-
-    if (stats.strength > 0) parts.push(`STR+${stats.strength}`);
-    if (stats.willpower > 0) parts.push(`WIL+${stats.willpower}`);
-    if (stats.agility > 0) parts.push(`AGI+${stats.agility}`);
-    if (stats.fortune > 0) parts.push(`LUK+${stats.fortune}`);
-
-    return parts.join(', ') || 'No bonus';
+    return `STR ${stats.strength} / WIL ${stats.willpower} / AGI ${stats.agility} / LUK ${stats.fortune}`;
   }
 
-  /**
-   * プレビューレベルを計算する
-   */
-  private calculatePreviewLevel(newItem: EquipmentItem): number {
-    const currentSlots = this.player.getEquipmentSlots();
-    const previewSlots = [...currentSlots];
-    previewSlots[this.currentSlot] = newItem;
-
-    const previewItems = previewSlots.filter(item => item !== null) as EquipmentItem[];
-    return this.effectCalculator.calculateAverageGradeBySlots(previewItems, 5);
+  private getMainEffectKey(accessory: Accessory): string {
+    const mainEffect = accessory.getMainEffect();
+    return `${mainEffect.boost}:${mainEffect.penalty}`;
   }
 
-  /**
-   * プレビューステータスを計算する
-   */
-  private calculatePreviewStats(newItem: EquipmentItem): EquipmentStatsData {
-    const currentSlots = this.player.getEquipmentSlots();
-    const previewSlots = [...currentSlots];
-    previewSlots[this.currentSlot] = newItem;
-
-    const previewItems = previewSlots.filter(item => item !== null) as EquipmentItem[];
-    return this.effectCalculator.calculateTotalStats(previewItems);
+  private showStatusMessage(variant: StatusMessageVariant, text: string): void {
+    this.statusMessage = { variant, text };
   }
 
-  /**
-   * 現在の装備の英文法をチェックする
-   */
-  private checkCurrentGrammar(): { isValid: boolean; message: string } {
-    const equippedNames = this.player.getEquippedItemNames().filter(name => name !== '');
-    return this.grammarChecker.isValidSentence(equippedNames)
-      ? { isValid: true, message: 'Valid English sentence' }
-      : { isValid: false, message: this.grammarChecker.getGrammarErrorMessage(equippedNames) };
+  private clearStatusMessage(): void {
+    this.statusMessage = null;
   }
 
-  async cleanup(): Promise<void> {
-    this.isActive = false;
-
-    // raw modeを終了
-    if (typeof process.stdin.setRawMode === 'function') {
-      process.stdin.setRawMode(false);
+  private renderStatusMessage(): void {
+    if (!this.statusMessage) {
+      return;
     }
-    process.stdin.pause();
 
-    // 少し待ってからstdinを再開
-    await new Promise(resolve => global.setTimeout(resolve, 50));
-    process.stdin.resume();
+    const { variant, text } = this.statusMessage;
 
-    await super.cleanup();
+    switch (variant) {
+      case 'success':
+        Display.printSuccess(text);
+        break;
+      case 'warning':
+        Display.printWarning(text);
+        break;
+      case 'error':
+        Display.printError(text);
+        break;
+      default:
+        Display.printInfo(text);
+        break;
+    }
+
+    Display.newLine();
+    this.clearStatusMessage();
   }
 }

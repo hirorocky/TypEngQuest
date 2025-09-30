@@ -1,9 +1,9 @@
 import { InventoryPhase } from './InventoryPhase';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { ConsumableItem, EffectType } from '../items/ConsumableItem';
-import { EquipmentItem } from '../items/EquipmentItem';
-import { ItemType, ItemRarity } from '../items/Item';
+import { Potion, EffectType } from '../items/Potion';
+import { ItemType } from '../items/types';
+import { Accessory, AccessoryCatalog } from '../items/accessory';
 import { Display } from '../ui/Display';
 // ScrollableList import removed - no longer used in InventoryPhase tests
 import { PhaseTypes } from '../core/types';
@@ -58,12 +58,11 @@ describe('InventoryPhase', () => {
 
     test('アイテムがある場合は一覧が表示される', () => {
       // テスト用アイテムを追加
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'test-item',
         name: 'Test Potion',
         description: 'Test description',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       player.getInventory().addItem(item);
@@ -71,20 +70,19 @@ describe('InventoryPhase', () => {
       phase.enter();
 
       expect(Display.printInfo).toHaveBeenCalledWith('items: 1/100');
-      expect(Display.println).toHaveBeenCalledWith('  1. Test Potion [common]');
+      expect(Display.println).toHaveBeenCalledWith('  1. Test Potion');
     });
   });
 
   describe('コマンド処理', () => {
-    let testItem: ConsumableItem;
+    let testItem: Potion;
 
     beforeEach(() => {
-      testItem = new ConsumableItem({
+      testItem = new Potion({
         id: 'test-item',
         name: 'Test Potion',
         description: 'Test description',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
     });
@@ -155,19 +153,17 @@ describe('InventoryPhase', () => {
   });
 
   describe('装備UI機能', () => {
-    describe('装備スロット管理システム', () => {
+    describe('アクセサリスロット管理システム', () => {
       test('equipコマンドでItemEquipmentフェーズに遷移する', async () => {
-        // 装備アイテムをインベントリに追加
-        const equipment = new EquipmentItem({
-          id: 'test-sword',
-          name: 'sword',
-          description: 'A sharp sword',
-          type: ItemType.EQUIPMENT,
-          rarity: ItemRarity.COMMON,
-          stats: { strength: 10, willpower: 0, agility: 0, fortune: 0 },
-          grade: 10,
+        player.setWorldLevel(30);
+        const catalog = AccessoryCatalog.load();
+        const mainEffect = catalog.getMainEffect('glove');
+        const accessory = Accessory.fromJSON({
+          grade: 20,
+          mainEffect: { ...mainEffect },
+          subEffects: [],
         });
-        player.getInventory().addItem(equipment);
+        player.getAccessoryInventory().addItem(accessory);
 
         const result = await phase.processInput('equip');
 
@@ -175,7 +171,7 @@ describe('InventoryPhase', () => {
         expect(result.nextPhase).toBe('itemEquipment');
       });
 
-      test('装備アイテムが存在しない場合もItemEquipmentフェーズに遷移', async () => {
+      test('アクセサリが存在しない場合もItemEquipmentフェーズに遷移', async () => {
         const result = await phase.processInput('equip');
 
         expect(result.success).toBe(true);

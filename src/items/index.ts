@@ -1,4 +1,4 @@
 // アイテムシステムの統合エクスポート
-export * from './Item';
-export * from './ConsumableItem';
-export * from './EquipmentItem';
+export * from './types';
+export * from './Potion';
+export * from './accessory';

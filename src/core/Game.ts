@@ -19,7 +19,7 @@ import { Enemy } from '../battle/Enemy';
 import { Display } from '../ui/Display';
 import { World } from '../world/World';
 import { Player } from '../player/Player';
-import { ConsumableItem } from '../items/ConsumableItem';
+import { Potion } from '../items/Potion';
 import { CommandParser } from './CommandParser';
 import {
   TabCompleter,
@@ -50,7 +50,7 @@ interface PhaseTransitionData {
   transitionReason?: 'skillsSelected' | 'typingComplete' | 'back' | 'enemyDefeated';
 
   // BattleItemConsumption phase
-  onItemUsed?: (item: ConsumableItem) => void;
+  onItemUsed?: (item: Potion) => void;
 
   // Typing phase
   difficulty?: number;

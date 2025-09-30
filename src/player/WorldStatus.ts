@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+const PROJECT_ROOT = path.resolve(process.cwd());
+const WORLD_STATUS_PATH = path.join(PROJECT_ROOT, 'data', 'world-status.json');
+
 /**
  * ワールドステータスの種別
  */
@@ -119,8 +122,7 @@ let worldStatusData: WorldStatusData | null = null;
 
 function loadWorldStatusData() {
   if (!worldStatusData) {
-    const dataPath = path.join(__dirname, '../../data/world-status.json');
-    worldStatusData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    worldStatusData = JSON.parse(fs.readFileSync(WORLD_STATUS_PATH, 'utf8'));
   }
   return worldStatusData;
 }

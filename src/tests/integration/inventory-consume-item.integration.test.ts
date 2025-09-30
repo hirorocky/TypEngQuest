@@ -1,8 +1,8 @@
 import { Game } from '../../core/Game';
 import { World } from '../../world/World';
 import { Player } from '../../player/Player';
-import { ConsumableItem, EffectType } from '../../items/ConsumableItem';
-import { ItemType, ItemRarity } from '../../items/Item';
+import { Potion, EffectType } from '../../items/Potion';
+import { ItemType } from '../../items/types';
 import { InventoryPhase } from '../../phases/InventoryPhase';
 
 describe('InventoryPhase consume item integration', () => {
@@ -20,7 +20,7 @@ describe('InventoryPhase consume item integration', () => {
   });
 
   describe('consume command', () => {
-    it('should handle consume command with no consumable items', async () => {
+    it('should handle consume command with no potion items', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -36,12 +36,11 @@ describe('InventoryPhase consume item integration', () => {
       player.getInventory().clear();
       
       // ヘルスポーションを追加
-      const healthPotion = new ConsumableItem({
+      const healthPotion = new Potion({
         id: 'hp001',
         name: 'Health Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       
@@ -53,26 +52,24 @@ describe('InventoryPhase consume item integration', () => {
       expect(result.nextPhase).toBe('itemConsumption');
     });
 
-    it('should transition to ItemConsumptionPhase with multiple consumable items', async () => {
+    it('should transition to ItemConsumptionPhase with multiple potion items', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
       // 複数の消費アイテムを追加
-      const healthPotion = new ConsumableItem({
+      const healthPotion = new Potion({
         id: 'hp001',
         name: 'Health Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       
-      const manaPotion = new ConsumableItem({
+      const manaPotion = new Potion({
         id: 'mp001',
         name: 'Mana Potion',
         description: 'Restores 30 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_MP, value: 30 }],
       });
       
@@ -85,7 +82,7 @@ describe('InventoryPhase consume item integration', () => {
       expect(result.nextPhase).toBe('itemConsumption');
     });
 
-    it('should handle consume command with non-consumable items in inventory', async () => {
+    it('should handle consume command with non-potion items in inventory', async () => {
       // インベントリをクリア
       player.getInventory().clear();
       
@@ -95,7 +92,6 @@ describe('InventoryPhase consume item integration', () => {
         getDisplayName: () => 'Iron Sword',
         getDescription: () => 'A sturdy iron sword',
         getType: () => 'weapon',
-        getRarity: () => 'common',
       };
       
       player.getInventory().addItem(sword as any);
@@ -112,21 +108,19 @@ describe('InventoryPhase consume item integration', () => {
       // インベントリをクリア
       player.getInventory().clear();
       
-      const healthPotion = new ConsumableItem({
+      const healthPotion = new Potion({
         id: 'hp001',
         name: 'Health Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       
-      const epicPotion = new ConsumableItem({
+      const epicPotion = new Potion({
         id: 'ep001',
         name: 'Epic Potion',
         description: 'Restores 100 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.EPIC,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 100 }],
       });
       
@@ -134,8 +128,8 @@ describe('InventoryPhase consume item integration', () => {
       player.getInventory().addItem(epicPotion);
       
       // アイテムが正しくインベントリに追加されていることを確認
-      const consumableItems = player.getInventory().getItems().filter(item => item instanceof ConsumableItem);
-      expect(consumableItems).toHaveLength(2);
+      const potionItems = player.getInventory().getItems().filter(item => item instanceof Potion);
+      expect(potionItems).toHaveLength(2);
       
       const result = await inventoryPhase.processInput('consume');
       expect(result.success).toBe(true);
@@ -149,12 +143,11 @@ describe('InventoryPhase consume item integration', () => {
       player.getInventory().clear();
       
       // 使用時にエラーを投げるアイテムを作成
-      const faultyItem = new ConsumableItem({
+      const faultyItem = new Potion({
         id: 'faulty001',
         name: 'Faulty Item',
         description: 'This item fails when used',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
       

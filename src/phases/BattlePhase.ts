@@ -8,7 +8,7 @@ import { World } from '../world/World';
 import { TabCompleter } from '../core/completion/TabCompleter';
 
 import { BattleTypingResult } from './types';
-import { ConsumableItem } from '../items/ConsumableItem';
+import { Potion } from '../items/Potion';
 import { delay } from '../utils/timer';
 import { createFractionBar } from '../ui/FractionBar';
 import { EX_COST_FOCUS, EX_COST_SPARK } from '../battle/const';
@@ -339,7 +339,7 @@ export class BattlePhase extends Phase {
       nextPhase: 'battleItemConsumption',
       data: {
         battle: this.battle,
-        onItemUsed: (item: ConsumableItem) => this.onItemUsed(item),
+        onItemUsed: (item: Potion) => this.onItemUsed(item),
         onBack: () => this.cancelPlayerTurn(),
       },
     };
@@ -348,7 +348,7 @@ export class BattlePhase extends Phase {
   /**
    * アイテム使用後の処理
    */
-  private onItemUsed(item: ConsumableItem): void {
+  private onItemUsed(item: Potion): void {
     console.log(`Used ${item.getName()}`);
     // アイテム使用後、敵のターンへ
     this.executeEnemyTurn();

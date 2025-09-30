@@ -52,7 +52,7 @@ export class InventoryCommand extends BaseCommand {
       '',
       'The inventory allows you to:',
       '  - View all items in your possession',
-      '  - Use consumable items (potions, etc.)',
+      '  - Use potion items (healing potions, etc.)',
       '  - Drop unwanted items',
       '  - View detailed item information',
       '',

@@ -12,8 +12,8 @@
 import { jest } from '@jest/globals';
 import { TestGameHelper } from './helpers/TestGameHelper';
 import { withMocks } from './helpers/SimplifiedMockHelper';
-import { ConsumableItem, EffectType } from '../../items/ConsumableItem';
-import { ItemType, ItemRarity } from '../../items/Item';
+import { Potion, EffectType } from '../../items/Potion';
+import { ItemType } from '../../items/types';
 
 describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト', () => {
   let gameHelper: TestGameHelper;
@@ -132,12 +132,11 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       const stats = player.getStats();
       stats.takeDamage(30); // HPを減少させる
       
-      const testItem = new ConsumableItem({
+      const testItem = new Potion({
         id: 'test-potion-1',
         name: 'Test Potion',
         description: 'A test healing potion',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 50 }],
       });
 
@@ -278,12 +277,11 @@ describe('Title -> Exploration -> Inventoryフェーズ移行の統合テスト'
       const player = (game as any).currentPlayer;
 
       // テストアイテムを追加
-      const testItem = new ConsumableItem({
+      const testItem = new Potion({
         id: 'hp-potion-test',
         name: 'HP Potion',
         description: 'Restores 30 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [{ type: EffectType.HEAL_HP, value: 30 }],
       });
 

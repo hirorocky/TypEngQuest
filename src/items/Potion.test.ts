@@ -1,8 +1,8 @@
-import { ConsumableItem, ConsumableItemData, EffectType } from './ConsumableItem';
-import { ItemType, ItemRarity } from './Item';
+import { Potion, PotionData, EffectType } from './Potion';
+import { ItemType } from './types';
 import { Player } from '../player/Player';
 
-describe('ConsumableItem', () => {
+describe('Potion', () => {
   let mockPlayer: Player;
 
   beforeEach(() => {
@@ -11,12 +11,11 @@ describe('ConsumableItem', () => {
 
   describe('コンストラクタ', () => {
     it('正常な引数で初期化できる', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -28,20 +27,18 @@ describe('ConsumableItem', () => {
       expect(item.getId()).toBe('hp_potion');
       expect(item.getName()).toBe('HP Potion');
       expect(item.getDescription()).toBe('Restores 50 HP');
-      expect(item.getType()).toBe(ItemType.CONSUMABLE);
-      expect(item.getRarity()).toBe(ItemRarity.COMMON);
+      expect(item.getType()).toBe(ItemType.POTION);
       expect(item.getEffects()).toHaveLength(1);
       expect(item.getEffects()[0].type).toBe(EffectType.HEAL_HP);
       expect(item.getEffects()[0].value).toBe(50);
     });
 
     it('複数の効果を持つアイテムで初期化できる', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'super_potion',
         name: 'Super Potion',
         description: 'Restores 100 HP and 50 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.RARE,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -61,26 +58,24 @@ describe('ConsumableItem', () => {
 
     it('効果配列が空の場合にエラーを投げる', () => {
       expect(() => {
-        new ConsumableItem({
+        new Potion({
           id: 'invalid_item',
           name: 'Invalid Item',
           description: 'Invalid item',
-          type: ItemType.CONSUMABLE,
-          rarity: ItemRarity.COMMON,
+          type: ItemType.POTION,
           effects: [],
         });
-      }).toThrow('ConsumableItem must have at least one effect');
+      }).toThrow('Potion must have at least one effect');
     });
   });
 
   describe('canUse', () => {
     it('HP回復アイテムはHPが満タンでない場合に使用可能', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -96,12 +91,11 @@ describe('ConsumableItem', () => {
     });
 
     it('HP回復アイテムはHPが満タンの場合に使用不可', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -115,12 +109,11 @@ describe('ConsumableItem', () => {
     });
 
     it('MP回復アイテムはMPが満タンでない場合に使用可能', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'mp_potion',
         name: 'MP Potion',
         description: 'Restores 30 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_MP,
@@ -136,12 +129,11 @@ describe('ConsumableItem', () => {
     });
 
     it('MP回復アイテムはMPが満タンの場合に使用不可', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'mp_potion',
         name: 'MP Potion',
         description: 'Restores 30 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_MP,
@@ -155,12 +147,11 @@ describe('ConsumableItem', () => {
     });
 
     it('複数効果のアイテムは最低1つの効果が使用可能なら使用可能', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'mixed_potion',
         name: 'Mixed Potion',
         description: 'Restores HP and MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -180,12 +171,11 @@ describe('ConsumableItem', () => {
     });
 
     it('複数効果のアイテムは全ての効果が使用不可なら使用不可', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'mixed_potion',
         name: 'Mixed Potion',
         description: 'Restores HP and MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -205,12 +195,11 @@ describe('ConsumableItem', () => {
 
   describe('use', () => {
     it('HP回復効果を正しく適用する', async () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -231,12 +220,11 @@ describe('ConsumableItem', () => {
     });
 
     it('MP回復効果を正しく適用する', async () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'mp_potion',
         name: 'MP Potion',
         description: 'Restores 30 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_MP,
@@ -257,12 +245,11 @@ describe('ConsumableItem', () => {
     });
 
     it('複数効果を正しく適用する', async () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'super_potion',
         name: 'Super Potion',
         description: 'Restores 100 HP and 50 MP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.RARE,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -291,12 +278,11 @@ describe('ConsumableItem', () => {
     });
 
     it('使用不可能なアイテムを使用するとエラーを投げる', async () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -312,12 +298,11 @@ describe('ConsumableItem', () => {
 
   describe('toJSON', () => {
     it('正しいJSONデータを返す', () => {
-      const item = new ConsumableItem({
+      const item = new Potion({
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -332,8 +317,7 @@ describe('ConsumableItem', () => {
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -346,12 +330,11 @@ describe('ConsumableItem', () => {
 
   describe('fromJSON', () => {
     it('正しいJSONデータからインスタンスを作成できる', () => {
-      const jsonData: ConsumableItemData = {
+      const jsonData: PotionData = {
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         effects: [
           {
             type: EffectType.HEAL_HP,
@@ -360,13 +343,12 @@ describe('ConsumableItem', () => {
         ],
       };
 
-      const item = ConsumableItem.fromJSON(jsonData);
+      const item = Potion.fromJSON(jsonData);
 
       expect(item.getId()).toBe('hp_potion');
       expect(item.getName()).toBe('HP Potion');
       expect(item.getDescription()).toBe('Restores 50 HP');
-      expect(item.getType()).toBe(ItemType.CONSUMABLE);
-      expect(item.getRarity()).toBe(ItemRarity.COMMON);
+      expect(item.getType()).toBe(ItemType.POTION);
       expect(item.getEffects()).toHaveLength(1);
       expect(item.getEffects()[0].type).toBe(EffectType.HEAL_HP);
     });
@@ -376,14 +358,13 @@ describe('ConsumableItem', () => {
         id: 'hp_potion',
         name: 'HP Potion',
         description: 'Restores 50 HP',
-        type: ItemType.CONSUMABLE,
-        rarity: ItemRarity.COMMON,
+        type: ItemType.POTION,
         // effects missing
       };
 
       expect(() => {
-        ConsumableItem.fromJSON(invalidData);
-      }).toThrow('Invalid consumable item data');
+        Potion.fromJSON(invalidData);
+      }).toThrow('Invalid potion data');
     });
   });
 

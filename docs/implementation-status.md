@@ -282,35 +282,33 @@
 **目標**: アイテムの基本構造を実装する
 
 **完了タスク**:
-- [x] TDD-RED: Itemクラステストファイル作成
-  - [x] アイテム基本情報管理テスト（ID、名前、説明、タイプ、レアリティ）
-  - [x] JSON シリアライゼーション・デシリアライゼーションテスト
-  - [x] データバリデーションテスト
-  - [x] equals・hashCode相当メソッドテスト
-- [x] TDD-GREEN: Itemクラス実装
-  - [x] アイテム基本情報管理（ID、名前、説明、タイプ、レアリティ）
-  - [x] toJSON/fromJSONメソッド実装
-  - [x] 堅牢なデータバリデーション
-  - [x] equals比較メソッド実装
-- [x] TDD-RED: ConsumableItemクラステストファイル作成
+- [x] TDD-RED: Itemユーティリティテストファイル作成
+  - [x] アイテム基本情報バリデーションのテスト
+  - [x] 表示名フォーマットユーティリティのテスト
+  - [x] ItemData判定ロジックのテスト
+- [x] TDD-GREEN: Itemユーティリティ実装
+  - [x] アイテム列挙とデータ型の定義
+  - [x] ID/名前バリデーションの提供
+  - [x] レアリティ反映済み表示名生成の実装
+- [x] TDD-RED: Potionクラステストファイル作成
   - [x] HP/MP回復効果テスト
   - [x] バフ/デバフ効果テスト
   - [x] 状態異常回復・付与効果テスト
   - [x] 効果システムテスト
-- [x] TDD-GREEN: ConsumableItemクラス実装
-  - [x] Itemクラス継承による基本構造
+- [x] TDD-GREEN: Potionクラス実装
+  - [x] 独立したアイテム構造と効果適用ロジック
   - [x] 効果システム（HP回復、MP回復、バフ、デバフ、状態異常）
-  - [x] 完全なJSONシリアライゼーション対応
+  - [x] JSONシリアライゼーション対応
 - [x] 品質保証
   - [x] 全718テストケース通過確認
   - [x] 95%以上のテストカバレッジ維持
   - [x] ESLint・Prettierによるコード品質チェック通過
 
 **成果物**:
-- アイテム基底クラス（Item）とConsumableItemの実装
+- アイテム共通ユーティリティとPotionの実装
 - 6種類の効果システム（HP回復、MP回復、攻撃力バフ、防御力バフ、デバフ、状態異常）
 - 完全なJSONシリアライゼーション対応（セーブ・ロード基盤）
-- 64テストケース（Item: 25、ConsumableItem: 39）による包括的品質保証
+- 64テストケース（Item utilities: 25、Potion: 39）による包括的品質保証
 
 **チェック済み**: アイテム基礎システムが正常に動作すること ✅
 **最終確認**: 2025-07-18 - プロジェクト6A完了
@@ -401,127 +399,83 @@
 - docs/agile-development-plan.md（「プロジェクト10D: 開発計画（初版）」、および詳細設計章）
 - docs/game-systems.md（EX/Focus/Spark 設計方針）
 
-### ✅ プロジェクト7A: 装備アイテム基礎システム
-**目標**: 装備アイテムの基本構造を実装する
+### 🚧 プロジェクト10E: アクセサリ装備システム刷新（進行中 / Issue #64）
+**目標**: アクセサリ3スロット制と合成フローを導入し、ビルド多様性を支える装備システムへ刷新する。
+
+**進捗（2025-09-28）**
+- [x] アクセサリドメイン基盤実装（Catalog / GradeTable / SlotManager / SynthesisService / 命名ロジック）
+- [x] アクセサリデータ初期セット（`data/accessories/main-effects.json` / `sub-effects.json`）整備
+- [x] Playerをアクセサリ前提へ移行（ワールドレベル制御・装備集約・シリアライズ更新）
+- [x] InventoryPhase / ItemEquipmentPhase をアクセサリUIに刷新（装備可否表示・スロットロック表示）
+- [x] ユニットテスト更新（Player / InventoryPhase / AccessorySlotManager）
+- [x] DEV_MODE 起動時にアクセサリ試用データを自動ロード（`npm run dev:test` でサンプル所持状態を再現）
+- [x] 合成UIフローの結合テスト追加（`src/phases/ItemEquipmentPhase.synthesis.test.ts`）
+- [x] 合成UIログ表示とドキュメント更新（操作ガイド追補・進捗反映）
+
+**品質**
+- `npm test -- --runTestsByPath src/player/Player.test.ts src/phases/InventoryPhase.test.ts src/items/accessory/AccessorySlotManager.test.ts src/phases/ItemEquipmentPhase.synthesis.test.ts` GREEN（2025-09-28）
+- フォーマット／Lint自動実行（pretest）でエラーなし
+
+**参照**
+- docs/agile-development-plan.md「プロジェクト10E: アクセサリ装備システム刷新」
+- docs/game-systems.md §2.5, 実装メモ（2025-09-22 更新）
+
+### ✅ プロジェクト7A: アクセサリ基盤再構築
+**目標**: 旧EquipmentItem系資産を全廃し、MainEffect/SubEffectベースのアクセサリ構造へ移行する
 
 **完了タスク**:
-- [x] TDD-RED: EquipmentItemクラステストファイル作成
-  - [x] 基本ステータス管理テスト（attack, defense, speed, accuracy, fortune）
-  - [x] グレードシステムテスト（1-5のグレード設定・取得）
-  - [x] 技システムテスト（技の追加・取得・検索）
-  - [x] JSON シリアライゼーション・デシリアライゼーションテスト
-  - [x] データバリデーションテスト（不正データ検証）
-  - [x] equals比較メソッドテスト
-- [x] TDD-GREEN: EquipmentItemクラス実装
-  - [x] Itemクラス継承による基本構造
-  - [x] 装備ステータス管理システム（5つの基本ステータス）
-  - [x] グレードシステム実装（1-5）
-  - [x] 技保持・管理機能（複数技対応）
-  - [x] 完全なJSON対応
-  - [x] 堅牢なデータバリデーション
-- [x] 技（Skill）データJSONファイル作成
-  - [x] 20個の技データ定義
-  - [x] 攻撃系、回復系、バフ系、デバフ系、状態異常系の多様な技
-  - [x] MP消費、成功率、タイピング難易度設定
-- [x] TDD-BLUE: リファクタリングとコード品質向上
-  - [x] 複雑度エラー修正（validateメソッドの分割）
-  - [x] TypeScript型安全性の向上
-  - [x] JSDocコメント追加
-- [x] 品質保証
-  - [x] 全749テストケース通過確認
-  - [x] 95%以上のテストカバレッジ維持
-  - [x] ESLint・Prettierによるコード品質チェック通過
+- [x] MainEffectとSubEffectのIDカタログ化（最大3件のサブ効果を許可）
+- [x] AccessorySubEffect型のリネームと単語ベースID/名称への整理
+- [x] Accessoryクラス内で「サブ効果名 最大3件 + メイン効果 + グレード」形式の名称生成を実装
+- [x] highlightEffectIdおよび関連ロジックを全削除
+- [x] data/accessories/catalog.json廃止とMainEffect（旧archetype）定義への統合
 
 **成果物**:
-- EquipmentItemクラス（装備アイテムシステムの基盤）
-- 装備ステータス管理（attack, defense, speed, accuracy, fortune）
-- グレードシステム（1-5の装備品質管理）
-- 技システム（装備に紐づく技の管理）
-- 20個の技データを含むJSONファイル
-- 31テストケースによる包括的品質保証
+- MainEffect + SubEffect + Grade によるシンプルなアクセサリ構成
+- ID参照による一貫したアクセサリデータバリデーション
+- アクセサリアイテムの名称・データがルールベースで生成される仕組み
+- docs/game-systems.md 等の関連ドキュメント更新
 
-**チェック済み**: 装備アイテム基礎システムが正常に動作すること ✅
-**最終確認**: 2025-07-20 - プロジェクト7A完了
+**チェック済み**: AccessoryCatalog.load() が新データ構造で動作し、既存テストがグリーンであること ✅
+**最終確認**: 2025-09-27
 
-## 次のプロジェクト
-
-### ✅ プロジェクト7B: 装備システム
-**目標**: 装備の文法チェックと効果計算を実装する
+### ✅ プロジェクト7B: アクセサリ装備UI再設計
+**目標**: ItemEquipmentPhaseと周辺機能をアクセサリ専用の運用に合わせて簡素化する
 
 **完了タスク**:
-- [x] EquipmentItemクラスのグレード範囲拡張（1-5 → 1-20）
-- [x] グレード＝ステータス合計値のバリデーション実装
-- [x] TDD-RED: EquipmentGrammarCheckerクラステストファイル作成
-  - [x] 5単語英文構成チェックテスト
-  - [x] 基本英文法チェックテスト（動詞・名詞必須）
-  - [x] 単語妥当性チェックテスト
-  - [x] エラーメッセージ生成テスト
-- [x] TDD-GREEN: EquipmentGrammarCheckerクラス実装
-  - [x] 150以上の動詞と500以上の名詞を含む辞書
-  - [x] 5単語で有効な英文構成の検証機能
-  - [x] 基本文法チェック（動詞・名詞の存在確認）
-  - [x] 詳細なエラーメッセージ生成機能
-- [x] TDD-RED: EquipmentEffectCalculatorクラステストファイル作成
-  - [x] 装備ステータス合計計算テスト
-  - [x] グレード平均値計算テスト（小数点切り捨て）
-  - [x] 使用可能技取得テスト
-  - [x] 空配列・複数装備の処理テスト
-- [x] TDD-GREEN: EquipmentEffectCalculatorクラス実装
-  - [x] 装備ステータス合計計算機能
-  - [x] グレード平均値計算機能（小数点切り捨て）
-  - [x] 装備から使用可能技の抽出機能
-- [x] Playerクラスの装備システム統合
-  - [x] 装備アイテム管理機能追加
-  - [x] レベル計算の装備グレード平均値対応
-  - [x] 装備ステータス取得機能
-  - [x] 装備技取得機能
-- [x] 品質保証
-  - [x] 全791テストケース通過確認
-  - [x] 95%以上のテストカバレッジ維持
-  - [x] ESLint複雑度問題修正
-  - [x] ESLint・Prettierによるコード品質チェック通過
+- [x] EquipmentEffectCalculator / EquipmentGrammarChecker など旧装備ロジックの削除
+- [x] アクセサリ装備可否チェック・UIロック表示などの撤廃
+- [x] AccessorySlotManager／Player／InventoryPhaseテストの更新
+- [x] highlightEffectIdに依存していたUI表示・データ処理の整理
+- [x] docs/agile-development-plan.md ほか仕様ドキュメントの刷新
 
 **成果物**:
-- 装備グレード管理システム（1-20、ステータス合計値＝グレード）
-- 英文法チェックシステム（5単語英文の妥当性検証）
-- 装備効果計算システム（ステータス合計、グレード平均、技抽出）
-- Playerクラスと装備システムの完全統合
-- 30テストケース（EquipmentItem更新: 8、EquipmentGrammarChecker: 9、EquipmentEffectCalculator: 13）による包括的品質保証
+- 装備可能判定に依存しないアクセサリ管理UI
+- プレイヤー装備スロット管理の明瞭化（AccessorySlotManager集中管理）
+- 旧仕様に紐づくデータフローの排除
 
-**チェック済み**: 装備システムが正常に動作し、プレイヤーレベル計算と統合されること ✅
-**最終確認**: 2025-07-22 - プロジェクト7B完了
+**チェック済み**: npm run build ✅（2025-09-26）
+**最終確認**: 2025-09-26
 
-### ✅ プロジェクト7C: インベントリ装備システム
-**目標**: InventoryPhaseから装備の装着・変更を実装する
+### ✅ プロジェクト7C: 旧装備アイテム資産の整理
+**目標**: src/items 配下からEquipmentItemと関連テスト／列挙値を撤廃し、アクセサリ主体のアイテム体系へ統一する
 
 **完了タスク**:
-- [x] Player.tsのsetEquippedItemsでstats全体が初期化される問題を修正（HP/MP/一時効果がリセットされる）
-- [x] EquipmentEffectCalculatorのcalculateTotalStatsをreduceで書き直し
-- [x] EquipmentEffectCalculatorのgetAvailableSkillsをmap+filterで書き直し
-- [x] EquipmentItemのvalidateGradeAndStatsを引数で受け取るように修正
-- [x] 装備がない場合のグレード平均値を1ではなく0に変更
-- [x] グレード平均値の分母を装備数ではなく最大スロット数5で固定
-- [x] 5単語未満でも文として成立すればtrueにするよう文法チェックを修正（テストケース更新）
-- [x] 文法チェックで外部ライブラリが使えないか検討（compromiseライブラリ導入）
-- [x] グレードの最大値を20から100に変更
-- [x] Playerクラスでレベルをプロパティではなく毎回装備から計算するように修正
-- [x] docs/implementation-status.mdの次のプロジェクト番号を修正
+- [x] src/items/EquipmentItem.ts と src/items/EquipmentItem.test.ts の削除
+- [x] ItemTypeから'equipment'を削除し、テスト（Item / Inventory / BattleItemConsumptionPhase）をアクセサリ仕様へ更新
+- [x] src/items/index.ts のエクスポート整理
+- [x] docs/project-structure.md・docs/agile-development-plan.md の最新仕様反映
 
 **成果物**:
-- PRコメント対応による装備システムの品質向上
-- compromiseライブラリを使った高度な英文法チェック
-- HP/MP/一時効果を保持した装備変更システム
-- スロット数ベースのレベル計算システム
-- グレード100対応による拡張性向上
-- 795テストケース全通過・95%以上カバレッジ維持
+- Itemモジュールから旧装備アイテムの依存を一掃
+- アクセサリ・消費アイテムのみを扱うシンプルなItemType列挙
+- 旧装備データとの混在リスクを排除したコードベース
 
-**チェック済み**: PRコメント対応が完了し、装備システムの品質が向上したこと ✅
-**最終確認**: 2025-07-22 - プロジェクト7C完了
-
-## 次のプロジェクト
+**チェック済み**: npm run build（予定） / npm test（予定） — 本タスク完了時に実行
+**最終確認**: 2025-09-27（本タスク）
 
 ### ✅ プロジェクト7D: インベントリ装備UI
-**目標**: InventoryPhaseから装備の装着・変更UIを実装する
+**目標**: InventoryPhaseから装備の装着・変更UIを実装する（英文法チェックは後に撤廃）
 
 **完了タスク**:
 - [x] Phase 1: 装備スロット管理システム実装
@@ -535,10 +489,9 @@
 - [x] Phase 3: リアルタイム情報表示機能
   - [x] 装備選択時のプレビュー情報表示
   - [x] レベル・ステータス変化の表示
-- [x] Phase 4: 英文法チェック統合実装
-  - [x] 装備組み合わせの英文法妥当性チェック
-  - [x] EquipmentGrammarCheckerとの統合
-  - [x] 英文法チェック付き装備機能
+- [x] Phase 4: 装備フィードバック強化
+  - [x] 装備組み合わせの妥当性チェック（後に撤廃）
+  - [x] 装備情報のフィードバック強化
 - [x] Phase 5: 統合テストとリファクタリング
   - [x] 全テストケース通過確認（819テスト）
   - [x] TypeScript型チェック通過
@@ -548,10 +501,10 @@
 - インベントリフェーズからの装備UI（equip/unequip/equipmentsコマンド）
 - ScrollableListを使用した直感的な装備選択
 - リアルタイムでのレベル・ステータスプレビュー
-- 英文法チェック統合による装備制限
+- （旧仕様）英文法チェック統合による装備制限
 - 41テストケースによる包括的品質保証
 
-**チェック済み**: インベントリ装備UIが動作し、英文法チェックが統合されること ✅
+**チェック済み**: インベントリ装備UIが動作し、装備管理が機能すること ✅
 **最終確認**: 2025-07-23 - プロジェクト7D完了
 
 ### ✅ Readline管理のPhase移譲リファクタリング

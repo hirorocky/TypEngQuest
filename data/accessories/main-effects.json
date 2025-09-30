@@ -1,0 +1,19 @@
+{
+  "mainEffects": [
+    {
+      "id": "glove",
+      "name": "glove",
+      "mainEffect": { "boost": "strength", "penalty": "willpower" }
+    },
+    {
+      "id": "ring",
+      "name": "ring",
+      "mainEffect": { "boost": "willpower", "penalty": "strength" }
+    },
+    {
+      "id": "necklace",
+      "name": "necklace",
+      "mainEffect": { "boost": "agility", "penalty": "fortune" }
+    }
+  ]
+}
