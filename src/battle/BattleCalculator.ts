@@ -9,6 +9,8 @@ import {
   SkillPotentialEffect,
   SkillEffect,
 } from './Skill';
+import { Player } from '../player/Player';
+import { Enemy } from './Enemy';
 
 /**
  * BattleCalculatorクラス - 戦闘に関する計算処理を管理する
@@ -143,85 +145,6 @@ export class BattleCalculator {
     return [...baseEffects, ...extra];
   }
   /**
-   * ダメージ計算
-   * @param attackPower 攻撃力
-   * @param defensePower 防御力
-   * @param skillPower 技の威力倍率
-   * @param isCritical クリティカルヒットかどうか
-   * @returns 計算されたダメージ（整数）
-   */
-  static calculateDamage(
-    attackPower: number,
-    defensePower: number,
-    skillPower: number,
-    isCritical: boolean = false
-  ): number {
-    // 基本ダメージ = (攻撃力 × 技倍率) - (敵防御力 × 0.5)
-    let baseDamage = attackPower * skillPower - defensePower * 0.5;
-
-    // 最小ダメージは1
-    baseDamage = Math.max(1, baseDamage);
-
-    // クリティカル時は1.2倍
-    if (isCritical) {
-      baseDamage *= 1.2;
-    }
-
-    // 整数に変換して返す
-    return Math.floor(baseDamage);
-  }
-
-  /**
-   * 命中率計算
-   * @param skillAccuracy 技の基本命中率
-   * @returns 最終的な命中率（%）
-   */
-  static calculateHitRate(skillAccuracy: number): number {
-    // 技の命中率をそのまま使用（agilityは参照しない）
-    return skillAccuracy;
-  }
-
-  /**
-   * 回避率計算
-   * @param agility 敏捷性ステータス
-   * @returns 回避率（%）
-   */
-  static calculateEvadeRate(agility: number): number {
-    // 基本回避率 = 5 + (敏捷性 / 20)%
-    let evadeRate = 5 + agility / 20;
-
-    // 最大30%、最小5%
-    evadeRate = Math.max(5, Math.min(30, evadeRate));
-
-    return evadeRate;
-  }
-
-  /**
-   * クリティカル率計算
-   * @param fortune 幸運ステータス
-   * @returns クリティカル率（%）
-   */
-  static calculateCriticalRate(fortune: number): number {
-    // 基本クリティカル率 = 5 + (幸運 / 15)%
-    let criticalRate = 5 + fortune / 15;
-
-    // 最大25%、最小5%
-    criticalRate = Math.max(5, Math.min(25, criticalRate));
-
-    return criticalRate;
-  }
-
-  /**
-   * 敏捷性ボーナス計算（タイピング用）
-   * @param agility 敏捷性ステータス
-   * @returns 敏捷性ボーナス倍率
-   */
-  static calculateAgilityBonus(agility: number): number {
-    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
-    return 1.0 + agility / 200;
-  }
-
-  /**
    * アイテムドロップ率計算
    * @param fortune 幸運ステータス
    * @param worldLevel ワールドレベル
@@ -238,21 +161,6 @@ export class BattleCalculator {
   }
 
   /**
-   * 実際の命中判定
-   * @param hitRate 命中率（%）
-   * @param evadeRate 回避率（%）
-   * @returns 命中したかどうか
-   */
-  static isHit(hitRate: number, evadeRate: number): boolean {
-    // 最終的な命中率 = 命中率 - 回避率
-    const finalHitRate = Math.max(1, hitRate - evadeRate);
-
-    // ランダム判定
-    const random = Math.random() * 100;
-    return random < finalHitRate;
-  }
-
-  /**
    * クリティカル判定
    * @param criticalRate クリティカル率（%）
    * @returns クリティカルが発生したかどうか
@@ -260,58 +168,6 @@ export class BattleCalculator {
   static isCritical(criticalRate: number): boolean {
     const random = Math.random() * 100;
     return random < criticalRate;
-  }
-
-  /**
-   * 状態異常付与判定
-   * @param baseChance 基本成功率（%）
-   * @param fortune 幸運ステータス
-   * @returns 状態異常が付与されたかどうか
-   */
-  static isStatusEffectApplied(baseChance: number, fortune: number): boolean {
-    // 成功率 = 基本成功率 + (幸運 / 20)
-    const successRate = Math.min(100, baseChance + fortune / 20);
-
-    const random = Math.random() * 100;
-    return random < successRate;
-  }
-
-  /**
-   * タイピング速度に基づく命中率ボーナス計算
-   * @param baseHitRate 基本命中率
-   * @param playerAgility プレイヤーの敏捷性ステータス
-   * @param speedRating タイピング速度評価
-   * @returns ボーナス適用後の命中率
-   */
-  static calculateTypingSpeedBonus(
-    baseHitRate: number,
-    playerAgility: number,
-    speedRating: SpeedRating
-  ): number {
-    // 敏捷性ボーナス = 1.0 + (敏捷性 / 200)
-    const agilityBonus = 1.0 + playerAgility / 200;
-
-    // タイピング速度による倍率
-    const speedMultiplier = {
-      Fast: 1.5, // 150%
-      Normal: 1.2, // 120%
-      Slow: 1.0, // 100%
-      Miss: 0.7, // 70%
-    }[speedRating];
-
-    const enhancedHitRate = baseHitRate * agilityBonus * speedMultiplier;
-    return Math.min(99, enhancedHitRate); // 最大99%
-  }
-
-  // calculateTypingAccuracyBonus は calculateSkillCriticalRate に統合
-
-  /**
-   * タイピング総合評価に基づく効果倍率計算
-   * @param totalRating タイピング総合評価（80, 100, 120, 150）
-   * @returns 効果倍率（0.8〜1.5）
-   */
-  static calculateTypingEffectMultiplier(totalRating: number): number {
-    return totalRating / 100;
   }
 
   /**
@@ -394,13 +250,33 @@ export class BattleCalculator {
   }
 
   /**
-   * 効果の成功判定
-   * @param successRate 効果の成功率（%）
+   * 効果の成功判定（ステータス影響込み）
+   * @param effect スキル効果
+   * @param attackerStats 攻撃者のステータス
+   * @param defenderStats 防御者のステータス（オプション）
    * @returns 成功したかどうか
    */
-  static isEffectSuccess(successRate: number): boolean {
+  static isEffectSuccess(
+    effect: SkillEffect,
+    attackerStats?: { strength: number; willpower: number; agility: number; fortune: number },
+    defenderStats?: { strength: number; willpower: number; agility: number; fortune: number }
+  ): boolean {
+    let finalSuccessRate = effect.successRate;
+
+    // ステータス影響を計算
+    if (effect.successRateInfluence && attackerStats && defenderStats) {
+      const attackerStat = attackerStats[effect.successRateInfluence.stat];
+      const defenderStat = defenderStats[effect.successRateInfluence.stat];
+      const statDiff = attackerStat - defenderStat;
+      const statBonus = statDiff * effect.successRateInfluence.rate;
+      finalSuccessRate += statBonus;
+    }
+
+    // 0-100%にクランプ
+    finalSuccessRate = Math.max(0, Math.min(100, finalSuccessRate));
+
     const random = Math.random() * 100;
-    return random < successRate;
+    return random < finalSuccessRate;
   }
 
   /**
@@ -460,18 +336,16 @@ export class BattleCalculator {
 
   /**
    * 3層判定システム全体を実行する
-   * @param skill 使用するスキル
-   * @param enemy 対象の敵
-   * @param playerStats プレイヤーのステータス
-   * @param typingScore タイピング評価（%）
+   * @param params パラメータオブジェクト
    * @returns 判定結果
    */
-  static executeThreeLayerJudgment(
-    skill: Skill,
-    target: BattleTarget,
-    attackerStats: { strength: number; willpower: number; agility: number; fortune: number },
-    options?: { speedRating?: SpeedRating; accuracyRating?: AccuracyRating }
-  ): {
+  static executeThreeLayerJudgment(params: {
+    skill: Skill;
+    target: BattleTarget;
+    attackerStats: { strength: number; willpower: number; agility: number; fortune: number };
+    defenderStats: { strength: number; willpower: number; agility: number; fortune: number };
+    options?: { speedRating?: SpeedRating; accuracyRating?: AccuracyRating };
+  }): {
     skillSuccess: boolean;
     evaded: boolean;
     effectResults: Array<{
@@ -483,6 +357,8 @@ export class BattleCalculator {
     finalDamage: number;
     isCritical: boolean;
   } {
+    const { skill, target, attackerStats, defenderStats, options } = params;
+
     const result = {
       skillSuccess: false,
       evaded: false,
@@ -506,7 +382,9 @@ export class BattleCalculator {
       speedRating
     );
 
-    result.skillSuccess = this.isEffectSuccess(skillSuccessRate);
+    // スキル成功率判定（固定値なので旧方式）
+    const skillSuccessRandom = Math.random() * 100;
+    result.skillSuccess = skillSuccessRandom < skillSuccessRate;
 
     if (!result.skillSuccess) {
       return result;
@@ -524,7 +402,8 @@ export class BattleCalculator {
     let anyEffectCritical = false;
 
     skill.effects.forEach((effect, index) => {
-      const effectSuccess = this.isEffectSuccess(effect.successRate);
+      // 効果成功判定（ステータス影響込み）
+      const effectSuccess = this.isEffectSuccess(effect, attackerStats, defenderStats);
 
       if (effectSuccess) {
         const power = this.calculateEffectPower(
@@ -568,5 +447,129 @@ export class BattleCalculator {
     result.isCritical = anyEffectCritical;
 
     return result;
+  }
+
+  /**
+   * Player/Enemyからステータスを抽出する（内部ヘルパー）
+   * @param target プレイヤーまたは敵
+   * @returns ステータスオブジェクト
+   */
+  private static extractStats(
+    target:
+      | Player
+      | Enemy
+      | { bodyStats?: { stats?: Record<string, number> }; stats?: Record<string, number> }
+  ): { strength: number; willpower: number; agility: number; fortune: number } {
+    // Playerインスタンスの場合
+    if (target instanceof Player) {
+      const stats = target.getStats();
+      return {
+        strength: stats.getStrength(),
+        willpower: stats.getWillpower(),
+        agility: stats.getAgility(),
+        fortune: stats.getFortune(),
+      };
+    }
+
+    // Enemyインスタンスの場合
+    if (target instanceof Enemy) {
+      return {
+        strength: target.stats.strength,
+        willpower: target.stats.willpower,
+        agility: target.stats.agility,
+        fortune: target.stats.fortune,
+      };
+    }
+
+    // モックオブジェクトの場合（テスト用）
+    // bodyStats.stats または stats プロパティから取得
+    if (target.bodyStats?.stats) {
+      return {
+        strength: target.bodyStats.stats.strength,
+        willpower: target.bodyStats.stats.willpower,
+        agility: target.bodyStats.stats.agility,
+        fortune: target.bodyStats.stats.fortune,
+      };
+    }
+
+    if (target.stats) {
+      return {
+        strength: target.stats.strength,
+        willpower: target.stats.willpower,
+        agility: target.stats.agility,
+        fortune: target.stats.fortune,
+      };
+    }
+
+    // デフォルト値（エラー回避用）
+    return { strength: 0, willpower: 0, agility: 0, fortune: 0 };
+  }
+
+  /**
+   * 効果のダメージ・回復範囲を計算する(敵の次回行動予告用)
+   * effectPowerベースのシンプルな計算に統一
+   * @param effect スキル効果
+   * @param attacker 攻撃者
+   * @returns ダメージ・回復の最小値と最大値
+   */
+  static calculateEffectDamageRange(
+    effect: SkillEffect,
+    attacker: Player | Enemy,
+    _defender: Player | Enemy,
+    _skill: Skill
+  ): { min: number; max: number } {
+    // 攻撃者のステータスを取得
+    const attackerStats = this.extractStats(attacker);
+
+    // 効果の威力を計算
+    const effectPower = this.calculateEffectPower(
+      effect.basePower,
+      attackerStats,
+      effect.powerInfluence
+    );
+
+    // 通常ダメージ(クリティカルなし)
+    const minDamage = effectPower;
+
+    // クリティカルダメージ(1.5倍)
+    const maxDamage = Math.floor(effectPower * 1.5);
+
+    return { min: minDamage, max: maxDamage };
+  }
+
+  /**
+   * 効果の成功率を計算する（ステータス影響込み）
+   * @param effect スキル効果
+   * @param attackerStats 攻撃者のステータス
+   * @param defenderStats 防御者のステータス
+   * @returns 成功率（%）
+   */
+  static calculateEffectSuccessRate(
+    effect: SkillEffect,
+    attackerStats?: { strength: number; willpower: number; agility: number; fortune: number },
+    defenderStats?: { strength: number; willpower: number; agility: number; fortune: number }
+  ): number {
+    let finalSuccessRate = effect.successRate;
+
+    // ステータス影響を計算
+    if (effect.successRateInfluence && attackerStats && defenderStats) {
+      const attackerStat = attackerStats[effect.successRateInfluence.stat];
+      const defenderStat = defenderStats[effect.successRateInfluence.stat];
+      const statDiff = attackerStat - defenderStat;
+      const statBonus = statDiff * effect.successRateInfluence.rate;
+      finalSuccessRate += statBonus;
+    }
+
+    // 0-100%にクランプ
+    return Math.max(0, Math.min(100, finalSuccessRate));
+  }
+
+  /**
+   * スキルの属性タイプを取得する
+   * @param skill スキル情報
+   * @returns 物理または魔法
+   */
+  static getEffectType(skill: Skill): 'physical' | 'magical' {
+    return skill.skillType;
   }
 }

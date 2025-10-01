@@ -60,7 +60,13 @@ export interface PlayerConfig {
     mpConsumption?: number;
   };
   worldLevel?: number;
-  equippedAccessories?: (AccessorySnapshot | null)[];
+  equippedAccessories?: ({
+    id: string;
+    name: string;
+    description: string;
+    type: string;
+    accessory: AccessorySnapshot;
+  } | null)[];
   inventory: {
     potionItems: Array<{
       id: string;

@@ -2,8 +2,10 @@ import { Phase } from '../core/Phase';
 import { CommandResult, PhaseType, PhaseTypes } from '../core/types';
 import { Battle } from '../battle/Battle';
 import { BattleActionExecutor } from '../battle/BattleActionExecutor';
+import { BattleCalculator } from '../battle/BattleCalculator';
 import { Player } from '../player/Player';
 import { Enemy } from '../battle/Enemy';
+import { Skill } from '../battle/Skill';
 import { World } from '../world/World';
 import { TabCompleter } from '../core/completion/TabCompleter';
 
@@ -387,6 +389,10 @@ export class BattlePhase extends Phase {
     console.log(`\n=== TURN ${this.battle.currentTurn}: PLAYER🗡️ ===`);
     await delay(250);
 
+    // 敵の次回行動を表示
+    const nextActionDisplay = this.displayEnemyNextAction();
+    nextActionDisplay.forEach(line => console.log(line));
+
     console.log('\nWhat will you do? (Type "help" for commands)');
   }
 
@@ -428,6 +434,107 @@ export class BattlePhase extends Phase {
 
     // プレイヤーターンに移行（入力待ち状態）
     this.battle.nextTurn();
+  }
+
+  /**
+   * 敵の次回行動を表示する
+   * @returns 表示文字列の配列
+   */
+  displayEnemyNextAction(): string[] {
+    if (!this.battle || !this.enemy) {
+      return [];
+    }
+
+    const output: string[] = [];
+    const nextSkillId = this.enemy.nextSkillId;
+
+    // 次回スキルを取得（なければ通常攻撃）
+    let nextSkill = this.enemy.skills.find(skill => skill.id === nextSkillId);
+    if (!nextSkill) {
+      nextSkill = Battle.getNormalAttackSkill();
+    }
+
+    output.push('');
+    output.push(`⚠️  Enemy's Next Action: [${nextSkill.name}]`);
+    output.push(`  Type: ${this.getAttributeName(nextSkill!)}`);
+
+    // スキル成功率を表示（タイピング評価範囲を考慮）
+    const enemyStats = {
+      strength: this.enemy.stats.strength,
+      willpower: this.enemy.stats.willpower,
+      agility: this.enemy.stats.agility,
+      fortune: this.enemy.stats.fortune,
+    };
+
+    // 敵はタイピング評価なし（Normal固定）
+    const skillSuccessRate = BattleCalculator.calculateSkillSuccessRate(
+      nextSkill.skillSuccessRate,
+      enemyStats.agility,
+      'Normal'
+    );
+    output.push(`  Skill Success Rate: ${skillSuccessRate.toFixed(1)}%`);
+
+    // 各効果について詳細を表示
+    nextSkill.effects.forEach((effect, index) => {
+      const effectNum = nextSkill!.effects.length > 1 ? ` ${index + 1}` : '';
+      output.push(`  Effect${effectNum}: ${this.getEffectTypeName(effect.type)}`);
+
+      // ダメージまたは回復量の範囲を表示
+      if (effect.type === 'damage' || effect.type === 'hp_heal') {
+        const damageRange = this.calculateEffectDamageRange(effect, nextSkill!);
+        output.push(
+          `    - Estimated ${effect.type === 'damage' ? 'Damage' : 'Heal'}: ${damageRange.min}-${damageRange.max}`
+        );
+      }
+
+      // 効果成功率を表示（ステータス影響込み）
+      const playerStats = this.player.getTotalStats();
+      const effectSuccessRate = BattleCalculator.calculateEffectSuccessRate(effect, enemyStats, {
+        strength: playerStats.strength,
+        willpower: playerStats.willpower,
+        agility: playerStats.agility,
+        fortune: playerStats.fortune,
+      });
+      output.push(`    - Effect Success Rate: ${effectSuccessRate.toFixed(1)}%`);
+    });
+
+    return output;
+  }
+
+  /**
+   * 効果タイプの名前を取得
+   */
+  private getEffectTypeName(type: string): string {
+    switch (type) {
+      case 'damage':
+        return 'Damage';
+      case 'hp_heal':
+        return 'Heal';
+      case 'add_status':
+        return 'Add Status';
+      case 'remove_status':
+        return 'Remove Status';
+      default:
+        return type;
+    }
+  }
+
+  /**
+   * 属性名を取得
+   */
+  private getAttributeName(skill: Skill): string {
+    const attributeType = skill.skillType;
+    return attributeType === 'physical' ? 'Physical' : 'Magical';
+  }
+
+  /**
+   * 効果のダメージ範囲を計算
+   */
+  private calculateEffectDamageRange(
+    effect: import('../battle/Skill').SkillEffect,
+    skill: Skill
+  ): { min: number; max: number } {
+    return BattleCalculator.calculateEffectDamageRange(effect, this.enemy!, this.player, skill);
   }
 
   private async endBattle(battleEnd: {

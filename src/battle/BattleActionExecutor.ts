@@ -134,17 +134,23 @@ export class BattleActionExecutor {
     const enemyTarget = this.buildEnemyTarget(enemy);
 
     // 新しい3層判定システムを使用
-    const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
-      effectiveSkill,
-      enemyTarget,
-      {
+    const judgmentResult = BattleCalculator.executeThreeLayerJudgment({
+      skill: effectiveSkill,
+      target: enemyTarget,
+      attackerStats: {
         strength: playerStats.strength,
         willpower: playerStats.willpower,
         agility: playerStats.agility,
         fortune: playerStats.fortune,
       },
-      { speedRating, accuracyRating }
-    );
+      defenderStats: {
+        strength: enemy.stats.strength,
+        willpower: enemy.stats.willpower,
+        agility: enemy.stats.agility,
+        fortune: enemy.stats.fortune,
+      },
+      options: { speedRating, accuracyRating },
+    });
 
     // MP回復処理
     const mpCharge = this.processMpRecovery(playerBodyStats, skill, typingResult);
@@ -227,17 +233,23 @@ export class BattleActionExecutor {
     };
 
     // 新しい3層判定システムを使用（敵視点）
-    const judgmentResult = BattleCalculator.executeThreeLayerJudgment(
+    const judgmentResult = BattleCalculator.executeThreeLayerJudgment({
       skill,
-      playerTarget, // プレイヤーをターゲットとして渡す
-      {
+      target: playerTarget, // プレイヤーをターゲットとして渡す
+      attackerStats: {
         strength: enemy.stats.strength,
         willpower: enemy.stats.willpower,
         agility: enemy.stats.agility,
         fortune: enemy.stats.fortune,
       },
-      { speedRating: 'Normal' } // 敵はタイピング評価なし（基準値）
-    );
+      defenderStats: {
+        strength: playerStats.strength,
+        willpower: playerStats.willpower,
+        agility: playerStats.agility,
+        fortune: playerStats.fortune,
+      },
+      options: { speedRating: 'Normal' }, // 敵はタイピング評価なし（基準値）
+    });
 
     // スキル失敗の場合
     if (!judgmentResult.skillSuccess) {

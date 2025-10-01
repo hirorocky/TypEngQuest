@@ -49,6 +49,7 @@ export interface EnemyJSON {
   magicalEvadeRate: number;
   skills: Skill[];
   drops: DropItem[];
+  nextSkillId: string | null;
 }
 
 /**
@@ -65,6 +66,7 @@ export class Enemy {
   private readonly _magicalEvadeRate: number;
   private readonly _skills: Skill[];
   private readonly _drops: DropItem[];
+  private _nextSkillId: string | null = null;
 
   /**
    * Enemyのコンストラクタ
@@ -166,6 +168,11 @@ export class Enemy {
     return [...this._drops];
   }
 
+  /** 次に使用するスキルのID */
+  get nextSkillId(): string | null {
+    return this._nextSkillId;
+  }
+
   /**
    * ダメージを受ける
    * @param damage ダメージ量
@@ -214,6 +221,21 @@ export class Enemy {
   }
 
   /**
+   * 次に使用する技を選択してnextSkillIdに設定する（AI）
+   * 技がない場合はnullを設定する
+   */
+  selectNextSkill(): void {
+    if (this._skills.length === 0) {
+      this._nextSkillId = null;
+      return;
+    }
+
+    // シンプルなAI: ランダムに選択
+    const randomIndex = Math.floor(Math.random() * this._skills.length);
+    this._nextSkillId = this._skills[randomIndex].id;
+  }
+
+  /**
    * JSONに変換する
    * @returns EnemyのJSON表現
    */
@@ -229,15 +251,18 @@ export class Enemy {
       magicalEvadeRate: this._magicalEvadeRate,
       skills: [...this._skills],
       drops: [...this._drops],
+      nextSkillId: this._nextSkillId,
     };
   }
 
   /**
-   * 現在のHPを設定する（fromJSON専用）
+   * 現在のHPとnextSkillIdを設定する（fromJSON専用）
    * @param currentHp 現在のHP
+   * @param nextSkillId 次に使用するスキルID
    */
-  private setCurrentStats(currentHp: number): void {
+  private setCurrentStats(currentHp: number, nextSkillId: string | null = null): void {
     this._currentHp = Math.max(0, Math.min(currentHp, this._stats.maxHp));
+    this._nextSkillId = nextSkillId;
   }
 
   /**
@@ -258,8 +283,8 @@ export class Enemy {
       drops: json.drops,
     });
 
-    // 現在のHPを復元
-    enemy.setCurrentStats(json.currentHp);
+    // 現在のHPとnextSkillIdを復元
+    enemy.setCurrentStats(json.currentHp, json.nextSkillId);
 
     return enemy;
   }

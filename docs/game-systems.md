@@ -327,13 +327,84 @@ docs/story.mdを参照
 * **行動予告**: 敵が次ターンに使用するスキルは、事前にプレイヤーへ開示される。
 * **MPシステム**: 敵キャラクターにはMPの概念は存在せず、スキルの使用に制限はない。
 
-### **2.9.2. EX Pointシステム**
+### **2.9.2. 敵の次回行動予告システム**
+
+プレイヤーターンの開始時に、敵が次ターンで使用するスキルの詳細情報が表示される。これにより、プレイヤーは戦略的な行動選択が可能となる。
+
+* **表示内容**:
+  * スキル名
+  * 各効果の詳細:
+    * 効果タイプ（ダメージ、回復、状態異常付与など）
+    * 属性（物理/魔法）
+    * 推定ダメージ範囲（最小値-最大値）
+    * 成功率（%）
+* **ダメージ範囲計算**: 効果の威力(effectPower)をベースに、クリティカル補正を考慮して算出される。
+  * 最小値 = effectPower
+  * 最大値 = floor(effectPower × 1.5)
+  * effectPower = basePower + (攻撃者のステータス × statInfluence.rate)
+* **タイミング**:
+  * 戦闘開始時に最初の行動が選択される
+  * 敵ターン終了後に次回行動が選択される
+  * プレイヤーターン開始時に予告が表示される
+
+### **2.9.3. バトル計算システム**
+
+#### **3層判定システム**
+
+スキル発動時は以下の3層判定を順に実行する:
+
+1. **Layer 1: スキル成功率判定**
+   ```
+   スキル成功率 = baseRate + タイピング速度ボーナス
+   タイピング速度ボーナス = (speedScore - 100) × typingInfluence
+   speedScore = { Fast: 150, Normal: 120, Slow: 80, Miss: 60 }
+   最終成功率 = max(0, min(200, スキル成功率))
+   ```
+
+2. **Layer 2: 回避判定**
+   ```
+   回避率 = (skillType === 'physical') ? target.physicalEvadeRate : target.magicalEvadeRate
+   判定: random(0-100) < 回避率
+   ```
+
+3. **Layer 3: 効果処理**
+   - 各効果(SkillEffect)について個別に成功判定とダメージ/回復計算を実行
+   - 効果成功判定（ステータス影響込み）:
+     ```
+     ステータス差 = 攻撃者のstat - 防御者のstat
+     ステータスボーナス = ステータス差 × successRateInfluence.rate
+     最終成功率 = effect.successRate + ステータスボーナス
+     最終成功率（クランプ後） = max(0, min(100, 最終成功率))
+     判定: random(0-100) < 最終成功率
+     ```
+   - 効果威力計算: `effectPower = basePower + (playerStats[statInfluence.stat] × statInfluence.rate)`
+   - クリティカル判定とダメージ算出:
+     ```
+     クリティカル率 = calculateSkillCriticalRate(skill.criticalRate, accuracyRating)
+     最終ダメージ/回復量 = isCritical ? floor(effectPower × 1.5) : effectPower
+     ```
+
+#### **タイピング評価の影響**
+
+* **速度評価(SpeedRating)**: スキル成功率に影響
+* **精度評価(AccuracyRating)**: クリティカル率とMP回復量に影響
+  * クリティカル率倍率: Perfect=2.0, Good=1.5, Poor=0.8
+  * MP回復量倍率: Perfect=1.5, Good=1.2, Poor=1.0
+
+#### **ステータス影響**
+
+* **strength**: 物理スキルの効果威力に影響
+* **willpower**: 魔法スキルの効果威力に影響
+* **agility**: プレイヤーの行動ポイント計算に使用 (3 + floor(agility / 50))、効果成功率にも影響可能（successRateInfluence設定時）
+* **fortune**: アイテムドロップ率に影響 (30 + fortune/10 + worldLevel×5, 上限80%, 下限30%)、効果成功率にも影響可能（successRateInfluence設定時）
+
+### **2.9.4. EX Pointシステム**
 
 * **獲得**: タイピングチャレンジの難易度と評価に応じて獲得。
 * **Focus Mode**: 全スキルの行動コストが1、MPコストが0となり、タイピング難易度が最低になる特殊モード。ただし、1回のミスでターンが強制終了する。
 * **Spark Mode**: 選択した1つのスキルを、1文字タイピングの成功回数に応じて連続発動させる特殊攻撃。
 
-### **2.9.3. EXポイント計算式**
+### **2.9.5. EXポイント計算式**
 
 floor(タイピング難易度 × 速度評価倍率 × 精度評価倍率)
 

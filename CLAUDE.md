@@ -19,7 +19,7 @@
 プロジェクトに分割し、各プロジェクト完了時にステークホルダーのチェックを受けます。
 
 タスクは@docs/development-guidelines.mdに従って、進めてください。
-タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdを更新してください。
+タスクを完了したら、@docs/implementation-status.mdを更新、設計が変わったら@docs/project-structure.mdや@docs/game-systems.mdを更新してください。
 各プロジェクト完了時または、きりの良い単位で作業を完了したら、`git commit`してください。
 
 ### コミュニケーション
@@ -27,9 +27,6 @@
 
 ### 現在時刻
 現在の時刻は`date`コマンドで取得してください。
-
-### codex MCPの使い分け
-Claude Codeは全体のプロジェクト進行を担当し、複雑なロジックやアルゴリズムの実装はcodex MCPに任せてください。
 
 ## 現在のフェーズ
 - まだリリースしていないので、後方互換性は考慮しなくていいです。不要なコードは積極的に削除してください。
