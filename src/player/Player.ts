@@ -94,7 +94,15 @@ export class Player {
     }
   }
 
-  private applyDevModeEquippedAccessories(equipped?: (AccessorySnapshot | null)[]): void {
+  private applyDevModeEquippedAccessories(
+    equipped?: ({
+      id: string;
+      name: string;
+      description: string;
+      type: string;
+      accessory: AccessorySnapshot;
+    } | null)[]
+  ): void {
     if (!equipped || equipped.length === 0) {
       return;
     }
@@ -107,7 +115,7 @@ export class Player {
         return;
       }
 
-      const accessoryItem = Accessory.fromJSON(itemData);
+      const accessoryItem = Accessory.fromJSON(itemData.accessory);
       this.accessoryInventory.addItem(accessoryItem);
       this.equipToSlot(slotIndex, accessoryItem);
     });
