@@ -2,6 +2,7 @@ node_modules
 coverage
 dist
 docs/story.md
+tmp
 
 .claude/settings.local.json
 .env

@@ -309,7 +309,7 @@ describe('BattlePhase', () => {
       expect(displayOutput.join('\n')).toContain('Damage');
       expect(displayOutput.join('\n')).toContain('Physical');
       expect(displayOutput.join('\n')).toContain('Estimated Damage');
-      expect(displayOutput.join('\n')).toContain('Success Rate: 95%');
+      expect(displayOutput.join('\n')).toContain('Effect Success Rate: 95.0%');
     });
 
     it('敵がスキルを持たない場合、通常攻撃を表示する', () => {
@@ -382,8 +382,8 @@ describe('BattlePhase', () => {
       expect(displayOutput.join('\n')).toContain('Combo Attack');
       expect(displayOutput.join('\n')).toContain('Effect 1');
       expect(displayOutput.join('\n')).toContain('Effect 2');
-      expect(displayOutput.join('\n')).toContain('Success Rate: 90%');
-      expect(displayOutput.join('\n')).toContain('Success Rate: 85%');
+      expect(displayOutput.join('\n')).toContain('Effect Success Rate: 90.0%');
+      expect(displayOutput.join('\n')).toContain('Effect Success Rate: 85.0%');
     });
 
     it('魔法スキルの場合、属性がMagicalと表示される', () => {

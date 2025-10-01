@@ -457,6 +457,22 @@ export class BattlePhase extends Phase {
     output.push('');
     output.push(`⚠️  Enemy's Next Action: [${nextSkill.name}]`);
 
+    // スキル成功率を表示（タイピング評価範囲を考慮）
+    const enemyStats = {
+      strength: this.enemy.stats.strength,
+      willpower: this.enemy.stats.willpower,
+      agility: this.enemy.stats.agility,
+      fortune: this.enemy.stats.fortune,
+    };
+
+    // 敵はタイピング評価なし（Normal固定）
+    const skillSuccessRate = BattleCalculator.calculateSkillSuccessRate(
+      nextSkill.skillSuccessRate,
+      enemyStats.agility,
+      'Normal'
+    );
+    output.push(`  Skill Success Rate: ${skillSuccessRate.toFixed(1)}%`);
+
     // 各効果について詳細を表示
     nextSkill.effects.forEach((effect, index) => {
       const effectNum = nextSkill!.effects.length > 1 ? ` ${index + 1}` : '';
@@ -472,8 +488,15 @@ export class BattlePhase extends Phase {
         );
       }
 
-      // 成功率を表示
-      output.push(`    - Success Rate: ${effect.successRate}%`);
+      // 効果成功率を表示（ステータス影響込み）
+      const playerStats = this.player.getTotalStats();
+      const effectSuccessRate = BattleCalculator.calculateEffectSuccessRate(effect, enemyStats, {
+        strength: playerStats.strength,
+        willpower: playerStats.willpower,
+        agility: playerStats.agility,
+        fortune: playerStats.fortune,
+      });
+      output.push(`    - Effect Success Rate: ${effectSuccessRate.toFixed(1)}%`);
     });
 
     return output;

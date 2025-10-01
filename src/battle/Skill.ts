@@ -57,6 +57,8 @@ export interface SkillEffect {
   powerInfluence?: StatInfluence;
   /** 効果の成功率（%） */
   successRate: number;
+  /** 成功率へのステータス影響（オプション） */
+  successRateInfluence?: StatInfluence;
   /** 状態異常ID（add_status/remove_status用） */
   statusId?: string;
   /** 効果が適用されるための条件（すべて満たす必要あり） */
