@@ -456,6 +456,7 @@ export class BattlePhase extends Phase {
 
     output.push('');
     output.push(`⚠️  Enemy's Next Action: [${nextSkill.name}]`);
+    output.push(`  Type: ${this.getAttributeName(nextSkill!)}`);
 
     // スキル成功率を表示（タイピング評価範囲を考慮）
     const enemyStats = {
@@ -476,9 +477,7 @@ export class BattlePhase extends Phase {
     // 各効果について詳細を表示
     nextSkill.effects.forEach((effect, index) => {
       const effectNum = nextSkill!.effects.length > 1 ? ` ${index + 1}` : '';
-      output.push(
-        `  Effect${effectNum}: ${this.getEffectTypeName(effect.type)} (${this.getAttributeName(nextSkill!)})`
-      );
+      output.push(`  Effect${effectNum}: ${this.getEffectTypeName(effect.type)}`);
 
       // ダメージまたは回復量の範囲を表示
       if (effect.type === 'damage' || effect.type === 'hp_heal') {
