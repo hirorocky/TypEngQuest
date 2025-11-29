@@ -8,8 +8,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/styles"
+	"hirorocky/type-battle/internal/typing"
 )
 
 // ==================== Task 10.3: バトル画面 ====================
@@ -50,6 +52,15 @@ type BattleScreen struct {
 	typingTimeLimit   time.Duration
 	selectedModuleIdx int
 
+	// タイピングシステム
+	challengeGenerator *typing.ChallengeGenerator
+	evaluator          *typing.Evaluator
+	typingState        *typing.ChallengeState
+
+	// バトルエンジン
+	battleEngine *battle.BattleEngine
+	battleState  *battle.BattleState
+
 	// 敵攻撃
 	nextEnemyAttack time.Time
 
@@ -62,16 +73,37 @@ type BattleScreen struct {
 
 // NewBattleScreen は新しいBattleScreenを作成します。
 func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agents []*domain.AgentModel) *BattleScreen {
+	// デフォルト辞書を作成
+	dictionary := createDefaultDictionary()
+
+	// 敵タイプリストを作成（BattleEngine用）
+	enemyTypes := []domain.EnemyType{enemy.Type}
+
 	screen := &BattleScreen{
-		enemy:          enemy,
-		player:         player,
-		equippedAgents: agents,
-		moduleSlots:    make([]ModuleSlot, 0),
-		selectedSlot:   0,
-		isTyping:       false,
-		styles:         styles.NewGameStyles(),
-		width:          120,
-		height:         40,
+		enemy:              enemy,
+		player:             player,
+		equippedAgents:     agents,
+		moduleSlots:        make([]ModuleSlot, 0),
+		selectedSlot:       0,
+		isTyping:           false,
+		challengeGenerator: typing.NewChallengeGenerator(dictionary),
+		evaluator:          typing.NewEvaluator(),
+		battleEngine:       battle.NewBattleEngine(enemyTypes),
+		styles:             styles.NewGameStyles(),
+		width:              120,
+		height:             40,
+	}
+
+	// バトル状態を初期化
+	screen.battleState = &battle.BattleState{
+		Enemy:          enemy,
+		Player:         player,
+		EquippedAgents: agents,
+		Level:          enemy.Level,
+		Stats: &battle.BattleStatistics{
+			StartTime: time.Now(),
+		},
+		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
 	// モジュールスロットを初期化
@@ -90,6 +122,33 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 	}
 
 	return screen
+}
+
+// createDefaultDictionary はデフォルトのタイピング辞書を作成します。
+func createDefaultDictionary() *typing.Dictionary {
+	return &typing.Dictionary{
+		// Easy: 3-6文字の単語
+		Easy: []string{
+			"cat", "dog", "run", "jump", "fire", "ice",
+			"hit", "cut", "heal", "buff", "fast", "slow",
+			"axe", "bow", "sun", "moon", "star", "wind",
+			"red", "blue", "gold", "dark", "life", "mana",
+		},
+		// Medium: 7-11文字の単語
+		Medium: []string{
+			"warrior", "monster", "defense", "attack",
+			"healing", "protect", "thunder", "blizzard",
+			"fireball", "critical", "accuracy", "strength",
+			"powerful", "ultimate", "blessing", "cursed",
+		},
+		// Hard: 12-20文字の単語
+		Hard: []string{
+			"thunderstorm", "annihilation", "resurrection",
+			"extraordinary", "invulnerable", "battleground",
+			"concentration", "determination", "acceleration",
+			"purification", "hallucination", "obliteration",
+		},
+	}
 }
 
 // Init は画面の初期化を行います。
@@ -139,8 +198,16 @@ func (s *BattleScreen) handleModuleSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		if len(s.moduleSlots) > 0 && s.moduleSlots[s.selectedSlot].IsReady() {
 			// モジュール選択 → タイピングチャレンジ開始
 			s.selectedModuleIdx = s.selectedSlot
-			// TODO: 実際のチャレンジテキストは外部から取得
-			s.StartTypingChallenge("example", 5*time.Second)
+			module := s.moduleSlots[s.selectedSlot].Module
+
+			// モジュールレベルに応じた難易度でチャレンジを生成
+			difficulty := typing.GetDifficultyForModuleLevel(module.Level)
+			timeLimit := typing.GetDefaultTimeLimit(difficulty)
+			challenge := s.challengeGenerator.Generate(difficulty, timeLimit)
+
+			if challenge != nil {
+				s.StartTypingChallenge(challenge.Text, challenge.TimeLimit)
+			}
 		}
 	case "esc":
 		// バトルを中断してホームに戻る（デバッグ用）
@@ -177,12 +244,24 @@ func (s *BattleScreen) StartTypingChallenge(text string, timeLimit time.Duration
 	s.typingMistakes = make([]int, 0)
 	s.typingStartTime = time.Now()
 	s.typingTimeLimit = timeLimit
+
+	// Evaluator用のチャレンジ状態を初期化
+	challenge := &typing.Challenge{
+		Text:      text,
+		TimeLimit: timeLimit,
+	}
+	s.typingState = s.evaluator.StartChallenge(challenge)
 }
 
 // ProcessTypingInput はタイピング入力を処理します。
 func (s *BattleScreen) ProcessTypingInput(r rune) {
 	if s.typingIndex >= len(s.typingText) {
 		return
+	}
+
+	// Evaluator経由で入力を処理
+	if s.typingState != nil {
+		s.typingState = s.evaluator.ProcessInput(s.typingState, r)
 	}
 
 	expected := rune(s.typingText[s.typingIndex])
@@ -201,13 +280,74 @@ func (s *BattleScreen) ProcessTypingInput(r rune) {
 // CompleteTyping はタイピングを完了します。
 func (s *BattleScreen) CompleteTyping() {
 	s.isTyping = false
-	s.message = "タイピング完了！"
-	// TODO: モジュール効果を適用
+
+	// タイピング結果を評価
+	var typingResult *typing.TypingResult
+	if s.typingState != nil {
+		typingResult = s.evaluator.CompleteChallenge(s.typingState)
+	} else {
+		// フォールバック用のデフォルト結果
+		typingResult = &typing.TypingResult{
+			Completed:      true,
+			WPM:            60.0,
+			Accuracy:       1.0,
+			SpeedFactor:    1.0,
+			AccuracyFactor: 1.0,
+		}
+	}
+
+	// バトル統計に記録
+	if s.battleEngine != nil && s.battleState != nil {
+		s.battleEngine.RecordTypingResult(s.battleState, typingResult)
+	}
+
+	// モジュール効果を適用
+	slot := s.moduleSlots[s.selectedModuleIdx]
+	agent := slot.Agent
+	module := slot.Module
+
+	var effectAmount int
+	if s.battleEngine != nil && s.battleState != nil {
+		effectAmount = s.battleEngine.ApplyModuleEffect(s.battleState, agent, module, typingResult)
+	}
+
+	// メッセージを表示
+	s.message = s.formatEffectMessage(module, effectAmount, typingResult)
+
+	// クールダウンを開始
+	s.StartCooldown(s.selectedModuleIdx, slot.CooldownTotal)
+
+	// フェーズ変化をチェック
+	if s.battleEngine != nil && s.battleState != nil {
+		if s.battleEngine.CheckPhaseTransition(s.battleState) {
+			s.message += " [敵が強化フェーズに突入！]"
+		}
+	}
+}
+
+// formatEffectMessage は効果メッセージをフォーマットします。
+func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult) string {
+	var action string
+	switch module.Category {
+	case domain.PhysicalAttack, domain.MagicAttack:
+		action = fmt.Sprintf("%dダメージを与えた！", effectAmount)
+	case domain.Heal:
+		action = fmt.Sprintf("%d回復した！", effectAmount)
+	case domain.Buff:
+		action = fmt.Sprintf("%sを付与した！", module.Name)
+	case domain.Debuff:
+		action = fmt.Sprintf("敵に%sを付与した！", module.Name)
+	default:
+		action = "効果を発動した！"
+	}
+
+	return fmt.Sprintf("%s (WPM:%.0f 正確性:%.0f%%)", action, result.WPM, result.Accuracy*100)
 }
 
 // CancelTyping はタイピングをキャンセルします。
 func (s *BattleScreen) CancelTyping() {
 	s.isTyping = false
+	s.typingState = nil
 	s.message = "タイピングキャンセル"
 }
 
