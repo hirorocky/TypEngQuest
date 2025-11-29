@@ -113,13 +113,6 @@ func TestSettingsNavigation(t *testing.T) {
 
 // ==================== ヘルパー関数 ====================
 
-// SettingsData は設定データです。
-type SettingsData struct {
-	Keybinds    map[string]string
-	SoundVolume int
-	Difficulty  string
-}
-
 func createTestSettings() *SettingsData {
 	return &SettingsData{
 		Keybinds: map[string]string{

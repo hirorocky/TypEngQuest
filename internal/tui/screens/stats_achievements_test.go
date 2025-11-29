@@ -157,37 +157,6 @@ func TestStatsAchievementsRender(t *testing.T) {
 
 // ==================== ヘルパー関数 ====================
 
-// TypingStatsData はタイピング統計データです。
-type TypingStatsData struct {
-	MaxWPM               int
-	AverageWPM           float64
-	PerfectAccuracyCount int
-	TotalCharacters      int
-}
-
-// BattleStatsData はバトル統計データです。
-type BattleStatsData struct {
-	TotalBattles    int
-	Wins            int
-	Losses          int
-	MaxLevelReached int
-}
-
-// AchievementData は実績データです。
-type AchievementData struct {
-	ID          string
-	Name        string
-	Description string
-	Achieved    bool
-}
-
-// StatsTestData はテスト用の統計データです。
-type StatsTestData struct {
-	TypingStats  TypingStatsData
-	BattleStats  BattleStatsData
-	Achievements []AchievementData
-}
-
 func createTestStatsData() *StatsTestData {
 	return &StatsTestData{
 		TypingStats: TypingStatsData{

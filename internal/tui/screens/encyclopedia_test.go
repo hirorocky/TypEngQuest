@@ -174,25 +174,6 @@ func TestEncyclopediaRender(t *testing.T) {
 
 // ==================== ヘルパー関数 ====================
 
-// EncyclopediaTestData はテスト用の図鑑データです。
-type EncyclopediaTestData struct {
-	AllCoreTypes         []domain.CoreType
-	AllModuleTypes       []ModuleTypeInfo
-	AllEnemyTypes        []domain.EnemyType
-	AcquiredCoreTypes    []string
-	AcquiredModuleTypes  []string
-	EncounteredEnemies   []string
-}
-
-// ModuleTypeInfo はモジュールタイプ情報です。
-type ModuleTypeInfo struct {
-	ID          string
-	Name        string
-	Category    domain.ModuleCategory
-	Level       int
-	Description string
-}
-
 func createTestEncyclopediaData() *EncyclopediaTestData {
 	coreTypes := []domain.CoreType{
 		{ID: "all_rounder", Name: "オールラウンダー", StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
