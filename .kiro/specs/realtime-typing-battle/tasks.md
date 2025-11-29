@@ -3,7 +3,7 @@
 ## Tasks
 
 - [ ] 1. プロジェクト基盤とアプリケーションエントリーポイント構築
-- [ ] 1.1 (P) Goプロジェクト初期化とBubbletea/Lipgloss/Bubbles依存関係セットアップ
+- [x] 1.1 (P) Goプロジェクト初期化とBubbletea/Lipgloss/Bubbles依存関係セットアップ
   - Goモジュール初期化とgo.mod作成
   - Bubbletea、Lipgloss、Bubblesライブラリの依存追加
   - 基本的なディレクトリ構造の作成（cmd、internal、data）
