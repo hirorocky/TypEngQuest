@@ -84,6 +84,11 @@ For each selected task, follow Kent Beck's TDD cycle:
 5. **MARK COMPLETE**:
    - Update checkbox from `- [ ]` to `- [x]` in tasks.md
 
+6. **COMMIT**:
+   - After completing each task, create a git commit
+   - Use a descriptive commit message summarizing the implemented functionality
+   - Include task number in commit message (e.g., "feat(domain): implement CoreModel - Task 2.1")
+
 ## Critical Constraints
 - **TDD Mandatory**: Tests MUST be written before implementation code
 - **Task Scope**: Implement only what the specific task requires

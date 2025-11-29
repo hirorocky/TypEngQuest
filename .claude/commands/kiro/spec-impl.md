@@ -45,6 +45,11 @@ File patterns to read:
 - .kiro/steering/*.md
 
 TDD Mode: strict (test-first)
+
+Git Commit Policy:
+- 各タスク完了時に必ずgit commitを行うこと
+- コミットメッセージ形式: "feat($1): [タスク番号] タスクの説明"
+- 例: "feat(auth): [1.1] ユーザー認証APIの実装"
 """
 )
 ```
