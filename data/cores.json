@@ -1,0 +1,36 @@
+{
+  "core_types": [
+    {
+      "id": "attack_balance",
+      "name": "攻撃バランス",
+      "allowed_tags": ["physical_low", "magic_low"],
+      "stat_weights": {"STR": 1.2, "MAG": 1.0, "SPD": 0.8, "LUK": 1.0},
+      "passive_skill_id": "balanced_stance",
+      "min_drop_level": 1
+    },
+    {
+      "id": "paladin",
+      "name": "パラディン",
+      "allowed_tags": ["buff_low", "buff_mid", "heal_low"],
+      "stat_weights": {"STR": 1.0, "MAG": 1.1, "SPD": 0.7, "LUK": 1.2},
+      "passive_skill_id": "holy_protection",
+      "min_drop_level": 5
+    },
+    {
+      "id": "all_rounder",
+      "name": "オールラウンダー",
+      "allowed_tags": ["physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"],
+      "stat_weights": {"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+      "passive_skill_id": "adaptability",
+      "min_drop_level": 1
+    },
+    {
+      "id": "healer",
+      "name": "ヒーラー",
+      "allowed_tags": ["heal_low", "heal_mid", "heal_high"],
+      "stat_weights": {"STR": 0.5, "MAG": 1.5, "SPD": 0.8, "LUK": 1.2},
+      "passive_skill_id": "healing_aura",
+      "min_drop_level": 3
+    }
+  ]
+}
