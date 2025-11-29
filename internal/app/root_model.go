@@ -4,6 +4,7 @@ package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/screens"
 )
 
@@ -35,6 +36,9 @@ type RootModel struct {
 	// styles はアプリケーションのlipglossスタイルを保持します
 	styles *Styles
 
+	// inventory はゲームのインベントリを管理します
+	inventory *MockInventory
+
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
 	battleSelectScreen      *screens.BattleSelectScreen
@@ -49,16 +53,108 @@ type RootModel struct {
 // 初期シーンはSceneHome（ホーム画面）に設定されます。
 func NewRootModel() *RootModel {
 	gameState := NewGameState()
+	inventory := NewMockInventory()
 
-	// 各画面を初期化
+	// ホーム画面を初期化
 	homeScreen := screens.NewHomeScreen(0, nil)
 
+	// バトル選択画面を初期化
+	battleSelectScreen := screens.NewBattleSelectScreen(
+		gameState.MaxLevelReached,
+		inventory.GetEquippedAgents(),
+	)
+
+	// エージェント管理画面を初期化
+	agentManagementScreen := screens.NewAgentManagementScreen(inventory)
+
+	// 図鑑画面を初期化
+	encyclopediaData := createDefaultEncyclopediaData()
+	encyclopediaScreen := screens.NewEncyclopediaScreen(encyclopediaData)
+
+	// 統計・実績画面を初期化
+	statsData := createDefaultStatsData()
+	statsAchievementsScreen := screens.NewStatsAchievementsScreen(statsData)
+
+	// 設定画面を初期化
+	settingsData := createDefaultSettingsData()
+	settingsScreen := screens.NewSettingsScreen(settingsData)
+
 	return &RootModel{
-		ready:        false,
-		currentScene: SceneHome,
-		gameState:    gameState,
-		styles:       NewStyles(),
-		homeScreen:   homeScreen,
+		ready:                   false,
+		currentScene:            SceneHome,
+		gameState:               gameState,
+		styles:                  NewStyles(),
+		inventory:               inventory,
+		homeScreen:              homeScreen,
+		battleSelectScreen:      battleSelectScreen,
+		agentManagementScreen:   agentManagementScreen,
+		encyclopediaScreen:      encyclopediaScreen,
+		statsAchievementsScreen: statsAchievementsScreen,
+		settingsScreen:          settingsScreen,
+	}
+}
+
+// createDefaultEncyclopediaData は図鑑のデフォルトデータを作成します。
+func createDefaultEncyclopediaData() *screens.EncyclopediaTestData {
+	coreTypes := GetAllCoreTypes()
+	moduleTypes := []screens.ModuleTypeInfo{
+		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: domain.PhysicalAttack, Level: 1, Description: "基本的な物理攻撃"},
+		{ID: "magic_lv1", Name: "魔法攻撃Lv1", Category: domain.MagicAttack, Level: 1, Description: "基本的な魔法攻撃"},
+		{ID: "heal_lv1", Name: "回復Lv1", Category: domain.Heal, Level: 1, Description: "基本的な回復"},
+		{ID: "buff_lv1", Name: "バフLv1", Category: domain.Buff, Level: 1, Description: "味方を強化"},
+		{ID: "debuff_lv1", Name: "デバフLv1", Category: domain.Debuff, Level: 1, Description: "敵を弱体化"},
+	}
+	enemyTypes := GetAllEnemyTypes()
+
+	return &screens.EncyclopediaTestData{
+		AllCoreTypes:        coreTypes,
+		AllModuleTypes:      moduleTypes,
+		AllEnemyTypes:       enemyTypes,
+		AcquiredCoreTypes:   []string{"all_rounder"},
+		AcquiredModuleTypes: []string{"physical_lv1"},
+		EncounteredEnemies:  []string{},
+	}
+}
+
+// createDefaultStatsData は統計のデフォルトデータを作成します。
+func createDefaultStatsData() *screens.StatsTestData {
+	return &screens.StatsTestData{
+		TypingStats: screens.TypingStatsData{
+			MaxWPM:               0,
+			AverageWPM:           0,
+			PerfectAccuracyCount: 0,
+			TotalCharacters:      0,
+		},
+		BattleStats: screens.BattleStatsData{
+			TotalBattles:    0,
+			Wins:            0,
+			Losses:          0,
+			MaxLevelReached: 0,
+		},
+		Achievements: []screens.AchievementData{
+			{ID: "wpm_50", Name: "タイピスト見習い", Description: "WPM 50達成", Achieved: false},
+			{ID: "wpm_80", Name: "タイピスト", Description: "WPM 80達成", Achieved: false},
+			{ID: "wpm_100", Name: "タイピストマスター", Description: "WPM 100達成", Achieved: false},
+			{ID: "enemy_10", Name: "初陣の勇者", Description: "敵10体撃破", Achieved: false},
+			{ID: "enemy_50", Name: "熟練の戦士", Description: "敵50体撃破", Achieved: false},
+			{ID: "level_10", Name: "Lv10到達", Description: "レベル10に到達", Achieved: false},
+		},
+	}
+}
+
+// createDefaultSettingsData は設定のデフォルトデータを作成します。
+func createDefaultSettingsData() *screens.SettingsData {
+	return &screens.SettingsData{
+		Keybinds: map[string]string{
+			"select":     "enter",
+			"cancel":     "esc",
+			"move_up":    "k",
+			"move_down":  "j",
+			"move_left":  "h",
+			"move_right": "l",
+		},
+		SoundVolume: 100,
+		Difficulty:  "normal",
 	}
 }
 
@@ -119,8 +215,33 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// 画面からのシーン遷移要求を処理
 		m.handleScreenSceneChange(msg.Scene)
 		return m, nil
+
+	case screens.StartBattleMsg:
+		// バトル開始メッセージを処理
+		m.startBattle(msg.Level)
+		return m, nil
 	}
 	return m, nil
+}
+
+// startBattle はバトルを開始します。
+func (m *RootModel) startBattle(level int) {
+	// 敵を生成
+	enemy := GenerateEnemy(level)
+
+	// 装備中エージェントを取得
+	agents := m.inventory.GetEquippedAgents()
+
+	// プレイヤーを作成
+	player := domain.NewPlayer()
+	player.RecalculateHP(agents)
+	player.PrepareForBattle()
+
+	// バトル画面を作成
+	m.battleScreen = screens.NewBattleScreen(enemy, player, agents)
+
+	// シーンを切り替え
+	m.currentScene = SceneBattle
 }
 
 // forwardToCurrentScene は現在のシーンにメッセージを転送します。
