@@ -20,6 +20,9 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 ## Development Guidelines
 - Think in English, generate responses in Japanese. All Markdown content written to project files (e.g., requirements.md, design.md, tasks.md, research.md, validation reports) MUST be written in the target language configured for this specification (see spec.json.language).
 
+## Coding Style
+- コード内のコメントは日本語で記述すること
+
 ## Minimal Workflow
 - Phase 0 (optional): `/kiro:steering`, `/kiro:steering-custom`
 - Phase 1 (Specification):

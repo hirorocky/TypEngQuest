@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TestStylesInitialization verifies that lipgloss styles can be created
+// TestStylesInitialization はlipglossスタイルが作成できることを検証します
 func TestStylesInitialization(t *testing.T) {
 	style := lipgloss.NewStyle().
 		Bold(true).
@@ -17,7 +17,7 @@ func TestStylesInitialization(t *testing.T) {
 	}
 }
 
-// TestTitleStyle verifies the title style configuration
+// TestTitleStyle はタイトルスタイルの設定を検証します
 func TestTitleStyle(t *testing.T) {
 	styles := NewStyles()
 	if styles.Title.GetBold() != true {
@@ -25,16 +25,16 @@ func TestTitleStyle(t *testing.T) {
 	}
 }
 
-// TestErrorStyle verifies the error style has red foreground
+// TestErrorStyle はエラースタイルが赤い前景色を持つことを検証します
 func TestErrorStyle(t *testing.T) {
 	styles := NewStyles()
-	// Error style should exist
+	// エラースタイルが存在すること
 	_ = styles.Error
 }
 
-// TestSuccessStyle verifies the success style has green foreground
+// TestSuccessStyle は成功スタイルが緑の前景色を持つことを検証します
 func TestSuccessStyle(t *testing.T) {
 	styles := NewStyles()
-	// Success style should exist
+	// 成功スタイルが存在すること
 	_ = styles.Success
 }

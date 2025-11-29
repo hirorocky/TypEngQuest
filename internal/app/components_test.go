@@ -6,12 +6,12 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 )
 
-// TestBubblesProgressAvailable verifies that bubbles progress component is available
+// TestBubblesProgressAvailable はbubblesプログレスコンポーネントが利用可能であることを検証します
 func TestBubblesProgressAvailable(t *testing.T) {
-	// Create a progress bar to verify bubbles is properly imported
+	// bubblesが正しくインポートされていることを確認するためにプログレスバーを作成
 	p := progress.New(progress.WithDefaultGradient())
 	if p.Width == 0 {
-		// Width can be 0 by default, that's fine
+		// デフォルトでWidthが0でも問題ない
 	}
-	// Just verify it can be created without panic
+	// パニックなしで作成できることを確認
 }

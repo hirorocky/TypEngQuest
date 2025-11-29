@@ -1,4 +1,4 @@
-// Package main is the entry point for the TypeBattle terminal typing battle game.
+// Package main は TypeBattleターミナルタイピングバトルゲームのエントリーポイントです。
 package main
 
 import (

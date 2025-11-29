@@ -6,21 +6,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// TestMinTerminalWidth verifies the minimum terminal width constant
+// TestMinTerminalWidth は最小ターミナル幅の定数を検証します
 func TestMinTerminalWidth(t *testing.T) {
 	if MinTerminalWidth != 120 {
 		t.Errorf("MinTerminalWidth should be 120, got %d", MinTerminalWidth)
 	}
 }
 
-// TestMinTerminalHeight verifies the minimum terminal height constant
+// TestMinTerminalHeight は最小ターミナル高さの定数を検証します
 func TestMinTerminalHeight(t *testing.T) {
 	if MinTerminalHeight != 40 {
 		t.Errorf("MinTerminalHeight should be 40, got %d", MinTerminalHeight)
 	}
 }
 
-// TestCheckTerminalSize_ValidSize verifies that valid terminal size passes validation
+// TestCheckTerminalSize_ValidSize は有効なターミナルサイズが検証を通過することを検証します
 func TestCheckTerminalSize_ValidSize(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -43,7 +43,7 @@ func TestCheckTerminalSize_ValidSize(t *testing.T) {
 	}
 }
 
-// TestCheckTerminalSize_InvalidSize verifies that invalid terminal size returns error
+// TestCheckTerminalSize_InvalidSize は無効なターミナルサイズがエラーを返すことを検証します
 func TestCheckTerminalSize_InvalidSize(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -69,7 +69,7 @@ func TestCheckTerminalSize_InvalidSize(t *testing.T) {
 	}
 }
 
-// TestTerminalSizeError_Width verifies error contains width information
+// TestTerminalSizeError_Width はエラーに幅の情報が含まれることを検証します
 func TestTerminalSizeError_Width(t *testing.T) {
 	err := CheckTerminalSize(100, 40)
 	if err == nil {
@@ -89,7 +89,7 @@ func TestTerminalSizeError_Width(t *testing.T) {
 	}
 }
 
-// TestTerminalSizeError_Height verifies error contains height information
+// TestTerminalSizeError_Height はエラーに高さの情報が含まれることを検証します
 func TestTerminalSizeError_Height(t *testing.T) {
 	err := CheckTerminalSize(120, 30)
 	if err == nil {
@@ -109,7 +109,7 @@ func TestTerminalSizeError_Height(t *testing.T) {
 	}
 }
 
-// TestTerminalSizeError_Error verifies error message format
+// TestTerminalSizeError_Error はエラーメッセージの形式を検証します
 func TestTerminalSizeError_Error(t *testing.T) {
 	err := CheckTerminalSize(100, 30)
 	if err == nil {
@@ -121,13 +121,13 @@ func TestTerminalSizeError_Error(t *testing.T) {
 		t.Error("error message should not be empty")
 	}
 
-	// Error message should mention both dimensions and requirements
+	// エラーメッセージは両方のサイズと要件を含むべき
 	if len(msg) < 20 {
 		t.Error("error message should be descriptive")
 	}
 }
 
-// TestNewTerminalState creates a new terminal state
+// TestNewTerminalState は新しいターミナル状態を作成します
 func TestNewTerminalState(t *testing.T) {
 	state := NewTerminalState(120, 40)
 	if state == nil {
@@ -141,7 +141,7 @@ func TestNewTerminalState(t *testing.T) {
 	}
 }
 
-// TestTerminalState_IsValid verifies terminal size validation method
+// TestTerminalState_IsValid はターミナルサイズ検証メソッドを検証します
 func TestTerminalState_IsValid(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -165,7 +165,7 @@ func TestTerminalState_IsValid(t *testing.T) {
 	}
 }
 
-// TestTerminalState_WarningMessage returns appropriate warning for invalid size
+// TestTerminalState_WarningMessage は無効なサイズに対して適切な警告を返します
 func TestTerminalState_WarningMessage(t *testing.T) {
 	state := NewTerminalState(100, 30)
 	msg := state.WarningMessage()
@@ -175,7 +175,7 @@ func TestTerminalState_WarningMessage(t *testing.T) {
 	}
 }
 
-// TestTerminalState_WarningMessage_ValidSize returns empty for valid size
+// TestTerminalState_WarningMessage_ValidSize は有効なサイズに対して空を返します
 func TestTerminalState_WarningMessage_ValidSize(t *testing.T) {
 	state := NewTerminalState(120, 40)
 	msg := state.WarningMessage()
@@ -185,11 +185,11 @@ func TestTerminalState_WarningMessage_ValidSize(t *testing.T) {
 	}
 }
 
-// TestModel_HandleWindowSizeMsg verifies model updates terminal state on WindowSizeMsg
+// TestModel_HandleWindowSizeMsg はWindowSizeMsgでモデルがターミナル状態を更新することを検証します
 func TestModel_HandleWindowSizeMsg(t *testing.T) {
 	model := New()
 
-	// Simulate receiving WindowSizeMsg
+	// WindowSizeMsgの受信をシミュレート
 	msg := tea.WindowSizeMsg{Width: 150, Height: 50}
 	updatedModel, _ := model.Update(msg)
 
@@ -210,11 +210,11 @@ func TestModel_HandleWindowSizeMsg(t *testing.T) {
 	}
 }
 
-// TestModel_ShowsWarningOnSmallTerminal verifies warning is shown when terminal is too small
+// TestModel_ShowsWarningOnSmallTerminal はターミナルが小さすぎる場合に警告が表示されることを検証します
 func TestModel_ShowsWarningOnSmallTerminal(t *testing.T) {
 	model := New()
 
-	// Simulate receiving small WindowSizeMsg
+	// 小さいWindowSizeMsgの受信をシミュレート
 	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
 	updatedModel, _ := model.Update(msg)
 
@@ -224,13 +224,13 @@ func TestModel_ShowsWarningOnSmallTerminal(t *testing.T) {
 	}
 
 	view := m.View()
-	// View should contain warning about terminal size
+	// ビューにターミナルサイズに関する警告が含まれるべき
 	if len(view) == 0 {
 		t.Error("View should not be empty")
 	}
 }
 
-// TestModel_Ready_AfterValidWindowSize verifies model is ready after valid window size
+// TestModel_Ready_AfterValidWindowSize は有効なウィンドウサイズ後にモデルが準備完了することを検証します
 func TestModel_Ready_AfterValidWindowSize(t *testing.T) {
 	model := New()
 
@@ -247,7 +247,7 @@ func TestModel_Ready_AfterValidWindowSize(t *testing.T) {
 	}
 }
 
-// TestModel_NotReady_AfterInvalidWindowSize verifies model is not ready when terminal is too small
+// TestModel_NotReady_AfterInvalidWindowSize はターミナルが小さすぎる場合にモデルが準備完了でないことを検証します
 func TestModel_NotReady_AfterInvalidWindowSize(t *testing.T) {
 	model := New()
 
@@ -264,11 +264,11 @@ func TestModel_NotReady_AfterInvalidWindowSize(t *testing.T) {
 	}
 }
 
-// TestModel_WindowSizeChange verifies model handles terminal resize correctly
+// TestModel_WindowSizeChange はモデルがターミナルリサイズを正しく処理することを検証します
 func TestModel_WindowSizeChange(t *testing.T) {
 	model := New()
 
-	// First set valid size
+	// まず有効なサイズを設定
 	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	m := updatedModel.(*Model)
@@ -277,7 +277,7 @@ func TestModel_WindowSizeChange(t *testing.T) {
 		t.Error("Model should be ready after first valid WindowSizeMsg")
 	}
 
-	// Then resize to invalid
+	// その後、無効なサイズにリサイズ
 	msg2 := tea.WindowSizeMsg{Width: 100, Height: 30}
 	updatedModel2, _ := m.Update(msg2)
 	m2 := updatedModel2.(*Model)
@@ -287,13 +287,13 @@ func TestModel_WindowSizeChange(t *testing.T) {
 	}
 }
 
-// TestFormatRecommendedSize formats the recommended size message correctly
+// TestFormatRecommendedSize は推奨サイズメッセージを正しくフォーマットします
 func TestFormatRecommendedSize(t *testing.T) {
 	msg := FormatRecommendedSize()
 	if msg == "" {
 		t.Error("FormatRecommendedSize should not return empty string")
 	}
-	// Should contain the minimum dimensions
+	// 最小サイズを含むべき
 	if len(msg) < 10 {
 		t.Error("FormatRecommendedSize should be descriptive")
 	}

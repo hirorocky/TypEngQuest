@@ -34,8 +34,8 @@ func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles incoming messages and updates the model state.
-// It returns the updated model and any commands to execute.
+// Update は受信メッセージを処理し、モデルの状態を更新します。
+// 更新されたモデルと実行するコマンドを返します。
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -52,14 +52,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the current state of the application as a string.
+// View はアプリケーションの現在の状態を文字列としてレンダリングします。
 func (m *Model) View() string {
-	// If terminal state hasn't been set yet, show loading message
+	// ターミナル状態がまだ設定されていない場合、ローディングメッセージを表示
 	if m.terminalState == nil {
 		return m.styles.Subtle.Render("Loading...")
 	}
 
-	// If terminal is too small, show warning message
+	// ターミナルが小さすぎる場合、警告メッセージを表示
 	if !m.terminalState.IsValid() {
 		warning := m.styles.Warning.Render(m.terminalState.WarningMessage())
 		quitHint := m.styles.Subtle.Render("Press q to quit.")

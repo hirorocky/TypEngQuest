@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Colors defines the color palette for the application
+// Colors はアプリケーションのカラーパレットを定義します
 var (
 	ColorPrimary   = lipgloss.Color("#7D56F4")
 	ColorSecondary = lipgloss.Color("#FAFAFA")
@@ -14,7 +14,7 @@ var (
 	ColorSubtle    = lipgloss.Color("#6C6C6C")
 )
 
-// Styles holds all the lipgloss styles used throughout the application
+// Styles はアプリケーション全体で使用されるすべてのlipglossスタイルを保持します
 type Styles struct {
 	Title   lipgloss.Style
 	Error   lipgloss.Style
@@ -24,7 +24,7 @@ type Styles struct {
 	Border  lipgloss.Style
 }
 
-// NewStyles creates and returns a new Styles instance with default configurations
+// NewStyles はデフォルト設定で新しいStylesインスタンスを作成して返します
 func NewStyles() *Styles {
 	return &Styles{
 		Title: lipgloss.NewStyle().
