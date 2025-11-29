@@ -4,6 +4,7 @@ package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"hirorocky/type-battle/internal/tui/screens"
 )
 
 // RootModel は TypeBattleゲームのメインアプリケーション状態を表します。
@@ -34,24 +35,30 @@ type RootModel struct {
 	// styles はアプリケーションのlipglossスタイルを保持します
 	styles *Styles
 
-	// TODO: 以下のフィールドは今後のタスクで実装予定
-	// homeScreen         *HomeScreen
-	// battleScreen       *BattleScreen
-	// agentScreen        *AgentManagementScreen
-	// encyclopediaScreen *EncyclopediaScreen
-	// achievementScreen  *AchievementScreen
-	// settingsScreen     *SettingsScreen
-	// errorMessage       string
+	// 各シーンの画面インスタンス
+	homeScreen              *screens.HomeScreen
+	battleSelectScreen      *screens.BattleSelectScreen
+	battleScreen            *screens.BattleScreen
+	agentManagementScreen   *screens.AgentManagementScreen
+	encyclopediaScreen      *screens.EncyclopediaScreen
+	statsAchievementsScreen *screens.StatsAchievementsScreen
+	settingsScreen          *screens.SettingsScreen
 }
 
 // NewRootModel はデフォルトの初期状態で新しいRootModelを作成します。
 // 初期シーンはSceneHome（ホーム画面）に設定されます。
 func NewRootModel() *RootModel {
+	gameState := NewGameState()
+
+	// 各画面を初期化
+	homeScreen := screens.NewHomeScreen(0, nil)
+
 	return &RootModel{
 		ready:        false,
 		currentScene: SceneHome,
-		gameState:    NewGameState(),
+		gameState:    gameState,
 		styles:       NewStyles(),
+		homeScreen:   homeScreen,
 	}
 }
 
@@ -70,6 +77,7 @@ func (m *RootModel) Init() tea.Cmd {
 // - tea.WindowSizeMsg: ターミナルサイズの変更
 // - tea.KeyMsg: キーボード入力（終了操作など）
 // - ChangeSceneMsg: シーン遷移要求
+// - screens.ChangeSceneMsg: 各画面からのシーン遷移要求
 //
 // 更新されたモデルと実行するコマンドを返します。
 func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -77,27 +85,100 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.terminalState = NewTerminalState(msg.Width, msg.Height)
 		m.ready = m.terminalState.IsValid()
+		// 各画面にもサイズ変更を通知
+		if m.homeScreen != nil {
+			m.homeScreen.Update(msg)
+		}
 		return m, nil
 
 	case tea.KeyMsg:
-		return m.handleKeyMsg(msg)
+		// グローバルなキー処理
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		case "esc":
+			// ホーム画面以外ならホームに戻る
+			if m.currentScene != SceneHome {
+				m.currentScene = SceneHome
+				return m, nil
+			}
+		case "q":
+			// ホーム画面でのみ終了可能
+			if m.currentScene == SceneHome {
+				return m, tea.Quit
+			}
+		}
+		// 各画面に入力を転送
+		return m.forwardToCurrentScene(msg)
 
 	case ChangeSceneMsg:
 		m.currentScene = msg.Scene
+		return m, nil
+
+	case screens.ChangeSceneMsg:
+		// 画面からのシーン遷移要求を処理
+		m.handleScreenSceneChange(msg.Scene)
 		return m, nil
 	}
 	return m, nil
 }
 
-// handleKeyMsg はキーボード入力を処理します。
-func (m *RootModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "q", "ctrl+c":
-		// 終了操作: tea.Quitを返してプログラムを終了
-		// Bubbleteaの tea.WithAltScreen() により自動的にターミナル状態が復元される
-		return m, tea.Quit
+// forwardToCurrentScene は現在のシーンにメッセージを転送します。
+func (m *RootModel) forwardToCurrentScene(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch m.currentScene {
+	case SceneHome:
+		if m.homeScreen != nil {
+			_, cmd = m.homeScreen.Update(msg)
+		}
+	case SceneBattleSelect:
+		if m.battleSelectScreen != nil {
+			_, cmd = m.battleSelectScreen.Update(msg)
+		}
+	case SceneBattle:
+		if m.battleScreen != nil {
+			_, cmd = m.battleScreen.Update(msg)
+		}
+	case SceneAgentManagement:
+		if m.agentManagementScreen != nil {
+			_, cmd = m.agentManagementScreen.Update(msg)
+		}
+	case SceneEncyclopedia:
+		if m.encyclopediaScreen != nil {
+			_, cmd = m.encyclopediaScreen.Update(msg)
+		}
+	case SceneAchievement:
+		if m.statsAchievementsScreen != nil {
+			_, cmd = m.statsAchievementsScreen.Update(msg)
+		}
+	case SceneSettings:
+		if m.settingsScreen != nil {
+			_, cmd = m.settingsScreen.Update(msg)
+		}
 	}
-	return m, nil
+
+	return m, cmd
+}
+
+// handleScreenSceneChange は画面からのシーン遷移要求を処理します。
+func (m *RootModel) handleScreenSceneChange(sceneName string) {
+	switch sceneName {
+	case "home":
+		m.currentScene = SceneHome
+	case "battle_select":
+		m.currentScene = SceneBattleSelect
+	case "battle":
+		m.currentScene = SceneBattle
+	case "agent_management":
+		m.currentScene = SceneAgentManagement
+	case "encyclopedia":
+		m.currentScene = SceneEncyclopedia
+	case "stats_achievements":
+		m.currentScene = SceneAchievement
+	case "settings":
+		m.currentScene = SceneSettings
+	}
 }
 
 // View はアプリケーションの現在の状態を文字列としてレンダリングします。
@@ -120,22 +201,53 @@ func (m *RootModel) View() string {
 }
 
 // renderCurrentScene は現在のシーンに応じたビューを返します。
-// 将来的には各シーンコンポーネントのViewメソッドを呼び出します。
 func (m *RootModel) renderCurrentScene() string {
-	title := m.styles.Title.Render("TypeBattle - Terminal Typing Battle Game")
-	sceneInfo := m.styles.Subtle.Render("Current scene: " + m.currentScene.String())
-	quitHint := m.styles.Subtle.Render("Press q to quit.")
+	switch m.currentScene {
+	case SceneHome:
+		if m.homeScreen != nil {
+			return m.homeScreen.View()
+		}
+	case SceneBattleSelect:
+		if m.battleSelectScreen != nil {
+			return m.battleSelectScreen.View()
+		}
+		return m.renderPlaceholder("バトル選択画面")
+	case SceneBattle:
+		if m.battleScreen != nil {
+			return m.battleScreen.View()
+		}
+		return m.renderPlaceholder("バトル画面")
+	case SceneAgentManagement:
+		if m.agentManagementScreen != nil {
+			return m.agentManagementScreen.View()
+		}
+		return m.renderPlaceholder("エージェント管理画面")
+	case SceneEncyclopedia:
+		if m.encyclopediaScreen != nil {
+			return m.encyclopediaScreen.View()
+		}
+		return m.renderPlaceholder("図鑑画面")
+	case SceneAchievement:
+		if m.statsAchievementsScreen != nil {
+			return m.statsAchievementsScreen.View()
+		}
+		return m.renderPlaceholder("統計・実績画面")
+	case SceneSettings:
+		if m.settingsScreen != nil {
+			return m.settingsScreen.View()
+		}
+		return m.renderPlaceholder("設定画面")
+	}
 
-	// TODO: 各シーンのビューをここで切り替える
-	// switch m.currentScene {
-	// case SceneHome:
-	//     return m.homeScreen.View()
-	// case SceneBattle:
-	//     return m.battleScreen.View()
-	// ...
-	// }
+	return m.renderPlaceholder("不明な画面")
+}
 
-	return title + "\n\n" + sceneInfo + "\n\n" + quitHint
+// renderPlaceholder はプレースホルダー画面をレンダリングします。
+func (m *RootModel) renderPlaceholder(name string) string {
+	title := m.styles.Title.Render("TypeBattle")
+	info := m.styles.Subtle.Render(name + " (準備中)")
+	hint := m.styles.Subtle.Render("Esc: ホームに戻る  q: 終了")
+	return title + "\n\n" + info + "\n\n" + hint
 }
 
 // GameState はゲーム全体の状態への参照を返します。
