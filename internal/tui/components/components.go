@@ -1,0 +1,471 @@
+// Package components はTUI共通コンポーネントを提供します。
+// メニュー、入力フィールド、情報パネルなどの再利用可能なUIコンポーネントを含みます。
+package components
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	"hirorocky/type-battle/internal/tui/styles"
+)
+
+// ==================== メニューコンポーネント ====================
+
+// MenuItem はメニューアイテムを表します。
+type MenuItem struct {
+	Label    string
+	Value    string
+	Disabled bool
+}
+
+// Menu はメニューコンポーネントを表します。
+type Menu struct {
+	Items         []MenuItem
+	SelectedIndex int
+	Title         string
+	styles        *styles.GameStyles
+}
+
+// NewMenu は新しいMenuを作成します。
+func NewMenu(items []MenuItem) *Menu {
+	return &Menu{
+		Items:         items,
+		SelectedIndex: 0,
+		styles:        styles.NewGameStyles(),
+	}
+}
+
+// NewMenuWithTitle はタイトル付きMenuを作成します。
+func NewMenuWithTitle(title string, items []MenuItem) *Menu {
+	m := NewMenu(items)
+	m.Title = title
+	return m
+}
+
+// MoveUp は選択を上に移動します。
+func (m *Menu) MoveUp() {
+	m.SelectedIndex--
+	if m.SelectedIndex < 0 {
+		m.SelectedIndex = len(m.Items) - 1
+	}
+	// 無効なアイテムをスキップ
+	for m.Items[m.SelectedIndex].Disabled && m.SelectedIndex > 0 {
+		m.SelectedIndex--
+	}
+}
+
+// MoveDown は選択を下に移動します。
+func (m *Menu) MoveDown() {
+	m.SelectedIndex++
+	if m.SelectedIndex >= len(m.Items) {
+		m.SelectedIndex = 0
+	}
+	// 無効なアイテムをスキップ
+	for m.Items[m.SelectedIndex].Disabled && m.SelectedIndex < len(m.Items)-1 {
+		m.SelectedIndex++
+	}
+}
+
+// GetSelected は現在選択されているアイテムを返します。
+func (m *Menu) GetSelected() MenuItem {
+	if m.SelectedIndex < 0 || m.SelectedIndex >= len(m.Items) {
+		return MenuItem{}
+	}
+	return m.Items[m.SelectedIndex]
+}
+
+// Render はメニューをレンダリングします。
+func (m *Menu) Render() string {
+	var builder strings.Builder
+
+	if m.Title != "" {
+		titleStyle := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(styles.ColorPrimary).
+			MarginBottom(1)
+		builder.WriteString(titleStyle.Render(m.Title))
+		builder.WriteString("\n\n")
+	}
+
+	for i, item := range m.Items {
+		var style lipgloss.Style
+		prefix := "  "
+
+		if i == m.SelectedIndex {
+			style = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(styles.ColorPrimary)
+			prefix = "> "
+		} else if item.Disabled {
+			style = lipgloss.NewStyle().
+				Foreground(styles.ColorSubtle)
+		} else {
+			style = lipgloss.NewStyle().
+				Foreground(styles.ColorSecondary)
+		}
+
+		builder.WriteString(style.Render(prefix + item.Label))
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
+}
+
+// ==================== 入力フィールドコンポーネント ====================
+
+// InputMode は入力モードを表します。
+type InputMode int
+
+const (
+	// InputModeText はテキスト入力モードです。
+	InputModeText InputMode = iota
+	// InputModeNumeric は数値入力モードです。
+	InputModeNumeric
+)
+
+// InputField は入力フィールドコンポーネントを表します。
+type InputField struct {
+	Value       string
+	Placeholder string
+	InputMode   InputMode
+	MinValue    int
+	MaxValue    int
+	MaxLength   int
+	Focused     bool
+	Error       string
+	styles      *styles.GameStyles
+}
+
+// NewInputField は新しいInputFieldを作成します。
+func NewInputField(placeholder string) *InputField {
+	return &InputField{
+		Value:       "",
+		Placeholder: placeholder,
+		InputMode:   InputModeText,
+		MinValue:    0,
+		MaxValue:    0,
+		MaxLength:   100,
+		Focused:     true,
+		styles:      styles.NewGameStyles(),
+	}
+}
+
+// HandleInput は文字入力を処理します。
+func (f *InputField) HandleInput(r rune) {
+	// 最大長チェック
+	if f.MaxLength > 0 && len(f.Value) >= f.MaxLength {
+		return
+	}
+
+	// 入力モードに応じたフィルタリング
+	if f.InputMode == InputModeNumeric {
+		if r < '0' || r > '9' {
+			return
+		}
+	}
+
+	f.Value += string(r)
+	f.Error = "" // 入力時にエラーをクリア
+}
+
+// HandleBackspace はバックスペースを処理します。
+func (f *InputField) HandleBackspace() {
+	if len(f.Value) > 0 {
+		f.Value = f.Value[:len(f.Value)-1]
+		f.Error = ""
+	}
+}
+
+// Clear は入力をクリアします。
+func (f *InputField) Clear() {
+	f.Value = ""
+	f.Error = ""
+}
+
+// GetIntValue は数値として値を取得します。
+func (f *InputField) GetIntValue() (int, error) {
+	if f.Value == "" {
+		return 0, fmt.Errorf("値が入力されていません")
+	}
+	return strconv.Atoi(f.Value)
+}
+
+// Validate は入力を検証します。
+func (f *InputField) Validate() (bool, string) {
+	if f.Value == "" {
+		return false, "値を入力してください"
+	}
+
+	if f.InputMode == InputModeNumeric {
+		val, err := strconv.Atoi(f.Value)
+		if err != nil {
+			return false, "有効な数値を入力してください"
+		}
+
+		if f.MinValue > 0 && val < f.MinValue {
+			return false, fmt.Sprintf("%d以上の値を入力してください", f.MinValue)
+		}
+
+		if f.MaxValue > 0 && val > f.MaxValue {
+			return false, fmt.Sprintf("%d以下の値を入力してください", f.MaxValue)
+		}
+	}
+
+	return true, ""
+}
+
+// Render は入力フィールドをレンダリングします。
+func (f *InputField) Render(width int) string {
+	var displayValue string
+	if f.Value == "" && !f.Focused {
+		displayValue = f.Placeholder
+	} else {
+		displayValue = f.Value
+	}
+
+	if f.Focused {
+		displayValue += "_"
+	}
+
+	var style lipgloss.Style
+	if f.Error != "" {
+		style = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(styles.ColorDamage).
+			Padding(0, 1).
+			Width(width)
+	} else if f.Focused {
+		style = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(styles.ColorPrimary).
+			Padding(0, 1).
+			Width(width)
+	} else {
+		style = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(styles.ColorSubtle).
+			Padding(0, 1).
+			Width(width)
+	}
+
+	result := style.Render(displayValue)
+
+	if f.Error != "" {
+		errorStyle := lipgloss.NewStyle().Foreground(styles.ColorDamage)
+		result += "\n" + errorStyle.Render(f.Error)
+	}
+
+	return result
+}
+
+// ==================== 情報パネルコンポーネント ====================
+
+// InfoItem は情報パネルのアイテムを表します。
+type InfoItem struct {
+	Label string
+	Value string
+}
+
+// InfoPanel は情報パネルコンポーネントを表します。
+type InfoPanel struct {
+	Title  string
+	Items  []InfoItem
+	styles *styles.GameStyles
+}
+
+// NewInfoPanel は新しいInfoPanelを作成します。
+func NewInfoPanel(title string) *InfoPanel {
+	return &InfoPanel{
+		Title:  title,
+		Items:  make([]InfoItem, 0),
+		styles: styles.NewGameStyles(),
+	}
+}
+
+// AddItem はアイテムを追加します。
+func (p *InfoPanel) AddItem(label, value string) {
+	p.Items = append(p.Items, InfoItem{
+		Label: label,
+		Value: value,
+	})
+}
+
+// ClearItems はアイテムをクリアします。
+func (p *InfoPanel) ClearItems() {
+	p.Items = make([]InfoItem, 0)
+}
+
+// Render は情報パネルをレンダリングします。
+func (p *InfoPanel) Render(width int) string {
+	var builder strings.Builder
+
+	for _, item := range p.Items {
+		labelStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorSubtle)
+		valueStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorSecondary).
+			Bold(true)
+
+		builder.WriteString(labelStyle.Render(item.Label + ": "))
+		builder.WriteString(valueStyle.Render(item.Value))
+		builder.WriteString("\n")
+	}
+
+	content := strings.TrimSuffix(builder.String(), "\n")
+	return p.styles.RenderBoxWithTitle(p.Title, content, width)
+}
+
+// ==================== リストコンポーネント ====================
+
+// ListItem はリストアイテムを表します。
+type ListItem struct {
+	ID          string
+	Title       string
+	Description string
+	Selected    bool
+	Disabled    bool
+}
+
+// List はリストコンポーネントを表します。
+type List struct {
+	Items         []ListItem
+	SelectedIndex int
+	Title         string
+	MaxVisible    int
+	ScrollOffset  int
+	styles        *styles.GameStyles
+}
+
+// NewList は新しいListを作成します。
+func NewList(title string, maxVisible int) *List {
+	return &List{
+		Items:         make([]ListItem, 0),
+		SelectedIndex: 0,
+		Title:         title,
+		MaxVisible:    maxVisible,
+		ScrollOffset:  0,
+		styles:        styles.NewGameStyles(),
+	}
+}
+
+// AddItem はアイテムを追加します。
+func (l *List) AddItem(item ListItem) {
+	l.Items = append(l.Items, item)
+}
+
+// ClearItems はアイテムをクリアします。
+func (l *List) ClearItems() {
+	l.Items = make([]ListItem, 0)
+	l.SelectedIndex = 0
+	l.ScrollOffset = 0
+}
+
+// MoveUp は選択を上に移動します。
+func (l *List) MoveUp() {
+	if len(l.Items) == 0 {
+		return
+	}
+	l.SelectedIndex--
+	if l.SelectedIndex < 0 {
+		l.SelectedIndex = len(l.Items) - 1
+	}
+	l.updateScroll()
+}
+
+// MoveDown は選択を下に移動します。
+func (l *List) MoveDown() {
+	if len(l.Items) == 0 {
+		return
+	}
+	l.SelectedIndex++
+	if l.SelectedIndex >= len(l.Items) {
+		l.SelectedIndex = 0
+	}
+	l.updateScroll()
+}
+
+// updateScroll はスクロール位置を更新します。
+func (l *List) updateScroll() {
+	if l.SelectedIndex < l.ScrollOffset {
+		l.ScrollOffset = l.SelectedIndex
+	}
+	if l.SelectedIndex >= l.ScrollOffset+l.MaxVisible {
+		l.ScrollOffset = l.SelectedIndex - l.MaxVisible + 1
+	}
+}
+
+// GetSelected は選択されているアイテムを返します。
+func (l *List) GetSelected() *ListItem {
+	if l.SelectedIndex < 0 || l.SelectedIndex >= len(l.Items) {
+		return nil
+	}
+	return &l.Items[l.SelectedIndex]
+}
+
+// Render はリストをレンダリングします。
+func (l *List) Render(width int) string {
+	var builder strings.Builder
+
+	if l.Title != "" {
+		titleStyle := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(styles.ColorPrimary).
+			MarginBottom(1)
+		builder.WriteString(titleStyle.Render(l.Title))
+		builder.WriteString("\n\n")
+	}
+
+	if len(l.Items) == 0 {
+		emptyStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorSubtle).
+			Italic(true)
+		builder.WriteString(emptyStyle.Render("(アイテムがありません)"))
+		return builder.String()
+	}
+
+	// 表示範囲を計算
+	endIndex := l.ScrollOffset + l.MaxVisible
+	if endIndex > len(l.Items) {
+		endIndex = len(l.Items)
+	}
+
+	for i := l.ScrollOffset; i < endIndex; i++ {
+		item := l.Items[i]
+		var style lipgloss.Style
+		prefix := "  "
+
+		if i == l.SelectedIndex {
+			style = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(styles.ColorPrimary)
+			prefix = "> "
+		} else if item.Disabled {
+			style = lipgloss.NewStyle().
+				Foreground(styles.ColorSubtle)
+		} else {
+			style = lipgloss.NewStyle().
+				Foreground(styles.ColorSecondary)
+		}
+
+		builder.WriteString(style.Render(prefix + item.Title))
+		if item.Description != "" {
+			descStyle := lipgloss.NewStyle().
+				Foreground(styles.ColorSubtle)
+			builder.WriteString(descStyle.Render(" - " + item.Description))
+		}
+		builder.WriteString("\n")
+	}
+
+	// スクロールインジケーター
+	if len(l.Items) > l.MaxVisible {
+		indicator := fmt.Sprintf("(%d/%d)", l.SelectedIndex+1, len(l.Items))
+		indicatorStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorSubtle)
+		builder.WriteString("\n")
+		builder.WriteString(indicatorStyle.Render(indicator))
+	}
+
+	return builder.String()
+}
