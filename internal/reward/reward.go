@@ -340,9 +340,8 @@ func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domai
 		selectedType := eligibleTypes[c.rng.Intn(len(eligibleTypes))]
 
 		// Requirement 12.12: モジュールをインスタンス化
+		// モジュールはマスタデータIDを使用（インスタンス固有データがないためUUID不要）
 		module := selectedType.ToDomain()
-		// IDを新規生成（同じ定義から複数のインスタンスを作成可能）
-		module.ID = uuid.New().String()
 		dropped = append(dropped, module)
 	}
 

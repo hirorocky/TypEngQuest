@@ -630,11 +630,15 @@ func (s *AgentManagementScreen) renderCoreListItems() string {
 	var items []string
 	for i, core := range s.coreList {
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
+			prefix = "> "
 		}
 		item := fmt.Sprintf("%s Lv.%d (%s)", core.Name, core.Level, core.Type.Name)
-		items = append(items, style.Render(item))
+		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
 }
@@ -696,11 +700,15 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 	var items []string
 	for i, module := range s.moduleList {
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
+			prefix = "> "
 		}
 		item := fmt.Sprintf("%s [%s] Lv.%d", module.Name, module.Category.String(), module.Level)
-		items = append(items, style.Render(item))
+		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
 }
@@ -953,7 +961,9 @@ func (s *AgentManagementScreen) renderSynthesisCoreListItems() string {
 		style := lipgloss.NewStyle()
 		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
 		item := fmt.Sprintf("%s Lv.%d (%s)", core.Name, core.Level, core.Type.Name)
@@ -976,7 +986,9 @@ func (s *AgentManagementScreen) renderSynthesisModuleListItems() string {
 		prefix := "  "
 
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		} else if !compatible || alreadySelected {
 			style = style.Foreground(styles.ColorSubtle)
@@ -1080,7 +1092,9 @@ func (s *AgentManagementScreen) renderEquipAgentList() string {
 		prefix := "  "
 
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
 

@@ -895,7 +895,8 @@ func (s *BattleScreen) renderModuleList() string {
 		if i == s.selectedSlot {
 			style = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(styles.ColorPrimary)
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		} else if !slot.IsReady() {
 			style = lipgloss.NewStyle().
@@ -1220,7 +1221,9 @@ func (s *BattleScreen) renderAgentArea() string {
 			// エージェント名とレベル
 			nameStyle := lipgloss.NewStyle().Bold(true)
 			if isSelected {
-				nameStyle = nameStyle.Foreground(styles.ColorPrimary)
+				nameStyle = nameStyle.
+					Foreground(styles.ColorSelectedFg).
+					Background(styles.ColorSelectedBg)
 			}
 			cardContent.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)))
 			cardContent.WriteString("\n\n")
@@ -1236,7 +1239,10 @@ func (s *BattleScreen) renderAgentArea() string {
 				// モジュール名とクールダウン
 				var moduleStyle lipgloss.Style
 				if isModuleSelected {
-					moduleStyle = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+					moduleStyle = lipgloss.NewStyle().
+						Bold(true).
+						Foreground(styles.ColorSelectedFg).
+						Background(styles.ColorSelectedBg)
 				} else if !slot.IsReady() {
 					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 				} else {

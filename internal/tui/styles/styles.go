@@ -21,8 +21,10 @@ const (
 // カラーパレット
 var (
 	// 基本色
-	ColorPrimary   = lipgloss.Color("#7D56F4")
-	ColorSecondary = lipgloss.Color("#FAFAFA")
+	ColorPrimary    = lipgloss.Color("#9B7BF7")
+	ColorSecondary  = lipgloss.Color("#FAFAFA")
+	ColorSelectedBg = lipgloss.Color("#5E43A4") // 選択中アイテムの背景（暗い紫）
+	ColorSelectedFg = lipgloss.Color("#FFFFFF") // 選択中アイテムの前景（白）
 
 	// HP色分け（Requirement 18.2）
 	ColorHPHigh   = lipgloss.Color("#04B575") // 緑（50%以上）
@@ -65,11 +67,11 @@ type GameStyles struct {
 
 // BoxStyle はボックス描画のスタイルを保持します。
 type BoxStyle struct {
-	Border          lipgloss.Border
-	BorderStyle     lipgloss.Style
-	TitleStyle      lipgloss.Style
-	ContentPadding  int
-	ContentMargin   int
+	Border           lipgloss.Border
+	BorderStyle      lipgloss.Style
+	TitleStyle       lipgloss.Style
+	ContentPadding   int
+	ContentMargin    int
 	BorderForeground lipgloss.Color
 }
 

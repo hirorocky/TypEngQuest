@@ -208,11 +208,15 @@ func (s *SettingsScreen) renderKeybindSettings() string {
 
 	for i, item := range items {
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
+			prefix = "> "
 			if s.editing {
 				style = style.Bold(true).Foreground(styles.ColorWarning)
 			} else {
-				style = style.Bold(true).Foreground(styles.ColorPrimary)
+				style = style.Bold(true).
+					Foreground(styles.ColorSelectedFg).
+					Background(styles.ColorSelectedBg)
 			}
 		}
 
@@ -221,7 +225,7 @@ func (s *SettingsScreen) renderKeybindSettings() string {
 			keyDisplay = "_"
 		}
 
-		line := fmt.Sprintf("%-12s : %s", item.Label, keyDisplay)
+		line := fmt.Sprintf("%s%-12s : %s", prefix, item.Label, keyDisplay)
 		itemLines = append(itemLines, style.Render(line))
 	}
 

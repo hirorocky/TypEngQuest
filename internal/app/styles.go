@@ -6,7 +6,7 @@ import (
 
 // Colors はアプリケーションのカラーパレットを定義します
 var (
-	ColorPrimary   = lipgloss.Color("#7D56F4")
+	ColorPrimary   = lipgloss.Color("#9B7BF7")
 	ColorSecondary = lipgloss.Color("#FAFAFA")
 	ColorSuccess   = lipgloss.Color("#04B575")
 	ColorError     = lipgloss.Color("#FF4672")

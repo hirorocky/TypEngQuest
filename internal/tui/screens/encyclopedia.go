@@ -266,15 +266,17 @@ func (s *EncyclopediaScreen) renderCategoryTabs() string {
 	var tabItems []string
 	for i, cat := range categories {
 		style := lipgloss.NewStyle().Padding(0, 2)
+		prefix := "  "
 		if EncyclopediaCategory(i) == s.currentCategory {
+			prefix = "> "
 			style = style.
 				Bold(true).
-				Foreground(styles.ColorPrimary).
-				Background(lipgloss.Color("236"))
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 		} else {
 			style = style.Foreground(styles.ColorSubtle)
 		}
-		tabItems = append(tabItems, style.Render(cat))
+		tabItems = append(tabItems, style.Render(prefix+cat))
 	}
 
 	tabBar := lipgloss.JoinHorizontal(lipgloss.Center, tabItems...)
@@ -338,8 +340,12 @@ func (s *EncyclopediaScreen) renderCoreList() string {
 	for i, ct := range s.data.AllCoreTypes {
 		acquired := s.isCoreTypeAcquired(ct.ID)
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
+			prefix = "> "
 		} else if !acquired {
 			style = style.Foreground(styles.ColorSubtle)
 		}
@@ -349,7 +355,7 @@ func (s *EncyclopediaScreen) renderCoreList() string {
 		if acquired {
 			status = " [獲得済み]"
 		}
-		items = append(items, style.Render(displayName+status))
+		items = append(items, style.Render(prefix+displayName+status))
 	}
 	return strings.Join(items, "\n")
 }
@@ -417,8 +423,12 @@ func (s *EncyclopediaScreen) renderModuleList() string {
 	for i, mt := range s.data.AllModuleTypes {
 		acquired := s.isModuleTypeAcquired(mt.ID)
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
+			prefix = "> "
 		} else if !acquired {
 			style = style.Foreground(styles.ColorSubtle)
 		}
@@ -428,7 +438,7 @@ func (s *EncyclopediaScreen) renderModuleList() string {
 		if acquired {
 			status = " [獲得済み]"
 		}
-		items = append(items, style.Render(displayName+status))
+		items = append(items, style.Render(prefix+displayName+status))
 	}
 	return strings.Join(items, "\n")
 }
@@ -496,8 +506,12 @@ func (s *EncyclopediaScreen) renderEnemyList() string {
 	for i, et := range s.data.AllEnemyTypes {
 		encountered := s.isEnemyEncountered(et.ID)
 		style := lipgloss.NewStyle()
+		prefix := "  "
 		if i == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			style = style.Bold(true).
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
+			prefix = "> "
 		} else if !encountered {
 			style = style.Foreground(styles.ColorSubtle)
 		}
@@ -507,7 +521,7 @@ func (s *EncyclopediaScreen) renderEnemyList() string {
 		if encountered {
 			status = " [遭遇済み]"
 		}
-		items = append(items, style.Render(displayName+status))
+		items = append(items, style.Render(prefix+displayName+status))
 	}
 	return strings.Join(items, "\n")
 }

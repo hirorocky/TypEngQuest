@@ -96,7 +96,8 @@ func (m *Menu) Render() string {
 		if i == m.SelectedIndex {
 			style = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(styles.ColorPrimary)
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		} else if item.Disabled {
 			style = lipgloss.NewStyle().
@@ -439,7 +440,8 @@ func (l *List) Render(width int) string {
 		if i == l.SelectedIndex {
 			style = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(styles.ColorPrimary)
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		} else if item.Disabled {
 			style = lipgloss.NewStyle().

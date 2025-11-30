@@ -174,15 +174,17 @@ func (s *StatsAchievementsScreen) renderTabBar() string {
 	var tabItems []string
 	for i, tab := range tabs {
 		style := lipgloss.NewStyle().Padding(0, 2)
+		prefix := "  "
 		if StatsTab(i) == s.currentTab {
+			prefix = "> "
 			style = style.
 				Bold(true).
-				Foreground(styles.ColorPrimary).
-				Background(lipgloss.Color("236"))
+				Foreground(styles.ColorSelectedFg).
+				Background(styles.ColorSelectedBg)
 		} else {
 			style = style.Foreground(styles.ColorSubtle)
 		}
-		tabItems = append(tabItems, style.Render(tab))
+		tabItems = append(tabItems, style.Render(prefix+tab))
 	}
 
 	tabBar := lipgloss.JoinHorizontal(lipgloss.Center, tabItems...)
