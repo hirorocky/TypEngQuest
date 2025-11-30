@@ -233,3 +233,54 @@ func TestHomeScreenHasKeyHelp(t *testing.T) {
 		t.Error("操作キーヘルプが表示されていません")
 	}
 }
+
+// ==================== Task 4.3: 進行状況パネルのテスト ====================
+
+// TestHomeScreenShowsEquippedAgentsWithCard は装備エージェント一覧がカード形式で表示されることをテストします。
+// Requirement 1.5: 装備中エージェント一覧をAgentCardで表示
+func TestHomeScreenShowsEquippedAgentsWithCard(t *testing.T) {
+	screen := NewHomeScreen(10, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 装備中エージェントセクションが含まれることを確認
+	if !containsAny(rendered, "装備中エージェント") {
+		t.Error("装備中エージェントセクションが表示されていません")
+	}
+
+	// スロット表示が含まれることを確認
+	if !containsAny(rendered, "スロット") {
+		t.Error("スロット表示がありません")
+	}
+}
+
+// TestHomeScreenShowsMaxLevel は到達最高レベルセクションが表示されることをテストします。
+// Requirement 1.4: 到達レベルをASCII数字アートで表示
+func TestHomeScreenShowsMaxLevel(t *testing.T) {
+	screen := NewHomeScreen(15, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 到達最高レベルセクションが含まれることを確認
+	if !containsAny(rendered, "到達最高レベル") {
+		t.Error("到達最高レベルセクションが表示されていません")
+	}
+}
+
+// TestHomeScreenEmptySlots はエージェント未装備時に空スロットが表示されることをテストします。
+func TestHomeScreenEmptySlots(t *testing.T) {
+	screen := NewHomeScreen(5, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 空きスロット表示が含まれることを確認
+	if !containsAny(rendered, "(空)", "(未装備)") {
+		t.Error("空スロット表示がありません")
+	}
+}
