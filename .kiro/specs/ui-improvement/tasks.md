@@ -4,7 +4,7 @@
 
 - [ ] 1. ASCIIアートパッケージの実装
 - [x] 1.1 (P) ゲームロゴのASCIIアート描画機能を実装
-  - TypeBattleロゴを5-8行のフィグレット風ASCIIアートで表現
+  - TypEngQuestロゴを5-8行のフィグレット風ASCIIアートで表現
   - カラーモード・モノクロモードの両方に対応
   - ロゴの幅と高さを取得できるインターフェースを提供
   - 中央揃え表示をサポート
@@ -64,7 +64,7 @@
 
 - [ ] 4. ホーム画面のUI改善
 - [x] 4.1 ホーム画面にASCIIアートロゴとレベル表示を統合
-  - 画面上部にTypeBattleロゴをASCIIアートで表示
+  - 画面上部にTypEngQuestロゴをASCIIアートで表示
   - ASCIILogoコンポーネントを使用
   - サブタイトル（Terminal Typing Battle Game）を表示
   - _Requirements: 1.1_

@@ -326,10 +326,28 @@ func createTestInventory() *TestInventory {
 		domain.NewModule("m5", "デバフ", domain.Debuff, 1, []string{"debuff_low"}, 10, "SPD", "攻撃力DOWN"),
 	}
 
+	// テスト用エージェントを作成
+	agentCore1 := domain.NewCore("agent_core1", "エージェントコア1", 5, coreType, domain.PassiveSkill{})
+	agentCore2 := domain.NewCore("agent_core2", "エージェントコア2", 10, coreType, domain.PassiveSkill{})
+	agentModules1 := []*domain.ModuleModel{
+		domain.NewModule("am1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		domain.NewModule("am2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		domain.NewModule("am3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		domain.NewModule("am4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+	agentModules2 := []*domain.ModuleModel{
+		domain.NewModule("am5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		domain.NewModule("am6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		domain.NewModule("am7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		domain.NewModule("am8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+	agent1 := domain.NewAgent("agent1", agentCore1, agentModules1)
+	agent2 := domain.NewAgent("agent2", agentCore2, agentModules2)
+
 	return &TestInventory{
 		cores:    []*domain.CoreModel{core1, core2},
 		modules:  modules,
-		agents:   []*domain.AgentModel{},
+		agents:   []*domain.AgentModel{agent1, agent2},
 		equipped: []*domain.AgentModel{nil, nil, nil},
 	}
 }

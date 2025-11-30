@@ -1,4 +1,4 @@
-// Package app は TypeBattle TUIゲームのメインアプリケーションモデルを提供します。
+// Package app は TypEngQuest TUIゲームのメインアプリケーションモデルを提供します。
 // Elm Architectureパターンを使用してBubbletea tea.Modelインターフェースを実装します。
 package app
 
@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Model は TypeBattleゲームのメインアプリケーション状態を表します。
+// Model は TypEngQuestゲームのメインアプリケーション状態を表します。
 // Bubbletea TUIフレームワークのtea.Modelインターフェースを実装します。
 type Model struct {
 	// ready はアプリケーションが初期化され、
@@ -66,7 +66,7 @@ func (m *Model) View() string {
 		return warning + "\n\n" + quitHint
 	}
 
-	title := m.styles.Title.Render("TypeBattle - Terminal Typing Battle Game")
+	title := m.styles.Title.Render("TypEngQuest - Terminal Typing Quest Game")
 	quitHint := m.styles.Subtle.Render("Press q to quit.")
 	return title + "\n\n" + quitHint
 }

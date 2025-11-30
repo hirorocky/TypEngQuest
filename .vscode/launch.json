@@ -6,7 +6,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/typebattle",
+            "program": "${workspaceFolder}/cmd/TypEngQuest",
             "console": "integratedTerminal",
             "args": []
         }

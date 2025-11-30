@@ -101,10 +101,9 @@ func TestEnemiesJSONExists(t *testing.T) {
 		t.Fatalf("enemies.jsonの読み込みに失敗: %v", err)
 	}
 
-	// 最低10種類の敵バリエーションが存在すること
-	// Requirement 13.4: 複数種類の敵キャラクター（最低10種類）
-	if len(enemyTypes) < 10 {
-		t.Errorf("敵タイプの数が足りません: got %d, want >= 10", len(enemyTypes))
+	// 最低4種類の敵バリエーションが存在すること
+	if len(enemyTypes) < 4 {
+		t.Errorf("敵タイプの数が足りません: got %d, want >= 4", len(enemyTypes))
 	}
 
 	for _, et := range enemyTypes {

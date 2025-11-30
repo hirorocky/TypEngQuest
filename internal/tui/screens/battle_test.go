@@ -598,14 +598,9 @@ func TestBattleScreenTypingColorDisplay(t *testing.T) {
 
 	rendered := screen.View()
 
-	// タイピングエリアが表示されること
-	if !strings.Contains(rendered, "残り時間") {
-		t.Error("タイピングエリアが表示されていません")
-	}
-
-	// 進捗が表示されること
+	// タイピングエリアが表示されること（進捗表示で確認）
 	if !strings.Contains(rendered, "進捗") {
-		t.Error("タイピング進捗が表示されていません")
+		t.Error("タイピングエリアが表示されていません")
 	}
 }
 

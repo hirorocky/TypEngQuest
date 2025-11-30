@@ -1,4 +1,4 @@
-// Package app は TypeBattle TUIゲームの設定管理を提供します。
+// Package app は TypEngQuest TUIゲームの設定管理を提供します。
 package app
 
 // Settings はゲームの設定を管理する構造体です。

@@ -287,7 +287,7 @@ func TestRootModel_View_ValidTerminal(t *testing.T) {
 		t.Fatal("View should not be empty for valid terminal")
 	}
 
-	// TypeBattleの文字列が含まれているべき
+	// TypEngQuestの文字列が含まれているべき
 	if len(view) < 10 {
 		t.Error("View should contain game title or content")
 	}

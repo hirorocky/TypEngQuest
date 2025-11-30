@@ -1,4 +1,4 @@
-// Package app は TypeBattle TUIゲームのゲーム状態管理を提供します。
+// Package app は TypEngQuest TUIゲームのゲーム状態管理を提供します。
 package app
 
 import (

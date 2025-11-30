@@ -137,7 +137,7 @@ func TestHomeScreenHasASCIILogo(t *testing.T) {
 	rendered := screen.View()
 
 	// ロゴの特徴的な文字が含まれることを確認（フィグレット風）
-	// TypeBattleロゴは「╔╦╗」などの文字を使用
+	// TypEngQuestロゴは「╔╦╗」などの文字を使用
 	if !containsAny(rendered, "╔", "╗", "╚", "╝") {
 		t.Error("ASCIIアートロゴが表示されていません")
 	}
@@ -241,7 +241,21 @@ func TestHomeScreenHasKeyHelp(t *testing.T) {
 // TestHomeScreenShowsEquippedAgentsWithCard は装備エージェント一覧がカード形式で表示されることをテストします。
 // Requirement 1.5: 装備中エージェント一覧をAgentCardで表示
 func TestHomeScreenShowsEquippedAgentsWithCard(t *testing.T) {
-	screen := NewHomeScreen(10, nil)
+	// mockAgentProviderを使用して装備エージェントがある状態を作成
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
+	agent := &domain.AgentModel{
+		ID:    "agent1",
+		Level: 5,
+		Core:  core,
+	}
+	provider := &mockAgentProvider{agents: []*domain.AgentModel{agent}}
+	screen := NewHomeScreen(10, provider)
 	screen.width = 120
 	screen.height = 40
 
@@ -275,7 +289,21 @@ func TestHomeScreenShowsMaxLevel(t *testing.T) {
 
 // TestHomeScreenEmptySlots はエージェント未装備時に空スロットが表示されることをテストします。
 func TestHomeScreenEmptySlots(t *testing.T) {
-	screen := NewHomeScreen(5, nil)
+	// 1つのエージェントのみ装備している状態（残り2スロットが空）
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
+	agent := &domain.AgentModel{
+		ID:    "agent1",
+		Level: 5,
+		Core:  core,
+	}
+	provider := &mockAgentProvider{agents: []*domain.AgentModel{agent}}
+	screen := NewHomeScreen(5, provider)
 	screen.width = 120
 	screen.height = 40
 

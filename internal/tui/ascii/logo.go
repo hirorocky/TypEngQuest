@@ -9,12 +9,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TypoBattleロゴのASCIIアート（フィグレット風）
+// TypEngQuestロゴのASCIIアート（フィグレット風）
 // Requirement 1.1: 5-8行程度のフィグレット風ASCIIアートでゲームロゴを表示
-var typeBattleLogo = []string{
-	"╔╦╗╦ ╦╔═╗╔═╗  ╔╗ ╔═╗╔╦╗╔╦╗╦  ╔═╗",
-	" ║ ╚╦╝╠═╝║╣   ╠╩╗╠═╣ ║  ║ ║  ║╣ ",
-	" ╩  ╩ ╩  ╚═╝  ╚═╝╩ ╩ ╩  ╩ ╩═╝╚═╝",
+var typEngQuestLogo = []string{
+	"╔╦╗╦ ╦╔═╗╔═╗╔╗╔╔═╗╔═╗╦ ╦╔═╗╔═╗╔╦╗",
+	" ║ ╚╦╝╠═╝║╣ ║║║║ ╦║ ║║ ║║╣ ╚═╗ ║ ",
+	" ╩  ╩ ╩  ╚═╝╝╚╝╚═╝╚╩╝╚═╝╚═╝╚═╝ ╩ ",
 }
 
 // ロゴのカラー定義
@@ -49,7 +49,7 @@ type asciiLogo struct {
 func NewASCIILogo() ASCIILogoRenderer {
 	// 幅は最長の行の長さを計算
 	maxWidth := 0
-	for _, line := range typeBattleLogo {
+	for _, line := range typEngQuestLogo {
 		lineWidth := len([]rune(line))
 		if lineWidth > maxWidth {
 			maxWidth = lineWidth
@@ -57,9 +57,9 @@ func NewASCIILogo() ASCIILogoRenderer {
 	}
 
 	return &asciiLogo{
-		lines:  typeBattleLogo,
+		lines:  typEngQuestLogo,
 		width:  maxWidth,
-		height: len(typeBattleLogo),
+		height: len(typEngQuestLogo),
 	}
 }
 

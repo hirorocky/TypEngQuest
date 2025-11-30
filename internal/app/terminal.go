@@ -1,4 +1,4 @@
-// Package app は TypeBattle TUIゲームのターミナル環境検証を提供します。
+// Package app は TypEngQuest TUIゲームのターミナル環境検証を提供します。
 // 最小要件（140x40文字）に基づいて、ターミナルサイズの検出、
 // 検証、警告メッセージの生成を実装します。
 package app

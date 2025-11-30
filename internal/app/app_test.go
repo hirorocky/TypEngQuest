@@ -51,7 +51,7 @@ func TestAppView(t *testing.T) {
 func TestAppViewContainsGameTitle(t *testing.T) {
 	model := New()
 	view := model.View()
-	// ゲームタイトル（TypeBattleまたは関連）の存在を確認
+	// ゲームタイトル（TypEngQuestまたは関連）の存在を確認
 	if len(view) == 0 {
 		t.Fatal("View should contain some content")
 	}

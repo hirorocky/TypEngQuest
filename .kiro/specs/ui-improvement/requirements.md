@@ -2,7 +2,7 @@
 
 ## Introduction
 
-このドキュメントはTypeBattleの全体的なUI改善に関する要件を定義します。TypeBattleはターミナルベースのタイピングバトルゲームであり、bubbletea/lipglossを使用したTUIで構成されています。本仕様は、ユーザー体験の向上、視覚的な一貫性の強化、操作性の改善を目的としています。
+このドキュメントはTypEngQuestの全体的なUI改善に関する要件を定義します。TypEngQuestはターミナルベースのタイピングバトルゲームであり、bubbletea/lipglossを使用したTUIで構成されています。本仕様は、ユーザー体験の向上、視覚的な一貫性の強化、操作性の改善を目的としています。
 
 ## Requirements
 
@@ -12,12 +12,12 @@
 
 #### Acceptance Criteria
 
-1. The TypeBattle shall ホーム画面に複数行（5-8行程度）のフィグレット風ASCIIアートでゲームロゴを表示する
-2. The TypeBattle shall 左側にメインメニュー、右側に進行状況パネルを横並びで表示する
-3. The TypeBattle shall メインメニューの下部に操作キーのヘルプを表示する
-4. The TypeBattle shall 進行状況パネルに到達レベルをフィグレット風の大きなASCII数字アートで表示する
-5. The TypeBattle shall 進行状況パネルに装備中エージェント一覧を表示する
-6. When 装備エージェントが空である, the TypeBattle shall エージェント管理への誘導メッセージを表示し、バトル選択メニューを無効化（グレーアウト）する
+1. The TypEngQuest shall ホーム画面に複数行（5-8行程度）のフィグレット風ASCIIアートでゲームロゴを表示する
+2. The TypEngQuest shall 左側にメインメニュー、右側に進行状況パネルを横並びで表示する
+3. The TypEngQuest shall メインメニューの下部に操作キーのヘルプを表示する
+4. The TypEngQuest shall 進行状況パネルに到達レベルをフィグレット風の大きなASCII数字アートで表示する
+5. The TypEngQuest shall 進行状況パネルに装備中エージェント一覧を表示する
+6. When 装備エージェントが空である, the TypEngQuest shall エージェント管理への誘導メッセージを表示し、バトル選択メニューを無効化（グレーアウト）する
 
 ### Requirement 2: エージェント管理画面の改善
 
@@ -25,15 +25,15 @@
 
 #### Acceptance Criteria
 
-1. The TypeBattle shall 合成タブで左側に選択可能なパーツ（コア/モジュール）のリストを表示する
-2. The TypeBattle shall 合成タブで右側に合成用に選択済みのパーツ一覧（コア1つ + モジュール4つ）を表示する
-3. The TypeBattle shall 合成タブの左側リスト下部にカーソル中のパーツの詳細性能を表示する
-4. The TypeBattle shall 合成タブの右側選択済み一覧の下部に完成後のエージェントステータス予測を表示する
-5. The TypeBattle shall 装備タブの上部エリアで、左側に所持エージェント一覧を縦リストで表示する
-6. The TypeBattle shall 装備タブの上部エリアで、右側に選択中エージェントの詳細（ステータス、モジュール一覧）を表示する
-7. The TypeBattle shall 装備タブの下部エリアに装備中の3体のエージェントを横並びのカード形式で表示する
-8. The TypeBattle shall 装備タブでTabキーにより選択スロット（1〜3）を切り替える
-9. When エージェントを削除する, the TypeBattle shall 確認ダイアログを表示する
+1. The TypEngQuest shall 合成タブで左側に選択可能なパーツ（コア/モジュール）のリストを表示する
+2. The TypEngQuest shall 合成タブで右側に合成用に選択済みのパーツ一覧（コア1つ + モジュール4つ）を表示する
+3. The TypEngQuest shall 合成タブの左側リスト下部にカーソル中のパーツの詳細性能を表示する
+4. The TypEngQuest shall 合成タブの右側選択済み一覧の下部に完成後のエージェントステータス予測を表示する
+5. The TypEngQuest shall 装備タブの上部エリアで、左側に所持エージェント一覧を縦リストで表示する
+6. The TypEngQuest shall 装備タブの上部エリアで、右側に選択中エージェントの詳細（ステータス、モジュール一覧）を表示する
+7. The TypEngQuest shall 装備タブの下部エリアに装備中の3体のエージェントを横並びのカード形式で表示する
+8. The TypEngQuest shall 装備タブでTabキーにより選択スロット（1〜3）を切り替える
+9. When エージェントを削除する, the TypEngQuest shall 確認ダイアログを表示する
 
 ### Requirement 3: バトル画面のUI改善
 
@@ -41,15 +41,15 @@
 
 #### Acceptance Criteria
 
-1. The TypeBattle shall 戦闘画面を上から「敵情報エリア」「エージェントエリア」「プレイヤー情報エリア」の3エリアで構成する
-2. The TypeBattle shall エージェントエリアに装備中の3体のエージェントを横並びのカード形式で表示する
-3. The TypeBattle shall HPバーの変化をアニメーション（徐々に増減）で表示する
-4. When ダメージまたは回復が発生する, the TypeBattle shall HPバーの横に数値を一時的に表示し、数秒後に消去する
-5. The TypeBattle shall 次の敵攻撃までの時間をプログレスバーで視覚化する
-6. The TypeBattle shall モジュール一覧でカテゴリ別にアイコンを表示する
-7. When バフまたはデバフが適用される, the TypeBattle shall エフェクト名と残り時間を視覚的に区別して表示する
-8. While タイピングチャレンジ中である, the TypeBattle shall 入力済み・現在位置・未入力を明確に色分けして表示する
-9. When 戦闘が終了する, the TypeBattle shall エージェントエリアにASCIIアートで「WIN」または「LOSE」を表示する
+1. The TypEngQuest shall 戦闘画面を上から「敵情報エリア」「エージェントエリア」「プレイヤー情報エリア」の3エリアで構成する
+2. The TypEngQuest shall エージェントエリアに装備中の3体のエージェントを横並びのカード形式で表示する
+3. The TypEngQuest shall HPバーの変化をアニメーション（徐々に増減）で表示する
+4. When ダメージまたは回復が発生する, the TypEngQuest shall HPバーの横に数値を一時的に表示し、数秒後に消去する
+5. The TypEngQuest shall 次の敵攻撃までの時間をプログレスバーで視覚化する
+6. The TypEngQuest shall モジュール一覧でカテゴリ別にアイコンを表示する
+7. When バフまたはデバフが適用される, the TypEngQuest shall エフェクト名と残り時間を視覚的に区別して表示する
+8. While タイピングチャレンジ中である, the TypEngQuest shall 入力済み・現在位置・未入力を明確に色分けして表示する
+9. When 戦闘が終了する, the TypEngQuest shall エージェントエリアにASCIIアートで「WIN」または「LOSE」を表示する
 
 ### Requirement 4: カラーテーマとスタイルの統一
 
@@ -57,11 +57,11 @@
 
 #### Acceptance Criteria
 
-1. The TypeBattle shall 全画面で統一されたカラーパレット（styles.goで定義済み）を使用する
-2. The TypeBattle shall ボーダースタイル（RoundedBorder）を全画面で統一する
-3. The TypeBattle shall プライマリ・セカンダリ・アクセントカラーを明確に定義して使用する
-4. When カラー非対応ターミナルを検出する, the TypeBattle shall モノクロ代替表示に切り替える
-5. The TypeBattle shall テキストの階層（タイトル、サブタイトル、本文、補足）を一貫したスタイルで表現する
+1. The TypEngQuest shall 全画面で統一されたカラーパレット（styles.goで定義済み）を使用する
+2. The TypEngQuest shall ボーダースタイル（RoundedBorder）を全画面で統一する
+3. The TypEngQuest shall プライマリ・セカンダリ・アクセントカラーを明確に定義して使用する
+4. When カラー非対応ターミナルを検出する, the TypEngQuest shall モノクロ代替表示に切り替える
+5. The TypEngQuest shall テキストの階層（タイトル、サブタイトル、本文、補足）を一貫したスタイルで表現する
 
 ### Requirement 5: 視覚的フィードバックの強化
 
@@ -69,7 +69,7 @@
 
 #### Acceptance Criteria
 
-1. When メニュー項目が選択される, the TypeBattle shall 選択項目をハイライト表示し、カーソル位置を明示する
-2. When ボタンやメニュー項目がフォーカスを受け取る, the TypeBattle shall アニメーション効果でフォーカス状態を示す
-3. When 操作が無効である, the TypeBattle shall 無効な操作の理由を含むエラーメッセージを表示する
-4. When アクションが成功する, the TypeBattle shall 成功を示す視覚的フィードバック（色変化、アイコン）を表示する
+1. When メニュー項目が選択される, the TypEngQuest shall 選択項目をハイライト表示し、カーソル位置を明示する
+2. When ボタンやメニュー項目がフォーカスを受け取る, the TypEngQuest shall アニメーション効果でフォーカス状態を示す
+3. When 操作が無効である, the TypEngQuest shall 無効な操作の理由を含むエラーメッセージを表示する
+4. When アクションが成功する, the TypEngQuest shall 成功を示す視覚的フィードバック（色変化、アイコン）を表示する

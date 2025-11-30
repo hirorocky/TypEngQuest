@@ -1,4 +1,4 @@
-# TypeBattle Makefile
+# TypEngQuest Makefile
 # Requirement 21: 拡張性 - データファイル埋め込みビルド
 
 .PHONY: build build-release clean test run help
@@ -8,13 +8,13 @@ all: build
 
 # 開発用ビルド
 build:
-	@echo "Building typebattle..."
-	go build -o typebattle ./cmd/typebattle
+	@echo "Building TypEngQuest..."
+	go build -o TypEngQuest ./cmd/TypEngQuest
 
 # リリース用ビルド（最適化あり）
 build-release:
-	@echo "Building typebattle (release)..."
-	go build -ldflags="-s -w" -o typebattle ./cmd/typebattle
+	@echo "Building TypEngQuest (release)..."
+	go build -ldflags="-s -w" -o TypEngQuest ./cmd/TypEngQuest
 
 # テスト実行
 test:
@@ -28,17 +28,17 @@ test-verbose:
 
 # アプリケーション実行（埋め込みデータ使用）
 run: build
-	@echo "Running typebattle..."
-	./typebattle
+	@echo "Running TypEngQuest..."
+	./TypEngQuest
 
 # クリーンアップ
 clean:
 	@echo "Cleaning up..."
-	@rm -f typebattle
+	@rm -f TypEngQuest
 
 # ヘルプ
 help:
-	@echo "TypeBattle Makefile"
+	@echo "TypEngQuest Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  build          - Build the application"
@@ -50,4 +50,4 @@ help:
 	@echo "  help           - Show this help message"
 	@echo ""
 	@echo "To use external data:"
-	@echo "  ./typebattle -data /path/to/custom_data"
+	@echo "  ./TypEngQuest -data /path/to/custom_data"

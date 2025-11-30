@@ -62,12 +62,12 @@ func TestASCIILogoGetHeight(t *testing.T) {
 	}
 }
 
-// TestASCIILogoContainsTypeBattle はロゴに「TYPE BATTLE」が含まれることを確認します。
-func TestASCIILogoContainsTypeBattle(t *testing.T) {
+// TestASCIILogoContainsTypEngQuest はロゴに「TYPENGQUEST」が含まれることを確認します。
+func TestASCIILogoContainsTypEngQuest(t *testing.T) {
 	logo := NewASCIILogo()
 	output := logo.Render(false)
 
-	// ASCIIアートなのでTYPEBATTLEの文字が形作られていることを確認
+	// ASCIIアートなのでTYPENGQUESTの文字が形作られていることを確認
 	// 少なくともロゴは空ではない
 	if len(output) < 50 {
 		t.Errorf("ロゴのサイズが小さすぎます: %d文字", len(output))

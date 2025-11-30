@@ -1,4 +1,4 @@
-// Package app は TypeBattle TUIゲームのシーン管理機能を提供します。
+// Package app は TypEngQuest TUIゲームのシーン管理機能を提供します。
 package app
 
 // Scene はゲーム内の各画面を表す列挙型です。
