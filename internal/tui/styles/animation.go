@@ -497,3 +497,107 @@ func (a *AnimatedHPBar) Render(styles *GameStyles, width int) string {
 func (a *AnimatedHPBar) GetCurrentHP() int {
 	return int(a.CurrentDisplayHP + 0.5)
 }
+
+// ==================== FloatingDamageManager ====================
+
+// FloatingText は浮遊テキストの状態を表します。
+// Requirement 3.4: ダメージ/回復発生時に数値を一時表示
+type FloatingText struct {
+	Text        string
+	IsHealing   bool   // true=回復（緑）、false=ダメージ（赤）
+	RemainingMS int    // 残り表示時間（ミリ秒）
+	YOffset     int    // Y方向オフセット（上方向に増加）
+	TargetArea  string // "enemy", "player", "agent_{index}"
+}
+
+// FloatingDamageManager はフローティングダメージの状態を管理します。
+// Requirement 3.4: フローティングダメージ/回復表示機能
+type FloatingDamageManager struct {
+	Texts []FloatingText
+}
+
+// フローティングテキストの設定
+const (
+	// FloatingTextDurationMS は表示時間（ミリ秒）
+	// Requirement 3.4: 2-3秒で消去
+	FloatingTextDurationMS = 2500
+
+	// FloatingTextRiseSpeed はY方向の移動速度（1秒あたりのピクセル数）
+	// Requirement 3.4: Y方向への浮遊アニメーション
+	FloatingTextRiseSpeed = 2
+)
+
+// NewFloatingDamageManager は新しいFloatingDamageManagerを作成します。
+func NewFloatingDamageManager() *FloatingDamageManager {
+	return &FloatingDamageManager{
+		Texts: make([]FloatingText, 0),
+	}
+}
+
+// AddDamage はダメージ表示を追加します。
+// Requirement 3.4: ダメージは赤で表示
+func (m *FloatingDamageManager) AddDamage(amount int, targetArea string) {
+	m.Texts = append(m.Texts, FloatingText{
+		Text:        fmt.Sprintf("-%d", amount),
+		IsHealing:   false,
+		RemainingMS: FloatingTextDurationMS,
+		YOffset:     0,
+		TargetArea:  targetArea,
+	})
+}
+
+// AddHeal は回復表示を追加します。
+// Requirement 3.4: 回復は緑で表示
+func (m *FloatingDamageManager) AddHeal(amount int, targetArea string) {
+	m.Texts = append(m.Texts, FloatingText{
+		Text:        fmt.Sprintf("+%d", amount),
+		IsHealing:   true,
+		RemainingMS: FloatingTextDurationMS,
+		YOffset:     0,
+		TargetArea:  targetArea,
+	})
+}
+
+// Update は状態を更新します（deltaMS: 経過ミリ秒）。
+// Requirement 3.4: 時間経過でテキストを消去、Y方向への浮遊
+func (m *FloatingDamageManager) Update(deltaMS int) {
+	// 経過時間を秒に変換
+	deltaSeconds := float64(deltaMS) / 1000.0
+
+	activeTexts := make([]FloatingText, 0, len(m.Texts))
+	for _, text := range m.Texts {
+		text.RemainingMS -= deltaMS
+
+		if text.RemainingMS > 0 {
+			// Y方向への浮遊（上に移動）
+			text.YOffset += int(float64(FloatingTextRiseSpeed) * deltaSeconds)
+			activeTexts = append(activeTexts, text)
+		}
+	}
+	m.Texts = activeTexts
+}
+
+// GetTextsForArea は指定エリアの表示テキストを取得します。
+// Requirement 3.4: 対象エリア（敵、プレイヤー、エージェント）を指定可能
+func (m *FloatingDamageManager) GetTextsForArea(targetArea string) []FloatingText {
+	result := make([]FloatingText, 0)
+	for _, text := range m.Texts {
+		if text.TargetArea == targetArea {
+			result = append(result, text)
+		}
+	}
+	return result
+}
+
+// HasActiveTexts はアクティブな表示があるかを返します。
+func (m *FloatingDamageManager) HasActiveTexts() bool {
+	return len(m.Texts) > 0
+}
+
+// RenderFloatingText はフローティングテキストをスタイル付きで描画します。
+func (m *FloatingDamageManager) RenderFloatingText(text FloatingText, styles *GameStyles) string {
+	if text.IsHealing {
+		return styles.Battle.Heal.Render(text.Text)
+	}
+	return styles.Battle.Damage.Render(text.Text)
+}

@@ -295,3 +295,145 @@ func TestAnimatedHPBarHealingAnimation(t *testing.T) {
 		t.Error("回復アニメーションでCurrentDisplayHPが増加していません")
 	}
 }
+
+// ==================== Task 2.2: FloatingDamageManagerのテスト ====================
+
+// TestNewFloatingDamageManager はFloatingDamageManagerの作成をテストします。
+// Requirement 3.4: フローティングダメージ/回復表示
+func TestNewFloatingDamageManager(t *testing.T) {
+	manager := NewFloatingDamageManager()
+	if manager == nil {
+		t.Error("NewFloatingDamageManager()がnilを返しました")
+	}
+
+	// 初期状態ではテキストがないはず
+	if manager.HasActiveTexts() {
+		t.Error("初期状態でHasActiveTexts()がtrueを返しました")
+	}
+}
+
+// TestFloatingDamageManagerAddDamage はダメージ追加をテストします。
+func TestFloatingDamageManagerAddDamage(t *testing.T) {
+	manager := NewFloatingDamageManager()
+
+	manager.AddDamage(50, "enemy")
+
+	if !manager.HasActiveTexts() {
+		t.Error("AddDamage後にHasActiveTexts()がfalseを返しました")
+	}
+
+	// 指定エリアのテキストを取得
+	texts := manager.GetTextsForArea("enemy")
+	if len(texts) != 1 {
+		t.Errorf("enemy エリアのテキスト数が正しくありません: got %d, want 1", len(texts))
+	}
+
+	if texts[0].IsHealing {
+		t.Error("ダメージテキストがIsHealing=trueになっています")
+	}
+}
+
+// TestFloatingDamageManagerAddHeal は回復追加をテストします。
+func TestFloatingDamageManagerAddHeal(t *testing.T) {
+	manager := NewFloatingDamageManager()
+
+	manager.AddHeal(30, "player")
+
+	if !manager.HasActiveTexts() {
+		t.Error("AddHeal後にHasActiveTexts()がfalseを返しました")
+	}
+
+	texts := manager.GetTextsForArea("player")
+	if len(texts) != 1 {
+		t.Errorf("player エリアのテキスト数が正しくありません: got %d, want 1", len(texts))
+	}
+
+	if !texts[0].IsHealing {
+		t.Error("回復テキストがIsHealing=falseになっています")
+	}
+}
+
+// TestFloatingDamageManagerUpdate は時間経過による更新をテストします。
+// Requirement 3.4: 2-3秒で消去
+func TestFloatingDamageManagerUpdate(t *testing.T) {
+	manager := NewFloatingDamageManager()
+	manager.AddDamage(50, "enemy")
+
+	// 1秒後もまだ表示されている
+	manager.Update(1000)
+	if !manager.HasActiveTexts() {
+		t.Error("1秒後にテキストが消去されました（2-3秒表示のはず）")
+	}
+
+	// さらに2秒経過で消える
+	manager.Update(2500)
+	if manager.HasActiveTexts() {
+		t.Error("3.5秒後もテキストが残っています")
+	}
+}
+
+// TestFloatingDamageManagerYOffset はY方向オフセットの更新をテストします。
+// Requirement 3.4: Y方向への浮遊アニメーション
+func TestFloatingDamageManagerYOffset(t *testing.T) {
+	manager := NewFloatingDamageManager()
+	manager.AddDamage(50, "enemy")
+
+	initialOffset := manager.Texts[0].YOffset
+
+	// 時間経過でYオフセットが増加する（上に浮く）
+	manager.Update(500)
+
+	if manager.Texts[0].YOffset <= initialOffset {
+		t.Error("YOffsetが増加していません（上に浮いていない）")
+	}
+}
+
+// TestFloatingDamageManagerMultipleTexts は複数の同時表示をテストします。
+// Requirement 3.4: 複数の同時表示をサポート
+func TestFloatingDamageManagerMultipleTexts(t *testing.T) {
+	manager := NewFloatingDamageManager()
+
+	manager.AddDamage(50, "enemy")
+	manager.AddDamage(30, "enemy")
+	manager.AddHeal(20, "player")
+
+	// 全テキスト数を確認
+	if len(manager.Texts) != 3 {
+		t.Errorf("テキスト数が正しくありません: got %d, want 3", len(manager.Texts))
+	}
+
+	// エリアごとのテキスト数を確認
+	enemyTexts := manager.GetTextsForArea("enemy")
+	if len(enemyTexts) != 2 {
+		t.Errorf("enemy エリアのテキスト数が正しくありません: got %d, want 2", len(enemyTexts))
+	}
+
+	playerTexts := manager.GetTextsForArea("player")
+	if len(playerTexts) != 1 {
+		t.Errorf("player エリアのテキスト数が正しくありません: got %d, want 1", len(playerTexts))
+	}
+}
+
+// TestFloatingDamageManagerTargetArea は対象エリアの指定をテストします。
+// Requirement 3.4: 対象エリア（敵、プレイヤー、エージェント）を指定可能
+func TestFloatingDamageManagerTargetArea(t *testing.T) {
+	manager := NewFloatingDamageManager()
+
+	// 各エリアにテキストを追加
+	manager.AddDamage(10, "enemy")
+	manager.AddDamage(20, "player")
+	manager.AddDamage(30, "agent_0")
+	manager.AddDamage(40, "agent_1")
+	manager.AddDamage(50, "agent_2")
+
+	// 各エリアのテキストが正しく取得できることを確認
+	if len(manager.GetTextsForArea("enemy")) != 1 {
+		t.Error("enemy エリアのテキストが正しく取得できません")
+	}
+	if len(manager.GetTextsForArea("player")) != 1 {
+		t.Error("player エリアのテキストが正しく取得できません")
+	}
+	if len(manager.GetTextsForArea("agent_0")) != 1 {
+		t.Error("agent_0 エリアのテキストが正しく取得できません")
+	}
+}
