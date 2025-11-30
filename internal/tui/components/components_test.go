@@ -328,3 +328,131 @@ func TestAgentCardRenderWithHP(t *testing.T) {
 		t.Error("HP付きRender()が空文字列を返しました")
 	}
 }
+
+// ==================== Task 3.2: ConfirmDialogコンポーネントのテスト ====================
+
+// TestNewConfirmDialog はConfirmDialogの作成をテストします。
+// Requirement 2.9: 確認ダイアログ表示
+func TestNewConfirmDialog(t *testing.T) {
+	dialog := NewConfirmDialog("削除確認", "本当に削除しますか？")
+	if dialog == nil {
+		t.Error("NewConfirmDialog()がnilを返しました")
+	}
+
+	if dialog.Title != "削除確認" {
+		t.Errorf("Titleが正しくありません: got %s", dialog.Title)
+	}
+
+	if dialog.Message != "本当に削除しますか？" {
+		t.Errorf("Messageが正しくありません: got %s", dialog.Message)
+	}
+
+	// 初期状態は非表示
+	if dialog.Visible {
+		t.Error("初期状態でVisible=trueになっています")
+	}
+}
+
+// TestConfirmDialogShowHide はShow/Hide機能をテストします。
+func TestConfirmDialogShowHide(t *testing.T) {
+	dialog := NewConfirmDialog("テスト", "テストメッセージ")
+
+	// 表示
+	dialog.Show()
+	if !dialog.Visible {
+		t.Error("Show()後にVisible=falseです")
+	}
+
+	// 初期選択は「いいえ」
+	if dialog.SelectedYes {
+		t.Error("初期選択がYesになっています（いいえが初期値のはず）")
+	}
+
+	// 非表示
+	dialog.Hide()
+	if dialog.Visible {
+		t.Error("Hide()後にVisible=trueです")
+	}
+}
+
+// TestConfirmDialogHandleKeyLeftRight は左右キー入力をテストします。
+func TestConfirmDialogHandleKeyLeftRight(t *testing.T) {
+	dialog := NewConfirmDialog("テスト", "テストメッセージ")
+	dialog.Show()
+
+	// 初期は「いいえ」が選択されている
+	if dialog.SelectedYes {
+		t.Error("初期選択がYesです")
+	}
+
+	// 左キーで「はい」に移動
+	result := dialog.HandleKey("left")
+	if result != ConfirmResultNone {
+		t.Error("left キーで結果が返されました")
+	}
+	if !dialog.SelectedYes {
+		t.Error("leftキー後にSelectedYes=falseです")
+	}
+
+	// 右キーで「いいえ」に移動
+	result = dialog.HandleKey("right")
+	if result != ConfirmResultNone {
+		t.Error("right キーで結果が返されました")
+	}
+	if dialog.SelectedYes {
+		t.Error("rightキー後にSelectedYes=trueです")
+	}
+}
+
+// TestConfirmDialogHandleKeyEnter はEnterキー入力をテストします。
+func TestConfirmDialogHandleKeyEnter(t *testing.T) {
+	dialog := NewConfirmDialog("テスト", "テストメッセージ")
+	dialog.Show()
+
+	// 「いいえ」が選択された状態でEnter
+	result := dialog.HandleKey("enter")
+	if result != ConfirmResultNo {
+		t.Errorf("「いいえ」選択時のEnterで正しい結果が返されませんでした: got %v", result)
+	}
+
+	// 「はい」が選択された状態でEnter
+	dialog.Show()
+	dialog.SelectedYes = true
+	result = dialog.HandleKey("enter")
+	if result != ConfirmResultYes {
+		t.Errorf("「はい」選択時のEnterで正しい結果が返されませんでした: got %v", result)
+	}
+}
+
+// TestConfirmDialogHandleKeyEscape はEscapeキー入力をテストします。
+func TestConfirmDialogHandleKeyEscape(t *testing.T) {
+	dialog := NewConfirmDialog("テスト", "テストメッセージ")
+	dialog.Show()
+
+	result := dialog.HandleKey("esc")
+	if result != ConfirmResultCancelled {
+		t.Errorf("Escapeで正しい結果が返されませんでした: got %v", result)
+	}
+}
+
+// TestConfirmDialogRender はダイアログの描画をテストします。
+func TestConfirmDialogRender(t *testing.T) {
+	dialog := NewConfirmDialog("削除確認", "「ファイター Lv.5」を削除しますか？")
+	dialog.Show()
+
+	result := dialog.Render(80, 24)
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+}
+
+// TestConfirmDialogRenderNotVisible は非表示時の描画をテストします。
+func TestConfirmDialogRenderNotVisible(t *testing.T) {
+	dialog := NewConfirmDialog("テスト", "テストメッセージ")
+	// 非表示のまま
+
+	result := dialog.Render(80, 24)
+	if result != "" {
+		t.Error("非表示時のRender()が空文字列以外を返しました")
+	}
+}

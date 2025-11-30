@@ -651,3 +651,166 @@ func (c *AgentCard) renderDetailed(width int) string {
 
 	return style.Render(content.String())
 }
+
+// ==================== ConfirmDialogコンポーネント ====================
+
+// ConfirmResult はダイアログの結果を表します。
+// Requirement 2.9: 確認ダイアログ表示
+type ConfirmResult int
+
+const (
+	// ConfirmResultNone は結果がまだないことを表します
+	ConfirmResultNone ConfirmResult = iota
+	// ConfirmResultYes は「はい」が選択されたことを表します
+	ConfirmResultYes
+	// ConfirmResultNo は「いいえ」が選択されたことを表します
+	ConfirmResultNo
+	// ConfirmResultCancelled はキャンセルされたことを表します
+	ConfirmResultCancelled
+)
+
+// ConfirmDialog は確認ダイアログを表します。
+// Requirement 2.9: エージェント削除確認ダイアログ
+type ConfirmDialog struct {
+	// Title はダイアログのタイトルです
+	Title string
+	// Message はダイアログのメッセージです
+	Message string
+	// Visible は表示中かどうかです
+	Visible bool
+	// SelectedYes は「はい」が選択されているかどうかです（falseなら「いいえ」）
+	SelectedYes bool
+	// Result はダイアログの結果です
+	Result ConfirmResult
+	// gameStyles はゲームスタイルです
+	gameStyles *styles.GameStyles
+}
+
+// NewConfirmDialog は新しいConfirmDialogを作成します。
+func NewConfirmDialog(title, message string) *ConfirmDialog {
+	return &ConfirmDialog{
+		Title:       title,
+		Message:     message,
+		Visible:     false,
+		SelectedYes: false, // 初期選択は「いいえ」（安全側）
+		Result:      ConfirmResultNone,
+		gameStyles:  styles.NewGameStyles(),
+	}
+}
+
+// Show はダイアログを表示します。
+func (d *ConfirmDialog) Show() {
+	d.Visible = true
+	d.SelectedYes = false // 表示時に「いいえ」にリセット
+	d.Result = ConfirmResultNone
+}
+
+// Hide はダイアログを非表示にします。
+func (d *ConfirmDialog) Hide() {
+	d.Visible = false
+}
+
+// HandleKey はキー入力を処理します。
+// 左右キーで選択、Enterで決定、Escでキャンセル
+func (d *ConfirmDialog) HandleKey(key string) ConfirmResult {
+	if !d.Visible {
+		return ConfirmResultNone
+	}
+
+	switch key {
+	case "left", "h":
+		d.SelectedYes = true
+		return ConfirmResultNone
+	case "right", "l":
+		d.SelectedYes = false
+		return ConfirmResultNone
+	case "enter":
+		if d.SelectedYes {
+			d.Result = ConfirmResultYes
+		} else {
+			d.Result = ConfirmResultNo
+		}
+		d.Hide()
+		return d.Result
+	case "esc", "escape":
+		d.Result = ConfirmResultCancelled
+		d.Hide()
+		return d.Result
+	}
+
+	return ConfirmResultNone
+}
+
+// Render はダイアログをレンダリングします。
+// screenWidth, screenHeightは画面サイズ（中央配置に使用）
+func (d *ConfirmDialog) Render(screenWidth, screenHeight int) string {
+	if !d.Visible {
+		return ""
+	}
+
+	// ダイアログの幅を計算
+	dialogWidth := 50
+	if len(d.Message) > dialogWidth-4 {
+		dialogWidth = len(d.Message) + 8
+	}
+	if dialogWidth > screenWidth-4 {
+		dialogWidth = screenWidth - 4
+	}
+
+	var content strings.Builder
+
+	// タイトル
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(styles.ColorPrimary)
+	content.WriteString(titleStyle.Render(d.Title))
+	content.WriteString("\n\n")
+
+	// メッセージ
+	messageStyle := lipgloss.NewStyle().
+		Foreground(styles.ColorSecondary)
+	content.WriteString(messageStyle.Render(d.Message))
+	content.WriteString("\n")
+	content.WriteString(messageStyle.Render("この操作は取り消せません。"))
+	content.WriteString("\n\n")
+
+	// ボタン
+	yesStyle := lipgloss.NewStyle().
+		Padding(0, 2).
+		Bold(d.SelectedYes)
+	noStyle := lipgloss.NewStyle().
+		Padding(0, 2).
+		Bold(!d.SelectedYes)
+
+	if d.SelectedYes {
+		yesStyle = yesStyle.
+			Background(styles.ColorPrimary).
+			Foreground(lipgloss.Color("#000000"))
+		noStyle = noStyle.
+			Foreground(styles.ColorSubtle)
+	} else {
+		yesStyle = yesStyle.
+			Foreground(styles.ColorSubtle)
+		noStyle = noStyle.
+			Background(styles.ColorPrimary).
+			Foreground(lipgloss.Color("#000000"))
+	}
+
+	buttons := lipgloss.JoinHorizontal(
+		lipgloss.Center,
+		yesStyle.Render("はい"),
+		"        ",
+		noStyle.Render("いいえ"),
+	)
+	content.WriteString(buttons)
+
+	// ダイアログボックス
+	dialogStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorPrimary).
+		Padding(1, 2).
+		Width(dialogWidth).
+		Align(lipgloss.Center)
+
+	return dialogStyle.Render(content.String())
+}
