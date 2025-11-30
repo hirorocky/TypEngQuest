@@ -456,3 +456,133 @@ func TestConfirmDialogRenderNotVisible(t *testing.T) {
 		t.Error("非表示時のRender()が空文字列以外を返しました")
 	}
 }
+
+// ==================== Task 8.1-8.2: 視覚的フィードバックのテスト ====================
+
+// TestMenuSelectionHighlight はメニュー項目選択時のハイライト表示をテストします。
+// Requirement 5.1: メニュー項目選択時のハイライト表示
+func TestMenuSelectionHighlight(t *testing.T) {
+	items := []MenuItem{
+		{Label: "項目1", Value: "1"},
+		{Label: "項目2", Value: "2"},
+		{Label: "項目3", Value: "3"},
+	}
+
+	menu := NewMenu(items)
+
+	// レンダリング
+	result := menu.Render()
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+
+	// 選択カーソル「>」が含まれること
+	if !containsStr(result, ">") {
+		t.Error("選択カーソルが表示されていません")
+	}
+}
+
+// TestMenuCursorPosition はカーソル位置の明示をテストします。
+// Requirement 5.2: カーソル位置の明示
+func TestMenuCursorPosition(t *testing.T) {
+	items := []MenuItem{
+		{Label: "項目1", Value: "1"},
+		{Label: "項目2", Value: "2"},
+	}
+
+	menu := NewMenu(items)
+	menu.MoveDown()
+
+	// 2番目の項目が選択されていること
+	if menu.SelectedIndex != 1 {
+		t.Errorf("選択インデックス: got %d, want 1", menu.SelectedIndex)
+	}
+
+	result := menu.Render()
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+}
+
+// TestMenuDisabledItemStyle は無効項目のスタイルをテストします。
+// Requirement 5.3: 無効なメニュー項目の表示
+func TestMenuDisabledItemStyle(t *testing.T) {
+	items := []MenuItem{
+		{Label: "有効", Value: "1", Disabled: false},
+		{Label: "無効", Value: "2", Disabled: true},
+	}
+
+	menu := NewMenu(items)
+	result := menu.Render()
+
+	// 無効項目が含まれること
+	if !containsStr(result, "無効") {
+		t.Error("無効項目が表示されていません")
+	}
+}
+
+// TestInputFieldErrorDisplay はエラーメッセージ表示をテストします。
+// Requirement 5.3: 無効操作時のエラーメッセージ表示
+func TestInputFieldErrorDisplay(t *testing.T) {
+	field := NewInputField("テスト")
+
+	// 空の入力でバリデーション
+	valid, msg := field.Validate()
+	if valid {
+		t.Error("空の入力がバリデーションを通過しました")
+	}
+	if msg == "" {
+		t.Error("エラーメッセージが空です")
+	}
+}
+
+// TestInputFieldSuccessFeedback は入力成功フィードバックをテストします。
+// Requirement 5.4: 操作成功時の成功フィードバック表示
+func TestInputFieldSuccessFeedback(t *testing.T) {
+	field := NewInputField("テスト")
+
+	// 文字入力
+	field.HandleInput('a')
+	field.HandleInput('b')
+	field.HandleInput('c')
+
+	// 入力値が正しいこと
+	if field.Value != "abc" {
+		t.Errorf("Value: got %s, want abc", field.Value)
+	}
+
+	// エラーがクリアされていること
+	if field.Error != "" {
+		t.Error("エラーがクリアされていません")
+	}
+}
+
+// TestNumericInputFieldValidation は数値入力フィールドのバリデーションをテストします。
+func TestNumericInputFieldValidation(t *testing.T) {
+	field := NewInputField("レベル")
+	field.InputMode = InputModeNumeric
+	field.MinValue = 1
+	field.MaxValue = 100
+
+	// 数字以外の入力は無視される
+	field.HandleInput('a')
+	if field.Value != "" {
+		t.Error("数字以外の入力が受け入れられました")
+	}
+
+	// 数字の入力は受け入れられる
+	field.HandleInput('5')
+	if field.Value != "5" {
+		t.Errorf("Value: got %s, want 5", field.Value)
+	}
+}
+
+// containsStr は文字列に部分文字列が含まれるかを確認します。
+func containsStr(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
