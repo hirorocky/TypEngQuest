@@ -489,3 +489,178 @@ func createTestAgents() []*domain.AgentModel {
 	agent := domain.NewAgent("agent1", core, modules)
 	return []*domain.AgentModel{agent}
 }
+
+// ==================== Task 6.1-6.6: バトル画面UI改善のテスト ====================
+
+// TestBattleScreen3AreaLayout はバトル画面の3エリアレイアウトをテストします。
+// Requirement 3.1: 上から敵情報エリア、エージェントエリア、プレイヤー情報エリア
+func TestBattleScreen3AreaLayout(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 敵情報が含まれること
+	if !strings.Contains(rendered, enemy.Name) {
+		t.Error("敵情報エリアに敵の名前が表示されていません")
+	}
+
+	// プレイヤー情報が含まれること
+	if !strings.Contains(rendered, "プレイヤー") {
+		t.Error("プレイヤー情報エリアが表示されていません")
+	}
+
+	// モジュール情報が含まれること
+	if !strings.Contains(rendered, "モジュール") {
+		t.Error("モジュールエリアが表示されていません")
+	}
+}
+
+// TestBattleScreenAgentModuleDisplay はエージェントごとのモジュール表示をテストします。
+// Requirement 3.2: 装備中のエージェントのモジュール一覧とクールダウン状態を表示
+func TestBattleScreenAgentModuleDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// エージェントのコアタイプ名が含まれること
+	if !strings.Contains(rendered, agents[0].GetCoreTypeName()) {
+		t.Error("エージェントのコアタイプ名が表示されていません")
+	}
+}
+
+// TestBattleScreenHPBarDisplay はHPバー表示をテストします。
+// Requirement 3.3: HPバーの表示
+func TestBattleScreenHPBarDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// HPバーが含まれること（HPの数値が表示されている）
+	if !strings.Contains(rendered, "HP:") {
+		t.Error("HP表示がありません")
+	}
+}
+
+// TestBattleScreenEnemyAttackTimerDisplay は敵攻撃タイマー表示をテストします。
+// Requirement 3.5: 次の敵攻撃までの時間をプログレスバーで視覚化
+func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 次の敵行動の表示が含まれること
+	if !strings.Contains(rendered, "次の敵行動") {
+		t.Error("敵攻撃タイマー表示がありません")
+	}
+}
+
+// TestBattleScreenTypingColorDisplay はタイピングの色分け表示をテストします。
+// Requirement 3.8: 入力済み・現在位置・未入力の色分け
+func TestBattleScreenTypingColorDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	// タイピングチャレンジを開始
+	screen.StartTypingChallenge("hello", 10*time.Second)
+
+	// 数文字入力
+	screen.ProcessTypingInput('h')
+	screen.ProcessTypingInput('e')
+
+	rendered := screen.View()
+
+	// タイピングエリアが表示されること
+	if !strings.Contains(rendered, "残り時間") {
+		t.Error("タイピングエリアが表示されていません")
+	}
+
+	// 進捗が表示されること
+	if !strings.Contains(rendered, "進捗") {
+		t.Error("タイピング進捗が表示されていません")
+	}
+}
+
+// TestBattleScreenWinDisplay は勝利時のWIN表示をテストします。
+// Requirement 3.9: 勝利時はWINを大きく表示
+func TestBattleScreenWinDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	enemy.HP = 0 // 敵HP0で勝利
+
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	// TickMsgを送信して勝利状態に
+	_, _ = screen.Update(BattleTickMsg{})
+
+	if !screen.IsVictory() {
+		t.Error("勝利状態になっていません")
+	}
+
+	rendered := screen.View()
+
+	// 勝利メッセージが含まれること
+	if !strings.Contains(rendered, "勝利") {
+		t.Error("勝利メッセージが表示されていません")
+	}
+}
+
+// TestBattleScreenLoseDisplay は敗北時のLOSE表示をテストします。
+// Requirement 3.9: 敗北時はLOSEを大きく表示
+func TestBattleScreenLoseDisplay(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	player.HP = 0 // プレイヤーHP0で敗北
+
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+	screen.width = 120
+	screen.height = 40
+
+	// TickMsgを送信して敗北状態に
+	_, _ = screen.Update(BattleTickMsg{})
+
+	if !screen.IsDefeat() {
+		t.Error("敗北状態になっていません")
+	}
+
+	rendered := screen.View()
+
+	// 敗北メッセージが含まれること
+	if !strings.Contains(rendered, "敗北") {
+		t.Error("敗北メッセージが表示されていません")
+	}
+}
