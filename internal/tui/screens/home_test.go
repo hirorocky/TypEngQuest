@@ -196,3 +196,40 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+// ==================== Task 4.2: 左右分割レイアウトのテスト ====================
+
+// TestHomeScreenHasLeftRightLayout は左右分割レイアウトをテストします。
+// Requirement 1.2: 左側にメインメニュー、右側に進行状況パネルを横並び表示
+func TestHomeScreenHasLeftRightLayout(t *testing.T) {
+	screen := NewHomeScreen(10, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// メインメニューが含まれることを確認
+	if !containsAny(rendered, "メインメニュー") {
+		t.Error("メインメニューが表示されていません")
+	}
+
+	// 進行状況が含まれることを確認
+	if !containsAny(rendered, "進行状況") {
+		t.Error("進行状況パネルが表示されていません")
+	}
+}
+
+// TestHomeScreenHasKeyHelp は操作キーヘルプが表示されることをテストします。
+// Requirement 1.3: メインメニューの下部に操作キーのヘルプを表示
+func TestHomeScreenHasKeyHelp(t *testing.T) {
+	screen := NewHomeScreen(10, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 操作キーヘルプが含まれることを確認
+	if !containsAny(rendered, "Enter", "選択", "終了") {
+		t.Error("操作キーヘルプが表示されていません")
+	}
+}
