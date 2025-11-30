@@ -63,7 +63,7 @@
   - _Requirements: 3.6_
 
 - [ ] 4. ホーム画面のUI改善
-- [ ] 4.1 ホーム画面にASCIIアートロゴとレベル表示を統合
+- [x] 4.1 ホーム画面にASCIIアートロゴとレベル表示を統合
   - 画面上部にTypeBattleロゴをASCIIアートで表示
   - ASCIILogoコンポーネントを使用
   - サブタイトル（Terminal Typing Battle Game）を表示

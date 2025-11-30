@@ -122,3 +122,77 @@ func TestHomeScreenRender(t *testing.T) {
 		t.Error("レンダリング結果が空です")
 	}
 }
+
+// ==================== Task 4.1: ASCIIアートロゴ統合のテスト ====================
+
+// TestHomeScreenHasASCIILogo はASCIIロゴが表示されることをテストします。
+// Requirement 1.1: ホーム画面にASCIIアートロゴを表示
+func TestHomeScreenHasASCIILogo(t *testing.T) {
+	screen := NewHomeScreen(10, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// ロゴの特徴的な文字が含まれることを確認（フィグレット風）
+	// TypeBattleロゴは「╔╦╗」などの文字を使用
+	if !containsAny(rendered, "╔", "╗", "╚", "╝") {
+		t.Error("ASCIIアートロゴが表示されていません")
+	}
+}
+
+// TestHomeScreenHasLevelASCII はレベルがASCII数字で表示されることをテストします。
+// Requirement 1.4: 進行状況パネルに到達レベルをASCII数字アートで表示
+func TestHomeScreenHasLevelASCII(t *testing.T) {
+	screen := NewHomeScreen(15, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// ASCII数字の特徴的な文字が含まれることを確認
+	// 数字は「█」を使用
+	if !containsAny(rendered, "█") {
+		t.Error("ASCII数字が表示されていません")
+	}
+}
+
+// TestHomeScreenHasSubtitle はサブタイトルが表示されることをテストします。
+func TestHomeScreenHasSubtitle(t *testing.T) {
+	screen := NewHomeScreen(10, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// サブタイトルが含まれることを確認
+	if !containsAny(rendered, "Terminal Typing Battle Game") {
+		t.Error("サブタイトルが表示されていません")
+	}
+}
+
+// containsAny は文字列に指定したいずれかの部分文字列が含まれるかを確認します。
+func containsAny(s string, substrs ...string) bool {
+	for _, substr := range substrs {
+		if contains(s, substr) {
+			return true
+		}
+	}
+	return false
+}
+
+// contains は文字列に部分文字列が含まれるかを確認します。
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+}
+
+// findSubstring は文字列内で部分文字列を探します。
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

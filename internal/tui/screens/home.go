@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 )
@@ -22,6 +23,7 @@ type AgentProvider interface {
 
 // HomeScreen はホーム画面を表します。
 // Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 21.1
+// UI-Improvement Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6
 type HomeScreen struct {
 	menu            *components.Menu
 	maxLevelReached int
@@ -30,6 +32,9 @@ type HomeScreen struct {
 	width           int
 	height          int
 	statusMessage   string // セーブ/ロード結果などのステータスメッセージ
+	// UI改善: ASCIIアートレンダラー
+	logoRenderer   ascii.ASCIILogoRenderer
+	numberRenderer ascii.ASCIINumberRenderer
 }
 
 // ChangeSceneMsg はシーン遷移を要求するメッセージです。
@@ -56,6 +61,9 @@ func NewHomeScreen(maxLevelReached int, agentProvider AgentProvider) *HomeScreen
 		styles:          styles.NewGameStyles(),
 		width:           140,
 		height:          40,
+		// UI改善: ASCIIアートレンダラーを初期化
+		logoRenderer:   ascii.NewASCIILogo(),
+		numberRenderer: ascii.NewASCIINumbers(),
 	}
 }
 
@@ -107,20 +115,28 @@ func (s *HomeScreen) handleMenuSelection(value string) tea.Cmd {
 }
 
 // View は画面をレンダリングします。
+// UI-Improvement Requirement 1.1: ASCIIアートロゴを表示
 func (s *HomeScreen) View() string {
 	var builder strings.Builder
 
-	// タイトル
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.ColorPrimary).
-		Align(lipgloss.Center).
-		Width(s.width)
+	// UI改善: ASCIIアートロゴを表示
+	// Requirement 1.1: ホーム画面にフィグレット風ASCIIアートでゲームロゴを表示
+	logo := s.logoRenderer.Render(true) // カラーモード
+	logoLines := strings.Split(logo, "\n")
 
-	title := titleStyle.Render("⚔ TypeBattle ⚔")
-	builder.WriteString(title)
-	builder.WriteString("\n")
+	// ロゴを中央揃えで表示
+	for _, line := range logoLines {
+		lineWidth := len([]rune(line))
+		padding := (s.width - lineWidth) / 2
+		if padding < 0 {
+			padding = 0
+		}
+		builder.WriteString(strings.Repeat(" ", padding))
+		builder.WriteString(line)
+		builder.WriteString("\n")
+	}
 
+	// サブタイトル
 	subtitleStyle := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
 		Align(lipgloss.Center).
@@ -187,6 +203,7 @@ func (s *HomeScreen) View() string {
 
 // renderStatusPanel は進行状況パネルをレンダリングします。
 // Requirement 2.10: 現在の進行状況を表示
+// UI-Improvement Requirement 1.4: 到達レベルをASCII数字アートで表示
 func (s *HomeScreen) renderStatusPanel() string {
 	var builder strings.Builder
 
@@ -204,12 +221,16 @@ func (s *HomeScreen) renderStatusPanel() string {
 	builder.WriteString(titleStyle.Render("進行状況"))
 	builder.WriteString("\n\n")
 
-	// 到達最高レベル
-	builder.WriteString(labelStyle.Render("到達最高レベル: "))
+	// UI改善: 到達最高レベルをASCII数字アートで表示
+	// Requirement 1.4: 進行状況パネルに到達レベルをフィグレット風の大きなASCII数字アートで表示
+	builder.WriteString(labelStyle.Render("到達最高レベル:"))
+	builder.WriteString("\n")
 	if s.maxLevelReached == 0 {
-		builder.WriteString(valueStyle.Render("まだなし"))
+		builder.WriteString(labelStyle.Render("  まだなし"))
 	} else {
-		builder.WriteString(valueStyle.Render(fmt.Sprintf("Lv.%d", s.maxLevelReached)))
+		// ASCII数字でレベルを表示
+		levelArt := s.numberRenderer.RenderNumber(s.maxLevelReached, styles.ColorPrimary)
+		builder.WriteString(levelArt)
 	}
 	builder.WriteString("\n")
 
