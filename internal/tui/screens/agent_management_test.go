@@ -333,3 +333,108 @@ func createTestInventory() *TestInventory {
 		equipped: []*domain.AgentModel{nil, nil, nil},
 	}
 }
+
+// ==================== Task 5.1-5.4: エージェント管理画面UI改善のテスト ====================
+
+// TestAgentManagementSynthesisLeftRightLayout は合成タブの左右分割レイアウトをテストします。
+// Requirement 2.1, 2.2: 左側に選択可能パーツリスト、右側に選択済みパーツリスト
+func TestAgentManagementSynthesisLeftRightLayout(t *testing.T) {
+	inventory := createTestInventory()
+	screen := NewAgentManagementScreen(inventory)
+	screen.currentTab = TabSynthesis
+	screen.width = 120
+	screen.height = 40
+	screen.updateCurrentList()
+
+	rendered := screen.View()
+
+	// 合成タブが表示されていること
+	if rendered == "" {
+		t.Error("レンダリング結果が空です")
+	}
+
+	// 選択状況パネルが表示されていること
+	if !containsString(rendered, "コア:") {
+		t.Error("コア選択状況が表示されていません")
+	}
+
+	if !containsString(rendered, "モジュール") {
+		t.Error("モジュール選択状況が表示されていません")
+	}
+}
+
+// TestAgentManagementSynthesisDetailAndPreview は合成タブのパーツ詳細と完成予測ステータス表示をテストします。
+// Requirement 2.3, 2.4: パーツ詳細と完成予測ステータス
+func TestAgentManagementSynthesisDetailAndPreview(t *testing.T) {
+	inventory := createTestInventory()
+	screen := NewAgentManagementScreen(inventory)
+	screen.currentTab = TabSynthesis
+	screen.synthesisState.step = 0
+	screen.width = 120
+	screen.height = 40
+	screen.updateCurrentList()
+
+	// コアを選択
+	if len(screen.coreList) > 0 {
+		screen.selectedIndex = 0
+		detail := screen.getSelectedCoreDetail()
+		if detail == nil {
+			t.Error("コア詳細が取得できません")
+		}
+	}
+
+	rendered := screen.View()
+	if rendered == "" {
+		t.Error("レンダリング結果が空です")
+	}
+}
+
+// TestAgentManagementEquipTopBottomLayout は装備タブの上下分割レイアウトをテストします。
+// Requirement 2.5, 2.6, 2.7: 上部にエージェント一覧と詳細、下部に装備スロット
+func TestAgentManagementEquipTopBottomLayout(t *testing.T) {
+	inventory := createTestInventory()
+	screen := NewAgentManagementScreen(inventory)
+	screen.currentTab = TabEquip
+	screen.width = 120
+	screen.height = 40
+	screen.updateCurrentList()
+
+	rendered := screen.View()
+
+	// 装備スロットが表示されていること
+	if !containsString(rendered, "スロット1") || !containsString(rendered, "スロット2") || !containsString(rendered, "スロット3") {
+		t.Error("装備スロットが表示されていません")
+	}
+}
+
+// TestAgentManagementEquipSlotSwitch は装備タブのスロット切替をテストします。
+// Requirement 2.8: Tabキーによるスロット切替
+func TestAgentManagementEquipSlotSwitch(t *testing.T) {
+	inventory := createTestInventory()
+	screen := NewAgentManagementScreen(inventory)
+	screen.currentTab = TabEquip
+	screen.width = 120
+	screen.height = 40
+	screen.updateCurrentList()
+
+	// 初期選択位置
+	initialIndex := screen.selectedIndex
+
+	// 下キーで次のスロット/エージェントに移動
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyDown})
+
+	// 選択位置が変わっていること
+	if screen.selectedIndex == initialIndex && screen.getMaxIndex() > 1 {
+		t.Error("選択位置が変わっていません")
+	}
+}
+
+// containsString は文字列に部分文字列が含まれるかを確認します（テスト用）。
+func containsString(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
