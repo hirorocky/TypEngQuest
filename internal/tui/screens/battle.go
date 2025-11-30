@@ -94,6 +94,11 @@ type BattleScreen struct {
 	width          int
 	height         int
 	message        string
+
+	// アニメーション（UI改善: フローティングダメージ、HPバーアニメーション）
+	floatingDamageManager *styles.FloatingDamageManager
+	playerHPBar           *styles.AnimatedHPBar
+	enemyHPBar            *styles.AnimatedHPBar
 }
 
 // NewBattleScreen は新しいBattleScreenを作成します。
@@ -120,6 +125,10 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		winLoseRenderer:    ascii.NewWinLoseRenderer(gs),
 		width:              140,
 		height:             40,
+		// UI改善: アニメーション初期化
+		floatingDamageManager: styles.NewFloatingDamageManager(),
+		playerHPBar:           styles.NewAnimatedHPBar(player.MaxHP),
+		enemyHPBar:            styles.NewAnimatedHPBar(enemy.MaxHP),
 	}
 
 	// バトル状態を初期化
@@ -236,6 +245,12 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 	// クールダウンを更新
 	s.UpdateCooldowns(deltaSeconds)
 
+	// UI改善: アニメーション更新
+	deltaMS := int(tickInterval.Milliseconds())
+	s.floatingDamageManager.Update(deltaMS)
+	s.playerHPBar.Update(deltaMS)
+	s.enemyHPBar.Update(deltaMS)
+
 	// タイピング中の時間切れチェック
 	if s.isTyping {
 		elapsed := time.Since(s.typingStartTime)
@@ -329,18 +344,25 @@ func (s *BattleScreen) processEnemyAttack() {
 		}
 		s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
 		s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+		// UI改善: フローティングダメージとHPアニメーション
+		s.floatingDamageManager.AddDamage(damage, "player")
+		s.playerHPBar.SetTarget(s.player.HP)
 		return
 	}
 
 	// 事前決定された行動を実行
 	damage, msg := s.battleEngine.ExecuteNextAction(s.battleState)
-	_ = damage // damageは統計で使用済み
 
 	// メッセージを表示
 	action := s.battleState.NextAction
 	switch action.ActionType {
 	case battle.EnemyActionAttack:
 		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, msg)
+		// UI改善: フローティングダメージとHPアニメーション
+		if damage > 0 {
+			s.floatingDamageManager.AddDamage(damage, "player")
+			s.playerHPBar.SetTarget(s.player.HP)
+		}
 	case battle.EnemyActionSelfBuff:
 		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, msg)
 	case battle.EnemyActionDebuff:
@@ -621,6 +643,20 @@ func (s *BattleScreen) CompleteTyping() {
 	var effectAmount int
 	if s.battleEngine != nil && s.battleState != nil {
 		effectAmount = s.battleEngine.ApplyModuleEffect(s.battleState, agent, module, typingResult)
+	}
+
+	// UI改善: フローティングダメージ/回復とHPアニメーション
+	if effectAmount > 0 {
+		switch module.Category {
+		case domain.PhysicalAttack, domain.MagicAttack:
+			// 敵へのダメージ
+			s.floatingDamageManager.AddDamage(effectAmount, "enemy")
+			s.enemyHPBar.SetTarget(s.enemy.HP)
+		case domain.Heal:
+			// プレイヤーへの回復
+			s.floatingDamageManager.AddHeal(effectAmount, "player")
+			s.playerHPBar.SetTarget(s.player.HP)
+		}
 	}
 
 	// メッセージを表示
@@ -958,21 +994,20 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 // renderTypingArea はタイピングエリアを描画します。
 // Requirement 9.6: タイピングチャレンジテキスト表示と入力進捗
 // Requirement 9.15: 制限時間のリアルタイム表示
+// UI改善: 残り時間をプログレスバー形式で表示
 func (s *BattleScreen) renderTypingArea() string {
 	var builder strings.Builder
 
-	// 制限時間表示
+	// 制限時間計算
 	elapsed := time.Since(s.typingStartTime)
 	remaining := s.typingTimeLimit - elapsed
 	if remaining < 0 {
 		remaining = 0
 	}
 
-	timeStyle := lipgloss.NewStyle().
-		Foreground(styles.ColorWarning).
-		Bold(true)
-
-	builder.WriteString(timeStyle.Render(fmt.Sprintf("残り時間: %.1f秒", remaining.Seconds())))
+	// UI改善: 残り時間プログレスバー（バー内に秒数表示）
+	timeRatio := remaining.Seconds() / s.typingTimeLimit.Seconds()
+	builder.WriteString(s.renderTimeProgressBar(remaining.Seconds(), timeRatio))
 	builder.WriteString("\n\n")
 
 	// タイピングテキスト
@@ -999,6 +1034,67 @@ func (s *BattleScreen) renderTypingArea() string {
 		Align(lipgloss.Center).
 		Width(s.width).
 		Render(builder.String())
+}
+
+// renderTimeProgressBar は残り時間をプログレスバー形式で描画します。
+// UI改善: バー内に秒数を表示、時間に応じて色を変化
+func (s *BattleScreen) renderTimeProgressBar(remainingSeconds float64, ratio float64) string {
+	barWidth := 30
+	timeText := fmt.Sprintf("%.1fs", remainingSeconds)
+
+	// 色を時間割合に応じて決定
+	var barColor lipgloss.Color
+	if ratio > 0.5 {
+		barColor = styles.ColorHPHigh // 緑
+	} else if ratio > 0.25 {
+		barColor = styles.ColorHPMedium // 黄
+	} else {
+		barColor = styles.ColorHPLow // 赤
+	}
+
+	// 塗りつぶし部分の計算
+	filledWidth := int(float64(barWidth) * ratio)
+	if filledWidth < 0 {
+		filledWidth = 0
+	}
+	if filledWidth > barWidth {
+		filledWidth = barWidth
+	}
+
+	// プログレスバー文字列を構築
+	filled := strings.Repeat("█", filledWidth)
+	empty := strings.Repeat("░", barWidth-filledWidth)
+
+	// バー全体を結合
+	bar := filled + empty
+
+	// 中央に秒数を挿入
+	// バーの中央位置を計算
+	textStart := (barWidth - len(timeText)) / 2
+	if textStart < 0 {
+		textStart = 0
+	}
+	textEnd := textStart + len(timeText)
+	if textEnd > barWidth {
+		textEnd = barWidth
+	}
+
+	// バーにテキストを重ねる
+	barRunes := []rune(bar)
+	for i, c := range timeText {
+		pos := textStart + i
+		if pos < len(barRunes) {
+			barRunes[pos] = c
+		}
+	}
+	barWithText := string(barRunes)
+
+	// スタイル適用
+	barStyle := lipgloss.NewStyle().
+		Foreground(barColor).
+		Bold(true)
+
+	return barStyle.Render("[" + barWithText + "]")
 }
 
 // UpdateCooldowns はクールダウンを更新します。
@@ -1040,10 +1136,28 @@ func (s *BattleScreen) renderEnemyArea() string {
 	}
 	builder.WriteString("\n")
 
-	// HP表示
-	hpBar := s.styles.RenderHPBarWithValue(s.enemy.HP, s.enemy.MaxHP, 50)
+	// HP表示（UI改善: アニメーション付きHPバー + フローティングダメージ）
+	hpBar := s.enemyHPBar.Render(s.styles, 50)
+	displayHP := s.enemyHPBar.GetCurrentHP()
+	hpValue := fmt.Sprintf(" %d/%d", displayHP, s.enemy.MaxHP)
 	builder.WriteString("HP: ")
 	builder.WriteString(hpBar)
+	builder.WriteString(hpValue)
+
+	// フローティングダメージ表示
+	floatingTexts := s.floatingDamageManager.GetTextsForArea("enemy")
+	if len(floatingTexts) > 0 {
+		// 最新のフローティングテキストを表示
+		text := floatingTexts[0]
+		var floatStyle lipgloss.Style
+		if text.IsHealing {
+			floatStyle = lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Bold(true)
+		} else {
+			floatStyle = lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
+		}
+		builder.WriteString("  ")
+		builder.WriteString(floatStyle.Render(text.Text))
+	}
 	builder.WriteString("\n")
 
 	// 敵のバフ表示
@@ -1228,10 +1342,28 @@ func (s *BattleScreen) renderPlayerArea() string {
 	builder.WriteString(titleStyle.Render("プレイヤー"))
 	builder.WriteString("\n")
 
-	// HP表示
-	hpBar := s.styles.RenderHPBarWithValue(s.player.HP, s.player.MaxHP, 50)
+	// HP表示（UI改善: アニメーション付きHPバー + フローティングダメージ/回復）
+	hpBar := s.playerHPBar.Render(s.styles, 50)
+	displayHP := s.playerHPBar.GetCurrentHP()
+	hpValue := fmt.Sprintf(" %d/%d", displayHP, s.player.MaxHP)
 	builder.WriteString("HP: ")
 	builder.WriteString(hpBar)
+	builder.WriteString(hpValue)
+
+	// フローティングダメージ/回復表示
+	floatingTexts := s.floatingDamageManager.GetTextsForArea("player")
+	if len(floatingTexts) > 0 {
+		// 最新のフローティングテキストを表示
+		text := floatingTexts[0]
+		var floatStyle lipgloss.Style
+		if text.IsHealing {
+			floatStyle = lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Bold(true)
+		} else {
+			floatStyle = lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
+		}
+		builder.WriteString("  ")
+		builder.WriteString(floatStyle.Render(text.Text))
+	}
 	builder.WriteString("\n")
 
 	// バフ表示

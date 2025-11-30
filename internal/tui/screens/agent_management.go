@@ -66,6 +66,8 @@ type AgentManagementScreen struct {
 	// UI改善: 確認ダイアログ
 	confirmDialog     *components.ConfirmDialog
 	pendingDeleteIdx  int // 削除待ちのエージェントインデックス
+	// 装備タブ用: 選択中のスロットインデックス (0-2)
+	selectedEquipSlot int
 }
 
 // NewAgentManagementScreen は新しいAgentManagementScreenを作成します。
@@ -124,6 +126,11 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		return s, nil
 	}
 
+	// 装備タブの場合は専用の処理
+	if s.currentTab == TabEquip {
+		return s.handleEquipKeyMsg(msg)
+	}
+
 	switch msg.String() {
 	case "esc":
 		return s, func() tea.Msg {
@@ -141,6 +148,51 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		s.moveDown()
 	case "enter":
 		return s.handleEnter()
+	case "d":
+		return s.handleDelete()
+	}
+
+	return s, nil
+}
+
+// handleEquipKeyMsg は装備タブ専用のキー処理を行います。
+// Tab: スロット切り替え、上下: エージェント選択、Enter: 装備、Backspace: 取り外し
+func (s *AgentManagementScreen) handleEquipKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		return s, func() tea.Msg {
+			return ChangeSceneMsg{Scene: "home"}
+		}
+	case "tab":
+		// スロット切り替え (0 → 1 → 2 → 0...)
+		s.selectedEquipSlot = (s.selectedEquipSlot + 1) % 3
+	case "left", "h":
+		s.prevTab()
+	case "right", "l":
+		s.nextTab()
+	case "up", "k":
+		// エージェント一覧で上に移動
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		// エージェント一覧で下に移動
+		if s.selectedIndex < len(s.agentList)-1 {
+			s.selectedIndex++
+		}
+	case "enter":
+		// 選択中のエージェントを選択中のスロットに装備
+		if s.selectedIndex < len(s.agentList) {
+			agent := s.agentList[s.selectedIndex]
+			s.inventory.EquipAgent(s.selectedEquipSlot, agent)
+			s.updateCurrentList()
+		}
+	case "backspace":
+		// 選択中のスロットからエージェントを取り外し
+		if s.equipSlots[s.selectedEquipSlot] != nil {
+			s.inventory.UnequipAgent(s.selectedEquipSlot)
+			s.updateCurrentList()
+		}
 	case "d":
 		return s.handleDelete()
 	}
@@ -477,6 +529,8 @@ func (s *AgentManagementScreen) View() string {
 	var hints string
 	if s.confirmDialog != nil && s.confirmDialog.Visible {
 		hints = "←/→: 選択切替  Enter: 決定  Esc: キャンセル"
+	} else if s.currentTab == TabEquip {
+		hints = "←/→: タブ切替  Tab: スロット切替  ↑/↓: エージェント選択  Enter: 装備  Backspace: 取り外し  Esc: ホーム"
 	} else {
 		hints = "←/→: タブ切替  ↑/↓: 選択  Enter: 決定  Backspace: 戻る  d: 削除  Esc: ホーム"
 	}
@@ -669,158 +723,275 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 }
 
 // renderSynthesis は合成画面をレンダリングします。
+// design.md準拠: 左右2カラムレイアウト
 func (s *AgentManagementScreen) renderSynthesis() string {
+	// 左側パネル: 選択可能なパーツ
+	leftContent := s.renderSynthesisLeftPanel()
+
+	// 右側パネル: 選択済みパーツ + 完成予測ステータス
+	rightContent := s.renderSynthesisRightPanel()
+
+	// 左右のパネルを結合
+	leftBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorPrimary).
+		Padding(1).
+		Width(50).
+		Height(20).
+		Render(leftContent)
+
+	rightBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorSubtle).
+		Padding(1).
+		Width(55).
+		Height(20).
+		Render(rightContent)
+
+	content := lipgloss.JoinHorizontal(lipgloss.Top, leftBox, "  ", rightBox)
+	return lipgloss.NewStyle().
+		Width(s.width).
+		Align(lipgloss.Center).
+		Render(content)
+}
+
+// renderSynthesisLeftPanel は合成画面の左側パネルをレンダリングします。
+func (s *AgentManagementScreen) renderSynthesisLeftPanel() string {
 	var builder strings.Builder
 
-	// 合成ステップ表示
-	stepStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.ColorSecondary)
-
-	steps := []string{"コア選択", "モジュール選択", "確認"}
-	currentStep := stepStyle.Render(fmt.Sprintf("ステップ %d: %s", s.synthesisState.step+1, steps[s.synthesisState.step]))
-	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(currentStep))
+	// タイトル
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+	builder.WriteString(titleStyle.Render("選択可能なパーツ"))
 	builder.WriteString("\n\n")
 
-	// 選択状況
-	selectionPanel := s.renderSynthesisSelection()
-	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(selectionPanel))
+	// ステップ表示
+	steps := []string{"コア選択", "モジュール選択", "確認"}
+	stepStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	builder.WriteString(stepStyle.Render(fmt.Sprintf("ステップ %d: %s", s.synthesisState.step+1, steps[s.synthesisState.step])))
 	builder.WriteString("\n\n")
 
 	// リスト
 	switch s.synthesisState.step {
 	case 0:
-		builder.WriteString(s.renderSynthesisCoreList())
+		builder.WriteString(s.renderSynthesisCoreListItems())
 	case 1:
-		builder.WriteString(s.renderSynthesisModuleList())
+		builder.WriteString(s.renderSynthesisModuleListItems())
 	case 2:
-		builder.WriteString(s.renderSynthesisConfirm())
+		builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("Enterキーで合成を実行"))
+	}
+
+	builder.WriteString("\n\n")
+
+	// 区切り線
+	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────────"))
+	builder.WriteString("\n")
+
+	// 選択中パーツの詳細
+	builder.WriteString(titleStyle.Render("選択中パーツの詳細"))
+	builder.WriteString("\n\n")
+	builder.WriteString(s.renderSelectedPartDetail())
+
+	return builder.String()
+}
+
+// renderSynthesisRightPanel は合成画面の右側パネルをレンダリングします。
+func (s *AgentManagementScreen) renderSynthesisRightPanel() string {
+	var builder strings.Builder
+
+	// タイトル
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+	builder.WriteString(titleStyle.Render("選択済みパーツ"))
+	builder.WriteString("\n\n")
+
+	// コア
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorPrimary)
+
+	builder.WriteString(labelStyle.Render("コア: "))
+	if s.synthesisState.selectedCore != nil {
+		builder.WriteString(valueStyle.Render(fmt.Sprintf("%s Lv.%d", s.synthesisState.selectedCore.Name, s.synthesisState.selectedCore.Level)))
+	} else {
+		builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(未選択)"))
+	}
+	builder.WriteString("\n")
+
+	// モジュール
+	for i := 0; i < 4; i++ {
+		builder.WriteString(labelStyle.Render(fmt.Sprintf("モジュール%d: ", i+1)))
+		if i < len(s.synthesisState.selectedModules) {
+			builder.WriteString(valueStyle.Render(s.synthesisState.selectedModules[i].Name))
+		} else {
+			builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(未選択)"))
+		}
+		builder.WriteString("\n")
+	}
+
+	builder.WriteString("\n")
+
+	// 区切り線
+	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("──────────────────────────────────────────────"))
+	builder.WriteString("\n")
+
+	// 完成予測ステータス
+	builder.WriteString(titleStyle.Render("完成予測ステータス"))
+	builder.WriteString("\n\n")
+	builder.WriteString(s.renderSynthesisPreview())
+
+	return builder.String()
+}
+
+// renderSelectedPartDetail は選択中パーツの詳細をレンダリングします。
+func (s *AgentManagementScreen) renderSelectedPartDetail() string {
+	switch s.synthesisState.step {
+	case 0:
+		// コア選択中
+		core := s.getSelectedCoreDetail()
+		if core == nil {
+			return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("コアを選択してください")
+		}
+		return s.formatCoreDetail(core)
+	case 1:
+		// モジュール選択中
+		module := s.getSelectedModuleDetail()
+		if module == nil {
+			return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("モジュールを選択してください")
+		}
+		return s.formatModuleDetail(module)
+	case 2:
+		// 確認画面
+		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("合成準備完了")
+	}
+	return ""
+}
+
+// formatCoreDetail はコアの詳細をフォーマットします。
+func (s *AgentManagementScreen) formatCoreDetail(core *domain.CoreModel) string {
+	var builder strings.Builder
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+
+	builder.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", core.Name, core.Level)))
+	builder.WriteString("\n")
+	builder.WriteString(labelStyle.Render("特性: "))
+	builder.WriteString(core.Type.Name)
+	builder.WriteString("\n")
+	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d  SPD: %-3d  LUK: %-3d",
+		core.Stats.STR, core.Stats.MAG, core.Stats.SPD, core.Stats.LUK))
+
+	return builder.String()
+}
+
+// formatModuleDetail はモジュールの詳細をフォーマットします。
+func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) string {
+	var builder strings.Builder
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+
+	builder.WriteString(nameStyle.Render(module.Name))
+	builder.WriteString("\n")
+	builder.WriteString(labelStyle.Render("カテゴリ: "))
+	builder.WriteString(s.getModuleIcon(module.Category) + " " + module.Category.String())
+	builder.WriteString("\n")
+	builder.WriteString(labelStyle.Render("基礎効果: "))
+	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect))
+	builder.WriteString("\n")
+	builder.WriteString(labelStyle.Render("説明: "))
+	builder.WriteString(module.Description)
+
+	return builder.String()
+}
+
+// renderSynthesisPreview は合成後の予測ステータスをレンダリングします。
+func (s *AgentManagementScreen) renderSynthesisPreview() string {
+	if s.synthesisState.selectedCore == nil {
+		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("コアを選択すると\n予測ステータスが表示されます")
+	}
+
+	var builder strings.Builder
+	core := s.synthesisState.selectedCore
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
+
+	// 名前
+	builder.WriteString(labelStyle.Render("名前: "))
+	builder.WriteString(valueStyle.Render(core.Type.Name))
+	builder.WriteString("\n")
+
+	// レベル
+	builder.WriteString(labelStyle.Render("Lv: "))
+	builder.WriteString(valueStyle.Render(fmt.Sprintf("%d", core.Level)))
+	builder.WriteString("\n")
+
+	// ステータス
+	stats := core.Stats
+	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d\n", stats.STR, stats.MAG))
+	builder.WriteString(fmt.Sprintf("SPD: %-3d  LUK: %-3d\n", stats.SPD, stats.LUK))
+
+	// モジュール情報
+	if len(s.synthesisState.selectedModules) > 0 {
+		builder.WriteString("\n")
+		builder.WriteString(labelStyle.Render("攻撃: "))
+		var attacks []string
+		for _, m := range s.synthesisState.selectedModules {
+			icon := s.getModuleIcon(m.Category)
+			attacks = append(attacks, fmt.Sprintf("%s(%s+%.0f)", m.Name, icon, m.BaseEffect))
+		}
+		builder.WriteString(strings.Join(attacks, ", "))
 	}
 
 	return builder.String()
 }
 
-// renderSynthesisSelection は合成選択状況をレンダリングします。
-func (s *AgentManagementScreen) renderSynthesisSelection() string {
-	var items []string
-
-	// コア
-	coreLabel := "コア: "
-	if s.synthesisState.selectedCore != nil {
-		coreLabel += s.synthesisState.selectedCore.Name
-	} else {
-		coreLabel += "(未選択)"
-	}
-	items = append(items, coreLabel)
-
-	// モジュール
-	for i := 0; i < 4; i++ {
-		moduleLabel := fmt.Sprintf("モジュール%d: ", i+1)
-		if i < len(s.synthesisState.selectedModules) {
-			moduleLabel += s.synthesisState.selectedModules[i].Name
-		} else {
-			moduleLabel += "(未選択)"
-		}
-		items = append(items, moduleLabel)
-	}
-
-	content := strings.Join(items, "  |  ")
-	return lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorSubtle).
-		Padding(0, 2).
-		Render(content)
-}
-
-// renderSynthesisCoreList は合成用コアリストをレンダリングします。
-func (s *AgentManagementScreen) renderSynthesisCoreList() string {
+// renderSynthesisCoreListItems はコアリストの項目をレンダリングします（合成用）。
+func (s *AgentManagementScreen) renderSynthesisCoreListItems() string {
 	if len(s.coreList) == 0 {
-		return lipgloss.NewStyle().
-			Width(s.width).
-			Align(lipgloss.Center).
-			Foreground(styles.ColorSubtle).
-			Render("合成可能なコアがありません")
+		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("コアがありません")
 	}
 
-	return s.renderCoreList()
+	var items []string
+	for i, core := range s.coreList {
+		style := lipgloss.NewStyle()
+		prefix := "  "
+		if i == s.selectedIndex {
+			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s Lv.%d (%s)", core.Name, core.Level, core.Type.Name)
+		items = append(items, style.Render(prefix+item))
+	}
+	return strings.Join(items, "\n")
 }
 
-// renderSynthesisModuleList は合成用モジュールリストをレンダリングします。
-func (s *AgentManagementScreen) renderSynthesisModuleList() string {
+// renderSynthesisModuleListItems はモジュールリストの項目をレンダリングします（合成用）。
+func (s *AgentManagementScreen) renderSynthesisModuleListItems() string {
 	if len(s.moduleList) == 0 {
-		return lipgloss.NewStyle().
-			Width(s.width).
-			Align(lipgloss.Center).
-			Foreground(styles.ColorSubtle).
-			Render("合成可能なモジュールがありません")
+		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("モジュールがありません")
 	}
 
-	// 互換性のあるモジュールのみ表示
 	var items []string
 	for i, module := range s.moduleList {
 		compatible := s.isModuleCompatible(module)
 		alreadySelected := s.isModuleAlreadySelected(module)
 		style := lipgloss.NewStyle()
+		prefix := "  "
+
 		if i == s.selectedIndex {
 			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			prefix = "> "
 		} else if !compatible || alreadySelected {
 			style = style.Foreground(styles.ColorSubtle)
 		}
 
-		item := fmt.Sprintf("%s [%s]", module.Name, module.Category.String())
+		icon := s.getModuleIcon(module.Category)
+		item := fmt.Sprintf("%s %s", icon, module.Name)
 		if !compatible {
 			item += " (互換性なし)"
 		} else if alreadySelected {
 			item += " (選択済み)"
 		}
-		items = append(items, style.Render(item))
+		items = append(items, style.Render(prefix+item))
 	}
-
-	listContent := strings.Join(items, "\n")
-	listBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1).
-		Width(60).
-		Render(listContent)
-
-	return lipgloss.NewStyle().
-		Width(s.width).
-		Align(lipgloss.Center).
-		Render(listBox)
-}
-
-// renderSynthesisConfirm は合成確認画面をレンダリングします。
-func (s *AgentManagementScreen) renderSynthesisConfirm() string {
-	if !s.canSynthesize() {
-		return lipgloss.NewStyle().
-			Width(s.width).
-			Align(lipgloss.Center).
-			Foreground(styles.ColorSubtle).
-			Render("合成条件が満たされていません")
-	}
-
-	panel := components.NewInfoPanel("合成プレビュー")
-	panel.AddItem("コア", s.synthesisState.selectedCore.Name)
-	panel.AddItem("コアレベル", fmt.Sprintf("Lv.%d", s.synthesisState.selectedCore.Level))
-	for i, m := range s.synthesisState.selectedModules {
-		panel.AddItem(fmt.Sprintf("モジュール%d", i+1), m.Name)
-	}
-
-	content := panel.Render(50)
-	content += "\n\nEnterキーで合成を実行"
-
-	box := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1).
-		Width(60).
-		Render(content)
-
-	return lipgloss.NewStyle().
-		Width(s.width).
-		Align(lipgloss.Center).
-		Render(box)
+	return strings.Join(items, "\n")
 }
 
 // renderEquip は装備画面をレンダリングします。
@@ -905,16 +1076,24 @@ func (s *AgentManagementScreen) renderEquipAgentList() string {
 	}
 
 	for i, agent := range s.agentList {
-		listIndex := i + 3 // スロットの後
 		style := lipgloss.NewStyle()
 		prefix := "  "
 
-		if listIndex == s.selectedIndex {
+		if i == s.selectedIndex {
 			style = style.Bold(true).Foreground(styles.ColorPrimary)
 			prefix = "> "
 		}
 
-		item := fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)
+		// 装備中かチェックしてマークを付ける
+		equipMark := ""
+		for slotIdx, equipped := range s.equipSlots {
+			if equipped != nil && equipped.ID == agent.ID {
+				equipMark = fmt.Sprintf(" [E%d]", slotIdx+1)
+				break
+			}
+		}
+
+		item := fmt.Sprintf("%s Lv.%d%s", agent.GetCoreTypeName(), agent.Level, equipMark)
 		builder.WriteString(style.Render(prefix + item))
 		builder.WriteString("\n")
 	}
@@ -930,12 +1109,10 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 	builder.WriteString(titleStyle.Render("選択中エージェント詳細"))
 	builder.WriteString("\n\n")
 
-	// 選択中のエージェントを取得
+	// 選択中のエージェントを取得（一覧から）
 	var selectedAgent *domain.AgentModel
-	if s.selectedIndex >= 3 && s.selectedIndex-3 < len(s.agentList) {
-		selectedAgent = s.agentList[s.selectedIndex-3]
-	} else if s.selectedIndex < 3 && s.equipSlots[s.selectedIndex] != nil {
-		selectedAgent = s.equipSlots[s.selectedIndex]
+	if s.selectedIndex >= 0 && s.selectedIndex < len(s.agentList) {
+		selectedAgent = s.agentList[s.selectedIndex]
 	}
 
 	if selectedAgent == nil {
@@ -986,7 +1163,7 @@ func (s *AgentManagementScreen) renderEquipBottomSection() string {
 
 	for i := 0; i < 3; i++ {
 		var cardContent strings.Builder
-		isSelected := i == s.selectedIndex && s.selectedIndex < 3
+		isSelected := i == s.selectedEquipSlot
 
 		// スロットタイトル
 		slotTitle := fmt.Sprintf("スロット%d", i+1)
@@ -1048,60 +1225,3 @@ func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) st
 	}
 }
 
-// renderEquipSlots は装備スロットをレンダリングします。
-func (s *AgentManagementScreen) renderEquipSlots() string {
-	var slots []string
-
-	for i := 0; i < 3; i++ {
-		style := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 1).
-			Width(30)
-
-		if i == s.selectedIndex && s.selectedIndex < 3 {
-			style = style.BorderForeground(styles.ColorPrimary)
-		} else {
-			style = style.BorderForeground(styles.ColorSubtle)
-		}
-
-		var content string
-		if s.equipSlots[i] != nil {
-			agent := s.equipSlots[i]
-			content = fmt.Sprintf("スロット%d\n%s\nLv.%d", i+1, agent.GetCoreTypeName(), agent.Level)
-		} else {
-			content = fmt.Sprintf("スロット%d\n(空)", i+1)
-		}
-
-		slots = append(slots, style.Render(content))
-	}
-
-	return lipgloss.JoinHorizontal(lipgloss.Center, slots...)
-}
-
-// renderAgentList はエージェント一覧をレンダリングします。
-func (s *AgentManagementScreen) renderAgentList() string {
-	if len(s.agentList) == 0 {
-		return lipgloss.NewStyle().
-			Foreground(styles.ColorSubtle).
-			Render("所持エージェントなし")
-	}
-
-	var items []string
-	for i, agent := range s.agentList {
-		style := lipgloss.NewStyle()
-		listIndex := i + 3 // スロットの後
-		if listIndex == s.selectedIndex {
-			style = style.Bold(true).Foreground(styles.ColorPrimary)
-		}
-		item := fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)
-		items = append(items, style.Render(item))
-	}
-
-	listContent := strings.Join(items, "\n")
-	return lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorSubtle).
-		Padding(1).
-		Width(50).
-		Render("所持エージェント\n\n" + listContent)
-}
