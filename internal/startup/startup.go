@@ -6,59 +6,86 @@ package startup
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
 )
 
+// 初期モジュールID定義（マスタデータのmodules.jsonと一致させる）
+var initialModuleIDs = []string{
+	"physical_strike_lv1",
+	"fireball_lv1",
+	"heal_lv1",
+	"attack_buff_lv1",
+}
+
+// 初期コア特性ID（マスタデータのcores.jsonと一致させる）
+const initialCoreTypeID = "all_rounder"
+
 // NewGameInitializer は新規ゲーム初期化を担当する構造体です。
 type NewGameInitializer struct {
-	// idCounter はID生成用のカウンターです。
-	idCounter int
+	// externalData は外部マスタデータです。
+	externalData *loader.ExternalData
 }
 
 // NewNewGameInitializer は新しいNewGameInitializerを作成します。
-func NewNewGameInitializer() *NewGameInitializer {
+// externalData はマスタデータを含む外部データです。
+func NewNewGameInitializer(externalData *loader.ExternalData) *NewGameInitializer {
 	return &NewGameInitializer{
-		idCounter: 0,
+		externalData: externalData,
 	}
 }
 
-// generateID は一意のIDを生成します。
-func (i *NewGameInitializer) generateID(prefix string) string {
-	i.idCounter++
-	return fmt.Sprintf("%s_%d", prefix, i.idCounter)
+// generateUUID は一意のUUIDを生成します。
+func generateUUID() string {
+	return uuid.New().String()
 }
 
 // CreateInitialCore は初期コアを作成します。
 // Requirement 3.8: 初期コアの提供（レベル1、オールラウンダー）
 func (i *NewGameInitializer) CreateInitialCore() *domain.CoreModel {
-	// オールラウンダー特性の定義
-	coreType := domain.CoreType{
-		ID:   "all_rounder",
-		Name: "オールラウンダー",
-		StatWeights: map[string]float64{
-			"STR": 1.0,
-			"MAG": 1.0,
-			"SPD": 1.0,
-			"LUK": 1.0,
-		},
-		PassiveSkillID: "balanced_power",
-		AllowedTags: []string{
-			"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low",
-		},
-		MinDropLevel: 1,
+	// マスタデータから"all_rounder"コア特性を検索
+	var coreType domain.CoreType
+	if i.externalData != nil {
+		for _, ct := range i.externalData.CoreTypes {
+			if ct.ID == initialCoreTypeID {
+				coreType = ct.ToDomain()
+				break
+			}
+		}
 	}
 
-	// パッシブスキルの定義
+	// 見つからない場合のフォールバック（外部データがない場合も含む）
+	if coreType.ID == "" {
+		coreType = domain.CoreType{
+			ID:   initialCoreTypeID,
+			Name: "オールラウンダー",
+			StatWeights: map[string]float64{
+				"STR": 1.0,
+				"MAG": 1.0,
+				"SPD": 1.0,
+				"LUK": 1.0,
+			},
+			PassiveSkillID: "adaptability",
+			AllowedTags: []string{
+				"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low",
+			},
+			MinDropLevel: 1,
+		}
+	}
+
+	// パッシブスキルの定義（マスタデータのpassive_skill_idに基づく）
 	passiveSkill := domain.PassiveSkill{
-		ID:          "balanced_power",
-		Name:        "バランスフォース",
+		ID:          coreType.PassiveSkillID,
+		Name:        "適応力",
 		Description: "全ステータスがバランス良く成長",
 	}
 
 	// レベル1のコアを作成
 	return domain.NewCore(
-		i.generateID("core"),
+		generateUUID(),
 		"初期コア",
 		1, // レベル1
 		coreType,
@@ -69,55 +96,34 @@ func (i *NewGameInitializer) CreateInitialCore() *domain.CoreModel {
 // CreateInitialModules は初期モジュールを作成します。
 // Requirement 3.8: 初期モジュールの提供（各カテゴリLv1を4個）
 func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
-	modules := make([]*domain.ModuleModel, 4)
+	modules := make([]*domain.ModuleModel, 0, len(initialModuleIDs))
 
-	// 物理攻撃Lv1
-	modules[0] = domain.NewModule(
-		i.generateID("module"),
-		"物理打撃Lv1",
-		domain.PhysicalAttack,
-		1, // レベル1
-		[]string{"physical_low"},
-		10.0,
-		"STR",
-		"物理ダメージを与える基本攻撃",
-	)
+	// マスタデータから初期モジュールを検索
+	if i.externalData != nil {
+		for _, moduleID := range initialModuleIDs {
+			for _, md := range i.externalData.ModuleDefinitions {
+				if md.ID == moduleID {
+					modules = append(modules, md.ToDomain())
+					break
+				}
+			}
+		}
+	}
 
-	// 魔法攻撃Lv1
-	modules[1] = domain.NewModule(
-		i.generateID("module"),
-		"ファイアボールLv1",
-		domain.MagicAttack,
-		1, // レベル1
-		[]string{"magic_low"},
-		10.0,
-		"MAG",
-		"魔法ダメージを与える基本魔法",
-	)
-
-	// 回復Lv1
-	modules[2] = domain.NewModule(
-		i.generateID("module"),
-		"ヒールLv1",
-		domain.Heal,
-		1, // レベル1
-		[]string{"heal_low"},
-		8.0,
-		"MAG",
-		"HPを回復する基本回復魔法",
-	)
-
-	// バフLv1
-	modules[3] = domain.NewModule(
-		i.generateID("module"),
-		"攻撃バフLv1",
-		domain.Buff,
-		1, // レベル1
-		[]string{"buff_low"},
-		5.0,
-		"SPD",
-		"一時的に攻撃力を上昇させる",
-	)
+	// 外部データがない場合やモジュールが見つからない場合のフォールバック
+	if len(modules) == 0 {
+		// デフォルトのモジュールを作成
+		modules = []*domain.ModuleModel{
+			domain.NewModule("physical_strike_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理ダメージを与える基本攻撃"),
+			domain.NewModule("fireball_lv1", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", "魔法ダメージを与える基本魔法"),
+			domain.NewModule("heal_lv1", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "HPを回復する基本回復魔法"),
+			domain.NewModule("attack_buff_lv1", "攻撃バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", "一時的に攻撃力を上昇させる"),
+		}
+	} else if len(modules) < len(initialModuleIDs) {
+		// ログを出力（デバッグ用）
+		fmt.Printf("警告: 一部の初期モジュールがマスタデータに見つかりませんでした (%d/%d)\n",
+			len(modules), len(initialModuleIDs))
+	}
 
 	return modules
 }
@@ -129,7 +135,7 @@ func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
 	modules := i.CreateInitialModules()
 
 	return domain.NewAgent(
-		i.generateID("agent"),
+		generateUUID(),
 		core,
 		modules,
 	)
@@ -137,6 +143,7 @@ func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
 
 // InitializeNewGame は新規ゲームを初期化してセーブデータを作成します。
 // Requirement 17.5: セーブデータ不在時の新規ゲーム開始
+// ID化最適化に対応：フルオブジェクトではなくID参照を保存
 func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
 	// 基本のセーブデータを作成
 	saveData := persistence.NewSaveData()
@@ -144,30 +151,54 @@ func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
 	// 初期エージェントを作成
 	initialAgent := i.CreateInitialAgent()
 
-	// インベントリにエージェントを追加
-	saveData.Inventory.Agents = []*domain.AgentModel{initialAgent}
+	// インベントリにエージェントを追加（コア情報を直接埋め込み）
+	moduleIDs := make([]string, len(initialAgent.Modules))
+	for idx, m := range initialAgent.Modules {
+		moduleIDs[idx] = m.ID
+	}
+	saveData.Inventory.AgentInstances = []persistence.AgentInstanceSave{
+		{
+			ID: initialAgent.ID,
+			Core: persistence.CoreInstanceSave{
+				ID:         initialAgent.Core.ID,
+				CoreTypeID: initialAgent.Core.Type.ID,
+				Level:      initialAgent.Core.Level,
+			},
+			ModuleIDs: moduleIDs,
+		},
+	}
+
+	// インベントリのコアは空（エージェントのコアはエージェント内に保持される）
+	saveData.Inventory.CoreInstances = []persistence.CoreInstanceSave{}
 
 	// コアとモジュールはエージェント合成で消費されるため、インベントリには追加しない
 	// （エージェントに含まれているコアとモジュールは参照として保持される）
 
-	// 初期エージェントを装備
-	saveData.Player.EquippedAgentIDs = []string{initialAgent.ID}
+	// 初期エージェントを装備（スロット0に装備）
+	saveData.Player.EquippedAgentIDs = [3]string{initialAgent.ID, "", ""}
 
 	return saveData
 }
 
 // CreateNewGameWithExtraItems は追加アイテム付きで新規ゲームを初期化します。
 // デバッグや特殊条件での開始用
+// ID化最適化に対応：フルオブジェクトではなくID参照を保存
 func (i *NewGameInitializer) CreateNewGameWithExtraItems() *persistence.SaveData {
 	saveData := i.InitializeNewGame()
 
-	// 追加のコアを作成してインベントリに追加
+	// 追加のコアを作成してインベントリにID化して追加
 	extraCore := i.CreateInitialCore()
-	saveData.Inventory.Cores = append(saveData.Inventory.Cores, extraCore)
+	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, persistence.CoreInstanceSave{
+		ID:         extraCore.ID,
+		CoreTypeID: extraCore.Type.ID,
+		Level:      extraCore.Level,
+	})
 
-	// 追加のモジュールを作成してインベントリに追加
+	// 追加のモジュールを作成してインベントリにカウント追加
 	extraModules := i.CreateInitialModules()
-	saveData.Inventory.Modules = append(saveData.Inventory.Modules, extraModules...)
+	for _, module := range extraModules {
+		saveData.Inventory.ModuleCounts[module.ID]++
+	}
 
 	return saveData
 }

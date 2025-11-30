@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"hirorocky/type-battle/internal/domain"
 )
 
 // TestNewSaveData は新規SaveDataの作成をテストします。
@@ -201,41 +199,19 @@ func TestLoadGameFileNotFound(t *testing.T) {
 }
 
 // TestSaveDataWithInventory はインベントリを含むセーブデータをテストします。
+// ID化されたセーブデータ構造をテスト
 func TestSaveDataWithInventory(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
 
-	// テスト用のコアとモジュールを作成
-	coreType := domain.CoreType{
-		ID:             "test_core",
-		Name:           "テストコア",
-		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		PassiveSkillID: "test_passive",
-		AllowedTags:    []string{"physical_low"},
-		MinDropLevel:   1,
-	}
-	passiveSkill := domain.PassiveSkill{
-		ID:          "test_passive",
-		Name:        "テストパッシブ",
-		Description: "テスト用のパッシブスキル",
-	}
-	core := domain.NewCore("core_001", "テストコア1", 5, coreType, passiveSkill)
-
-	module := domain.NewModule(
-		"module_001",
-		"テストモジュール",
-		domain.PhysicalAttack,
-		1,
-		[]string{"physical_low"},
-		10.0,
-		"STR",
-		"テスト用のモジュール",
-	)
-
-	// セーブデータを作成
+	// セーブデータを作成（ID化された構造）
 	saveData := NewSaveData()
-	saveData.Inventory.Cores = append(saveData.Inventory.Cores, core)
-	saveData.Inventory.Modules = append(saveData.Inventory.Modules, module)
+	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, CoreInstanceSave{
+		ID:         "core_001",
+		CoreTypeID: "test_core",
+		Level:      5,
+	})
+	saveData.Inventory.ModuleCounts["module_001"] = 1
 
 	// セーブ
 	if err := io.SaveGame(saveData); err != nil {
@@ -249,53 +225,38 @@ func TestSaveDataWithInventory(t *testing.T) {
 	}
 
 	// 検証
-	if len(loadedData.Inventory.Cores) != 1 {
-		t.Errorf("Cores: got %d, want 1", len(loadedData.Inventory.Cores))
+	if len(loadedData.Inventory.CoreInstances) != 1 {
+		t.Errorf("CoreInstances: got %d, want 1", len(loadedData.Inventory.CoreInstances))
 	}
-	if len(loadedData.Inventory.Modules) != 1 {
-		t.Errorf("Modules: got %d, want 1", len(loadedData.Inventory.Modules))
+	if loadedData.Inventory.ModuleCounts["module_001"] != 1 {
+		t.Errorf("ModuleCounts[module_001]: got %d, want 1", loadedData.Inventory.ModuleCounts["module_001"])
 	}
-	if loadedData.Inventory.Cores[0].ID != "core_001" {
-		t.Errorf("Core ID: got %s, want core_001", loadedData.Inventory.Cores[0].ID)
+	if loadedData.Inventory.CoreInstances[0].ID != "core_001" {
+		t.Errorf("Core ID: got %s, want core_001", loadedData.Inventory.CoreInstances[0].ID)
 	}
-	if loadedData.Inventory.Modules[0].ID != "module_001" {
-		t.Errorf("Module ID: got %s, want module_001", loadedData.Inventory.Modules[0].ID)
+	if loadedData.Inventory.CoreInstances[0].Level != 5 {
+		t.Errorf("Core Level: got %d, want 5", loadedData.Inventory.CoreInstances[0].Level)
 	}
 }
 
 // TestSaveDataWithAgents はエージェントを含むセーブデータをテストします。
+// ID化されたセーブデータ構造をテスト
 func TestSaveDataWithAgents(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
 
-	// テスト用のエージェントを作成
-	coreType := domain.CoreType{
-		ID:             "test_core",
-		Name:           "テストコア",
-		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		PassiveSkillID: "test_passive",
-		AllowedTags:    []string{"physical_low"},
-		MinDropLevel:   1,
-	}
-	passiveSkill := domain.PassiveSkill{
-		ID:          "test_passive",
-		Name:        "テストパッシブ",
-		Description: "テスト用",
-	}
-	core := domain.NewCore("core_001", "テストコア1", 5, coreType, passiveSkill)
-
-	modules := []*domain.ModuleModel{
-		domain.NewModule("mod_1", "モジュール1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "説明1"),
-		domain.NewModule("mod_2", "モジュール2", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "説明2"),
-		domain.NewModule("mod_3", "モジュール3", domain.Heal, 1, []string{"heal_low"}, 10.0, "MAG", "説明3"),
-		domain.NewModule("mod_4", "モジュール4", domain.Buff, 1, []string{"buff_low"}, 10.0, "SPD", "説明4"),
-	}
-
-	agent := domain.NewAgent("agent_001", core, modules)
-
-	// セーブデータを作成
+	// セーブデータを作成（コア情報を直接埋め込み）
 	saveData := NewSaveData()
-	saveData.Inventory.Agents = append(saveData.Inventory.Agents, agent)
+	// エージェントインスタンスを追加（コア情報を埋め込み）
+	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, AgentInstanceSave{
+		ID: "agent_001",
+		Core: CoreInstanceSave{
+			ID:         "core_001",
+			CoreTypeID: "test_core",
+			Level:      5,
+		},
+		ModuleIDs: []string{"mod_1", "mod_2", "mod_3", "mod_4"},
+	})
 
 	// セーブ
 	if err := io.SaveGame(saveData); err != nil {
@@ -309,14 +270,20 @@ func TestSaveDataWithAgents(t *testing.T) {
 	}
 
 	// 検証
-	if len(loadedData.Inventory.Agents) != 1 {
-		t.Errorf("Agents: got %d, want 1", len(loadedData.Inventory.Agents))
+	if len(loadedData.Inventory.AgentInstances) != 1 {
+		t.Errorf("AgentInstances: got %d, want 1", len(loadedData.Inventory.AgentInstances))
 	}
-	if loadedData.Inventory.Agents[0].ID != "agent_001" {
-		t.Errorf("Agent ID: got %s, want agent_001", loadedData.Inventory.Agents[0].ID)
+	if loadedData.Inventory.AgentInstances[0].ID != "agent_001" {
+		t.Errorf("Agent ID: got %s, want agent_001", loadedData.Inventory.AgentInstances[0].ID)
 	}
-	if loadedData.Inventory.Agents[0].Level != 5 {
-		t.Errorf("Agent Level: got %d, want 5", loadedData.Inventory.Agents[0].Level)
+	if loadedData.Inventory.AgentInstances[0].Core.ID != "core_001" {
+		t.Errorf("Agent Core.ID: got %s, want core_001", loadedData.Inventory.AgentInstances[0].Core.ID)
+	}
+	if loadedData.Inventory.AgentInstances[0].Core.Level != 5 {
+		t.Errorf("Agent Core.Level: got %d, want 5", loadedData.Inventory.AgentInstances[0].Core.Level)
+	}
+	if len(loadedData.Inventory.AgentInstances[0].ModuleIDs) != 4 {
+		t.Errorf("Agent ModuleIDs count: got %d, want 4", len(loadedData.Inventory.AgentInstances[0].ModuleIDs))
 	}
 }
 

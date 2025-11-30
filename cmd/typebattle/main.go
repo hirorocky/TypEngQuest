@@ -5,19 +5,30 @@
 //
 // 終了操作（qキーまたはCtrl+C）を行うと、tea.WithAltScreen()により
 // ターミナルの状態が自動的に復元されます。
+//
+// コマンドライン引数:
+//
+//	-data <path>  外部データディレクトリのパス（省略時は埋め込みデータを使用）
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/app"
+	"hirorocky/type-battle/internal/embedded"
 )
 
 func main() {
+	// コマンドライン引数を解析
+	dataDir := flag.String("data", "", "外部データディレクトリのパス（省略時は埋め込みデータを使用）")
+	flag.Parse()
+
 	// RootModelを作成 - ゲーム全体の状態管理とシーンルーティングを担当
-	model := app.NewRootModel()
+	// 外部データディレクトリが指定されていない場合は埋め込みデータを使用
+	model := app.NewRootModel(*dataDir, embedded.Data)
 
 	// Bubbleteaプログラムを作成
 	// tea.WithAltScreen(): 代替スクリーンバッファを使用し、

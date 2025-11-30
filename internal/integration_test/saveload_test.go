@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/persistence"
 	"hirorocky/type-battle/internal/startup"
 )
@@ -22,7 +21,7 @@ func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
 	io := persistence.NewSaveDataIO(tempDir)
 
 	// 初期データを作成
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 	saveData := initializer.InitializeNewGame()
 
 	// 統計データを追加
@@ -59,30 +58,22 @@ func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
 }
 
 func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
-	// インベントリの永続化テスト
+	// インベントリの永続化テスト（ID化された構造）
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
 
 	// テスト用データを作成
 	saveData := persistence.NewSaveData()
 
-	// コアを追加
-	coreType := domain.CoreType{
-		ID:   "test_type",
-		Name: "テスト特性",
-		StatWeights: map[string]float64{
-			"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0,
-		},
-		AllowedTags: []string{"physical_low"},
-	}
-	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト", Description: ""}
-	core := domain.NewCore("core_1", "テストコア", 5, coreType, passiveSkill)
-	saveData.Inventory.Cores = append(saveData.Inventory.Cores, core)
+	// コアインスタンスを追加（ID化された構造）
+	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, persistence.CoreInstanceSave{
+		ID:         "core_1",
+		CoreTypeID: "test_type",
+		Level:      5,
+	})
 
-	// モジュールを追加
-	module := domain.NewModule("module_1", "テストモジュール", domain.PhysicalAttack, 1,
-		[]string{"physical_low"}, 10.0, "STR", "テスト説明")
-	saveData.Inventory.Modules = append(saveData.Inventory.Modules, module)
+	// モジュールカウントを追加（ID化された構造）
+	saveData.Inventory.ModuleCounts["module_1"] = 1
 
 	// セーブ
 	err := io.SaveGame(saveData)
@@ -96,11 +87,11 @@ func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 		t.Fatalf("ロードに失敗: %v", err)
 	}
 
-	// コア確認
-	if len(loadedData.Inventory.Cores) != 1 {
-		t.Fatalf("コア数 expected 1, got %d", len(loadedData.Inventory.Cores))
+	// コア確認（ID化された構造）
+	if len(loadedData.Inventory.CoreInstances) != 1 {
+		t.Fatalf("コアインスタンス数 expected 1, got %d", len(loadedData.Inventory.CoreInstances))
 	}
-	loadedCore := loadedData.Inventory.Cores[0]
+	loadedCore := loadedData.Inventory.CoreInstances[0]
 	if loadedCore.ID != "core_1" {
 		t.Errorf("Core ID expected 'core_1', got '%s'", loadedCore.ID)
 	}
@@ -108,13 +99,9 @@ func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 		t.Errorf("Core Level expected 5, got %d", loadedCore.Level)
 	}
 
-	// モジュール確認
-	if len(loadedData.Inventory.Modules) != 1 {
-		t.Fatalf("モジュール数 expected 1, got %d", len(loadedData.Inventory.Modules))
-	}
-	loadedModule := loadedData.Inventory.Modules[0]
-	if loadedModule.ID != "module_1" {
-		t.Errorf("Module ID expected 'module_1', got '%s'", loadedModule.ID)
+	// モジュール確認（ID化された構造）
+	if loadedData.Inventory.ModuleCounts["module_1"] != 1 {
+		t.Errorf("モジュールカウント expected 1, got %d", loadedData.Inventory.ModuleCounts["module_1"])
 	}
 }
 
@@ -124,7 +111,7 @@ func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
 	io := persistence.NewSaveDataIO(tempDir)
 
 	// 正常なデータをセーブ
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 	saveData := initializer.InitializeNewGame()
 	saveData.Statistics.MaxLevelReached = 10
 
@@ -169,7 +156,7 @@ func TestSaveLoadFlow_BackupRotation(t *testing.T) {
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
 
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 複数回セーブしてバックアップローテーションを確認
 	for i := 1; i <= 5; i++ {
@@ -220,7 +207,7 @@ func TestSaveLoadFlow_NewGameWhenNoSave(t *testing.T) {
 	}
 
 	// 新規ゲームを開始
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 	newGameData := initializer.InitializeNewGame()
 
 	// セーブ
@@ -271,7 +258,7 @@ func TestSaveLoadFlow_ResetSaveData(t *testing.T) {
 	io := persistence.NewSaveDataIO(tempDir)
 
 	// データをセーブ
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 	saveData := initializer.InitializeNewGame()
 	saveData.Statistics.MaxLevelReached = 50
 	io.SaveGame(saveData)

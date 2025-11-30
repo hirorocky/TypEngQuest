@@ -3,6 +3,7 @@
 package app
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -10,8 +11,10 @@ import (
 	"hirorocky/type-battle/internal/agent"
 	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
 	"hirorocky/type-battle/internal/reward"
+	"hirorocky/type-battle/internal/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 )
 
@@ -63,11 +66,26 @@ type RootModel struct {
 // NewRootModel はデフォルトの初期状態で新しいRootModelを作成します。
 // 初期シーンはSceneHome（ホーム画面）に設定されます。
 // セーブデータが存在する場合は自動的にロードします。
-func NewRootModel() *RootModel {
+// 外部データファイル（data/）から敵タイプ等を読み込みます。
+//
+// dataDir: 外部データディレクトリのパス（空の場合は埋め込みデータを使用）
+// embeddedFS: 埋め込みファイルシステム（dataDir が空の場合に使用）
+func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	// セーブディレクトリを決定
 	homeDir, _ := os.UserHomeDir()
 	saveDir := filepath.Join(homeDir, ".typebattle")
 	saveDataIO := persistence.NewSaveDataIO(saveDir)
+
+	// 外部データをロード
+	var dataLoader *loader.DataLoader
+	if dataDir != "" {
+		// 外部ディレクトリから読み込み
+		dataLoader = loader.NewDataLoader(dataDir)
+	} else {
+		// 埋め込みFSから読み込み
+		dataLoader = loader.NewEmbeddedDataLoader(embeddedFS, "data")
+	}
+	externalData, loadErr := dataLoader.LoadAllExternalData()
 
 	// セーブデータをロードまたは新規作成
 	var gameState *GameState
@@ -76,15 +94,28 @@ func NewRootModel() *RootModel {
 	if saveDataIO.Exists() {
 		saveData, err := saveDataIO.LoadGame()
 		if err == nil {
-			gameState = GameStateFromSaveData(saveData)
+			gameState = GameStateFromSaveData(saveData, externalData)
 			statusMessage = "セーブデータをロードしました"
 		} else {
-			gameState = NewGameState()
+			// セーブデータの読み込みに失敗した場合、新規ゲームを初期化
+			initializer := startup.NewNewGameInitializer(externalData)
+			saveData := initializer.InitializeNewGame()
+			gameState = GameStateFromSaveData(saveData, externalData)
 			statusMessage = "セーブデータの読み込みに失敗しました。新規ゲームを開始します"
 		}
 	} else {
-		gameState = NewGameState()
+		// セーブデータが存在しない場合、新規ゲームを初期化（マスタデータ参照）
+		initializer := startup.NewNewGameInitializer(externalData)
+		saveData := initializer.InitializeNewGame()
+		gameState = GameStateFromSaveData(saveData, externalData)
 		statusMessage = "新規ゲームを開始します"
+	}
+
+	// 外部データを設定
+	if loadErr == nil && externalData != nil {
+		gameState.SetExternalData(externalData)
+		// EnemyGeneratorを外部データで再初期化
+		gameState.UpdateEnemyGenerator(externalData.EnemyTypes)
 	}
 
 	// インベントリプロバイダーアダプターを作成（複数画面で共有）

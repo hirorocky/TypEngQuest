@@ -59,6 +59,40 @@ const (
 	PlayerDebuffCooldownExtend
 )
 
+// EnemyActionType は敵の行動タイプを表します。
+// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+type EnemyActionType int
+
+const (
+	// EnemyActionAttack は攻撃行動
+	EnemyActionAttack EnemyActionType = iota
+
+	// EnemyActionSelfBuff は自己バフ行動
+	EnemyActionSelfBuff
+
+	// EnemyActionDebuff はプレイヤーへのデバフ行動
+	EnemyActionDebuff
+)
+
+// NextEnemyAction は敵の次回行動を表します。
+// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+type NextEnemyAction struct {
+	// ActionType は行動タイプ（攻撃/自己バフ/デバフ）
+	ActionType EnemyActionType
+
+	// AttackType は攻撃属性（"physical" or "magic"）（攻撃時のみ有効）
+	AttackType string
+
+	// BuffType は自己バフの種類（自己バフ時のみ有効）
+	BuffType EnemyBuffType
+
+	// DebuffType はデバフの種類（デバフ時のみ有効）
+	DebuffType PlayerDebuffType
+
+	// ExpectedValue は予測ダメージまたは効果量
+	ExpectedValue int
+}
+
 // BattleStatistics はバトル統計を表す構造体です。
 type BattleStatistics struct {
 	// TotalTypingCount は総タイピング回数です。
@@ -123,6 +157,10 @@ type BattleState struct {
 
 	// NextAttackTime は敵の次回攻撃時刻です。
 	NextAttackTime time.Time
+
+	// NextAction は敵の次回行動です。
+	// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+	NextAction NextEnemyAction
 }
 
 // BattleResult はバトル結果を表す構造体です。
@@ -185,6 +223,9 @@ func (e *BattleEngine) InitializeBattle(level int, agents []*domain.AgentModel) 
 		},
 		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
+
+	// Requirement 11.8: 初回行動を決定
+	state.NextAction = e.DetermineNextAction(state)
 
 	return state, nil
 }
@@ -290,6 +331,101 @@ func (e *BattleEngine) GetAttackType(state *BattleState) string {
 	return state.Enemy.Type.AttackType
 }
 
+// DetermineNextAction は敵の次回行動を決定します。
+// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+func (e *BattleEngine) DetermineNextAction(state *BattleState) NextEnemyAction {
+	// 強化フェーズでない場合は攻撃のみ
+	if !state.Enemy.IsEnhanced() {
+		return NextEnemyAction{
+			ActionType:    EnemyActionAttack,
+			AttackType:    state.Enemy.Type.AttackType,
+			ExpectedValue: e.GetExpectedDamage(state),
+		}
+	}
+
+	// 強化フェーズ: 30%確率で特殊行動
+	if e.rng.Float64() > 0.3 {
+		return NextEnemyAction{
+			ActionType:    EnemyActionAttack,
+			AttackType:    state.Enemy.Type.AttackType,
+			ExpectedValue: e.GetExpectedDamage(state),
+		}
+	}
+
+	// 50%で自己バフ、50%でプレイヤーデバフ
+	if e.rng.Float64() < 0.5 {
+		buffTypes := []EnemyBuffType{EnemyBuffAttackUp, EnemyBuffPhysicalDamageDown, EnemyBuffMagicDamageDown}
+		return NextEnemyAction{
+			ActionType: EnemyActionSelfBuff,
+			BuffType:   buffTypes[e.rng.Intn(len(buffTypes))],
+		}
+	}
+
+	debuffTypes := []PlayerDebuffType{PlayerDebuffTypingTimeDown, PlayerDebuffTextShuffle,
+		PlayerDebuffDifficultyUp, PlayerDebuffCooldownExtend}
+	return NextEnemyAction{
+		ActionType: EnemyActionDebuff,
+		DebuffType: debuffTypes[e.rng.Intn(len(debuffTypes))],
+	}
+}
+
+// ExecuteNextAction は事前決定された次回行動を実行します。
+// Requirement 11.8, 11.16-11.27: 行動予告に基づいた行動実行
+func (e *BattleEngine) ExecuteNextAction(state *BattleState) (damage int, message string) {
+	action := state.NextAction
+
+	switch action.ActionType {
+	case EnemyActionAttack:
+		// 通常攻撃を実行
+		damage = e.ProcessEnemyAttack(state)
+		return damage, fmt.Sprintf("%dダメージを受けた！", damage)
+
+	case EnemyActionSelfBuff:
+		// 自己バフを適用
+		e.ApplyEnemySelfBuff(state, action.BuffType)
+		return 0, getEnemyBuffMessage(action.BuffType)
+
+	case EnemyActionDebuff:
+		// プレイヤーデバフを適用
+		e.ApplyPlayerDebuff(state, action.DebuffType)
+		return 0, getPlayerDebuffMessage(action.DebuffType)
+	}
+
+	return 0, ""
+}
+
+// GetEnemyBuffName は敵自己バフの名前を返します。
+// Requirement 11.8: 行動予告表示用
+func GetEnemyBuffName(buffType EnemyBuffType) string {
+	switch buffType {
+	case EnemyBuffAttackUp:
+		return "攻撃力UP"
+	case EnemyBuffPhysicalDamageDown:
+		return "物理防御UP"
+	case EnemyBuffMagicDamageDown:
+		return "魔法防御UP"
+	default:
+		return "強化"
+	}
+}
+
+// GetPlayerDebuffName はプレイヤーデバフの名前を返します。
+// Requirement 11.8: 行動予告表示用
+func GetPlayerDebuffName(debuffType PlayerDebuffType) string {
+	switch debuffType {
+	case PlayerDebuffTypingTimeDown:
+		return "タイピング時間短縮"
+	case PlayerDebuffTextShuffle:
+		return "テキストシャッフル"
+	case PlayerDebuffDifficultyUp:
+		return "難易度上昇"
+	case PlayerDebuffCooldownExtend:
+		return "クールダウン延長"
+	default:
+		return "デバフ"
+	}
+}
+
 // ==================== 敵フェーズ変化と特殊行動（Task 7.3） ====================
 
 // CheckPhaseTransition はフェーズ変化をチェックし、必要に応じて移行します。
@@ -377,6 +513,66 @@ func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDe
 func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	state.Player.EffectTable.UpdateDurations(deltaSeconds)
 	state.Enemy.EffectTable.UpdateDurations(deltaSeconds)
+}
+
+// SelectEnemySpecialAction は敵の特殊行動を選択して実行します。
+// 強化フェーズ時のみ発動し、確率で自己バフまたはプレイヤーデバフを選択。
+// Requirement 11.16-11.27: 強化フェーズでの特殊行動
+func (e *BattleEngine) SelectEnemySpecialAction(state *BattleState) (actionTaken bool, message string) {
+	// 強化フェーズ以外では特殊行動しない
+	if state.Enemy == nil || !state.Enemy.IsEnhanced() {
+		return false, ""
+	}
+
+	// 30%の確率で特殊行動を発動
+	if e.rng.Float64() > 0.3 {
+		return false, ""
+	}
+
+	// 50%で自己バフ、50%でプレイヤーデバフ
+	if e.rng.Float64() < 0.5 {
+		// 自己バフを選択（3種類からランダム）
+		buffTypes := []EnemyBuffType{EnemyBuffAttackUp, EnemyBuffPhysicalDamageDown, EnemyBuffMagicDamageDown}
+		buff := buffTypes[e.rng.Intn(len(buffTypes))]
+		e.ApplyEnemySelfBuff(state, buff)
+		return true, getEnemyBuffMessage(buff)
+	}
+
+	// プレイヤーデバフを選択（4種類からランダム）
+	debuffTypes := []PlayerDebuffType{PlayerDebuffTypingTimeDown, PlayerDebuffTextShuffle, PlayerDebuffDifficultyUp, PlayerDebuffCooldownExtend}
+	debuff := debuffTypes[e.rng.Intn(len(debuffTypes))]
+	e.ApplyPlayerDebuff(state, debuff)
+	return true, getPlayerDebuffMessage(debuff)
+}
+
+// getEnemyBuffMessage は敵自己バフのメッセージを返します。
+func getEnemyBuffMessage(buffType EnemyBuffType) string {
+	switch buffType {
+	case EnemyBuffAttackUp:
+		return "敵の攻撃力が上昇した！"
+	case EnemyBuffPhysicalDamageDown:
+		return "敵が物理防御を強化した！"
+	case EnemyBuffMagicDamageDown:
+		return "敵が魔法防御を強化した！"
+	default:
+		return "敵が強化された！"
+	}
+}
+
+// getPlayerDebuffMessage はプレイヤーデバフのメッセージを返します。
+func getPlayerDebuffMessage(debuffType PlayerDebuffType) string {
+	switch debuffType {
+	case PlayerDebuffTypingTimeDown:
+		return "タイピング時間が短縮された！"
+	case PlayerDebuffTextShuffle:
+		return "テキストがシャッフルされた！"
+	case PlayerDebuffDifficultyUp:
+		return "難易度が上昇した！"
+	case PlayerDebuffCooldownExtend:
+		return "クールダウンが延長された！"
+	default:
+		return "デバフを受けた！"
+	}
 }
 
 // ==================== モジュール効果計算（Task 7.4） ====================

@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-// getProjectDataDir はプロジェクトルートのdataディレクトリパスを返します。
+// getProjectDataDir は埋め込みデータディレクトリのパスを返します。
 func getProjectDataDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	// internal/loader/ から2階層上がプロジェクトルート
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
-	return filepath.Join(projectRoot, "data")
+	// internal/loader/ から1階層上が internal/
+	internalDir := filepath.Dir(filepath.Dir(filename))
+	return filepath.Join(internalDir, "embedded", "data")
 }
 
 // TestCoresJSONExists はcores.jsonの存在と内容を検証します。

@@ -2,6 +2,8 @@
 package app
 
 import (
+	"fmt"
+
 	"hirorocky/type-battle/internal/achievement"
 	"hirorocky/type-battle/internal/agent"
 	"hirorocky/type-battle/internal/domain"
@@ -141,6 +143,13 @@ func (g *GameState) Settings() *Settings {
 // EnemyGenerator は敵生成器を返します。
 func (g *GameState) EnemyGenerator() *enemy.EnemyGenerator {
 	return g.enemyGenerator
+}
+
+// UpdateEnemyGenerator は外部データで敵生成器を更新します。
+func (g *GameState) UpdateEnemyGenerator(enemyTypes []loader.EnemyTypeData) {
+	if len(enemyTypes) > 0 {
+		g.enemyGenerator = enemy.NewEnemyGenerator(enemyTypes)
+	}
 }
 
 // RecordBattleVictory はバトル勝利を記録します。
@@ -341,25 +350,60 @@ func getDefaultPassiveSkills() map[string]domain.PassiveSkill {
 // ==================== セーブ/ロード変換関数 ====================
 
 // ToSaveData はGameStateをセーブデータに変換します。
+// ID化最適化により、フルオブジェクトではなくID参照を保存します。
 func (g *GameState) ToSaveData() *persistence.SaveData {
 	saveData := persistence.NewSaveData()
 
 	// 最高到達レベル
 	saveData.Statistics.MaxLevelReached = g.MaxLevelReached
 
-	// インベントリ
-	saveData.Inventory.Cores = g.inventory.GetCores()
-	saveData.Inventory.Modules = g.inventory.GetModules()
-	saveData.Inventory.Agents = g.agentManager.GetAgents()
+	// コアをID化して保存
+	coreInstances := make([]persistence.CoreInstanceSave, 0)
+	for _, core := range g.inventory.GetCores() {
+		coreInstances = append(coreInstances, persistence.CoreInstanceSave{
+			ID:         core.ID,
+			CoreTypeID: core.Type.ID,
+			Level:      core.Level,
+		})
+	}
+	saveData.Inventory.CoreInstances = coreInstances
+
+	// モジュールをカウント化して保存
+	moduleCounts := make(map[string]int)
+	for _, module := range g.inventory.GetModules() {
+		moduleCounts[module.ID]++
+	}
+	saveData.Inventory.ModuleCounts = moduleCounts
+
+	// エージェントを保存（コア情報を直接埋め込み）
+	agentInstances := make([]persistence.AgentInstanceSave, 0)
+	for _, agent := range g.agentManager.GetAgents() {
+		moduleIDs := make([]string, len(agent.Modules))
+		for i, m := range agent.Modules {
+			moduleIDs[i] = m.ID
+		}
+		agentInstances = append(agentInstances, persistence.AgentInstanceSave{
+			ID: agent.ID,
+			Core: persistence.CoreInstanceSave{
+				ID:         agent.Core.ID,
+				CoreTypeID: agent.Core.Type.ID,
+				Level:      agent.Core.Level,
+			},
+			ModuleIDs: moduleIDs,
+		})
+	}
+	saveData.Inventory.AgentInstances = agentInstances
+
 	saveData.Inventory.MaxCoreSlots = g.inventory.Cores().MaxSlots()
 	saveData.Inventory.MaxModuleSlots = g.inventory.Modules().MaxSlots()
 
-	// 装備中のエージェントIDを取得
-	equippedIDs := make([]string, 0)
-	for _, agent := range g.agentManager.GetEquippedAgents() {
-		if agent != nil {
-			equippedIDs = append(equippedIDs, agent.ID)
+	// 装備中のエージェントIDをスロット番号順に取得
+	var equippedIDs [agent.MaxEquipmentSlots]string
+	for slot := 0; slot < agent.MaxEquipmentSlots; slot++ {
+		if equippedAgent := g.agentManager.GetEquippedAgentAt(slot); equippedAgent != nil {
+			equippedIDs[slot] = equippedAgent.ID
 		}
+		// nilの場合は空文字列のまま
 	}
 	saveData.Player.EquippedAgentIDs = equippedIDs
 
@@ -384,17 +428,60 @@ func (g *GameState) ToSaveData() *persistence.SaveData {
 }
 
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
-func GameStateFromSaveData(data *persistence.SaveData) *GameState {
+// ID化最適化されたセーブデータからオブジェクトを再構築します。
+// externalDataが提供されている場合はそれを使用し、なければデフォルト値を使用します。
+func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.ExternalData) *GameState {
+	// マスタデータを取得
+	var coreTypeData []loader.CoreTypeData
+	var moduleDefData []loader.ModuleDefinitionData
+	var passiveSkills map[string]domain.PassiveSkill
+
+	if len(externalData) > 0 && externalData[0] != nil {
+		// 外部データが提供されている場合はそれを使用
+		coreTypeData = externalData[0].CoreTypes
+		moduleDefData = externalData[0].ModuleDefinitions
+		passiveSkills = getDefaultPassiveSkills() // パッシブスキルは現状デフォルトを使用
+	} else {
+		// 外部データがない場合はデフォルト値を使用
+		coreTypeData = getDefaultCoreTypeData()
+		moduleDefData = getDefaultModuleDefinitionData()
+		passiveSkills = getDefaultPassiveSkills()
+	}
+
 	// インベントリマネージャーを作成
 	invManager := NewInventoryManager()
 
-	// セーブデータからコアを復元
+	// コアのIDマップを作成（エージェント復元時に使用）
+	coreMap := make(map[string]*domain.CoreModel)
+
+	// セーブデータからコアを再構築
 	if data.Inventory != nil {
-		for _, core := range data.Inventory.Cores {
+		for _, coreSave := range data.Inventory.CoreInstances {
+			// コア特性を検索
+			coreType := findCoreType(coreTypeData, coreSave.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, coreSave.CoreTypeID)
+
+			// コアを再構築（ステータスは自動計算される）
+			core := domain.NewCore(
+				coreSave.ID,
+				coreType.Name+" Lv."+fmt.Sprintf("%d", coreSave.Level),
+				coreSave.Level,
+				coreType.ToDomain(),
+				passiveSkill,
+			)
+			coreMap[coreSave.ID] = core
 			invManager.AddCore(core)
 		}
-		for _, module := range data.Inventory.Modules {
-			invManager.AddModule(module)
+
+		// モジュールを再構築
+		for moduleID, count := range data.Inventory.ModuleCounts {
+			moduleDef := findModuleDefinition(moduleDefData, moduleID)
+			if moduleDef != nil {
+				for i := 0; i < count; i++ {
+					module := moduleDef.ToDomain()
+					invManager.AddModule(module)
+				}
+			}
 		}
 	}
 
@@ -404,18 +491,40 @@ func GameStateFromSaveData(data *persistence.SaveData) *GameState {
 		invManager.Modules(),
 	)
 
-	// セーブデータからエージェントを復元
+	// セーブデータからエージェントを再構築（コア情報は各エージェントに埋め込まれている）
 	if data.Inventory != nil {
-		for _, savedAgent := range data.Inventory.Agents {
-			agentMgr.AddAgent(savedAgent)
+		for _, agentSave := range data.Inventory.AgentInstances {
+			// エージェント内のコア情報からコアを再構築
+			coreType := findCoreType(coreTypeData, agentSave.Core.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
+			core := domain.NewCore(
+				agentSave.Core.ID,
+				coreType.Name+" Lv."+fmt.Sprintf("%d", agentSave.Core.Level),
+				agentSave.Core.Level,
+				coreType.ToDomain(),
+				passiveSkill,
+			)
+
+			// モジュールを再構築
+			modules := make([]*domain.ModuleModel, 0, len(agentSave.ModuleIDs))
+			for _, moduleID := range agentSave.ModuleIDs {
+				moduleDef := findModuleDefinition(moduleDefData, moduleID)
+				if moduleDef != nil {
+					modules = append(modules, moduleDef.ToDomain())
+				}
+			}
+
+			// エージェントを再構築
+			agentModel := domain.NewAgent(agentSave.ID, core, modules)
+			agentMgr.AddAgent(agentModel)
 		}
 	}
 
-	// 装備エージェントを復元
+	// 装備エージェントを復元（スロット番号を保持して復元）
+	player := domain.NewPlayer()
 	if data.Player != nil {
-		player := domain.NewPlayer()
 		for slot, agentID := range data.Player.EquippedAgentIDs {
-			if slot < agent.MaxEquipmentSlots {
+			if agentID != "" {
 				agentMgr.EquipAgent(slot, agentID, player)
 			}
 		}
@@ -451,11 +560,6 @@ func GameStateFromSaveData(data *persistence.SaveData) *GameState {
 		}
 	}
 
-	// 報酬計算用のデータを準備
-	coreTypeData := getDefaultCoreTypeData()
-	moduleDefData := getDefaultModuleDefinitionData()
-	passiveSkills := getDefaultPassiveSkills()
-
 	// RewardCalculatorを作成
 	rewardCalc := reward.NewRewardCalculator(coreTypeData, moduleDefData, passiveSkills)
 
@@ -472,7 +576,7 @@ func GameStateFromSaveData(data *persistence.SaveData) *GameState {
 
 	return &GameState{
 		MaxLevelReached:    maxLevelReached,
-		player:             domain.NewPlayer(),
+		player:             player,
 		inventory:          invManager,
 		agentManager:       agentMgr,
 		statistics:         statsMgr,
@@ -494,4 +598,61 @@ func (inv *InventoryManager) SetMaxCoreSlots(slots int) {
 // SetMaxModuleSlots はモジュールの最大スロット数を設定します。
 func (inv *InventoryManager) SetMaxModuleSlots(slots int) {
 	inv.modules = inventory.NewModuleInventory(slots)
+}
+
+// ==================== ID化セーブデータ復元ヘルパー ====================
+
+// findCoreType はコア特性リストから指定IDのコア特性を検索します。
+// 見つからない場合はデフォルトのオールラウンダーを返します。
+func findCoreType(coreTypes []loader.CoreTypeData, coreTypeID string) loader.CoreTypeData {
+	for _, ct := range coreTypes {
+		if ct.ID == coreTypeID {
+			return ct
+		}
+	}
+	// デフォルト（最初のコア特性またはオールラウンダー）
+	if len(coreTypes) > 0 {
+		return coreTypes[0]
+	}
+	return loader.CoreTypeData{
+		ID:             "all_rounder",
+		Name:           "オールラウンダー",
+		AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		PassiveSkillID: "balance_mastery",
+		MinDropLevel:   1,
+	}
+}
+
+// findPassiveSkill はパッシブスキルマップから指定コア特性に対応するスキルを検索します。
+// 見つからない場合はデフォルトのパッシブスキルを返します。
+func findPassiveSkill(passiveSkills map[string]domain.PassiveSkill, coreTypeID string) domain.PassiveSkill {
+	// コア特性IDに対応するパッシブスキルIDを取得
+	skillID := coreTypeID + "_skill"
+	if skill, ok := passiveSkills[skillID]; ok {
+		return skill
+	}
+	// コア特性のパッシブスキルIDで検索
+	for _, skill := range passiveSkills {
+		if skill.ID == coreTypeID || skill.ID == skillID {
+			return skill
+		}
+	}
+	// デフォルト
+	return domain.PassiveSkill{
+		ID:          "default_skill",
+		Name:        "バランス",
+		Description: "バランスの取れた能力",
+	}
+}
+
+// findModuleDefinition はモジュール定義リストから指定IDのモジュール定義を検索します。
+// 見つからない場合はnilを返します。
+func findModuleDefinition(moduleDefs []loader.ModuleDefinitionData, moduleID string) *loader.ModuleDefinitionData {
+	for i := range moduleDefs {
+		if moduleDefs[i].ID == moduleID {
+			return &moduleDefs[i]
+		}
+	}
+	return nil
 }

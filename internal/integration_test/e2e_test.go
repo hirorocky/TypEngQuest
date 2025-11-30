@@ -15,6 +15,76 @@ import (
 	"hirorocky/type-battle/internal/typing"
 )
 
+// createTestExternalData はテスト用の外部データを作成します。
+func createTestExternalData() *loader.ExternalData {
+	return &loader.ExternalData{
+		CoreTypes: []loader.CoreTypeData{
+			{
+				ID:             "all_rounder",
+				Name:           "オールラウンダー",
+				AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
+				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				PassiveSkillID: "adaptability",
+				MinDropLevel:   1,
+			},
+		},
+		ModuleDefinitions: []loader.ModuleDefinitionData{
+			{
+				ID:            "physical_strike_lv1",
+				Name:          "物理打撃Lv1",
+				Category:      "physical_attack",
+				Level:         1,
+				Tags:          []string{"physical_low"},
+				BaseEffect:    10.0,
+				StatReference: "STR",
+				Description:   "物理ダメージを与える基本攻撃",
+				MinDropLevel:  1,
+			},
+			{
+				ID:            "fireball_lv1",
+				Name:          "ファイアボールLv1",
+				Category:      "magic_attack",
+				Level:         1,
+				Tags:          []string{"magic_low"},
+				BaseEffect:    12.0,
+				StatReference: "MAG",
+				Description:   "魔法ダメージを与える基本魔法",
+				MinDropLevel:  1,
+			},
+			{
+				ID:            "heal_lv1",
+				Name:          "ヒールLv1",
+				Category:      "heal",
+				Level:         1,
+				Tags:          []string{"heal_low"},
+				BaseEffect:    8.0,
+				StatReference: "MAG",
+				Description:   "HPを回復する基本回復魔法",
+				MinDropLevel:  1,
+			},
+			{
+				ID:            "attack_buff_lv1",
+				Name:          "攻撃バフLv1",
+				Category:      "buff",
+				Level:         1,
+				Tags:          []string{"buff_low"},
+				BaseEffect:    5.0,
+				StatReference: "SPD",
+				Description:   "一時的に攻撃力を上昇させる",
+				MinDropLevel:  1,
+			},
+		},
+		EnemyTypes: []loader.EnemyTypeData{
+			{
+				ID:              "slime",
+				Name:            "スライム",
+				BaseHP:          50,
+				BaseAttackPower: 5,
+			},
+		},
+	}
+}
+
 // createTestRewardCalculator はテスト用のRewardCalculatorを作成します。
 func createTestRewardCalculator() *reward.RewardCalculator {
 	coreTypes := []loader.CoreTypeData{
@@ -63,7 +133,7 @@ func TestE2E_NewGameFlow(t *testing.T) {
 	// Requirement 1.1, 17.5: 起動→新規ゲーム開始
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// セーブデータがない場合は新規ゲーム開始
 	if !io.Exists() {
@@ -74,8 +144,8 @@ func TestE2E_NewGameFlow(t *testing.T) {
 			t.Error("初期エージェントが装備されているべきです")
 		}
 
-		// 初期エージェントがインベントリに存在する
-		if len(saveData.Inventory.Agents) == 0 {
+		// 初期エージェントがインベントリに存在する（ID化された構造）
+		if len(saveData.Inventory.AgentInstances) == 0 {
 			t.Error("初期エージェントがインベントリに存在するべきです")
 		}
 
@@ -102,13 +172,14 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 	// Requirement 2.1, 3.7, 12.1: ホーム→バトル選択→バトル→勝利→報酬
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 新規ゲーム開始
 	saveData := initializer.InitializeNewGame()
 
-	// ホーム画面（シミュレート）- 装備エージェントを取得
-	agents := saveData.Inventory.Agents
+	// ホーム画面（シミュレート）- 装備エージェントを取得（ドメインオブジェクトを直接作成）
+	agent := initializer.CreateInitialAgent()
+	agents := []*domain.AgentModel{agent}
 	if len(agents) == 0 {
 		t.Fatal("エージェントがいません")
 	}
@@ -175,12 +246,16 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 		t.Error("平均WPMが計算されるべきです")
 	}
 
-	// 報酬をインベントリに追加
+	// 報酬をインベントリに追加（ID化された構造）
 	for _, c := range rewards.DroppedCores {
-		saveData.Inventory.Cores = append(saveData.Inventory.Cores, c)
+		saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, persistence.CoreInstanceSave{
+			ID:         c.ID,
+			CoreTypeID: c.Type.ID,
+			Level:      c.Level,
+		})
 	}
 	for _, m := range rewards.DroppedModules {
-		saveData.Inventory.Modules = append(saveData.Inventory.Modules, m)
+		saveData.Inventory.ModuleCounts[m.ID]++
 	}
 
 	// 統計更新
@@ -214,25 +289,26 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	// エージェント合成フロー
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 追加アイテム付きで新規ゲーム開始
 	saveData := initializer.CreateNewGameWithExtraItems()
 
-	// コアとモジュールがインベントリにある
-	if len(saveData.Inventory.Cores) == 0 {
+	// コアとモジュールがインベントリにある（ID化された構造）
+	if len(saveData.Inventory.CoreInstances) == 0 {
 		t.Fatal("コアがありません")
 	}
-	if len(saveData.Inventory.Modules) < 4 {
-		t.Fatal("モジュールが4個未満です")
+	if len(saveData.Inventory.ModuleCounts) < 4 {
+		t.Fatal("モジュールが4種類未満です")
 	}
 
-	// コアを選択
-	core := saveData.Inventory.Cores[0]
+	// テスト用にドメインオブジェクトを直接作成
+	core := initializer.CreateInitialCore()
+	modules := initializer.CreateInitialModules()
 
 	// 互換性のあるモジュールを選択
 	selectedModules := make([]*domain.ModuleModel, 0, 4)
-	for _, m := range saveData.Inventory.Modules {
+	for _, m := range modules {
 		if m.IsCompatibleWithCore(core) {
 			selectedModules = append(selectedModules, m)
 			if len(selectedModules) >= 4 {
@@ -256,12 +332,27 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 		t.Error("エージェントは4つのモジュールを持つべきです")
 	}
 
-	// インベントリに追加（消費したコア/モジュールを削除するのは省略）
-	saveData.Inventory.Agents = append(saveData.Inventory.Agents, newAgent)
+	// インベントリに追加（コア情報を直接埋め込み）
+	moduleIDs := make([]string, len(newAgent.Modules))
+	for i, m := range newAgent.Modules {
+		moduleIDs[i] = m.ID
+	}
+	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, persistence.AgentInstanceSave{
+		ID: newAgent.ID,
+		Core: persistence.CoreInstanceSave{
+			ID:         newAgent.Core.ID,
+			CoreTypeID: newAgent.Core.Type.ID,
+			Level:      newAgent.Core.Level,
+		},
+		ModuleIDs: moduleIDs,
+	})
 
-	// エージェント装備
-	if len(saveData.Player.EquippedAgentIDs) < 3 {
-		saveData.Player.EquippedAgentIDs = append(saveData.Player.EquippedAgentIDs, newAgent.ID)
+	// エージェント装備（空きスロットを探して装備）
+	for i := range saveData.Player.EquippedAgentIDs {
+		if saveData.Player.EquippedAgentIDs[i] == "" {
+			saveData.Player.EquippedAgentIDs[i] = newAgent.ID
+			break
+		}
 	}
 
 	// セーブ
@@ -276,9 +367,9 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 		t.Fatalf("ロードに失敗: %v", err)
 	}
 
-	// 新しいエージェントが保存されている
+	// 新しいエージェントが保存されている（ID化された構造）
 	found := false
-	for _, a := range loadedData.Inventory.Agents {
+	for _, a := range loadedData.Inventory.AgentInstances {
 		if a.ID == "new_agent_1" {
 			found = true
 			break
@@ -293,10 +384,12 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 	// ゲーム進行フロー：複数バトル→レベル上昇
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
-	agents := saveData.Inventory.Agents
+	// ドメインオブジェクトを直接作成
+	agent := initializer.CreateInitialAgent()
+	agents := []*domain.AgentModel{agent}
 
 	enemyTypes := []domain.EnemyType{
 		{
@@ -370,7 +463,7 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 	// Requirement 17.5: セーブ→終了→再起動→ロード→状態確認
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// ゲーム開始（セッション1）
 	saveData := initializer.InitializeNewGame()
@@ -408,8 +501,8 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 		t.Errorf("HighestWPM expected 150.5, got %f", loadedData.Statistics.HighestWPM)
 	}
 
-	// インベントリも復元されている
-	if len(loadedData.Inventory.Agents) == 0 {
+	// インベントリも復元されている（ID化された構造）
+	if len(loadedData.Inventory.AgentInstances) == 0 {
 		t.Error("エージェントが復元されるべきです")
 	}
 }
@@ -418,10 +511,12 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 	// 敗北→リトライフロー
 	tempDir := t.TempDir()
 	io := persistence.NewSaveDataIO(tempDir)
-	initializer := startup.NewNewGameInitializer()
+	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
-	agents := saveData.Inventory.Agents
+	// ドメインオブジェクトを直接作成
+	agent := initializer.CreateInitialAgent()
+	agents := []*domain.AgentModel{agent}
 
 	enemyTypes := []domain.EnemyType{
 		{

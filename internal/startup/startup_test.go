@@ -4,7 +4,75 @@ package startup
 
 import (
 	"testing"
+
+	"hirorocky/type-battle/internal/loader"
 )
+
+// createTestExternalData はテスト用の外部データを作成します。
+func createTestExternalData() *loader.ExternalData {
+	return &loader.ExternalData{
+		CoreTypes: []loader.CoreTypeData{
+			{
+				ID:             "all_rounder",
+				Name:           "オールラウンダー",
+				AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
+				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				PassiveSkillID: "adaptability",
+				MinDropLevel:   1,
+			},
+		},
+		ModuleDefinitions: []loader.ModuleDefinitionData{
+			{
+				ID:            "physical_strike_lv1",
+				Name:          "物理打撃Lv1",
+				Category:      "physical_attack",
+				Level:         1,
+				Tags:          []string{"physical_low"},
+				BaseEffect:    10.0,
+				StatReference: "STR",
+				Description:   "物理ダメージを与える基本攻撃",
+			},
+			{
+				ID:            "fireball_lv1",
+				Name:          "ファイアボールLv1",
+				Category:      "magic_attack",
+				Level:         1,
+				Tags:          []string{"magic_low"},
+				BaseEffect:    12.0,
+				StatReference: "MAG",
+				Description:   "魔法ダメージを与える基本魔法",
+			},
+			{
+				ID:            "heal_lv1",
+				Name:          "ヒールLv1",
+				Category:      "heal",
+				Level:         1,
+				Tags:          []string{"heal_low"},
+				BaseEffect:    8.0,
+				StatReference: "MAG",
+				Description:   "HPを回復する基本回復魔法",
+			},
+			{
+				ID:            "attack_buff_lv1",
+				Name:          "攻撃バフLv1",
+				Category:      "buff",
+				Level:         1,
+				Tags:          []string{"buff_low"},
+				BaseEffect:    5.0,
+				StatReference: "SPD",
+				Description:   "一時的に攻撃力を上昇させる",
+			},
+		},
+		EnemyTypes: []loader.EnemyTypeData{
+			{
+				ID:              "slime",
+				Name:            "スライム",
+				BaseHP:          50,
+				BaseAttackPower: 5,
+			},
+		},
+	}
+}
 
 // ==================================================
 // Task 14.1: 新規ゲーム初期化テスト
@@ -12,7 +80,7 @@ import (
 
 func TestNewGameInitializer_CreateInitialCore(t *testing.T) {
 	// Requirement 3.8: 初期コアの提供（レベル1、オールラウンダー）
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	core := initializer.CreateInitialCore()
 	if core == nil {
@@ -32,7 +100,7 @@ func TestNewGameInitializer_CreateInitialCore(t *testing.T) {
 
 func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
 	// Requirement 3.8: 初期モジュールの提供（各カテゴリLv1を4個）
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	modules := initializer.CreateInitialModules()
 	if len(modules) != 4 {
@@ -58,7 +126,7 @@ func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
 
 func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
 	// Requirement 3.8: 初期エージェント自動合成と装備
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	agent := initializer.CreateInitialAgent()
 	if agent == nil {
@@ -83,7 +151,7 @@ func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
 
 func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
 	// Requirement 17.5: セーブデータ不在時の新規ゲーム開始
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
 	if saveData == nil {
@@ -91,20 +159,26 @@ func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
 	}
 
 	// インベントリに初期コアが含まれている（エージェント合成で消費されるため0）
-	// 初期エージェントが作成されていること
-	if len(saveData.Inventory.Agents) != 1 {
-		t.Errorf("初期エージェントが1体存在するべきです: got %d", len(saveData.Inventory.Agents))
+	// 初期エージェントが作成されていること（ID化された構造）
+	if len(saveData.Inventory.AgentInstances) != 1 {
+		t.Errorf("初期エージェントが1体存在するべきです: got %d", len(saveData.Inventory.AgentInstances))
 	}
 
-	// 初期エージェントが装備されていること
-	if len(saveData.Player.EquippedAgentIDs) != 1 {
-		t.Errorf("初期エージェントが装備されているべきです: got %d", len(saveData.Player.EquippedAgentIDs))
+	// 初期エージェントが装備されていること（スロット0に装備）
+	equippedCount := 0
+	for _, id := range saveData.Player.EquippedAgentIDs {
+		if id != "" {
+			equippedCount++
+		}
+	}
+	if equippedCount != 1 {
+		t.Errorf("初期エージェントが1体装備されているべきです: got %d", equippedCount)
 	}
 
 	// 装備されているエージェントIDがインベントリのエージェントと一致すること
 	equippedID := saveData.Player.EquippedAgentIDs[0]
 	found := false
-	for _, a := range saveData.Inventory.Agents {
+	for _, a := range saveData.Inventory.AgentInstances {
 		if a.ID == equippedID {
 			found = true
 			break
@@ -117,7 +191,7 @@ func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
 
 func TestNewGameInitializer_InitialStats(t *testing.T) {
 	// 新規ゲーム開始時の統計情報がリセットされていること
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
 
@@ -134,7 +208,7 @@ func TestNewGameInitializer_InitialStats(t *testing.T) {
 
 func TestNewGameInitializer_InitialAchievements(t *testing.T) {
 	// 新規ゲーム開始時の実績がリセットされていること
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
 
@@ -145,7 +219,7 @@ func TestNewGameInitializer_InitialAchievements(t *testing.T) {
 
 func TestInitialAgent_ModulesCompatibleWithCore(t *testing.T) {
 	// 初期エージェントのモジュールがコアと互換性があること
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	agent := initializer.CreateInitialAgent()
 
@@ -158,14 +232,14 @@ func TestInitialAgent_ModulesCompatibleWithCore(t *testing.T) {
 
 func TestNewGameInitializer_MultipleCalls(t *testing.T) {
 	// 複数回呼び出しても毎回新しいデータが作成されること
-	initializer := NewNewGameInitializer()
+	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData1 := initializer.InitializeNewGame()
 	saveData2 := initializer.InitializeNewGame()
 
-	// 異なるエージェントIDが割り当てられていること
-	if len(saveData1.Inventory.Agents) > 0 && len(saveData2.Inventory.Agents) > 0 {
-		if saveData1.Inventory.Agents[0].ID == saveData2.Inventory.Agents[0].ID {
+	// 異なるエージェントIDが割り当てられていること（ID化された構造）
+	if len(saveData1.Inventory.AgentInstances) > 0 && len(saveData2.Inventory.AgentInstances) > 0 {
+		if saveData1.Inventory.AgentInstances[0].ID == saveData2.Inventory.AgentInstances[0].ID {
 			t.Error("異なる呼び出しで異なるIDが割り当てられるべきです")
 		}
 	}

@@ -9,13 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"hirorocky/type-battle/internal/domain"
 )
 
 // CurrentSaveDataVersion は現在のセーブデータバージョンです。
 // セーブデータの形式が変更された場合にインクリメントします。
-const CurrentSaveDataVersion = "1.0.0"
+// v2.0.0: ID化最適化（フルオブジェクト → ID参照）
+const CurrentSaveDataVersion = "2.0.0"
 
 // SaveFileName はセーブファイル名です。
 const SaveFileName = "save.json"
@@ -60,21 +59,55 @@ type SaveData struct {
 
 // PlayerSaveData はプレイヤーのセーブデータです。
 type PlayerSaveData struct {
-	// EquippedAgentIDs は装備中のエージェントIDリストです。
+	// EquippedAgentIDs は装備中のエージェントIDリストです（スロット番号順）。
+	// 空きスロットは空文字列で表現されます。
 	// Requirement 17.4: 装備エージェントを保存
-	EquippedAgentIDs []string `json:"equipped_agent_ids"`
+	EquippedAgentIDs [3]string `json:"equipped_agent_ids"`
+}
+
+// CoreInstanceSave はコアインスタンスの軽量セーブデータです。
+// フルオブジェクト保存ではなく、ID+Type+Levelのみ保存し、
+// ロード時にマスタデータからステータスを再計算します。
+type CoreInstanceSave struct {
+	// ID はコアインスタンスの一意識別子です。
+	ID string `json:"id"`
+
+	// CoreTypeID はコア特性ID（例: "all_rounder"）です。
+	// マスタデータ（cores.json）から参照します。
+	CoreTypeID string `json:"core_type_id"`
+
+	// Level はコアのレベルです。
+	// ステータスはレベルとコア特性から再計算されます。
+	Level int `json:"level"`
+}
+
+// AgentInstanceSave はエージェントインスタンスの軽量セーブデータです。
+// コア情報を直接保持し、インベントリに依存せずにロード時に再構築します。
+type AgentInstanceSave struct {
+	// ID はエージェントインスタンスの一意識別子です。
+	ID string `json:"id"`
+
+	// Core はエージェントが使用するコアの情報です。
+	// エージェント合成時にコアは消費されるため、インベントリとは別に保持します。
+	Core CoreInstanceSave `json:"core"`
+
+	// ModuleIDs はモジュール定義IDリストです（4つ）。
+	// マスタデータ（modules.json）から参照します。
+	ModuleIDs []string `json:"module_ids"`
 }
 
 // InventorySaveData はインベントリのセーブデータです。
+// ID化最適化により、フルオブジェクトではなくID参照を保存します。
 type InventorySaveData struct {
-	// Cores は所持コアリストです。
-	Cores []*domain.CoreModel `json:"cores"`
+	// CoreInstances は所持コアのID+Type+Levelリストです。
+	CoreInstances []CoreInstanceSave `json:"core_instances"`
 
-	// Modules は所持モジュールリストです。
-	Modules []*domain.ModuleModel `json:"modules"`
+	// ModuleCounts は所持モジュールの個数マップです（モジュールID → 個数）。
+	// モジュールにはインスタンス固有データがないため、IDとカウントで十分です。
+	ModuleCounts map[string]int `json:"module_counts"`
 
-	// Agents は所持エージェントリストです。
-	Agents []*domain.AgentModel `json:"agents"`
+	// AgentInstances は所持エージェントの参照リストです。
+	AgentInstances []AgentInstanceSave `json:"agent_instances"`
 
 	// MaxCoreSlots はコアの最大所持数です。
 	MaxCoreSlots int `json:"max_core_slots"`
@@ -139,12 +172,12 @@ func NewSaveData() *SaveData {
 		Version:   CurrentSaveDataVersion,
 		Timestamp: time.Now(),
 		Player: &PlayerSaveData{
-			EquippedAgentIDs: make([]string, 0),
+			EquippedAgentIDs: [3]string{},
 		},
 		Inventory: &InventorySaveData{
-			Cores:          make([]*domain.CoreModel, 0),
-			Modules:        make([]*domain.ModuleModel, 0),
-			Agents:         make([]*domain.AgentModel, 0),
+			CoreInstances:  make([]CoreInstanceSave, 0),
+			ModuleCounts:   make(map[string]int),
+			AgentInstances: make([]AgentInstanceSave, 0),
 			MaxCoreSlots:   100,
 			MaxModuleSlots: 200,
 			MaxAgentSlots:  20, // Requirement 20.6

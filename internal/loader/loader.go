@@ -7,6 +7,7 @@ package loader
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,14 +18,51 @@ import (
 // DataLoader は外部データファイルのロードを担当する構造体です。
 type DataLoader struct {
 	// dataDir はデータファイルが格納されているディレクトリパスです。
+	// 外部ディレクトリ使用時のみ設定されます。
 	dataDir string
+	// fileSystem は埋め込みまたはOSファイルシステムです。
+	fileSystem fs.FS
+	// subDir はfs.FS内でのサブディレクトリパスです（埋め込み時は "data"）。
+	subDir string
 }
 
-// NewDataLoader は新しいDataLoaderを作成します。
+// NewDataLoader は外部ディレクトリから読み込むDataLoaderを作成します。
 func NewDataLoader(dataDir string) *DataLoader {
 	return &DataLoader{
-		dataDir: dataDir,
+		dataDir:    dataDir,
+		fileSystem: nil,
+		subDir:     "",
 	}
+}
+
+// NewEmbeddedDataLoader は埋め込みFSから読み込むDataLoaderを作成します。
+// embeddedFS は embed.FS などの fs.FS 実装です。
+// subDir は埋め込みFS内でのサブディレクトリパスです（通常は "data"）。
+func NewEmbeddedDataLoader(embeddedFS fs.FS, subDir string) *DataLoader {
+	return &DataLoader{
+		dataDir:    "",
+		fileSystem: embeddedFS,
+		subDir:     subDir,
+	}
+}
+
+// readFile はファイルを読み込むヘルパーメソッドです。
+// 外部ディレクトリまたは埋め込みFSから読み込みます。
+func (l *DataLoader) readFile(filename string) ([]byte, error) {
+	if l.dataDir != "" {
+		// 外部ディレクトリから読み込み
+		filePath := filepath.Join(l.dataDir, filename)
+		return os.ReadFile(filePath)
+	}
+
+	// 埋め込みFSから読み込み
+	var filePath string
+	if l.subDir != "" {
+		filePath = l.subDir + "/" + filename
+	} else {
+		filePath = filename
+	}
+	return fs.ReadFile(l.fileSystem, filePath)
 }
 
 // ExternalData は外部データファイルから読み込んだ全データを格納する構造体です。
@@ -55,9 +93,7 @@ type coresFileData struct {
 // LoadCoreTypes はcores.jsonからコア特性定義を読み込みます。
 // Requirement 5.19: コア特性を外部データファイルで定義
 func (l *DataLoader) LoadCoreTypes() ([]CoreTypeData, error) {
-	filePath := filepath.Join(l.dataDir, "cores.json")
-
-	data, err := os.ReadFile(filePath)
+	data, err := l.readFile("cores.json")
 	if err != nil {
 		return nil, fmt.Errorf("cores.jsonの読み込みに失敗: %w", err)
 	}
@@ -117,9 +153,7 @@ type modulesFileData struct {
 // LoadModuleDefinitions はmodules.jsonからモジュール定義を読み込みます。
 // Requirement 6.18: モジュール定義を外部データファイルで管理
 func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
-	filePath := filepath.Join(l.dataDir, "modules.json")
-
-	data, err := os.ReadFile(filePath)
+	data, err := l.readFile("modules.json")
 	if err != nil {
 		return nil, fmt.Errorf("modules.jsonの読み込みに失敗: %w", err)
 	}
@@ -186,9 +220,7 @@ type enemiesFileData struct {
 // LoadEnemyTypes はenemies.jsonから敵タイプ定義を読み込みます。
 // Requirement 11.14: 敵タイプを外部データファイルで定義
 func (l *DataLoader) LoadEnemyTypes() ([]EnemyTypeData, error) {
-	filePath := filepath.Join(l.dataDir, "enemies.json")
-
-	data, err := os.ReadFile(filePath)
+	data, err := l.readFile("enemies.json")
 	if err != nil {
 		return nil, fmt.Errorf("enemies.jsonの読み込みに失敗: %w", err)
 	}
@@ -237,9 +269,7 @@ type wordsFileData struct {
 // LoadTypingDictionary はwords.jsonからタイピング辞書を読み込みます。
 // Requirement 16.3: チャレンジテキストの辞書を外部ファイルから読み込む
 func (l *DataLoader) LoadTypingDictionary() (*TypingDictionary, error) {
-	filePath := filepath.Join(l.dataDir, "words.json")
-
-	data, err := os.ReadFile(filePath)
+	data, err := l.readFile("words.json")
 	if err != nil {
 		return nil, fmt.Errorf("words.jsonの読み込みに失敗: %w", err)
 	}

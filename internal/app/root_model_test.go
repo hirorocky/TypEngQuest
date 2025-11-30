@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"hirorocky/type-battle/internal/embedded"
 )
 
 // === シーン定義のテスト ===
@@ -78,7 +79,7 @@ func TestGameState_HasMaxLevelReached(t *testing.T) {
 
 // TestNewRootModel は新しいRootModelが正しく初期化されることを検証します
 func TestNewRootModel(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	if model == nil {
 		t.Fatal("NewRootModel() returned nil")
 	}
@@ -91,7 +92,7 @@ func TestRootModel_ImplementsTeaModel(t *testing.T) {
 
 // TestRootModel_HasGameState はRootModelがGameStateを保持していることを検証します
 func TestRootModel_HasGameState(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	if model.GameState() == nil {
 		t.Fatal("RootModel should have GameState")
 	}
@@ -99,7 +100,7 @@ func TestRootModel_HasGameState(t *testing.T) {
 
 // TestRootModel_HasCurrentScene はRootModelが現在のシーンを保持していることを検証します
 func TestRootModel_HasCurrentScene(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	// 初期シーンはSceneHomeであるべき
 	if model.CurrentScene() != SceneHome {
 		t.Errorf("Initial scene should be SceneHome, got %v", model.CurrentScene())
@@ -108,14 +109,14 @@ func TestRootModel_HasCurrentScene(t *testing.T) {
 
 // TestRootModel_HasTerminalState はRootModelがターミナル状態を保持していることを検証します
 func TestRootModel_HasTerminalState(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	// ターミナル状態はWindowSizeMsg受信後に設定されるのでnilでもOK
 	_ = model.TerminalState()
 }
 
 // TestRootModel_HasStyles はRootModelがスタイルを保持していることを検証します
 func TestRootModel_HasStyles(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	if model.Styles() == nil {
 		t.Fatal("RootModel should have Styles")
 	}
@@ -125,7 +126,7 @@ func TestRootModel_HasStyles(t *testing.T) {
 
 // TestRootModel_ChangeScene はシーン変更が正しく動作することを検証します
 func TestRootModel_ChangeScene(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// ホームからバトル選択へ遷移
 	model.ChangeScene(SceneBattleSelect)
@@ -142,7 +143,7 @@ func TestRootModel_ChangeScene(t *testing.T) {
 
 // TestRootModel_ChangeSceneMsg はChangeSceneMsgでシーンが変更されることを検証します
 func TestRootModel_ChangeSceneMsg(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// WindowSizeMsgを先に送信してモデルを初期化
 	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
@@ -163,7 +164,7 @@ func TestRootModel_ChangeSceneMsg(t *testing.T) {
 
 // TestRootModel_Init はInitが正しく動作することを検証します
 func TestRootModel_Init(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	cmd := model.Init()
 	// Initは nil または有効なコマンドを返すことができます
 	_ = cmd
@@ -171,7 +172,7 @@ func TestRootModel_Init(t *testing.T) {
 
 // TestRootModel_Update_WindowSizeMsg はWindowSizeMsgが正しく処理されることを検証します
 func TestRootModel_Update_WindowSizeMsg(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	msg := tea.WindowSizeMsg{Width: 150, Height: 50}
 	updatedModel, _ := model.Update(msg)
@@ -196,7 +197,7 @@ func TestRootModel_Update_WindowSizeMsg(t *testing.T) {
 
 // TestRootModel_Update_QuitKey は終了キーでtea.Quitが返されることを検証します
 func TestRootModel_Update_QuitKey(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// まずWindowSizeMsgで初期化
 	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
@@ -221,7 +222,7 @@ func TestRootModel_Update_QuitKey(t *testing.T) {
 
 // TestRootModel_Update_CtrlC はCtrl+Cでtea.Quitが返されることを検証します
 func TestRootModel_Update_CtrlC(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// まずWindowSizeMsgで初期化
 	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
@@ -245,7 +246,7 @@ func TestRootModel_Update_CtrlC(t *testing.T) {
 
 // TestRootModel_View_Loading は初期状態でローディングメッセージが表示されることを検証します
 func TestRootModel_View_Loading(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 	view := model.View()
 
 	if view == "" {
@@ -255,7 +256,7 @@ func TestRootModel_View_Loading(t *testing.T) {
 
 // TestRootModel_View_SmallTerminal は小さいターミナルで警告が表示されることを検証します
 func TestRootModel_View_SmallTerminal(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// 小さいWindowSizeMsgを送信
 	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
@@ -272,7 +273,7 @@ func TestRootModel_View_SmallTerminal(t *testing.T) {
 
 // TestRootModel_View_ValidTerminal は有効なターミナルでタイトルが表示されることを検証します
 func TestRootModel_View_ValidTerminal(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// 有効なWindowSizeMsgを送信
 	msg := tea.WindowSizeMsg{Width: 140, Height: 40}
@@ -294,7 +295,7 @@ func TestRootModel_View_ValidTerminal(t *testing.T) {
 
 // TestRootModel_IsReady は有効なターミナルでIsReady()がtrueになることを検証します
 func TestRootModel_IsReady(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// 初期状態では準備完了でない
 	if model.IsReady() {
@@ -314,7 +315,7 @@ func TestRootModel_IsReady(t *testing.T) {
 
 // TestRootModel_NotReady_SmallTerminal は小さいターミナルでIsReady()がfalseになることを検証します
 func TestRootModel_NotReady_SmallTerminal(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// 小さいWindowSizeMsgを送信
 	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
@@ -332,7 +333,7 @@ func TestRootModel_NotReady_SmallTerminal(t *testing.T) {
 // TestRootModel_QuitPreservesTerminalState は終了時にターミナル状態を保存することを検証します
 // 注: Bubbleteaでは tea.WithAltScreen() により自動的に復元される
 func TestRootModel_QuitPreservesTerminalState(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// WindowSizeMsgで初期化
 	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
@@ -377,7 +378,7 @@ func TestRootModel_SceneTransition_HomeToAll(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := NewRootModel()
+			model := NewRootModel("", embedded.Data)
 
 			// 初期状態はホームであるべき
 			if model.CurrentScene() != SceneHome {
@@ -396,7 +397,7 @@ func TestRootModel_SceneTransition_HomeToAll(t *testing.T) {
 
 // TestRootModel_SceneTransition_BackToHome は各シーンからホームへ戻れることを検証します
 func TestRootModel_SceneTransition_BackToHome(t *testing.T) {
-	model := NewRootModel()
+	model := NewRootModel("", embedded.Data)
 
 	// バトル選択へ遷移
 	model.ChangeScene(SceneBattleSelect)

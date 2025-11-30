@@ -125,6 +125,9 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
+	// Requirement 11.8: 初回行動を決定
+	screen.battleState.NextAction = screen.battleEngine.DetermineNextAction(screen.battleState)
+
 	// モジュールスロットを初期化
 	// Requirement 18.10: エージェントごとにモジュールをグループ化
 	for agentIdx, agent := range agents {
@@ -305,24 +308,47 @@ func (s *BattleScreen) IsShowingResult() bool {
 	return s.showingResult
 }
 
-// processEnemyAttack は敵の攻撃を処理します。
+// processEnemyAttack は敵の行動を処理します。
+// Requirement 11.8: 事前決定された行動を実行し、次回行動を再決定
 func (s *BattleScreen) processEnemyAttack() {
-	// プレイヤーにダメージを与える
-	damage := s.enemy.AttackPower
-	s.player.HP -= damage
-	if s.player.HP < 0 {
-		s.player.HP = 0
+	if s.battleEngine == nil || s.battleState == nil {
+		// フォールバック: 従来の攻撃処理
+		damage := s.enemy.AttackPower
+		s.player.HP -= damage
+		if s.player.HP < 0 {
+			s.player.HP = 0
+		}
+		s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
+		s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+		return
 	}
 
-	// 被ダメージを統計に記録
-	if s.battleState != nil && s.battleState.Stats != nil {
-		s.battleState.Stats.TotalDamageTaken += damage
-	}
+	// 事前決定された行動を実行
+	damage, msg := s.battleEngine.ExecuteNextAction(s.battleState)
+	_ = damage // damageは統計で使用済み
 
 	// メッセージを表示
-	s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
+	action := s.battleState.NextAction
+	switch action.ActionType {
+	case battle.EnemyActionAttack:
+		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, msg)
+	case battle.EnemyActionSelfBuff:
+		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, msg)
+	case battle.EnemyActionDebuff:
+		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, msg)
+	default:
+		s.message = msg
+	}
 
-	// 次の攻撃時間を設定
+	// フェーズ変化をチェック
+	if s.battleEngine.CheckPhaseTransition(s.battleState) {
+		s.message += " [敵が強化フェーズに突入！]"
+	}
+
+	// 次回行動を決定
+	s.battleState.NextAction = s.battleEngine.DetermineNextAction(s.battleState)
+
+	// 次の行動時間を設定
 	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
 }
 
@@ -761,6 +787,7 @@ func (s *BattleScreen) renderModuleList() string {
 }
 
 // renderBattleArea はバトルエリアを描画します。
+// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
 func (s *BattleScreen) renderBattleArea() string {
 	// 次の敵攻撃までの時間を表示
 	remaining := time.Until(s.nextEnemyAttack)
@@ -768,14 +795,58 @@ func (s *BattleScreen) renderBattleArea() string {
 		remaining = 0
 	}
 
-	attackWarning := fmt.Sprintf("次の敵攻撃まで: %.1f秒", remaining.Seconds())
-	warningStyle := lipgloss.NewStyle().
+	timerText := fmt.Sprintf("次の敵行動まで: %.1f秒", remaining.Seconds())
+	timerStyle := lipgloss.NewStyle().
 		Foreground(styles.ColorWarning).
 		Bold(true).
 		Align(lipgloss.Center).
 		Width(s.width)
 
-	return warningStyle.Render(attackWarning)
+	// 行動予告を取得
+	icon, actionText, actionColor := s.getActionDisplay()
+	actionInfo := fmt.Sprintf("%s %s", icon, actionText)
+
+	actionStyle := lipgloss.NewStyle().
+		Foreground(actionColor).
+		Bold(true).
+		Align(lipgloss.Center).
+		Width(s.width)
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		timerStyle.Render(timerText),
+		actionStyle.Render(actionInfo),
+	)
+}
+
+// getActionDisplay は次回行動の表示情報を返します。
+// Requirement 11.8: 行動タイプに応じたアイコン・色を返す
+func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgloss.Color) {
+	if s.battleState == nil {
+		return "?", "不明", styles.ColorSubtle
+	}
+
+	action := s.battleState.NextAction
+
+	switch action.ActionType {
+	case battle.EnemyActionAttack:
+		// 攻撃予告（赤色）
+		if action.AttackType == "physical" {
+			return "⚔", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+		}
+		return "✦", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+
+	case battle.EnemyActionSelfBuff:
+		// 自己バフ予告（黄色）
+		name := battle.GetEnemyBuffName(action.BuffType)
+		return "▲", name, styles.ColorWarning
+
+	case battle.EnemyActionDebuff:
+		// プレイヤーデバフ予告（青色）
+		name := battle.GetPlayerDebuffName(action.DebuffType)
+		return "▼", name, styles.ColorInfo
+	}
+
+	return "?", "不明", styles.ColorSubtle
 }
 
 // renderTypingArea はタイピングエリアを描画します。
