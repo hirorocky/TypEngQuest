@@ -259,8 +259,21 @@ func (s *HomeScreen) renderStatusPanel() string {
 		equippedAgents = s.agentProvider.GetEquippedAgents()
 	}
 
+	// UI-Improvement Requirement 1.6: 装備なし時の誘導メッセージ
 	if len(equippedAgents) == 0 {
-		builder.WriteString(labelStyle.Render("(未装備)"))
+		// 警告アイコンとメッセージ
+		warningStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorWarning).
+			Bold(true)
+		builder.WriteString(warningStyle.Render("⚠ エージェントが装備されていません"))
+		builder.WriteString("\n\n")
+
+		// 誘導メッセージ
+		guideStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorInfo)
+		builder.WriteString(guideStyle.Render("→ エージェント管理で"))
+		builder.WriteString("\n")
+		builder.WriteString(guideStyle.Render("  合成・装備を行ってください"))
 	} else {
 		for i, agent := range equippedAgents {
 			slotLabel := fmt.Sprintf("スロット%d: ", i+1)
@@ -269,14 +282,14 @@ func (s *HomeScreen) renderStatusPanel() string {
 			builder.WriteString(valueStyle.Render(agentInfo))
 			builder.WriteString("\n")
 		}
-	}
 
-	// 空きスロットを表示
-	for i := len(equippedAgents); i < 3; i++ {
-		slotLabel := fmt.Sprintf("スロット%d: ", i+1)
-		builder.WriteString(labelStyle.Render(slotLabel))
-		builder.WriteString(labelStyle.Render("(空)"))
-		builder.WriteString("\n")
+		// 空きスロットを表示
+		for i := len(equippedAgents); i < 3; i++ {
+			slotLabel := fmt.Sprintf("スロット%d: ", i+1)
+			builder.WriteString(labelStyle.Render(slotLabel))
+			builder.WriteString(labelStyle.Render("(空)"))
+			builder.WriteString("\n")
+		}
 	}
 
 	return builder.String()

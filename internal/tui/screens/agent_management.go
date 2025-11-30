@@ -50,6 +50,7 @@ type SynthesisState struct {
 
 // AgentManagementScreen はエージェント管理画面を表します。
 // Requirements: 5.1, 5.2, 5.5, 6.1, 6.2, 7.1, 7.2, 8.1, 8.2
+// UI-Improvement Requirements: 2.5, 2.6, 2.7, 2.8, 2.9
 type AgentManagementScreen struct {
 	inventory      InventoryProvider
 	currentTab     AgentManagementTab
@@ -62,6 +63,9 @@ type AgentManagementScreen struct {
 	styles         *styles.GameStyles
 	width          int
 	height         int
+	// UI改善: 確認ダイアログ
+	confirmDialog     *components.ConfirmDialog
+	pendingDeleteIdx  int // 削除待ちのエージェントインデックス
 }
 
 // NewAgentManagementScreen は新しいAgentManagementScreenを作成します。
@@ -103,7 +107,23 @@ func (s *AgentManagementScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // handleKeyMsg はキーボード入力を処理します。
+// UI-Improvement Requirement 2.9: 確認ダイアログ対応
 func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// 確認ダイアログが表示中の場合はダイアログのキー処理を優先
+	if s.confirmDialog != nil && s.confirmDialog.Visible {
+		result := s.confirmDialog.HandleKey(msg.String())
+		switch result {
+		case components.ConfirmResultYes:
+			// 削除を実行
+			s.executeDelete()
+			return s, nil
+		case components.ConfirmResultNo, components.ConfirmResultCancelled:
+			// キャンセル
+			return s, nil
+		}
+		return s, nil
+	}
+
 	switch msg.String() {
 	case "esc":
 		return s, func() tea.Msg {
@@ -289,20 +309,62 @@ func (s *AgentManagementScreen) handleEquipEnter() (tea.Model, tea.Cmd) {
 }
 
 // handleDelete は削除処理を行います。
+// UI-Improvement Requirement 2.9: エージェント削除時に確認ダイアログを表示
 func (s *AgentManagementScreen) handleDelete() (tea.Model, tea.Cmd) {
 	switch s.currentTab {
 	case TabCoreList:
 		if s.selectedIndex < len(s.coreList) {
-			s.inventory.RemoveCore(s.coreList[s.selectedIndex].ID)
-			s.updateCurrentList()
+			core := s.coreList[s.selectedIndex]
+			s.confirmDialog = components.NewConfirmDialog(
+				"コアの削除",
+				fmt.Sprintf("「%s Lv.%d」を削除しますか？", core.Name, core.Level),
+			)
+			s.confirmDialog.Show()
+			s.pendingDeleteIdx = s.selectedIndex
 		}
 	case TabModuleList:
 		if s.selectedIndex < len(s.moduleList) {
-			s.inventory.RemoveModule(s.moduleList[s.selectedIndex].ID)
-			s.updateCurrentList()
+			module := s.moduleList[s.selectedIndex]
+			s.confirmDialog = components.NewConfirmDialog(
+				"モジュールの削除",
+				fmt.Sprintf("「%s」を削除しますか？", module.Name),
+			)
+			s.confirmDialog.Show()
+			s.pendingDeleteIdx = s.selectedIndex
+		}
+	case TabEquip:
+		// エージェント削除（装備タブで所持エージェントを選択中の場合）
+		if s.selectedIndex >= 3 && s.selectedIndex-3 < len(s.agentList) {
+			agent := s.agentList[s.selectedIndex-3]
+			s.confirmDialog = components.NewConfirmDialog(
+				"エージェントの削除",
+				fmt.Sprintf("「%s Lv.%d」を削除しますか？", agent.GetCoreTypeName(), agent.Level),
+			)
+			s.confirmDialog.Show()
+			s.pendingDeleteIdx = s.selectedIndex
 		}
 	}
 	return s, nil
+}
+
+// executeDelete は確認後の削除を実行します。
+func (s *AgentManagementScreen) executeDelete() {
+	switch s.currentTab {
+	case TabCoreList:
+		if s.pendingDeleteIdx < len(s.coreList) {
+			s.inventory.RemoveCore(s.coreList[s.pendingDeleteIdx].ID)
+			s.updateCurrentList()
+		}
+	case TabModuleList:
+		if s.pendingDeleteIdx < len(s.moduleList) {
+			s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].ID)
+			s.updateCurrentList()
+		}
+	case TabEquip:
+		// エージェント削除は未実装（インベントリにRemoveAgentメソッドが必要）
+		// 今後の拡張として実装
+	}
+	s.pendingDeleteIdx = -1
 }
 
 // isModuleAlreadySelected は指定されたモジュールが既に選択済みかをチェックします。
@@ -384,6 +446,7 @@ func (s *AgentManagementScreen) getSelectedModuleDetail() *domain.ModuleModel {
 }
 
 // View は画面をレンダリングします。
+// UI-Improvement Requirement 2.9: 確認ダイアログのオーバーレイ表示
 func (s *AgentManagementScreen) View() string {
 	var builder strings.Builder
 
@@ -411,8 +474,20 @@ func (s *AgentManagementScreen) View() string {
 		Align(lipgloss.Center).
 		Width(s.width)
 
-	hints := "←/→: タブ切替  ↑/↓: 選択  Enter: 決定  Backspace: 戻る  d: 削除  Esc: ホーム"
+	var hints string
+	if s.confirmDialog != nil && s.confirmDialog.Visible {
+		hints = "←/→: 選択切替  Enter: 決定  Esc: キャンセル"
+	} else {
+		hints = "←/→: タブ切替  ↑/↓: 選択  Enter: 決定  Backspace: 戻る  d: 削除  Esc: ホーム"
+	}
 	builder.WriteString(hintStyle.Render(hints))
+
+	// 確認ダイアログのオーバーレイ
+	if s.confirmDialog != nil && s.confirmDialog.Visible {
+		builder.WriteString("\n\n")
+		dialog := s.confirmDialog.Render(s.width, s.height)
+		builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(dialog))
+	}
 
 	return builder.String()
 }
@@ -749,19 +824,228 @@ func (s *AgentManagementScreen) renderSynthesisConfirm() string {
 }
 
 // renderEquip は装備画面をレンダリングします。
+// UI-Improvement Requirement 2.5, 2.6, 2.7: 上下分割レイアウト
 func (s *AgentManagementScreen) renderEquip() string {
 	var builder strings.Builder
 
-	// 装備スロット
-	slotsContent := s.renderEquipSlots()
-	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(slotsContent))
+	// 上部エリア: 所持エージェント一覧（左）と選択中エージェント詳細（右）
+	topSection := s.renderEquipTopSection()
+	topBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorSubtle).
+		Padding(1, 2).
+		Width(s.width - 10)
+
+	topTitle := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("──────────────────────────  所持エージェント  ──────────────────────────")
+
+	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(
+		lipgloss.JoinVertical(lipgloss.Center, topTitle, topBox.Render(topSection)),
+	))
 	builder.WriteString("\n\n")
 
-	// 所持エージェント一覧
-	agentsContent := s.renderAgentList()
-	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(agentsContent))
+	// 下部エリア: 装備中エージェント（3スロット横並び）
+	bottomSection := s.renderEquipBottomSection()
+	bottomBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorPrimary).
+		Padding(1, 2).
+		Width(s.width - 10)
+
+	bottomTitle := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("────────────────────────  装備中エージェント  ────────────────────────")
+
+	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(
+		lipgloss.JoinVertical(lipgloss.Center, bottomTitle, bottomBox.Render(bottomSection)),
+	))
 
 	return builder.String()
+}
+
+// renderEquipTopSection は装備タブの上部セクション（エージェント一覧と詳細）をレンダリングします。
+func (s *AgentManagementScreen) renderEquipTopSection() string {
+	// 左側: エージェント一覧
+	leftContent := s.renderEquipAgentList()
+	leftBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorSubtle).
+		Padding(0, 1).
+		Width(35).
+		Height(12)
+
+	// 右側: 選択中エージェントの詳細
+	rightContent := s.renderEquipAgentDetail()
+	rightBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorSubtle).
+		Padding(0, 1).
+		Width(55).
+		Height(12)
+
+	return lipgloss.JoinHorizontal(lipgloss.Top,
+		leftBox.Render(leftContent),
+		"  ",
+		rightBox.Render(rightContent),
+	)
+}
+
+// renderEquipAgentList は装備タブのエージェント一覧をレンダリングします。
+func (s *AgentManagementScreen) renderEquipAgentList() string {
+	var builder strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+	builder.WriteString(titleStyle.Render("エージェント一覧"))
+	builder.WriteString("\n\n")
+
+	if len(s.agentList) == 0 {
+		builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(なし)"))
+		return builder.String()
+	}
+
+	for i, agent := range s.agentList {
+		listIndex := i + 3 // スロットの後
+		style := lipgloss.NewStyle()
+		prefix := "  "
+
+		if listIndex == s.selectedIndex {
+			style = style.Bold(true).Foreground(styles.ColorPrimary)
+			prefix = "> "
+		}
+
+		item := fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)
+		builder.WriteString(style.Render(prefix + item))
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
+}
+
+// renderEquipAgentDetail は選択中エージェントの詳細をレンダリングします。
+func (s *AgentManagementScreen) renderEquipAgentDetail() string {
+	var builder strings.Builder
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+	builder.WriteString(titleStyle.Render("選択中エージェント詳細"))
+	builder.WriteString("\n\n")
+
+	// 選択中のエージェントを取得
+	var selectedAgent *domain.AgentModel
+	if s.selectedIndex >= 3 && s.selectedIndex-3 < len(s.agentList) {
+		selectedAgent = s.agentList[s.selectedIndex-3]
+	} else if s.selectedIndex < 3 && s.equipSlots[s.selectedIndex] != nil {
+		selectedAgent = s.equipSlots[s.selectedIndex]
+	}
+
+	if selectedAgent == nil {
+		builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("エージェントを選択してください"))
+		return builder.String()
+	}
+
+	// エージェント名とレベル
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	builder.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", selectedAgent.GetCoreTypeName(), selectedAgent.Level)))
+	builder.WriteString("\n")
+
+	// コアタイプ
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
+	builder.WriteString(labelStyle.Render("コアタイプ: "))
+	builder.WriteString(valueStyle.Render(selectedAgent.Core.Type.Name))
+	builder.WriteString("\n")
+
+	// 区切り線
+	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
+	builder.WriteString("\n")
+
+	// ステータス（コアから取得）
+	stats := selectedAgent.Core.Stats
+	builder.WriteString(fmt.Sprintf("STR: %-4d  MAG: %-4d  SPD: %-4d  LUK: %-4d\n",
+		stats.STR, stats.MAG, stats.SPD, stats.LUK))
+
+	// 区切り線
+	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
+	builder.WriteString("\n")
+
+	// モジュール
+	builder.WriteString(labelStyle.Render("モジュール:"))
+	builder.WriteString("\n")
+	for _, module := range selectedAgent.Modules {
+		icon := s.getModuleIcon(module.Category)
+		builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name))
+	}
+
+	return builder.String()
+}
+
+// renderEquipBottomSection は装備タブの下部セクション（装備スロット）をレンダリングします。
+func (s *AgentManagementScreen) renderEquipBottomSection() string {
+	var cards []string
+	cardWidth := 30
+
+	for i := 0; i < 3; i++ {
+		var cardContent strings.Builder
+		isSelected := i == s.selectedIndex && s.selectedIndex < 3
+
+		// スロットタイトル
+		slotTitle := fmt.Sprintf("スロット%d", i+1)
+		if isSelected {
+			slotTitle = "*" + slotTitle + "*"
+		}
+		cardContent.WriteString(lipgloss.NewStyle().Bold(true).Render(slotTitle))
+		cardContent.WriteString("\n\n")
+
+		if s.equipSlots[i] != nil {
+			agent := s.equipSlots[i]
+			cardContent.WriteString(fmt.Sprintf("%s Lv.%d\n", agent.GetCoreTypeName(), agent.Level))
+
+			// モジュールアイコン
+			var icons []string
+			for _, module := range agent.Modules {
+				icons = append(icons, s.getModuleIcon(module.Category))
+			}
+			cardContent.WriteString(strings.Join(icons, ""))
+		} else {
+			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)\n\n"))
+			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("Enterで装備"))
+		}
+
+		// カードスタイル
+		borderColor := styles.ColorSubtle
+		if isSelected {
+			borderColor = styles.ColorPrimary
+		}
+
+		cardStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(borderColor).
+			Padding(0, 1).
+			Width(cardWidth).
+			Height(6)
+
+		cards = append(cards, cardStyle.Render(cardContent.String()))
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Center, cards[0], "  ", cards[1], "  ", cards[2])
+}
+
+// getModuleIcon はモジュールカテゴリのアイコンを返します。
+func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) string {
+	switch category {
+	case domain.PhysicalAttack:
+		return "⚔"
+	case domain.MagicAttack:
+		return "✦"
+	case domain.Heal:
+		return "♥"
+	case domain.Buff:
+		return "▲"
+	case domain.Debuff:
+		return "▼"
+	default:
+		return "•"
+	}
 }
 
 // renderEquipSlots は装備スロットをレンダリングします。

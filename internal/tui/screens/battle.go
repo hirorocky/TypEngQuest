@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/typing"
 )
@@ -47,6 +48,7 @@ func (s *ModuleSlot) IsReady() bool {
 
 // BattleScreen はバトル画面を表します。
 // Requirements: 9.2-9.6, 9.11-9.15, 18.9, 18.10
+// UI-Improvement Requirements: 3.1, 3.2, 3.9
 type BattleScreen struct {
 	// 戦闘参加者
 	enemy          *domain.EnemyModel
@@ -56,6 +58,9 @@ type BattleScreen struct {
 	// モジュールスロット
 	moduleSlots   []ModuleSlot
 	selectedSlot  int
+
+	// エージェント選択状態（UI改善: 3エリアレイアウト用）
+	selectedAgentIdx int
 
 	// タイピング状態
 	isTyping          bool
@@ -84,10 +89,11 @@ type BattleScreen struct {
 	showingResult bool
 
 	// UI
-	styles  *styles.GameStyles
-	width   int
-	height  int
-	message string
+	styles         *styles.GameStyles
+	winLoseRenderer ascii.WinLoseRenderer
+	width          int
+	height         int
+	message        string
 }
 
 // NewBattleScreen は新しいBattleScreenを作成します。
@@ -98,17 +104,20 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 	// 敵タイプリストを作成（BattleEngine用）
 	enemyTypes := []domain.EnemyType{enemy.Type}
 
+	gs := styles.NewGameStyles()
 	screen := &BattleScreen{
 		enemy:              enemy,
 		player:             player,
 		equippedAgents:     agents,
 		moduleSlots:        make([]ModuleSlot, 0),
 		selectedSlot:       0,
+		selectedAgentIdx:   0,
 		isTyping:           false,
 		challengeGenerator: typing.NewChallengeGenerator(dictionary),
 		evaluator:          typing.NewEvaluator(),
 		battleEngine:       battle.NewBattleEngine(enemyTypes),
-		styles:             styles.NewGameStyles(),
+		styles:             gs,
+		winLoseRenderer:    ascii.NewWinLoseRenderer(gs),
 		width:              140,
 		height:             40,
 	}
@@ -391,18 +400,31 @@ func (s *BattleScreen) handleResultInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleModuleSelection はモジュール選択時のキー処理を行います。
+// UI-Improvement: 左右キーでエージェント切替、上下キーでモジュール選択
 func (s *BattleScreen) handleModuleSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
+	case "left", "h":
+		// 前のエージェントに切り替え
+		s.selectedAgentIdx--
+		if s.selectedAgentIdx < 0 {
+			s.selectedAgentIdx = len(s.equippedAgents) - 1
+		}
+		// そのエージェントの最初のモジュールを選択
+		s.selectFirstModuleOfAgent(s.selectedAgentIdx)
+	case "right", "l":
+		// 次のエージェントに切り替え
+		s.selectedAgentIdx++
+		if s.selectedAgentIdx >= len(s.equippedAgents) {
+			s.selectedAgentIdx = 0
+		}
+		// そのエージェントの最初のモジュールを選択
+		s.selectFirstModuleOfAgent(s.selectedAgentIdx)
 	case "up", "k":
-		s.selectedSlot--
-		if s.selectedSlot < 0 {
-			s.selectedSlot = len(s.moduleSlots) - 1
-		}
+		// 現在のエージェント内で前のモジュールに移動
+		s.moveToPrevModuleInAgent()
 	case "down", "j":
-		s.selectedSlot++
-		if s.selectedSlot >= len(s.moduleSlots) {
-			s.selectedSlot = 0
-		}
+		// 現在のエージェント内で次のモジュールに移動
+		s.moveToNextModuleInAgent()
 	case "enter":
 		if len(s.moduleSlots) > 0 && s.moduleSlots[s.selectedSlot].IsReady() {
 			// モジュール選択 → タイピングチャレンジ開始
@@ -426,6 +448,87 @@ func (s *BattleScreen) handleModuleSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd
 	}
 
 	return s, nil
+}
+
+// selectFirstModuleOfAgent は指定エージェントの最初のモジュールを選択します。
+func (s *BattleScreen) selectFirstModuleOfAgent(agentIdx int) {
+	for i, slot := range s.moduleSlots {
+		if slot.AgentIndex == agentIdx {
+			s.selectedSlot = i
+			return
+		}
+	}
+}
+
+// moveToPrevModuleInAgent は現在のエージェント内で前のモジュールに移動します。
+func (s *BattleScreen) moveToPrevModuleInAgent() {
+	if len(s.moduleSlots) == 0 {
+		return
+	}
+
+	currentAgentIdx := s.selectedAgentIdx
+	agentModules := s.getModuleIndicesForAgent(currentAgentIdx)
+
+	if len(agentModules) == 0 {
+		return
+	}
+
+	// 現在のモジュールの位置を見つける
+	currentPos := 0
+	for i, idx := range agentModules {
+		if idx == s.selectedSlot {
+			currentPos = i
+			break
+		}
+	}
+
+	// 前のモジュールに移動（ループ）
+	newPos := currentPos - 1
+	if newPos < 0 {
+		newPos = len(agentModules) - 1
+	}
+	s.selectedSlot = agentModules[newPos]
+}
+
+// moveToNextModuleInAgent は現在のエージェント内で次のモジュールに移動します。
+func (s *BattleScreen) moveToNextModuleInAgent() {
+	if len(s.moduleSlots) == 0 {
+		return
+	}
+
+	currentAgentIdx := s.selectedAgentIdx
+	agentModules := s.getModuleIndicesForAgent(currentAgentIdx)
+
+	if len(agentModules) == 0 {
+		return
+	}
+
+	// 現在のモジュールの位置を見つける
+	currentPos := 0
+	for i, idx := range agentModules {
+		if idx == s.selectedSlot {
+			currentPos = i
+			break
+		}
+	}
+
+	// 次のモジュールに移動（ループ）
+	newPos := currentPos + 1
+	if newPos >= len(agentModules) {
+		newPos = 0
+	}
+	s.selectedSlot = agentModules[newPos]
+}
+
+// getModuleIndicesForAgent は指定エージェントのモジュールスロットのインデックスを返します。
+func (s *BattleScreen) getModuleIndicesForAgent(agentIdx int) []int {
+	var indices []int
+	for i, slot := range s.moduleSlots {
+		if slot.AgentIndex == agentIdx {
+			indices = append(indices, i)
+		}
+	}
+	return indices
 }
 
 // handleTypingInput はタイピング中のキー処理を行います。
@@ -561,30 +664,34 @@ func (s *BattleScreen) CancelTyping() {
 }
 
 // View は画面をレンダリングします。
+// UI-Improvement Requirement 3.1: 3エリアレイアウト（敵情報、エージェント、プレイヤー情報）
 func (s *BattleScreen) View() string {
 	var builder strings.Builder
 
-	// 上部: 敵情報
-	enemyInfo := s.renderEnemyInfo()
-	builder.WriteString(enemyInfo)
+	// 上部: 敵情報エリア
+	enemyArea := s.renderEnemyArea()
+	builder.WriteString(enemyArea)
 	builder.WriteString("\n")
 
-	// 中央: バトルエリア
-	if s.isTyping {
+	// 中央: エージェントエリア / タイピングエリア / 結果表示
+	if s.showingResult {
+		// 結果表示（WIN/LOSE ASCIIアート）
+		resultArea := s.renderResultArea()
+		builder.WriteString(resultArea)
+	} else if s.isTyping {
+		// タイピングチャレンジ
 		typingArea := s.renderTypingArea()
 		builder.WriteString(typingArea)
 	} else {
-		battleArea := s.renderBattleArea()
-		builder.WriteString(battleArea)
+		// エージェントエリア（3体横並びカード）
+		agentArea := s.renderAgentArea()
+		builder.WriteString(agentArea)
 	}
 	builder.WriteString("\n")
 
-	// 下部: プレイヤー情報とモジュール一覧
-	playerInfo := s.renderPlayerInfo()
-	moduleList := s.renderModuleList()
-
-	bottomContent := lipgloss.JoinHorizontal(lipgloss.Top, playerInfo, "  ", moduleList)
-	builder.WriteString(bottomContent)
+	// 下部: プレイヤー情報エリア
+	playerArea := s.renderPlayerArea()
+	builder.WriteString(playerArea)
 	builder.WriteString("\n")
 
 	// メッセージ
@@ -605,12 +712,11 @@ func (s *BattleScreen) View() string {
 
 	var hint string
 	if s.showingResult {
-		// 結果表示中
 		hint = "Enter: 続ける"
 	} else if s.isTyping {
 		hint = "タイピング中...  Esc: キャンセル"
 	} else {
-		hint = "↑/k: 上  ↓/j: 下  Enter: モジュール使用  Esc: 中断"
+		hint = "←/→: エージェント切替  ↑/↓: モジュール選択  Enter: 使用  Esc: 中断"
 	}
 	builder.WriteString(hintStyle.Render(hint))
 
@@ -912,5 +1018,313 @@ func (s *BattleScreen) StartCooldown(slotIndex int, duration float64) {
 	if slotIndex >= 0 && slotIndex < len(s.moduleSlots) {
 		s.moduleSlots[slotIndex].CooldownRemaining = duration
 		s.moduleSlots[slotIndex].CooldownTotal = duration
+	}
+}
+
+// ==================== UI改善: 3エリアレイアウト ====================
+
+// renderEnemyArea は敵情報エリアをレンダリングします。
+// UI-Improvement Requirement 3.1: 敵情報エリア
+func (s *BattleScreen) renderEnemyArea() string {
+	var builder strings.Builder
+
+	// 敵名とフェーズ
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDamage)
+	builder.WriteString(nameStyle.Render(s.enemy.Name))
+	builder.WriteString(fmt.Sprintf(" Lv.%d", s.enemy.Level))
+
+	if s.enemy.IsEnhanced() {
+		phaseStyle := lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
+		builder.WriteString("  ")
+		builder.WriteString(phaseStyle.Render("[強化フェーズ]"))
+	}
+	builder.WriteString("\n")
+
+	// HP表示
+	hpBar := s.styles.RenderHPBarWithValue(s.enemy.HP, s.enemy.MaxHP, 50)
+	builder.WriteString("HP: ")
+	builder.WriteString(hpBar)
+	builder.WriteString("\n")
+
+	// 敵のバフ表示
+	buffs := s.enemy.EffectTable.GetRowsBySource(domain.SourceBuff)
+	if len(buffs) > 0 {
+		for _, buff := range buffs {
+			if buff.Duration != nil {
+				builder.WriteString(s.styles.RenderBuff(buff.Name, *buff.Duration))
+				builder.WriteString(" ")
+			}
+		}
+		builder.WriteString("\n")
+	}
+
+	// 次の敵攻撃までの時間
+	remaining := time.Until(s.nextEnemyAttack)
+	if remaining < 0 {
+		remaining = 0
+	}
+	timerText := fmt.Sprintf("次の敵行動まで: %.1f秒", remaining.Seconds())
+	timerStyle := lipgloss.NewStyle().Foreground(styles.ColorWarning)
+	builder.WriteString(timerStyle.Render(timerText))
+	builder.WriteString("\n")
+
+	// 行動予告
+	icon, actionText, actionColor := s.getActionDisplay()
+	actionStyle := lipgloss.NewStyle().Foreground(actionColor).Bold(true)
+	builder.WriteString(actionStyle.Render(fmt.Sprintf("%s %s", icon, actionText)))
+
+	// エリアボックス
+	areaStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorDamage).
+		Padding(1, 2).
+		Width(s.width - 4)
+
+	title := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("───────────────────────────  敵情報エリア  ───────────────────────────")
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		areaStyle.Render(builder.String()),
+	)
+}
+
+// renderAgentArea はエージェントエリア（3体横並びカード）をレンダリングします。
+// UI-Improvement Requirement 3.2: エージェント横並びカード表示
+func (s *BattleScreen) renderAgentArea() string {
+	cardWidth := 36
+	var cards []string
+
+	for i := 0; i < 3; i++ {
+		var cardContent strings.Builder
+		isSelected := i == s.selectedAgentIdx
+
+		if i < len(s.equippedAgents) {
+			agent := s.equippedAgents[i]
+
+			// エージェント名とレベル
+			nameStyle := lipgloss.NewStyle().Bold(true)
+			if isSelected {
+				nameStyle = nameStyle.Foreground(styles.ColorPrimary)
+			}
+			cardContent.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)))
+			cardContent.WriteString("\n\n")
+
+			// エージェントのモジュール一覧
+			agentModules := s.getModulesForAgent(i)
+			for j, slot := range agentModules {
+				isModuleSelected := isSelected && j == s.getSelectedModuleInAgent(i)
+
+				// モジュールアイコン
+				icon := s.getModuleIcon(slot.Module.Category)
+
+				// モジュール名とクールダウン
+				var moduleStyle lipgloss.Style
+				if isModuleSelected {
+					moduleStyle = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+				} else if !slot.IsReady() {
+					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+				} else {
+					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSecondary)
+				}
+
+				prefix := "  "
+				if isModuleSelected {
+					prefix = "> "
+				}
+
+				if !slot.IsReady() {
+					cdBar := s.styles.RenderCooldownBarWithTime(slot.CooldownRemaining, slot.CooldownTotal, 8)
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s ", prefix, icon, slot.Module.Name)))
+					cardContent.WriteString(cdBar)
+				} else {
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s", prefix, icon, slot.Module.Name)))
+					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Render(" [READY]"))
+				}
+				cardContent.WriteString("\n")
+			}
+		} else {
+			// 空スロット
+			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)"))
+		}
+
+		// カードボックス
+		borderColor := styles.ColorSubtle
+		if isSelected {
+			borderColor = styles.ColorPrimary
+		}
+
+		cardStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(borderColor).
+			Padding(0, 1).
+			Width(cardWidth).
+			Height(10)
+
+		cards = append(cards, cardStyle.Render(cardContent.String()))
+	}
+
+	// カードを横に並べる
+	agentCards := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], "  ", cards[1], "  ", cards[2])
+
+	// エリアボックス
+	areaStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorPrimary).
+		Padding(1, 2).
+		Width(s.width - 4)
+
+	title := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("─────────────────────────  エージェントエリア  ─────────────────────────")
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		areaStyle.Render(agentCards),
+	)
+}
+
+// renderResultArea は結果表示（WIN/LOSE ASCIIアート）をレンダリングします。
+// UI-Improvement Requirement 3.9: WIN/LOSE ASCIIアート表示
+func (s *BattleScreen) renderResultArea() string {
+	var resultArt string
+	if s.victory {
+		resultArt = s.winLoseRenderer.RenderWin()
+	} else {
+		resultArt = s.winLoseRenderer.RenderLose()
+	}
+
+	// 中央揃え
+	centeredArt := lipgloss.NewStyle().
+		Width(s.width - 8).
+		Align(lipgloss.Center).
+		Render(resultArt)
+
+	// エリアボックス
+	areaStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorPrimary).
+		Padding(2, 2).
+		Width(s.width - 4)
+
+	title := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("─────────────────────────  エージェントエリア  ─────────────────────────")
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		areaStyle.Render(centeredArt),
+	)
+}
+
+// renderPlayerArea はプレイヤー情報エリアをレンダリングします。
+// UI-Improvement Requirement 3.1: プレイヤー情報エリア
+func (s *BattleScreen) renderPlayerArea() string {
+	var builder strings.Builder
+
+	// プレイヤー名
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorHPHigh)
+	builder.WriteString(titleStyle.Render("プレイヤー"))
+	builder.WriteString("\n")
+
+	// HP表示
+	hpBar := s.styles.RenderHPBarWithValue(s.player.HP, s.player.MaxHP, 50)
+	builder.WriteString("HP: ")
+	builder.WriteString(hpBar)
+	builder.WriteString("\n")
+
+	// バフ表示
+	buffs := s.player.EffectTable.GetRowsBySource(domain.SourceBuff)
+	if len(buffs) > 0 {
+		builder.WriteString("バフ: ")
+		for _, buff := range buffs {
+			if buff.Duration != nil {
+				builder.WriteString(s.styles.RenderBuff(buff.Name, *buff.Duration))
+				builder.WriteString(" ")
+			}
+		}
+		builder.WriteString("\n")
+	}
+
+	// デバフ表示
+	debuffs := s.player.EffectTable.GetRowsBySource(domain.SourceDebuff)
+	if len(debuffs) > 0 {
+		builder.WriteString("デバフ: ")
+		for _, debuff := range debuffs {
+			if debuff.Duration != nil {
+				builder.WriteString(s.styles.RenderDebuff(debuff.Name, *debuff.Duration))
+				builder.WriteString(" ")
+			}
+		}
+	}
+
+	// エリアボックス
+	areaStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.ColorHPHigh).
+		Padding(1, 2).
+		Width(s.width - 4)
+
+	title := lipgloss.NewStyle().
+		Foreground(styles.ColorSubtle).
+		Render("────────────────────────  プレイヤー情報エリア  ────────────────────────")
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		areaStyle.Render(builder.String()),
+	)
+}
+
+// getModulesForAgent は指定エージェントのモジュールスロットを取得します。
+func (s *BattleScreen) getModulesForAgent(agentIdx int) []ModuleSlot {
+	var modules []ModuleSlot
+	for _, slot := range s.moduleSlots {
+		if slot.AgentIndex == agentIdx {
+			modules = append(modules, slot)
+		}
+	}
+	return modules
+}
+
+// getSelectedModuleInAgent は選択中エージェント内でのモジュール選択位置を返します。
+func (s *BattleScreen) getSelectedModuleInAgent(agentIdx int) int {
+	if s.selectedAgentIdx != agentIdx {
+		return -1
+	}
+
+	// 現在選択されているスロットがこのエージェントのものか確認
+	if s.selectedSlot >= 0 && s.selectedSlot < len(s.moduleSlots) {
+		slot := s.moduleSlots[s.selectedSlot]
+		if slot.AgentIndex == agentIdx {
+			// このエージェント内での相対位置を計算
+			moduleIdx := 0
+			for i := 0; i < s.selectedSlot; i++ {
+				if s.moduleSlots[i].AgentIndex == agentIdx {
+					moduleIdx++
+				}
+			}
+			return moduleIdx
+		}
+	}
+	return 0
+}
+
+// getModuleIcon はモジュールカテゴリのアイコンを返します。
+// UI-Improvement Requirement 3.6: モジュールカテゴリアイコン
+func (s *BattleScreen) getModuleIcon(category domain.ModuleCategory) string {
+	switch category {
+	case domain.PhysicalAttack:
+		return "⚔"
+	case domain.MagicAttack:
+		return "✦"
+	case domain.Heal:
+		return "♥"
+	case domain.Buff:
+		return "▲"
+	case domain.Debuff:
+		return "▼"
+	default:
+		return "•"
 	}
 }
