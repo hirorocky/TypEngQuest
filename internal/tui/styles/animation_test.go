@@ -139,3 +139,159 @@ func TestCooldownProgressBar(t *testing.T) {
 		})
 	}
 }
+
+// ==================== Task 2.1: AnimatedHPBarのテスト ====================
+
+// TestNewAnimatedHPBar はAnimatedHPBarの作成をテストします。
+// Requirement 3.3: HPバーのスムーズアニメーション
+func TestNewAnimatedHPBar(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+	if bar == nil {
+		t.Error("NewAnimatedHPBar()がnilを返しました")
+	}
+
+	// 初期状態の確認
+	if bar.MaxHP != 100 {
+		t.Errorf("MaxHPが正しくありません: got %d, want %d", bar.MaxHP, 100)
+	}
+	if bar.TargetHP != 100 {
+		t.Errorf("TargetHPが正しくありません: got %d, want %d", bar.TargetHP, 100)
+	}
+	if bar.CurrentDisplayHP != 100.0 {
+		t.Errorf("CurrentDisplayHPが正しくありません: got %f, want %f", bar.CurrentDisplayHP, 100.0)
+	}
+	if bar.IsAnimating {
+		t.Error("初期状態でIsAnimatingがtrueです")
+	}
+}
+
+// TestAnimatedHPBarSetTarget は目標HP設定をテストします。
+func TestAnimatedHPBarSetTarget(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+
+	// ダメージを受けた場合（減少）
+	bar.SetTarget(70)
+	if bar.TargetHP != 70 {
+		t.Errorf("TargetHPが正しくありません: got %d, want %d", bar.TargetHP, 70)
+	}
+	if !bar.IsAnimating {
+		t.Error("SetTarget後にIsAnimatingがfalseです")
+	}
+
+	// 回復した場合（増加）
+	bar.SetTarget(90)
+	if bar.TargetHP != 90 {
+		t.Errorf("TargetHPが正しくありません: got %d, want %d", bar.TargetHP, 90)
+	}
+}
+
+// TestAnimatedHPBarSetTargetBounds は目標HPの境界値をテストします。
+func TestAnimatedHPBarSetTargetBounds(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+
+	// 0未満は0に制限
+	bar.SetTarget(-10)
+	if bar.TargetHP != 0 {
+		t.Errorf("TargetHPが0に制限されていません: got %d", bar.TargetHP)
+	}
+
+	// MaxHP超過はMaxHPに制限
+	bar.SetTarget(150)
+	if bar.TargetHP != 100 {
+		t.Errorf("TargetHPがMaxHPに制限されていません: got %d", bar.TargetHP)
+	}
+}
+
+// TestAnimatedHPBarUpdate はアニメーション更新をテストします。
+// Requirement 3.3: 100msごとの更新で自然なアニメーション
+func TestAnimatedHPBarUpdate(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+	bar.SetTarget(50) // 100から50へ減少
+
+	// 更新前の値を記録
+	beforeHP := bar.CurrentDisplayHP
+
+	// 100ms更新
+	bar.Update(100)
+
+	// HPが減少していることを確認
+	if bar.CurrentDisplayHP >= beforeHP {
+		t.Error("Update()でCurrentDisplayHPが減少していません")
+	}
+
+	// まだ目標に達していないはず
+	if bar.CurrentDisplayHP <= float64(bar.TargetHP) {
+		t.Error("1回の更新で目標に達するのは速すぎます")
+	}
+}
+
+// TestAnimatedHPBarUpdateComplete はアニメーション完了をテストします。
+func TestAnimatedHPBarUpdateComplete(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+	bar.SetTarget(50)
+
+	// 十分な時間更新してアニメーション完了させる
+	for i := 0; i < 50; i++ {
+		bar.Update(100)
+	}
+
+	// 目標に達していることを確認
+	if bar.GetCurrentHP() != 50 {
+		t.Errorf("アニメーション完了後のHPが正しくありません: got %d, want %d", bar.GetCurrentHP(), 50)
+	}
+
+	// アニメーションが終了していることを確認
+	if bar.IsAnimating {
+		t.Error("アニメーション完了後もIsAnimatingがtrueです")
+	}
+}
+
+// TestAnimatedHPBarRender はHPバーの描画をテストします。
+func TestAnimatedHPBarRender(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+	gs := NewGameStyles()
+
+	result := bar.Render(gs, 20)
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+}
+
+// TestAnimatedHPBarGetCurrentHP は現在の表示HPを取得するテストです。
+func TestAnimatedHPBarGetCurrentHP(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+
+	hp := bar.GetCurrentHP()
+	if hp != 100 {
+		t.Errorf("GetCurrentHP()が正しくありません: got %d, want %d", hp, 100)
+	}
+
+	// 途中の値でも整数で取得できることを確認
+	bar.CurrentDisplayHP = 75.7
+	hp = bar.GetCurrentHP()
+	if hp != 76 { // 四捨五入
+		t.Errorf("GetCurrentHP()の丸めが正しくありません: got %d, want %d", hp, 76)
+	}
+}
+
+// TestAnimatedHPBarHealingAnimation は回復アニメーションをテストします。
+func TestAnimatedHPBarHealingAnimation(t *testing.T) {
+	bar := NewAnimatedHPBar(100)
+	bar.CurrentDisplayHP = 50
+	bar.TargetHP = 50
+	bar.IsAnimating = false
+
+	// 回復（増加）
+	bar.SetTarget(80)
+
+	// 更新前の値を記録
+	beforeHP := bar.CurrentDisplayHP
+
+	// 100ms更新
+	bar.Update(100)
+
+	// HPが増加していることを確認
+	if bar.CurrentDisplayHP <= beforeHP {
+		t.Error("回復アニメーションでCurrentDisplayHPが増加していません")
+	}
+}

@@ -386,3 +386,114 @@ func (as *AnimationState) Update(deltaMS int) {
 func (as *AnimationState) HasActiveAnimations() bool {
 	return len(as.DamageAnimations) > 0 || len(as.HealAnimations) > 0 || len(as.Messages) > 0
 }
+
+// ==================== AnimatedHPBar ====================
+
+// AnimatedHPBar はアニメーション付きHPバーの状態を管理します。
+// Requirement 3.3: HPバーのスムーズアニメーション
+type AnimatedHPBar struct {
+	// CurrentDisplayHP は現在表示中のHP値（アニメーション用）
+	CurrentDisplayHP float64
+
+	// TargetHP は目標HP値
+	TargetHP int
+
+	// MaxHP は最大HP値
+	MaxHP int
+
+	// AnimationSpeed は1秒あたりのHP変化量
+	AnimationSpeed float64
+
+	// IsAnimating はアニメーション中かどうか
+	IsAnimating bool
+}
+
+// デフォルトのアニメーション速度（1秒あたりのHP変化量）
+const (
+	// DefaultAnimationSpeed はデフォルトのアニメーション速度
+	DefaultAnimationSpeed = 100.0
+)
+
+// NewAnimatedHPBar は新しいAnimatedHPBarを作成します。
+func NewAnimatedHPBar(maxHP int) *AnimatedHPBar {
+	return &AnimatedHPBar{
+		CurrentDisplayHP: float64(maxHP),
+		TargetHP:         maxHP,
+		MaxHP:            maxHP,
+		AnimationSpeed:   DefaultAnimationSpeed,
+		IsAnimating:      false,
+	}
+}
+
+// SetTarget は目標HP値を設定しアニメーションを開始します。
+func (a *AnimatedHPBar) SetTarget(targetHP int) {
+	// 境界値チェック
+	if targetHP < 0 {
+		targetHP = 0
+	}
+	if targetHP > a.MaxHP {
+		targetHP = a.MaxHP
+	}
+
+	a.TargetHP = targetHP
+
+	// 目標と現在表示が異なる場合はアニメーション開始
+	if int(a.CurrentDisplayHP+0.5) != targetHP {
+		a.IsAnimating = true
+	}
+}
+
+// Update はアニメーションを更新します（deltaMS: 経過ミリ秒）。
+// Requirement 3.3: 100msごとの更新で自然なアニメーション
+func (a *AnimatedHPBar) Update(deltaMS int) {
+	if !a.IsAnimating {
+		return
+	}
+
+	// ミリ秒を秒に変換
+	deltaSeconds := float64(deltaMS) / 1000.0
+
+	// 変化量を計算
+	change := a.AnimationSpeed * deltaSeconds
+
+	targetFloat := float64(a.TargetHP)
+
+	if a.CurrentDisplayHP > targetFloat {
+		// ダメージ（減少）
+		a.CurrentDisplayHP -= change
+		if a.CurrentDisplayHP <= targetFloat {
+			a.CurrentDisplayHP = targetFloat
+			a.IsAnimating = false
+		}
+	} else if a.CurrentDisplayHP < targetFloat {
+		// 回復（増加）
+		a.CurrentDisplayHP += change
+		if a.CurrentDisplayHP >= targetFloat {
+			a.CurrentDisplayHP = targetFloat
+			a.IsAnimating = false
+		}
+	} else {
+		// 目標に到達
+		a.IsAnimating = false
+	}
+
+	// 境界値制限
+	if a.CurrentDisplayHP < 0 {
+		a.CurrentDisplayHP = 0
+	}
+	if a.CurrentDisplayHP > float64(a.MaxHP) {
+		a.CurrentDisplayHP = float64(a.MaxHP)
+	}
+}
+
+// Render は現在の表示HPでHPバーを描画します。
+func (a *AnimatedHPBar) Render(styles *GameStyles, width int) string {
+	currentHP := a.GetCurrentHP()
+	return styles.RenderHPBar(currentHP, a.MaxHP, width)
+}
+
+// GetCurrentHP は現在の表示HP（整数）を返します。
+// 四捨五入して整数値を返します。
+func (a *AnimatedHPBar) GetCurrentHP() int {
+	return int(a.CurrentDisplayHP + 0.5)
+}
