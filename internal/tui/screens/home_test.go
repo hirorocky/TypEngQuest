@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"hirorocky/type-battle/internal/domain"
 )
 
 // ==================== Task 10.1: ホーム画面のテスト ====================
@@ -52,7 +53,8 @@ func TestHomeScreenMenuItems(t *testing.T) {
 // TestHomeScreenNavigation はメニューナビゲーションをテストします。
 // Requirement 2.7: 矢印キーまたはhjklでメニュー選択
 func TestHomeScreenNavigation(t *testing.T) {
-	screen := NewHomeScreen(0, nil)
+	// モックAgentProviderを使用してバトル選択を有効化
+	screen := NewHomeScreen(0, &mockAgentProvider{agents: []*domain.AgentModel{{Level: 1}}})
 
 	// 下キーで移動
 	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyDown})
@@ -282,5 +284,41 @@ func TestHomeScreenEmptySlots(t *testing.T) {
 	// 空きスロット表示が含まれることを確認
 	if !containsAny(rendered, "(空)", "(未装備)") {
 		t.Error("空スロット表示がありません")
+	}
+}
+
+// ==================== Task 4.4: 装備なし時の誘導メッセージとバトル無効化のテスト ====================
+
+// TestHomeScreenBattleDisabledWhenNoAgent は装備エージェントがない場合にバトル選択が無効化されることをテストします。
+// Requirement 1.6, 5.3: 装備エージェントが空の場合、バトル選択メニューを無効化
+func TestHomeScreenBattleDisabledWhenNoAgent(t *testing.T) {
+	screen := NewHomeScreen(5, nil)
+	screen.width = 120
+	screen.height = 40
+
+	// 装備エージェントがない場合、バトル選択メニューが無効化されていること
+	for _, item := range screen.menu.Items {
+		if item.Value == "battle_select" {
+			if !item.Disabled {
+				t.Error("バトル選択メニューが無効化されていません")
+			}
+			return
+		}
+	}
+	t.Error("バトル選択メニューが見つかりません")
+}
+
+// TestHomeScreenGuidanceMessageWhenNoAgent は装備エージェントがない場合に誘導メッセージが表示されることをテストします。
+// Requirement 1.6: 装備エージェントが空の場合、エージェント管理への誘導メッセージを表示
+func TestHomeScreenGuidanceMessageWhenNoAgent(t *testing.T) {
+	screen := NewHomeScreen(5, nil)
+	screen.width = 120
+	screen.height = 40
+
+	rendered := screen.View()
+
+	// 誘導メッセージが含まれることを確認
+	if !containsAny(rendered, "エージェント管理", "装備") {
+		t.Error("誘導メッセージが表示されていません")
 	}
 }

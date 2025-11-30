@@ -44,11 +44,20 @@ type ChangeSceneMsg struct {
 
 // NewHomeScreen は新しいHomeScreenを作成します。
 // Requirement 2.1: ゲーム起動時にホーム画面を表示
+// UI-Improvement Requirement 1.6, 5.3: 装備エージェントが空の場合、バトル選択メニューを無効化
 func NewHomeScreen(maxLevelReached int, agentProvider AgentProvider) *HomeScreen {
+	// 装備エージェントがあるかチェック
+	hasEquippedAgents := false
+	if agentProvider != nil {
+		equippedAgents := agentProvider.GetEquippedAgents()
+		hasEquippedAgents = len(equippedAgents) > 0
+	}
+
 	// Requirement 2.2: 4つの主要機能 + 設定
+	// UI-Improvement Requirement 1.6, 5.3: 装備がない場合はバトル選択を無効化
 	items := []components.MenuItem{
 		{Label: "エージェント管理", Value: "agent_management"},
-		{Label: "バトル選択", Value: "battle_select"},
+		{Label: "バトル選択", Value: "battle_select", Disabled: !hasEquippedAgents},
 		{Label: "図鑑", Value: "encyclopedia"},
 		{Label: "統計/実績", Value: "stats_achievements"},
 		{Label: "設定", Value: "settings"}, // Requirement 21.1
