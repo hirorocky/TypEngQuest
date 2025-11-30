@@ -58,16 +58,38 @@ type AgentManager struct {
 }
 
 // NewAgentManager は新しいAgentManagerを作成します。
+// AgentInventoryは内部で作成・管理されます（最大20体）。
 func NewAgentManager(
 	coreInv *inventory.CoreInventory,
 	moduleInv *inventory.ModuleInventory,
-	agentInv *inventory.AgentInventory,
 ) *AgentManager {
 	return &AgentManager{
 		coreInventory:   coreInv,
 		moduleInventory: moduleInv,
-		agentInventory:  agentInv,
+		agentInventory:  inventory.NewAgentInventoryWithDefault(20),
 		equippedAgents:  [MaxEquipmentSlots]*domain.AgentModel{},
+	}
+}
+
+// InitializeWithDefaults は初期エージェントをセットアップします。
+func (m *AgentManager) InitializeWithDefaults() {
+	// 初期エージェントを作成（コアとモジュールが存在する場合のみ）
+	cores := m.coreInventory.List()
+	modules := m.moduleInventory.List()
+
+	if len(cores) > 0 && len(modules) >= domain.ModuleSlotCount {
+		// 最初のコアと最初の4つのモジュールで初期エージェントを合成
+		core := cores[0]
+		moduleIDs := make([]string, domain.ModuleSlotCount)
+		for i := 0; i < domain.ModuleSlotCount; i++ {
+			moduleIDs[i] = modules[i].ID
+		}
+
+		agent, err := m.SynthesizeAgent(core.ID, moduleIDs)
+		if err == nil && agent != nil {
+			// 初期エージェントを装備（スロット0）
+			m.equippedAgents[0] = agent
+		}
 	}
 }
 
@@ -211,7 +233,6 @@ func (m *AgentManager) EquipAgent(slot int, agentID string, player *domain.Playe
 
 	// 装備
 	m.equippedAgents[slot] = agent
-	m.agentInventory.SetEquipped(agentID, true)
 
 	// Requirement 8.6: プレイヤーHPを再計算
 	m.recalculatePlayerHP(player)
@@ -226,10 +247,6 @@ func (m *AgentManager) UnequipAgent(slot int, player *domain.PlayerModel) error 
 		return fmt.Errorf("無効なスロット番号です: %d", slot)
 	}
 
-	agent := m.equippedAgents[slot]
-	if agent != nil {
-		m.agentInventory.SetEquipped(agent.ID, false)
-	}
 	m.equippedAgents[slot] = nil
 
 	// Requirement 8.6: プレイヤーHPを再計算
@@ -256,6 +273,16 @@ func (m *AgentManager) GetEquippedAgentAt(slot int) *domain.AgentModel {
 		return nil
 	}
 	return m.equippedAgents[slot]
+}
+
+// GetAgents は所持エージェント一覧を返します。
+func (m *AgentManager) GetAgents() []*domain.AgentModel {
+	return m.agentInventory.List()
+}
+
+// AddAgent はエージェントをインベントリに追加します。
+func (m *AgentManager) AddAgent(agent *domain.AgentModel) error {
+	return m.agentInventory.Add(agent)
 }
 
 // GetEquippedCount は装備中のエージェント数を返します。

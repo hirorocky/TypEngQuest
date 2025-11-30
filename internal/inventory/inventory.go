@@ -280,17 +280,12 @@ func (inv *ModuleInventory) SortByCategory(ascending bool) []*domain.ModuleModel
 
 // ==================== エージェントインベントリ（Task 4.3） ====================
 
-// agentEntry はエージェントの情報を保持する内部構造体です。
-type agentEntry struct {
-	agent      *domain.AgentModel
-	isEquipped bool
-}
-
 // AgentInventory はエージェントのインベントリを管理する構造体です。
+// 装備状態はAgentManagerで一元管理されます。
 // Requirements: 7.12, 8.9, 8.10, 20.6
 type AgentInventory struct {
-	// agents はエージェントのマップ（ID → agentEntry）です。
-	agents map[string]*agentEntry
+	// agents はエージェントのマップ（ID → AgentModel）です。
+	agents map[string]*domain.AgentModel
 
 	// maxSlots はエージェントの最大保持数です。
 	// Requirement 20.6: 最低20体
@@ -301,7 +296,7 @@ type AgentInventory struct {
 // Requirement 20.6: 最低20体の保有上限
 func NewAgentInventory(maxSlots int) *AgentInventory {
 	return &AgentInventory{
-		agents:   make(map[string]*agentEntry),
+		agents:   make(map[string]*domain.AgentModel),
 		maxSlots: maxSlots,
 	}
 }
@@ -312,7 +307,7 @@ func NewAgentInventoryWithDefault(maxSlots int) *AgentInventory {
 		maxSlots = 20 // 最低20体を保証
 	}
 	return &AgentInventory{
-		agents:   make(map[string]*agentEntry),
+		agents:   make(map[string]*domain.AgentModel),
 		maxSlots: maxSlots,
 	}
 }
@@ -324,59 +319,25 @@ func (inv *AgentInventory) Add(agent *domain.AgentModel) error {
 	if len(inv.agents) >= inv.maxSlots {
 		return fmt.Errorf("エージェントインベントリが満杯です（上限: %d）", inv.maxSlots)
 	}
-	inv.agents[agent.ID] = &agentEntry{
-		agent:      agent,
-		isEquipped: false,
-	}
+	inv.agents[agent.ID] = agent
 	return nil
 }
 
 // Remove はエージェントをインベントリから削除します。
-// 装備中かどうかに関わらず削除します。
+// 装備状態はAgentManagerで管理されているため、装備解除は別途行う必要があります。
 // Requirement 8.9: 所持エージェントを破棄する機能
 func (inv *AgentInventory) Remove(id string) *domain.AgentModel {
-	entry, exists := inv.agents[id]
+	agent, exists := inv.agents[id]
 	if !exists {
 		return nil
 	}
 	delete(inv.agents, id)
-	return entry.agent
-}
-
-// RemoveWithWarning は装備中の場合に警告を返しながら削除を試みます。
-// Requirement 8.10: 装備中エージェント破棄時の警告
-// 戻り値: (エージェント, 警告メッセージ)
-// 警告メッセージが空でない場合、実際の削除は行われません。
-func (inv *AgentInventory) RemoveWithWarning(id string) (*domain.AgentModel, string) {
-	entry, exists := inv.agents[id]
-	if !exists {
-		return nil, ""
-	}
-	if entry.isEquipped {
-		return entry.agent, "このエージェントは現在装備中です。本当に破棄しますか？"
-	}
-	// 装備中でなければ削除
-	delete(inv.agents, id)
-	return entry.agent, ""
-}
-
-// ForceRemove は装備中でも強制的に削除します。
-func (inv *AgentInventory) ForceRemove(id string) *domain.AgentModel {
-	entry, exists := inv.agents[id]
-	if !exists {
-		return nil
-	}
-	delete(inv.agents, id)
-	return entry.agent
+	return agent
 }
 
 // Get は指定されたIDのエージェントを取得します。
 func (inv *AgentInventory) Get(id string) *domain.AgentModel {
-	entry, exists := inv.agents[id]
-	if !exists {
-		return nil
-	}
-	return entry.agent
+	return inv.agents[id]
 }
 
 // Count はインベントリ内のエージェント数を返します。
@@ -397,36 +358,8 @@ func (inv *AgentInventory) IsFull() bool {
 // List は全てのエージェントをリストで返します。
 func (inv *AgentInventory) List() []*domain.AgentModel {
 	result := make([]*domain.AgentModel, 0, len(inv.agents))
-	for _, entry := range inv.agents {
-		result = append(result, entry.agent)
-	}
-	return result
-}
-
-// SetEquipped はエージェントの装備状態を設定します。
-func (inv *AgentInventory) SetEquipped(id string, equipped bool) {
-	entry, exists := inv.agents[id]
-	if exists {
-		entry.isEquipped = equipped
-	}
-}
-
-// IsEquipped はエージェントが装備中かどうかを返します。
-func (inv *AgentInventory) IsEquipped(id string) bool {
-	entry, exists := inv.agents[id]
-	if !exists {
-		return false
-	}
-	return entry.isEquipped
-}
-
-// GetEquipped は装備中のエージェントリストを返します。
-func (inv *AgentInventory) GetEquipped() []*domain.AgentModel {
-	result := make([]*domain.AgentModel, 0)
-	for _, entry := range inv.agents {
-		if entry.isEquipped {
-			result = append(result, entry.agent)
-		}
+	for _, agent := range inv.agents {
+		result = append(result, agent)
 	}
 	return result
 }

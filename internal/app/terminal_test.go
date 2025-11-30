@@ -8,8 +8,8 @@ import (
 
 // TestMinTerminalWidth は最小ターミナル幅の定数を検証します
 func TestMinTerminalWidth(t *testing.T) {
-	if MinTerminalWidth != 120 {
-		t.Errorf("MinTerminalWidth should be 120, got %d", MinTerminalWidth)
+	if MinTerminalWidth != 140 {
+		t.Errorf("MinTerminalWidth should be 140, got %d", MinTerminalWidth)
 	}
 }
 
@@ -27,9 +27,9 @@ func TestCheckTerminalSize_ValidSize(t *testing.T) {
 		width  int
 		height int
 	}{
-		{"exact minimum", 120, 40},
+		{"exact minimum", 140, 40},
 		{"larger width", 200, 40},
-		{"larger height", 120, 60},
+		{"larger height", 140, 60},
 		{"both larger", 200, 60},
 	}
 
@@ -51,12 +51,12 @@ func TestCheckTerminalSize_InvalidSize(t *testing.T) {
 		height int
 	}{
 		{"width too small", 100, 40},
-		{"height too small", 120, 30},
+		{"height too small", 140, 30},
 		{"both too small", 100, 30},
 		{"zero width", 0, 40},
-		{"zero height", 120, 0},
+		{"zero height", 140, 0},
 		{"negative width", -1, 40},
-		{"negative height", 120, -1},
+		{"negative height", 140, -1},
 	}
 
 	for _, tt := range tests {
@@ -84,14 +84,14 @@ func TestTerminalSizeError_Width(t *testing.T) {
 	if sizeErr.CurrentWidth != 100 {
 		t.Errorf("CurrentWidth should be 100, got %d", sizeErr.CurrentWidth)
 	}
-	if sizeErr.RequiredWidth != 120 {
-		t.Errorf("RequiredWidth should be 120, got %d", sizeErr.RequiredWidth)
+	if sizeErr.RequiredWidth != 140 {
+		t.Errorf("RequiredWidth should be 140, got %d", sizeErr.RequiredWidth)
 	}
 }
 
 // TestTerminalSizeError_Height はエラーに高さの情報が含まれることを検証します
 func TestTerminalSizeError_Height(t *testing.T) {
-	err := CheckTerminalSize(120, 30)
+	err := CheckTerminalSize(140, 30)
 	if err == nil {
 		t.Fatal("expected error but got nil")
 	}
@@ -129,12 +129,12 @@ func TestTerminalSizeError_Error(t *testing.T) {
 
 // TestNewTerminalState は新しいターミナル状態を作成します
 func TestNewTerminalState(t *testing.T) {
-	state := NewTerminalState(120, 40)
+	state := NewTerminalState(140, 40)
 	if state == nil {
 		t.Fatal("NewTerminalState returned nil")
 	}
-	if state.Width != 120 {
-		t.Errorf("Width should be 120, got %d", state.Width)
+	if state.Width != 140 {
+		t.Errorf("Width should be 140, got %d", state.Width)
 	}
 	if state.Height != 40 {
 		t.Errorf("Height should be 40, got %d", state.Height)
@@ -149,10 +149,10 @@ func TestTerminalState_IsValid(t *testing.T) {
 		height   int
 		expected bool
 	}{
-		{"valid size", 120, 40, true},
+		{"valid size", 140, 40, true},
 		{"larger size", 200, 60, true},
 		{"width too small", 100, 40, false},
-		{"height too small", 120, 30, false},
+		{"height too small", 140, 30, false},
 	}
 
 	for _, tt := range tests {
@@ -177,7 +177,7 @@ func TestTerminalState_WarningMessage(t *testing.T) {
 
 // TestTerminalState_WarningMessage_ValidSize は有効なサイズに対して空を返します
 func TestTerminalState_WarningMessage_ValidSize(t *testing.T) {
-	state := NewTerminalState(120, 40)
+	state := NewTerminalState(140, 40)
 	msg := state.WarningMessage()
 
 	if msg != "" {
@@ -234,7 +234,7 @@ func TestModel_ShowsWarningOnSmallTerminal(t *testing.T) {
 func TestModel_Ready_AfterValidWindowSize(t *testing.T) {
 	model := New()
 
-	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg)
 
 	m, ok := updatedModel.(*Model)
@@ -269,7 +269,7 @@ func TestModel_WindowSizeChange(t *testing.T) {
 	model := New()
 
 	// まず有効なサイズを設定
-	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	m := updatedModel.(*Model)
 

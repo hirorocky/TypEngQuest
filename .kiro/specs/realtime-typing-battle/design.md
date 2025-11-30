@@ -166,7 +166,7 @@ sequenceDiagram
     Player->>BattleScreen: Select Level & Start Battle
     BattleScreen->>BattleEngine: Initialize Battle (level, equipped agents)
     BattleEngine->>Enemy: Generate Enemy (level)
-    BattleEngine->>Player: Set HP = avg(agent core levels) × coefficient
+    BattleEngine->>Player: Set HP = avg(agent core levels) × coefficient + base HP
     BattleEngine->>BattleScreen: Start Enemy Attack Timer (tea.Tick)
 
     loop Real-time Game Loop
@@ -570,7 +570,7 @@ type BattleResult struct {
 
 | Field | Detail |
 |-------|--------|
-| Intent | エージェント合成、装備管理、インベントリ管理 |
+| Intent | エージェント合成、装備管理、エージェントインベントリ管理（装備状態の唯一のソース） |
 | Requirements | 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8 |
 
 **Responsibilities & Constraints**
@@ -579,9 +579,16 @@ type BattleResult struct {
 - エージェント装備・装備解除（最大3スロット）
 - 装備変更時のプレイヤーHP再計算
 - エージェントインベントリ管理（保有上限チェック）
+- **装備状態の一元管理**: AgentManagerが装備中エージェントの唯一の信頼できるソースとして機能する
+
+**Architecture Decision: Single Source of Truth for Equipment**
+- 装備状態はAgentManagerのみで管理し、各画面はAgentProviderインターフェース経由で参照
+- InventoryManagerはコアとモジュールのみを管理（エージェントは含まない）
+- 各画面（HomeScreen、BattleSelectScreen等）はローカルキャッシュを持たず、常に最新の装備状態を取得
 
 **Dependencies**
 - Inbound: AgentManagementScreen — 合成・装備リクエスト (P0)
+- Inbound: HomeScreen, BattleSelectScreen — 装備状態参照（AgentProvider経由）(P0)
 - Outbound: CoreModel — コアドメインモデル (P0)
 - Outbound: ModuleModel — モジュールドメインモデル (P0)
 - Outbound: AgentModel — エージェントドメインモデル (P0)
@@ -1003,7 +1010,7 @@ func (a *AgentModel) GetFinalStats(playerEffectTable *EffectTable) FinalStats {
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ プレイヤー                                                   │
-│  - HP（エージェントのコアレベル平均から算出）                  │
+│  - HP（エージェントのコアレベル平均 × 係数 + 基礎HPから算出）   │
 │  - EffectTable（全エージェントに影響）                        │
 │    ├─ [Core] 攻撃特化パッシブ（STR+10）← エージェント1のコア  │
 │    ├─ [Core] ヒーラーパッシブ（MAG+15）← エージェント2のコア  │
@@ -1063,7 +1070,7 @@ const (
 - エージェントのレベル = コアのレベル（固定）
 - エージェントは必ず4個のモジュールを装備
 - モジュールタグがコア特性の許可タグに含まれる場合のみ装備可能
-- プレイヤーHP = 装備中エージェントのコアレベル平均 × HP係数
+- プレイヤーHP = 装備中エージェントのコアレベル平均 × HP係数 + 基礎HP
 - 敵のHP <= 50% で PhaseEnhanced に移行
 - バフ・デバフの残り時間 >= 0、0になったら削除
 
@@ -1234,7 +1241,7 @@ type ExternalData struct {
 - `CoreModel.ValidateModuleCompatibility()` - コア特性とモジュールタグの互換性検証
 - `TypingEvaluator.CalculateWPM()` - WPM計算ロジックの正確性
 - `EffectCalculator.CalculateDamage()` - ダメージ計算式（基礎効果 × ステータス × 速度係数 × 正確性係数）
-- `PlayerModel.CalculateMaxHP()` - プレイヤーHP計算（装備エージェントのコアレベル平均 × HP係数）
+- `PlayerModel.CalculateMaxHP()` - プレイヤーHP計算（装備エージェントのコアレベル平均 × HP係数 + 基礎HP）
 - `BattleEngine.CheckBattleEnd()` - 勝敗判定ロジック
 
 ### Integration Tests

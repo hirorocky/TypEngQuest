@@ -43,7 +43,7 @@ func NewStatsAchievementsScreen(data *StatsTestData) *StatsAchievementsScreen {
 		currentTab:    TabTypingStats,
 		selectedIndex: 0,
 		styles:        styles.NewGameStyles(),
-		width:         120,
+		width:         140,
 		height:        40,
 	}
 }

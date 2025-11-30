@@ -8,9 +8,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/google/uuid"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/loader"
+
+	"github.com/google/uuid"
 )
 
 // 敵生成関連の定数

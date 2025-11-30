@@ -113,6 +113,9 @@ type StatisticsSaveData struct {
 
 	// TotalCharactersTyped は総タイプ文字数です。
 	TotalCharactersTyped int `json:"total_characters_typed"`
+
+	// EncounteredEnemies はエンカウントした敵のIDリストです（敵図鑑用）。
+	EncounteredEnemies []string `json:"encountered_enemies"`
 }
 
 // AchievementsSaveData は実績のセーブデータです。

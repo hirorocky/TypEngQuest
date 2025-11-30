@@ -37,7 +37,7 @@ func TestValidateModuleCompatibility(t *testing.T) {
 		[]string{"heal_mid"}, 16.0, "MAG", "",
 	)
 
-	manager := NewAgentManager(nil, nil, nil)
+	manager := NewAgentManager(nil, nil)
 
 	if !manager.ValidateModuleCompatibility(core, compatibleModule) {
 		t.Error("互換性のあるモジュールが装備不可と判定された")
@@ -60,7 +60,7 @@ func TestGetAllowedTags(t *testing.T) {
 	passiveSkill := domain.PassiveSkill{ID: "healing_aura", Name: "ヒーリングオーラ"}
 	core := domain.NewCore("core_001", "ヒーラーコア", 10, healerType, passiveSkill)
 
-	manager := NewAgentManager(nil, nil, nil)
+	manager := NewAgentManager(nil, nil)
 	tags := manager.GetAllowedTags(core)
 
 	if len(tags) != 3 {
@@ -88,7 +88,6 @@ func TestSynthesizeAgent(t *testing.T) {
 	// インベントリをセットアップ
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
-	agentInv := inventory.NewAgentInventory(20)
 
 	// コアを追加
 	coreType := domain.CoreType{
@@ -112,7 +111,7 @@ func TestSynthesizeAgent(t *testing.T) {
 		moduleInv.Add(m)
 	}
 
-	manager := NewAgentManager(coreInv, moduleInv, agentInv)
+	manager := NewAgentManager(coreInv, moduleInv)
 	moduleIDs := []string{"m1", "m2", "m3", "m4"}
 
 	agent, err := manager.SynthesizeAgent("core_001", moduleIDs)
@@ -137,8 +136,9 @@ func TestSynthesizeAgent(t *testing.T) {
 	}
 
 	// エージェントがインベントリに追加されていることを確認
-	if agentInv.Count() != 1 {
-		t.Errorf("エージェントインベントリのエージェント数: 期待 1, 実際 %d", agentInv.Count())
+	agents := manager.GetAgents()
+	if len(agents) != 1 {
+		t.Errorf("エージェントインベントリのエージェント数: 期待 1, 実際 %d", len(agents))
 	}
 }
 
@@ -147,7 +147,6 @@ func TestSynthesizeAgent(t *testing.T) {
 func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
-	agentInv := inventory.NewAgentInventory(20)
 
 	// 攻撃バランスコア（physical_low, magic_lowのみ許可）
 	coreType := domain.CoreType{
@@ -166,7 +165,7 @@ func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 	moduleInv.Add(domain.NewModule("m3", "ヒールLv2", domain.Heal, 2, []string{"heal_mid"}, 16.0, "MAG", "")) // 互換性なし
 	moduleInv.Add(domain.NewModule("m4", "攻撃バフ", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""))   // 互換性なし
 
-	manager := NewAgentManager(coreInv, moduleInv, agentInv)
+	manager := NewAgentManager(coreInv, moduleInv)
 
 	_, err := manager.SynthesizeAgent("core_001", []string{"m1", "m2", "m3", "m4"})
 	if err == nil {
@@ -179,7 +178,6 @@ func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
-	agentInv := inventory.NewAgentInventory(20)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -194,7 +192,7 @@ func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 	moduleInv.Add(domain.NewModule("m1", "物理打撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
 	moduleInv.Add(domain.NewModule("m2", "ファイアボール", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", ""))
 
-	manager := NewAgentManager(coreInv, moduleInv, agentInv)
+	manager := NewAgentManager(coreInv, moduleInv)
 
 	_, err := manager.SynthesizeAgent("core_001", []string{"m1", "m2"})
 	if err == nil {
@@ -207,7 +205,6 @@ func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 func TestGetSynthesisPreview(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
-	agentInv := inventory.NewAgentInventory(20)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -229,7 +226,7 @@ func TestGetSynthesisPreview(t *testing.T) {
 		moduleInv.Add(m)
 	}
 
-	manager := NewAgentManager(coreInv, moduleInv, agentInv)
+	manager := NewAgentManager(coreInv, moduleInv)
 	moduleIDs := []string{"m1", "m2", "m3", "m4"}
 
 	preview, err := manager.GetSynthesisPreview("core_001", moduleIDs)
@@ -254,7 +251,7 @@ func TestGetSynthesisPreview(t *testing.T) {
 // TestEquipAgent はエージェント装備処理をテストします。
 // Requirement 8.1-8.5: エージェント装備機能
 func TestEquipAgent(t *testing.T) {
-	agentInv := inventory.NewAgentInventory(20)
+	manager := NewAgentManager(nil, nil)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -271,9 +268,8 @@ func TestEquipAgent(t *testing.T) {
 		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
 	}
 	agent := domain.NewAgent("agent_001", core, modules)
-	agentInv.Add(agent)
+	manager.AddAgent(agent)
 
-	manager := NewAgentManager(nil, nil, agentInv)
 	player := domain.NewPlayer()
 
 	err := manager.EquipAgent(0, "agent_001", player)
@@ -295,7 +291,7 @@ func TestEquipAgent(t *testing.T) {
 // TestEquipAgent_MaxSlots は3スロット制限をテストします。
 // Requirement 8.2: 3つの装備スロット
 func TestEquipAgent_MaxSlots(t *testing.T) {
-	agentInv := inventory.NewAgentInventory(20)
+	manager := NewAgentManager(nil, nil)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -320,10 +316,9 @@ func TestEquipAgent_MaxSlots(t *testing.T) {
 			passiveSkill,
 		)
 		agent := domain.NewAgent("agent_00"+string(rune('1'+i)), core, modules)
-		agentInv.Add(agent)
+		manager.AddAgent(agent)
 	}
 
-	manager := NewAgentManager(nil, nil, agentInv)
 	player := domain.NewPlayer()
 
 	// 3体まで装備可能
@@ -344,7 +339,7 @@ func TestEquipAgent_MaxSlots(t *testing.T) {
 // TestUnequipAgent はエージェント装備解除処理をテストします。
 // Requirement 8.7: 装備解除オプション
 func TestUnequipAgent(t *testing.T) {
-	agentInv := inventory.NewAgentInventory(20)
+	manager := NewAgentManager(nil, nil)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -361,9 +356,8 @@ func TestUnequipAgent(t *testing.T) {
 		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
 	}
 	agent := domain.NewAgent("agent_001", core, modules)
-	agentInv.Add(agent)
+	manager.AddAgent(agent)
 
-	manager := NewAgentManager(nil, nil, agentInv)
 	player := domain.NewPlayer()
 
 	manager.EquipAgent(0, "agent_001", player)
@@ -381,7 +375,7 @@ func TestUnequipAgent(t *testing.T) {
 // TestEquipAgent_RecalculateHP は装備変更時のHP再計算をテストします。
 // Requirement 8.6: 装備変更時のプレイヤー最大HP再計算
 func TestEquipAgent_RecalculateHP(t *testing.T) {
-	agentInv := inventory.NewAgentInventory(20)
+	manager := NewAgentManager(nil, nil)
 
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
@@ -400,14 +394,13 @@ func TestEquipAgent_RecalculateHP(t *testing.T) {
 	// レベル10のエージェント
 	core1 := domain.NewCore("core_001", "コア1", 10, coreType, passiveSkill)
 	agent1 := domain.NewAgent("agent_001", core1, modules)
-	agentInv.Add(agent1)
+	manager.AddAgent(agent1)
 
 	// レベル20のエージェント
 	core2 := domain.NewCore("core_002", "コア2", 20, coreType, passiveSkill)
 	agent2 := domain.NewAgent("agent_002", core2, modules)
-	agentInv.Add(agent2)
+	manager.AddAgent(agent2)
 
-	manager := NewAgentManager(nil, nil, agentInv)
 	player := domain.NewPlayer()
 
 	// 最初のエージェントを装備

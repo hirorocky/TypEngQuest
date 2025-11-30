@@ -145,7 +145,7 @@ func TestRootModel_ChangeSceneMsg(t *testing.T) {
 	model := NewRootModel()
 
 	// WindowSizeMsgを先に送信してモデルを初期化
-	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	model = updatedModel.(*RootModel)
 
@@ -199,7 +199,7 @@ func TestRootModel_Update_QuitKey(t *testing.T) {
 	model := NewRootModel()
 
 	// まずWindowSizeMsgで初期化
-	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	model = updatedModel.(*RootModel)
 
@@ -224,7 +224,7 @@ func TestRootModel_Update_CtrlC(t *testing.T) {
 	model := NewRootModel()
 
 	// まずWindowSizeMsgで初期化
-	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	model = updatedModel.(*RootModel)
 
@@ -275,7 +275,7 @@ func TestRootModel_View_ValidTerminal(t *testing.T) {
 	model := NewRootModel()
 
 	// 有効なWindowSizeMsgを送信
-	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg)
 	m := updatedModel.(*RootModel)
 
@@ -302,7 +302,7 @@ func TestRootModel_IsReady(t *testing.T) {
 	}
 
 	// 有効なWindowSizeMsgを送信
-	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg)
 	m := updatedModel.(*RootModel)
 
@@ -335,7 +335,7 @@ func TestRootModel_QuitPreservesTerminalState(t *testing.T) {
 	model := NewRootModel()
 
 	// WindowSizeMsgで初期化
-	msg1 := tea.WindowSizeMsg{Width: 120, Height: 40}
+	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
 	updatedModel, _ := model.Update(msg1)
 	model = updatedModel.(*RootModel)
 

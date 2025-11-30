@@ -75,7 +75,7 @@ func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScree
 			selectedModules: []*domain.ModuleModel{},
 		},
 		styles: styles.NewGameStyles(),
-		width:  120,
+		width:  140,
 		height: 40,
 	}
 	screen.updateCurrentList()
@@ -109,6 +109,8 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		return s, func() tea.Msg {
 			return ChangeSceneMsg{Scene: "home"}
 		}
+	case "backspace":
+		return s.handleBackspace()
 	case "left", "h":
 		s.prevTab()
 	case "right", "l":
@@ -190,6 +192,32 @@ func (s *AgentManagementScreen) updateCurrentList() {
 	}
 }
 
+// handleBackspace は合成中のBackspace処理を行います。
+func (s *AgentManagementScreen) handleBackspace() (tea.Model, tea.Cmd) {
+	if s.currentTab != TabSynthesis {
+		return s, nil
+	}
+
+	switch s.synthesisState.step {
+	case 0: // コア選択中 - 何もしない
+		return s, nil
+	case 1: // モジュール選択中
+		if len(s.synthesisState.selectedModules) > 0 {
+			// 最後に選択したモジュールを取り消し
+			s.synthesisState.selectedModules = s.synthesisState.selectedModules[:len(s.synthesisState.selectedModules)-1]
+		} else {
+			// モジュール未選択ならコア選択に戻る
+			s.synthesisState.selectedCore = nil
+			s.synthesisState.step = 0
+			s.selectedIndex = 0
+		}
+	case 2: // 確認画面
+		// モジュール選択に戻る
+		s.synthesisState.step = 1
+	}
+	return s, nil
+}
+
 // handleEnter はEnterキーの処理を行います。
 func (s *AgentManagementScreen) handleEnter() (tea.Model, tea.Cmd) {
 	switch s.currentTab {
@@ -213,8 +241,10 @@ func (s *AgentManagementScreen) handleSynthesisEnter() (tea.Model, tea.Cmd) {
 	case 1: // モジュール選択
 		if s.selectedIndex < len(s.moduleList) {
 			module := s.moduleList[s.selectedIndex]
-			// タグ互換性チェック
-			if s.synthesisState.selectedCore != nil && s.isModuleCompatible(module) {
+			// タグ互換性チェック + 重複チェック
+			if s.synthesisState.selectedCore != nil &&
+				s.isModuleCompatible(module) &&
+				!s.isModuleAlreadySelected(module) {
 				if len(s.synthesisState.selectedModules) < 4 {
 					s.synthesisState.selectedModules = append(s.synthesisState.selectedModules, module)
 				}
@@ -273,6 +303,16 @@ func (s *AgentManagementScreen) handleDelete() (tea.Model, tea.Cmd) {
 		}
 	}
 	return s, nil
+}
+
+// isModuleAlreadySelected は指定されたモジュールが既に選択済みかをチェックします。
+func (s *AgentManagementScreen) isModuleAlreadySelected(module *domain.ModuleModel) bool {
+	for _, selected := range s.synthesisState.selectedModules {
+		if selected.ID == module.ID {
+			return true
+		}
+	}
+	return false
 }
 
 // isModuleCompatible はモジュールがコアと互換性があるかチェックします。
@@ -371,7 +411,7 @@ func (s *AgentManagementScreen) View() string {
 		Align(lipgloss.Center).
 		Width(s.width)
 
-	hints := "←/→: タブ切替  ↑/↓: 選択  Enter: 決定  d: 削除  Esc: 戻る"
+	hints := "←/→: タブ切替  ↑/↓: 選択  Enter: 決定  Backspace: 戻る  d: 削除  Esc: ホーム"
 	builder.WriteString(hintStyle.Render(hints))
 
 	return builder.String()
@@ -644,16 +684,19 @@ func (s *AgentManagementScreen) renderSynthesisModuleList() string {
 	var items []string
 	for i, module := range s.moduleList {
 		compatible := s.isModuleCompatible(module)
+		alreadySelected := s.isModuleAlreadySelected(module)
 		style := lipgloss.NewStyle()
 		if i == s.selectedIndex {
 			style = style.Bold(true).Foreground(styles.ColorPrimary)
-		} else if !compatible {
+		} else if !compatible || alreadySelected {
 			style = style.Foreground(styles.ColorSubtle)
 		}
 
 		item := fmt.Sprintf("%s [%s]", module.Name, module.Category.String())
 		if !compatible {
 			item += " (互換性なし)"
+		} else if alreadySelected {
+			item += " (選択済み)"
 		}
 		items = append(items, style.Render(item))
 	}

@@ -33,6 +33,10 @@ const (
 	// SceneSettings は設定画面を表します。
 	// キーバインド設定などを変更可能です。
 	SceneSettings
+
+	// SceneReward は報酬画面を表します。
+	// バトル勝利後のドロップアイテムとバトル統計を表示します。
+	SceneReward
 )
 
 // String はシーンの文字列表現を返します。
@@ -52,6 +56,8 @@ func (s Scene) String() string {
 		return "Achievement"
 	case SceneSettings:
 		return "Settings"
+	case SceneReward:
+		return "Reward"
 	default:
 		return "Unknown"
 	}

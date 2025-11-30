@@ -16,6 +16,20 @@ import (
 
 // ==================== Task 10.3: バトル画面 ====================
 
+// tickInterval はバトル画面の更新間隔です。
+const tickInterval = 100 * time.Millisecond
+
+// BattleTickMsg はバトル画面の定期更新メッセージです。
+type BattleTickMsg struct{}
+
+// BattleResultMsg はバトル結果メッセージです。
+type BattleResultMsg struct {
+	Victory bool
+	Level   int
+	Stats   *battle.BattleStatistics // バトル統計
+	EnemyID string                   // 敵図鑑更新用
+}
+
 // ModuleSlot はモジュールスロットを表します。
 type ModuleSlot struct {
 	Module            *domain.ModuleModel
@@ -64,6 +78,11 @@ type BattleScreen struct {
 	// 敵攻撃
 	nextEnemyAttack time.Time
 
+	// ゲーム終了状態
+	gameOver      bool
+	victory       bool
+	showingResult bool
+
 	// UI
 	styles  *styles.GameStyles
 	width   int
@@ -90,7 +109,7 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		evaluator:          typing.NewEvaluator(),
 		battleEngine:       battle.NewBattleEngine(enemyTypes),
 		styles:             styles.NewGameStyles(),
-		width:              120,
+		width:              140,
 		height:             40,
 	}
 
@@ -154,7 +173,14 @@ func createDefaultDictionary() *typing.Dictionary {
 // Init は画面の初期化を行います。
 func (s *BattleScreen) Init() tea.Cmd {
 	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
-	return nil
+	return s.tick()
+}
+
+// tick は次のtickコマンドを返します。
+func (s *BattleScreen) tick() tea.Cmd {
+	return tea.Tick(tickInterval, func(t time.Time) tea.Msg {
+		return BattleTickMsg{}
+	})
 }
 
 // Update はメッセージを処理します。
@@ -165,6 +191,9 @@ func (s *BattleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.height = msg.Height
 		return s, nil
 
+	case BattleTickMsg:
+		return s.handleTick()
+
 	case tea.KeyMsg:
 		return s.handleKeyMsg(msg)
 	}
@@ -172,13 +201,167 @@ func (s *BattleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
+// handleTick は定期更新を処理します。
+func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
+	// ゲーム終了済みなら何もしない（最優先）
+	if s.gameOver {
+		return s, nil
+	}
+
+	// 結果表示中はtickを継続するが、ゲーム進行はしない
+	if s.showingResult {
+		return s, s.tick()
+	}
+
+	deltaSeconds := tickInterval.Seconds()
+
+	// 勝敗判定（結果表示状態に入る）
+	if s.checkGameOver() {
+		s.showingResult = true
+		return s, s.tick()
+	}
+
+	// クールダウンを更新
+	s.UpdateCooldowns(deltaSeconds)
+
+	// タイピング中の時間切れチェック
+	if s.isTyping {
+		elapsed := time.Since(s.typingStartTime)
+		if elapsed >= s.typingTimeLimit {
+			s.CancelTyping()
+			s.message = "タイムアップ！"
+		}
+	}
+
+	// 敵攻撃チェック
+	if time.Now().After(s.nextEnemyAttack) {
+		s.processEnemyAttack()
+
+		// 攻撃後の敗北判定（結果表示状態に入る）
+		if s.checkGameOver() {
+			s.showingResult = true
+			return s, s.tick()
+		}
+	}
+
+	// バフ・デバフの持続時間を更新
+	s.updateEffectDurations(deltaSeconds)
+
+	// 次のtickを返す
+	return s, s.tick()
+}
+
+// checkGameOver は勝敗を判定します。
+func (s *BattleScreen) checkGameOver() bool {
+	// プレイヤー敗北
+	if s.player.HP <= 0 {
+		s.gameOver = true
+		s.victory = false
+		s.message = "敗北..."
+		return true
+	}
+
+	// プレイヤー勝利
+	if s.enemy.HP <= 0 {
+		s.gameOver = true
+		s.victory = true
+		s.message = "勝利！"
+		return true
+	}
+
+	return false
+}
+
+// createGameOverCmd はゲーム終了時のコマンドを作成します。
+func (s *BattleScreen) createGameOverCmd() tea.Cmd {
+	result := BattleResultMsg{
+		Victory: s.victory,
+		Level:   s.enemy.Level,
+		Stats:   s.battleState.Stats,
+		EnemyID: s.enemy.Type.ID,
+	}
+	return func() tea.Msg {
+		return result
+	}
+}
+
+// IsGameOver はゲームが終了したかを返します。
+func (s *BattleScreen) IsGameOver() bool {
+	return s.gameOver
+}
+
+// IsVictory は勝利したかを返します。
+func (s *BattleScreen) IsVictory() bool {
+	return s.gameOver && s.victory
+}
+
+// IsDefeat は敗北したかを返します。
+func (s *BattleScreen) IsDefeat() bool {
+	return s.gameOver && !s.victory
+}
+
+// IsShowingResult は結果表示中かを返します。
+func (s *BattleScreen) IsShowingResult() bool {
+	return s.showingResult
+}
+
+// processEnemyAttack は敵の攻撃を処理します。
+func (s *BattleScreen) processEnemyAttack() {
+	// プレイヤーにダメージを与える
+	damage := s.enemy.AttackPower
+	s.player.HP -= damage
+	if s.player.HP < 0 {
+		s.player.HP = 0
+	}
+
+	// 被ダメージを統計に記録
+	if s.battleState != nil && s.battleState.Stats != nil {
+		s.battleState.Stats.TotalDamageTaken += damage
+	}
+
+	// メッセージを表示
+	s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
+
+	// 次の攻撃時間を設定
+	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+}
+
+// updateEffectDurations はバフ・デバフの持続時間を更新します。
+func (s *BattleScreen) updateEffectDurations(deltaSeconds float64) {
+	// プレイヤーのエフェクトを更新
+	if s.player.EffectTable != nil {
+		s.player.EffectTable.UpdateDurations(deltaSeconds)
+	}
+
+	// 敵のエフェクトを更新
+	if s.enemy.EffectTable != nil {
+		s.enemy.EffectTable.UpdateDurations(deltaSeconds)
+	}
+}
+
 // handleKeyMsg はキーボード入力を処理します。
 func (s *BattleScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// 結果表示中はEnterでのみ遷移
+	if s.showingResult {
+		return s.handleResultInput(msg)
+	}
+
 	if s.isTyping {
 		return s.handleTypingInput(msg)
 	}
 
 	return s.handleModuleSelection(msg)
+}
+
+// handleResultInput は結果表示中のキー入力を処理します。
+func (s *BattleScreen) handleResultInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEnter:
+		// Enterで結果を確定してホームに戻る
+		return s, s.createGameOverCmd()
+	}
+	// Enter以外のキーは無視
+	return s, nil
 }
 
 // handleModuleSelection はモジュール選択時のキー処理を行います。
@@ -395,7 +578,10 @@ func (s *BattleScreen) View() string {
 		Width(s.width)
 
 	var hint string
-	if s.isTyping {
+	if s.showingResult {
+		// 結果表示中
+		hint = "Enter: 続ける"
+	} else if s.isTyping {
 		hint = "タイピング中...  Esc: キャンセル"
 	} else {
 		hint = "↑/k: 上  ↓/j: 下  Enter: モジュール使用  Esc: 中断"
@@ -421,7 +607,7 @@ func (s *BattleScreen) renderEnemyInfo() string {
 	builder.WriteString("\n")
 
 	// HP表示
-	hpBar := s.styles.RenderHPBarWithValue(s.enemy.HP, s.enemy.MaxHP, 30)
+	hpBar := s.styles.RenderHPBarWithValue(s.enemy.HP, s.enemy.MaxHP, 40)
 	builder.WriteString(labelStyle.Render("HP: "))
 	builder.WriteString(hpBar)
 	builder.WriteString("\n")
@@ -448,7 +634,7 @@ func (s *BattleScreen) renderEnemyInfo() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(styles.ColorDamage).
 		Padding(1, 2).
-		Width(50).
+		Width(65).
 		Render(builder.String())
 }
 
@@ -469,7 +655,7 @@ func (s *BattleScreen) renderPlayerInfo() string {
 
 	// HP表示
 	// Requirement 9.4: 現在HP、最大HPを表示
-	hpBar := s.styles.RenderHPBarWithValue(s.player.HP, s.player.MaxHP, 30)
+	hpBar := s.styles.RenderHPBarWithValue(s.player.HP, s.player.MaxHP, 35)
 	builder.WriteString(labelStyle.Render("HP: "))
 	builder.WriteString(hpBar)
 	builder.WriteString("\n\n")
@@ -504,7 +690,7 @@ func (s *BattleScreen) renderPlayerInfo() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(styles.ColorHPHigh).
 		Padding(1, 2).
-		Width(40).
+		Width(55).
 		Render(builder.String())
 }
 
@@ -570,7 +756,7 @@ func (s *BattleScreen) renderModuleList() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(styles.ColorPrimary).
 		Padding(1, 2).
-		Width(50).
+		Width(70).
 		Render(builder.String())
 }
 

@@ -3,8 +3,15 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"hirorocky/type-battle/internal/agent"
+	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/tui/screens"
 )
 
@@ -17,8 +24,8 @@ import (
 // - 現在のシーン（画面）の管理
 // - メッセージを現在のシーンへルーティング
 // - シーン遷移メッセージの処理
-// - 起動時のセーブデータロード（将来実装）
-// - 終了時の状態保存（将来実装）
+// - 起動時のセーブデータロード
+// - バトル終了時のオートセーブ
 type RootModel struct {
 	// ready はアプリケーションが初期化され、
 	// ターミナルサイズが最小要件を満たしているかを示します
@@ -36,8 +43,11 @@ type RootModel struct {
 	// styles はアプリケーションのlipglossスタイルを保持します
 	styles *Styles
 
-	// inventory はゲームのインベントリを管理します
-	inventory *MockInventory
+	// saveDataIO はセーブデータの読み書きを担当します
+	saveDataIO *persistence.SaveDataIO
+
+	// statusMessage はステータスメッセージ（セーブ/ロード結果など）です
+	statusMessage string
 
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
@@ -47,36 +57,66 @@ type RootModel struct {
 	encyclopediaScreen      *screens.EncyclopediaScreen
 	statsAchievementsScreen *screens.StatsAchievementsScreen
 	settingsScreen          *screens.SettingsScreen
+	rewardScreen            *screens.RewardScreen
 }
 
 // NewRootModel はデフォルトの初期状態で新しいRootModelを作成します。
 // 初期シーンはSceneHome（ホーム画面）に設定されます。
+// セーブデータが存在する場合は自動的にロードします。
 func NewRootModel() *RootModel {
-	gameState := NewGameState()
-	inventory := NewMockInventory()
+	// セーブディレクトリを決定
+	homeDir, _ := os.UserHomeDir()
+	saveDir := filepath.Join(homeDir, ".typebattle")
+	saveDataIO := persistence.NewSaveDataIO(saveDir)
 
-	// ホーム画面を初期化
-	homeScreen := screens.NewHomeScreen(0, nil)
+	// セーブデータをロードまたは新規作成
+	var gameState *GameState
+	var statusMessage string
 
-	// バトル選択画面を初期化
+	if saveDataIO.Exists() {
+		saveData, err := saveDataIO.LoadGame()
+		if err == nil {
+			gameState = GameStateFromSaveData(saveData)
+			statusMessage = "セーブデータをロードしました"
+		} else {
+			gameState = NewGameState()
+			statusMessage = "セーブデータの読み込みに失敗しました。新規ゲームを開始します"
+		}
+	} else {
+		gameState = NewGameState()
+		statusMessage = "新規ゲームを開始します"
+	}
+
+	// インベントリプロバイダーアダプターを作成（複数画面で共有）
+	invAdapter := &inventoryProviderAdapter{
+		inv:      gameState.Inventory(),
+		agentMgr: gameState.AgentManager(),
+		player:   gameState.Player(),
+	}
+
+	// ホーム画面を初期化（AgentProviderとして渡す）
+	homeScreen := screens.NewHomeScreen(gameState.MaxLevelReached, invAdapter)
+	homeScreen.SetStatusMessage(statusMessage)
+
+	// バトル選択画面を初期化（AgentProviderとして渡す）
 	battleSelectScreen := screens.NewBattleSelectScreen(
 		gameState.MaxLevelReached,
-		inventory.GetEquippedAgents(),
+		invAdapter,
 	)
 
-	// エージェント管理画面を初期化
-	agentManagementScreen := screens.NewAgentManagementScreen(inventory)
+	// エージェント管理画面を初期化（InventoryProviderとして渡す）
+	agentManagementScreen := screens.NewAgentManagementScreen(invAdapter)
 
 	// 図鑑画面を初期化
 	encyclopediaData := createDefaultEncyclopediaData()
 	encyclopediaScreen := screens.NewEncyclopediaScreen(encyclopediaData)
 
 	// 統計・実績画面を初期化
-	statsData := createDefaultStatsData()
+	statsData := createStatsDataFromGameState(gameState)
 	statsAchievementsScreen := screens.NewStatsAchievementsScreen(statsData)
 
 	// 設定画面を初期化
-	settingsData := createDefaultSettingsData()
+	settingsData := createSettingsDataFromGameState(gameState)
 	settingsScreen := screens.NewSettingsScreen(settingsData)
 
 	return &RootModel{
@@ -84,7 +124,8 @@ func NewRootModel() *RootModel {
 		currentScene:            SceneHome,
 		gameState:               gameState,
 		styles:                  NewStyles(),
-		inventory:               inventory,
+		saveDataIO:              saveDataIO,
+		statusMessage:           statusMessage,
 		homeScreen:              homeScreen,
 		battleSelectScreen:      battleSelectScreen,
 		agentManagementScreen:   agentManagementScreen,
@@ -94,9 +135,130 @@ func NewRootModel() *RootModel {
 	}
 }
 
+// inventoryProviderAdapter はInventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させます。
+// コア・モジュールの管理はInventoryManager、エージェント・装備の管理はAgentManagerが担当します。
+type inventoryProviderAdapter struct {
+	inv      *InventoryManager
+	agentMgr *agent.AgentManager
+	player   *domain.PlayerModel
+}
+
+func (a *inventoryProviderAdapter) GetCores() []*domain.CoreModel {
+	return a.inv.GetCores()
+}
+
+func (a *inventoryProviderAdapter) GetModules() []*domain.ModuleModel {
+	return a.inv.GetModules()
+}
+
+func (a *inventoryProviderAdapter) GetAgents() []*domain.AgentModel {
+	return a.agentMgr.GetAgents()
+}
+
+func (a *inventoryProviderAdapter) GetEquippedAgents() []*domain.AgentModel {
+	return a.agentMgr.GetEquippedAgents()
+}
+
+func (a *inventoryProviderAdapter) AddAgent(agent *domain.AgentModel) error {
+	return a.agentMgr.AddAgent(agent)
+}
+
+func (a *inventoryProviderAdapter) RemoveCore(id string) error {
+	return a.inv.RemoveCore(id)
+}
+
+func (a *inventoryProviderAdapter) RemoveModule(id string) error {
+	return a.inv.RemoveModule(id)
+}
+
+func (a *inventoryProviderAdapter) EquipAgent(slot int, agentModel *domain.AgentModel) error {
+	return a.agentMgr.EquipAgent(slot, agentModel.ID, a.player)
+}
+
+func (a *inventoryProviderAdapter) UnequipAgent(slot int) error {
+	return a.agentMgr.UnequipAgent(slot, a.player)
+}
+
+// createStatsDataFromGameState はGameStateから統計データを生成します。
+func createStatsDataFromGameState(gs *GameState) *screens.StatsTestData {
+	stats := gs.Statistics()
+	achievements := gs.Achievements()
+
+	// 実績データを変換
+	allAchievements := achievements.GetAllAchievements()
+	achievementData := make([]screens.AchievementData, 0, len(allAchievements))
+	for _, ach := range allAchievements {
+		achievementData = append(achievementData, screens.AchievementData{
+			ID:          ach.ID,
+			Name:        ach.Name,
+			Description: ach.Description,
+			Achieved:    achievements.IsUnlocked(ach.ID),
+		})
+	}
+
+	return &screens.StatsTestData{
+		TypingStats: screens.TypingStatsData{
+			MaxWPM:               stats.Typing().MaxWPM,
+			AverageWPM:           stats.GetAverageWPM(),
+			PerfectAccuracyCount: stats.Typing().PerfectAccuracyCount,
+			TotalCharacters:      stats.Typing().TotalCharacters,
+		},
+		BattleStats: screens.BattleStatsData{
+			TotalBattles:    stats.Battle().TotalBattles,
+			Wins:            stats.Battle().Wins,
+			Losses:          stats.Battle().Losses,
+			MaxLevelReached: gs.MaxLevelReached,
+		},
+		Achievements: achievementData,
+	}
+}
+
+// createSettingsDataFromGameState はGameStateから設定データを生成します。
+func createSettingsDataFromGameState(gs *GameState) *screens.SettingsData {
+	settings := gs.Settings()
+	return &screens.SettingsData{
+		Keybinds:    settings.Keybinds(),
+		SoundVolume: settings.SoundVolume(),
+		Difficulty:  string(settings.Difficulty()),
+	}
+}
+
 // createDefaultEncyclopediaData は図鑑のデフォルトデータを作成します。
 func createDefaultEncyclopediaData() *screens.EncyclopediaTestData {
-	coreTypes := GetAllCoreTypes()
+	coreTypes := []domain.CoreType{
+		{
+			ID:             "all_rounder",
+			Name:           "オールラウンダー",
+			StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+			PassiveSkillID: "balance_mastery",
+			AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
+			MinDropLevel:   1,
+		},
+		{
+			ID:             "attacker",
+			Name:           "攻撃バランス",
+			StatWeights:    map[string]float64{"STR": 1.2, "MAG": 1.2, "SPD": 0.8, "LUK": 0.8},
+			PassiveSkillID: "attack_boost",
+			AllowedTags:    []string{"physical_low", "physical_mid", "magic_low", "magic_mid"},
+			MinDropLevel:   1,
+		},
+		{
+			ID:             "healer",
+			Name:           "ヒーラー",
+			StatWeights:    map[string]float64{"STR": 0.8, "MAG": 1.4, "SPD": 0.9, "LUK": 0.9},
+			PassiveSkillID: "heal_boost",
+			AllowedTags:    []string{"heal_low", "heal_mid", "magic_low", "buff_low"},
+			MinDropLevel:   5,
+		},
+		{
+			ID:             "tank",
+			Name:           "タンク",
+			StatWeights:    map[string]float64{"STR": 1.1, "MAG": 0.7, "SPD": 0.7, "LUK": 1.5},
+			PassiveSkillID: "defense_boost",
+			AllowedTags:    []string{"physical_low", "buff_low", "buff_mid"},
+			MinDropLevel:   3,
+		},
+	}
 	moduleTypes := []screens.ModuleTypeInfo{
 		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: domain.PhysicalAttack, Level: 1, Description: "基本的な物理攻撃"},
 		{ID: "magic_lv1", Name: "魔法攻撃Lv1", Category: domain.MagicAttack, Level: 1, Description: "基本的な魔法攻撃"},
@@ -104,7 +266,11 @@ func createDefaultEncyclopediaData() *screens.EncyclopediaTestData {
 		{ID: "buff_lv1", Name: "バフLv1", Category: domain.Buff, Level: 1, Description: "味方を強化"},
 		{ID: "debuff_lv1", Name: "デバフLv1", Category: domain.Debuff, Level: 1, Description: "敵を弱体化"},
 	}
-	enemyTypes := GetAllEnemyTypes()
+	enemyTypes := []domain.EnemyType{
+		{ID: "goblin", Name: "ゴブリン", BaseHP: 100, BaseAttackPower: 10, BaseAttackInterval: 3000000000, AttackType: "physical"},
+		{ID: "orc", Name: "オーク", BaseHP: 200, BaseAttackPower: 15, BaseAttackInterval: 4000000000, AttackType: "physical"},
+		{ID: "dragon", Name: "ドラゴン", BaseHP: 500, BaseAttackPower: 30, BaseAttackInterval: 5000000000, AttackType: "magic"},
+	}
 
 	return &screens.EncyclopediaTestData{
 		AllCoreTypes:        coreTypes,
@@ -116,45 +282,30 @@ func createDefaultEncyclopediaData() *screens.EncyclopediaTestData {
 	}
 }
 
-// createDefaultStatsData は統計のデフォルトデータを作成します。
-func createDefaultStatsData() *screens.StatsTestData {
-	return &screens.StatsTestData{
-		TypingStats: screens.TypingStatsData{
-			MaxWPM:               0,
-			AverageWPM:           0,
-			PerfectAccuracyCount: 0,
-			TotalCharacters:      0,
-		},
-		BattleStats: screens.BattleStatsData{
-			TotalBattles:    0,
-			Wins:            0,
-			Losses:          0,
-			MaxLevelReached: 0,
-		},
-		Achievements: []screens.AchievementData{
-			{ID: "wpm_50", Name: "タイピスト見習い", Description: "WPM 50達成", Achieved: false},
-			{ID: "wpm_80", Name: "タイピスト", Description: "WPM 80達成", Achieved: false},
-			{ID: "wpm_100", Name: "タイピストマスター", Description: "WPM 100達成", Achieved: false},
-			{ID: "enemy_10", Name: "初陣の勇者", Description: "敵10体撃破", Achieved: false},
-			{ID: "enemy_50", Name: "熟練の戦士", Description: "敵50体撃破", Achieved: false},
-			{ID: "level_10", Name: "Lv10到達", Description: "レベル10に到達", Achieved: false},
-		},
-	}
-}
+// createEncyclopediaDataFromGameState はGameStateから図鑑データを生成します。
+func createEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaTestData {
+	// 基本データを取得
+	baseData := createDefaultEncyclopediaData()
 
-// createDefaultSettingsData は設定のデフォルトデータを作成します。
-func createDefaultSettingsData() *screens.SettingsData {
-	return &screens.SettingsData{
-		Keybinds: map[string]string{
-			"select":     "enter",
-			"cancel":     "esc",
-			"move_up":    "k",
-			"move_down":  "j",
-			"move_left":  "h",
-			"move_right": "l",
-		},
-		SoundVolume: 100,
-		Difficulty:  "normal",
+	// 所持コアタイプを取得
+	acquiredCoreTypes := make([]string, 0)
+	for _, core := range gs.Inventory().GetCores() {
+		acquiredCoreTypes = append(acquiredCoreTypes, core.Type.ID)
+	}
+
+	// 所持モジュールタイプを取得
+	acquiredModuleTypes := make([]string, 0)
+	for _, module := range gs.Inventory().GetModules() {
+		acquiredModuleTypes = append(acquiredModuleTypes, module.ID)
+	}
+
+	return &screens.EncyclopediaTestData{
+		AllCoreTypes:        baseData.AllCoreTypes,
+		AllModuleTypes:      baseData.AllModuleTypes,
+		AllEnemyTypes:       baseData.AllEnemyTypes,
+		AcquiredCoreTypes:   acquiredCoreTypes,
+		AcquiredModuleTypes: acquiredModuleTypes,
+		EncounteredEnemies:  gs.GetEncounteredEnemies(),
 	}
 }
 
@@ -218,30 +369,136 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case screens.StartBattleMsg:
 		// バトル開始メッセージを処理
-		m.startBattle(msg.Level)
+		cmd := m.startBattle(msg.Level)
+		return m, cmd
+
+	case screens.BattleTickMsg:
+		// バトル画面のtickメッセージを転送
+		if m.currentScene == SceneBattle && m.battleScreen != nil {
+			_, cmd := m.battleScreen.Update(msg)
+			return m, cmd
+		}
+
+	case screens.BattleResultMsg:
+		// バトル結果を処理
+		m.handleBattleResult(msg)
 		return m, nil
 	}
 	return m, nil
 }
 
+// handleBattleResult はバトル結果を処理します。
+func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
+	stats := m.gameState.Statistics()
+
+	// バトル統計を転送（勝敗に関わらず記録）
+	if result.Stats != nil {
+		// ダメージ統計を記録
+		stats.RecordDamageDealt(result.Stats.TotalDamageDealt)
+		stats.RecordDamageTaken(result.Stats.TotalDamageTaken)
+		stats.RecordHealing(result.Stats.TotalHealAmount)
+
+		// タイピング統計を記録（平均値を計算）
+		if result.Stats.TotalTypingCount > 0 {
+			avgWPM := result.Stats.TotalWPM / float64(result.Stats.TotalTypingCount)
+			avgAccuracy := result.Stats.TotalAccuracy / float64(result.Stats.TotalTypingCount)
+			stats.RecordTypingStats(avgWPM, avgAccuracy)
+		}
+	}
+
+	// 敵図鑑を更新
+	m.gameState.AddEncounteredEnemy(result.EnemyID)
+
+	if result.Victory {
+		// 勝利時：統計を記録し、最高レベルを更新
+		m.gameState.RecordBattleVictory(result.Level)
+
+		// ノーダメージ判定付きで実績チェック
+		noDamage := result.Stats != nil && result.Stats.TotalDamageTaken == 0
+		m.gameState.CheckBattleAchievementsWithNoDamage(noDamage)
+
+		// バトル統計を変換
+		rewardStats := convertBattleStatsToRewardStats(result.Stats)
+
+		// 報酬を計算
+		rewardResult := m.gameState.RewardCalculator().CalculateRewards(
+			true,
+			rewardStats,
+			result.Level,
+		)
+
+		// 報酬をインベントリに追加
+		m.gameState.AddRewardsToInventory(rewardResult)
+
+		// 報酬画面を作成
+		m.rewardScreen = screens.NewRewardScreen(rewardResult)
+
+		// 報酬画面へ遷移
+		m.currentScene = SceneReward
+	} else {
+		// 敗北時：統計を記録
+		m.gameState.RecordBattleDefeat(result.Level)
+
+		// ホーム画面の最高到達レベルを更新してホームに戻る
+		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
+		m.currentScene = SceneHome
+	}
+
+	// オートセーブ（勝敗に関わらず実行）
+	m.performAutoSave()
+
+	m.battleScreen = nil
+}
+
+// performAutoSave はオートセーブを実行します。
+func (m *RootModel) performAutoSave() {
+	if m.saveDataIO == nil {
+		return
+	}
+
+	saveData := m.gameState.ToSaveData()
+	if err := m.saveDataIO.SaveGame(saveData); err == nil {
+		m.statusMessage = "オートセーブしました"
+		m.homeScreen.SetStatusMessage(m.statusMessage)
+	} else {
+		m.statusMessage = "オートセーブに失敗しました"
+		m.homeScreen.SetStatusMessage(m.statusMessage)
+	}
+}
+
+// convertBattleStatsToRewardStats はバトル統計を報酬用統計に変換します。
+func convertBattleStatsToRewardStats(stats *battle.BattleStatistics) *reward.BattleStatistics {
+	if stats == nil {
+		return &reward.BattleStatistics{}
+	}
+	return &reward.BattleStatistics{
+		TotalWPM:         stats.TotalWPM,
+		TotalAccuracy:    stats.TotalAccuracy,
+		TotalTypingCount: stats.TotalTypingCount,
+		TotalDamageDealt: stats.TotalDamageDealt,
+		TotalDamageTaken: stats.TotalDamageTaken,
+		TotalHealAmount:  stats.TotalHealAmount,
+	}
+}
+
 // startBattle はバトルを開始します。
-func (m *RootModel) startBattle(level int) {
+func (m *RootModel) startBattle(level int) tea.Cmd {
 	// 敵を生成
-	enemy := GenerateEnemy(level)
+	enemy := m.gameState.EnemyGenerator().Generate(level)
 
-	// 装備中エージェントを取得
-	agents := m.inventory.GetEquippedAgents()
-
-	// プレイヤーを作成
-	player := domain.NewPlayer()
-	player.RecalculateHP(agents)
-	player.PrepareForBattle()
+	// GameStateからプレイヤーとエージェントを取得
+	m.gameState.PreparePlayerForBattle()
+	player := m.gameState.Player()
+	agents := m.gameState.GetEquippedAgents()
 
 	// バトル画面を作成
 	m.battleScreen = screens.NewBattleScreen(enemy, player, agents)
 
 	// シーンを切り替え
 	m.currentScene = SceneBattle
+
+	// バトル画面を初期化（tickコマンドを開始）
+	return m.battleScreen.Init()
 }
 
 // forwardToCurrentScene は現在のシーンにメッセージを転送します。
@@ -277,6 +534,10 @@ func (m *RootModel) forwardToCurrentScene(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.settingsScreen != nil {
 			_, cmd = m.settingsScreen.Update(msg)
 		}
+	case SceneReward:
+		if m.rewardScreen != nil {
+			_, cmd = m.rewardScreen.Update(msg)
+		}
 	}
 
 	return m, cmd
@@ -284,21 +545,46 @@ func (m *RootModel) forwardToCurrentScene(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // handleScreenSceneChange は画面からのシーン遷移要求を処理します。
 func (m *RootModel) handleScreenSceneChange(sceneName string) {
+	// ホーム画面から別の画面に遷移する場合、ステータスメッセージをクリア
+	if m.currentScene == SceneHome && sceneName != "home" {
+		m.homeScreen.ClearStatusMessage()
+	}
+
 	switch sceneName {
 	case "home":
+		// ホーム画面の最高到達レベルを更新
+		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
 		m.currentScene = SceneHome
 	case "battle_select":
+		// バトル選択画面を再初期化してリセット
+		invAdapter := &inventoryProviderAdapter{
+			inv:      m.gameState.Inventory(),
+			agentMgr: m.gameState.AgentManager(),
+			player:   m.gameState.Player(),
+		}
+		m.battleSelectScreen = screens.NewBattleSelectScreen(
+			m.gameState.MaxLevelReached,
+			invAdapter,
+		)
 		m.currentScene = SceneBattleSelect
 	case "battle":
 		m.currentScene = SceneBattle
 	case "agent_management":
 		m.currentScene = SceneAgentManagement
 	case "encyclopedia":
+		// 最新の図鑑データで画面を再初期化
+		encycData := createEncyclopediaDataFromGameState(m.gameState)
+		m.encyclopediaScreen = screens.NewEncyclopediaScreen(encycData)
 		m.currentScene = SceneEncyclopedia
 	case "stats_achievements":
+		// 最新の統計データで画面を再初期化
+		statsData := createStatsDataFromGameState(m.gameState)
+		m.statsAchievementsScreen = screens.NewStatsAchievementsScreen(statsData)
 		m.currentScene = SceneAchievement
 	case "settings":
 		m.currentScene = SceneSettings
+	case "reward":
+		m.currentScene = SceneReward
 	}
 }
 
@@ -358,6 +644,11 @@ func (m *RootModel) renderCurrentScene() string {
 			return m.settingsScreen.View()
 		}
 		return m.renderPlaceholder("設定画面")
+	case SceneReward:
+		if m.rewardScreen != nil {
+			return m.rewardScreen.View()
+		}
+		return m.renderPlaceholder("報酬画面")
 	}
 
 	return m.renderPlaceholder("不明な画面")

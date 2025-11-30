@@ -14,15 +14,22 @@ import (
 
 // ==================== Task 10.1: ホーム画面 ====================
 
+// AgentProvider は装備エージェントを提供するインターフェースです。
+// HomeScreenやBattleSelectScreenがAgentManagerから最新の装備状態を取得するために使用します。
+type AgentProvider interface {
+	GetEquippedAgents() []*domain.AgentModel
+}
+
 // HomeScreen はホーム画面を表します。
 // Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 21.1
 type HomeScreen struct {
-	menu             *components.Menu
-	maxLevelReached  int
-	equippedAgents   []*domain.AgentModel
-	styles           *styles.GameStyles
-	width            int
-	height           int
+	menu            *components.Menu
+	maxLevelReached int
+	agentProvider   AgentProvider // 装備エージェントを取得するプロバイダー
+	styles          *styles.GameStyles
+	width           int
+	height          int
+	statusMessage   string // セーブ/ロード結果などのステータスメッセージ
 }
 
 // ChangeSceneMsg はシーン遷移を要求するメッセージです。
@@ -32,7 +39,7 @@ type ChangeSceneMsg struct {
 
 // NewHomeScreen は新しいHomeScreenを作成します。
 // Requirement 2.1: ゲーム起動時にホーム画面を表示
-func NewHomeScreen(maxLevelReached int, equippedAgents []*domain.AgentModel) *HomeScreen {
+func NewHomeScreen(maxLevelReached int, agentProvider AgentProvider) *HomeScreen {
 	// Requirement 2.2: 4つの主要機能 + 設定
 	items := []components.MenuItem{
 		{Label: "エージェント管理", Value: "agent_management"},
@@ -45,9 +52,9 @@ func NewHomeScreen(maxLevelReached int, equippedAgents []*domain.AgentModel) *Ho
 	return &HomeScreen{
 		menu:            components.NewMenuWithTitle("メインメニュー", items),
 		maxLevelReached: maxLevelReached,
-		equippedAgents:  equippedAgents,
+		agentProvider:   agentProvider,
 		styles:          styles.NewGameStyles(),
-		width:           120,
+		width:           140,
 		height:          40,
 	}
 }
@@ -154,6 +161,18 @@ func (s *HomeScreen) View() string {
 	builder.WriteString(centeredContent)
 	builder.WriteString("\n\n")
 
+	// ステータスメッセージ（セーブ/ロード結果など）
+	if s.statusMessage != "" {
+		statusStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorHeal).
+			Align(lipgloss.Center).
+			Width(s.width)
+
+		status := statusStyle.Render("💾 " + s.statusMessage)
+		builder.WriteString(status)
+		builder.WriteString("\n\n")
+	}
+
 	// ヒント
 	hintStyle := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
@@ -204,10 +223,16 @@ func (s *HomeScreen) renderStatusPanel() string {
 	builder.WriteString(titleStyle.Render("装備中エージェント"))
 	builder.WriteString("\n\n")
 
-	if len(s.equippedAgents) == 0 {
+	// AgentProviderから最新の装備状態を取得
+	var equippedAgents []*domain.AgentModel
+	if s.agentProvider != nil {
+		equippedAgents = s.agentProvider.GetEquippedAgents()
+	}
+
+	if len(equippedAgents) == 0 {
 		builder.WriteString(labelStyle.Render("(未装備)"))
 	} else {
-		for i, agent := range s.equippedAgents {
+		for i, agent := range equippedAgents {
 			slotLabel := fmt.Sprintf("スロット%d: ", i+1)
 			builder.WriteString(labelStyle.Render(slotLabel))
 			agentInfo := fmt.Sprintf("%s (Lv.%d)", agent.GetCoreTypeName(), agent.Level)
@@ -217,7 +242,7 @@ func (s *HomeScreen) renderStatusPanel() string {
 	}
 
 	// 空きスロットを表示
-	for i := len(s.equippedAgents); i < 3; i++ {
+	for i := len(equippedAgents); i < 3; i++ {
 		slotLabel := fmt.Sprintf("スロット%d: ", i+1)
 		builder.WriteString(labelStyle.Render(slotLabel))
 		builder.WriteString(labelStyle.Render("(空)"))
@@ -232,7 +257,12 @@ func (s *HomeScreen) SetMaxLevelReached(level int) {
 	s.maxLevelReached = level
 }
 
-// SetEquippedAgents は装備中エージェントを設定します。
-func (s *HomeScreen) SetEquippedAgents(agents []*domain.AgentModel) {
-	s.equippedAgents = agents
+// SetStatusMessage はステータスメッセージを設定します。
+func (s *HomeScreen) SetStatusMessage(msg string) {
+	s.statusMessage = msg
+}
+
+// ClearStatusMessage はステータスメッセージをクリアします。
+func (s *HomeScreen) ClearStatusMessage() {
+	s.statusMessage = ""
 }

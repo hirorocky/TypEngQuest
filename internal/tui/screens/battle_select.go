@@ -8,7 +8,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 )
@@ -36,7 +35,7 @@ type BattleSelectScreen struct {
 	input             *components.InputField
 	maxLevelReached   int
 	maxChallengeLevel int
-	equippedAgents    []*domain.AgentModel
+	agentProvider     AgentProvider // 装備エージェントを取得するプロバイダー
 	state             BattleSelectState
 	selectedLevel     int
 	error             string
@@ -47,7 +46,7 @@ type BattleSelectScreen struct {
 
 // NewBattleSelectScreen は新しいBattleSelectScreenを作成します。
 // Requirement 3.1: レベル番号入力欄を表示
-func NewBattleSelectScreen(maxLevelReached int, equippedAgents []*domain.AgentModel) *BattleSelectScreen {
+func NewBattleSelectScreen(maxLevelReached int, agentProvider AgentProvider) *BattleSelectScreen {
 	input := components.NewInputField("レベル番号を入力 (例: 1)")
 	input.InputMode = components.InputModeNumeric
 	input.MinValue = 1
@@ -58,10 +57,10 @@ func NewBattleSelectScreen(maxLevelReached int, equippedAgents []*domain.AgentMo
 		input:             input,
 		maxLevelReached:   maxLevelReached,
 		maxChallengeLevel: maxLevelReached + 1, // Requirement 20.1: プログレッシブレベルアンロック
-		equippedAgents:    equippedAgents,
+		agentProvider:     agentProvider,
 		state:             StateInput,
 		styles:            styles.NewGameStyles(),
-		width:             120,
+		width:             140,
 		height:            40,
 	}
 }
@@ -139,7 +138,8 @@ func (s *BattleSelectScreen) handleConfirmState(msg tea.KeyMsg) (tea.Model, tea.
 		return s, nil
 	case "enter", "y":
 		// Requirement 3.8: エージェント未装備時のバトル開始拒否
-		if len(s.equippedAgents) == 0 {
+		equippedAgents := s.agentProvider.GetEquippedAgents()
+		if len(equippedAgents) == 0 {
 			s.error = "エージェントが装備されていません。\nエージェント管理でエージェントを装備してください。"
 			return s, nil
 		}
@@ -281,12 +281,13 @@ func (s *BattleSelectScreen) renderConfirmState() string {
 	builder.WriteString(centeredInfo)
 	builder.WriteString("\n\n")
 
-	// 装備中エージェント情報
+	// 装備中エージェント情報（AgentProviderから最新の状態を取得）
+	equippedAgents := s.agentProvider.GetEquippedAgents()
 	agentPanel := components.NewInfoPanel("装備中エージェント")
-	if len(s.equippedAgents) == 0 {
+	if len(equippedAgents) == 0 {
 		agentPanel.AddItem("状態", "未装備")
 	} else {
-		for i, agent := range s.equippedAgents {
+		for i, agent := range equippedAgents {
 			agentPanel.AddItem(fmt.Sprintf("スロット%d", i+1),
 				fmt.Sprintf("%s (Lv.%d)", agent.GetCoreTypeName(), agent.Level))
 		}
@@ -326,9 +327,4 @@ func (s *BattleSelectScreen) SetMaxLevelReached(level int) {
 	s.maxLevelReached = level
 	s.maxChallengeLevel = level + 1
 	s.input.MaxValue = s.maxChallengeLevel
-}
-
-// SetEquippedAgents は装備中エージェントを設定します。
-func (s *BattleSelectScreen) SetEquippedAgents(agents []*domain.AgentModel) {
-	s.equippedAgents = agents
 }

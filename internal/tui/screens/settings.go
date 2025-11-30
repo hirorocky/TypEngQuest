@@ -38,7 +38,7 @@ func NewSettingsScreen(settings *SettingsData) *SettingsScreen {
 		selectedIndex: 0,
 		editing:       false,
 		styles:        styles.NewGameStyles(),
-		width:         120,
+		width:         140,
 		height:        40,
 	}
 }

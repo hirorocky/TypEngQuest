@@ -8,12 +8,21 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// mockAgentProvider はテスト用のAgentProvider実装です。
+type mockAgentProvider struct {
+	agents []*domain.AgentModel
+}
+
+func (m *mockAgentProvider) GetEquippedAgents() []*domain.AgentModel {
+	return m.agents
+}
+
 // ==================== Task 10.2: バトル選択画面のテスト ====================
 
 // TestNewBattleSelectScreen はBattleSelectScreenの初期化をテストします。
 // Requirement 3.1: レベル番号入力欄を表示
 func TestNewBattleSelectScreen(t *testing.T) {
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 
 	if screen == nil {
 		t.Fatal("BattleSelectScreenがnilです")
@@ -29,7 +38,7 @@ func TestNewBattleSelectScreen(t *testing.T) {
 // Requirement 3.2: 到達最高レベルと挑戦可能最大レベルを表示
 func TestBattleSelectMaxLevelDisplay(t *testing.T) {
 	maxLevel := 15
-	screen := NewBattleSelectScreen(maxLevel, nil)
+	screen := NewBattleSelectScreen(maxLevel, &mockAgentProvider{})
 
 	// 挑戦可能最大レベルは maxLevel + 1
 	if screen.maxChallengeLevel != maxLevel+1 {
@@ -40,7 +49,7 @@ func TestBattleSelectMaxLevelDisplay(t *testing.T) {
 // TestBattleSelectInputValidation は入力検証をテストします。
 // Requirements 3.3, 3.4, 3.5: 入力値の検証
 func TestBattleSelectInputValidation(t *testing.T) {
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 
 	tests := []struct {
 		name        string
@@ -76,7 +85,7 @@ func TestBattleSelectInputValidation(t *testing.T) {
 // Requirement 3.8: エージェント未装備時のバトル開始拒否
 func TestBattleSelectNoAgentEquipped(t *testing.T) {
 	// エージェント未装備
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 	screen.input.Value = "5"
 
 	// 確認画面に移動
@@ -110,7 +119,7 @@ func TestBattleSelectWithAgentEquipped(t *testing.T) {
 	}
 	agent := domain.NewAgent("agent1", core, modules)
 
-	screen := NewBattleSelectScreen(10, []*domain.AgentModel{agent})
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{agents: []*domain.AgentModel{agent}})
 	screen.input.Value = "5"
 
 	// 入力検証
@@ -138,7 +147,7 @@ func TestBattleSelectConfirmScreen(t *testing.T) {
 	}
 	agent := domain.NewAgent("agent1", core, modules)
 
-	screen := NewBattleSelectScreen(10, []*domain.AgentModel{agent})
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{agents: []*domain.AgentModel{agent}})
 	screen.input.Value = "5"
 
 	// Enterで確認画面へ
@@ -152,7 +161,7 @@ func TestBattleSelectConfirmScreen(t *testing.T) {
 // TestBattleSelectRechallenge は再挑戦のテストです。
 // Requirement 3.10: 過去にクリアしたレベルへの再挑戦を許可
 func TestBattleSelectRechallenge(t *testing.T) {
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 
 	// 過去にクリアしたレベル（例: レベル5）への再挑戦
 	screen.input.Value = "5"
@@ -165,7 +174,7 @@ func TestBattleSelectRechallenge(t *testing.T) {
 
 // TestBattleSelectRender はバトル選択画面のレンダリングをテストします。
 func TestBattleSelectRender(t *testing.T) {
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 	screen.width = 120
 	screen.height = 40
 
@@ -179,7 +188,7 @@ func TestBattleSelectRender(t *testing.T) {
 // TestBattleSelectBackNavigation は戻るナビゲーションのテストです。
 // Requirement 2.9: 各機能画面からホームに戻る
 func TestBattleSelectBackNavigation(t *testing.T) {
-	screen := NewBattleSelectScreen(10, nil)
+	screen := NewBattleSelectScreen(10, &mockAgentProvider{})
 
 	_, cmd := screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyEsc})
 

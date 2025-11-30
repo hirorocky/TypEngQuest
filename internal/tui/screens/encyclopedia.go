@@ -54,7 +54,7 @@ func NewEncyclopediaScreen(data *EncyclopediaTestData) *EncyclopediaScreen {
 		currentCategory: CategoryCore,
 		selectedIndex:   0,
 		styles:          styles.NewGameStyles(),
-		width:           120,
+		width:           140,
 		height:          40,
 	}
 }

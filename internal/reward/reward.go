@@ -15,8 +15,8 @@ import (
 
 // ドロップ関連の定数
 const (
-	// DefaultCoreDropRate はコアのデフォルトドロップ率（50%）です。
-	DefaultCoreDropRate = 0.5
+	// DefaultCoreDropRate はコアのデフォルトドロップ率（70%）です。
+	DefaultCoreDropRate = 0.7
 
 	// DefaultModuleDropRate はモジュールのデフォルトドロップ率（70%）です。
 	DefaultModuleDropRate = 0.7
