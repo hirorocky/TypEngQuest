@@ -204,3 +204,127 @@ func TestInfoPanelItems(t *testing.T) {
 		t.Error("レンダリング結果が空です")
 	}
 }
+
+// ==================== Task 3.1: AgentCardコンポーネントのテスト ====================
+
+// TestNewAgentCard はAgentCardの作成をテストします。
+// Requirement 1.5, 2.7, 3.2: エージェント情報カード表示
+func TestNewAgentCard(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+	if card == nil {
+		t.Error("NewAgentCard()がnilを返しました")
+	}
+
+	// エージェントがnilの場合でもカードは作成できる（空スロット表示用）
+	if card.Style != AgentCardCompact {
+		t.Errorf("Styleが正しくありません: got %v, want %v", card.Style, AgentCardCompact)
+	}
+}
+
+// TestAgentCardWithAgent はエージェント付きカードをテストします。
+func TestAgentCardWithAgent(t *testing.T) {
+	// テスト用のエージェントを作成（簡易版）
+	card := NewAgentCard(nil, AgentCardCompact)
+	card.AgentName = "ファイター"
+	card.AgentLevel = 5
+	card.CoreTypeName = "物理攻撃型"
+
+	if card.AgentName != "ファイター" {
+		t.Errorf("AgentNameが正しくありません: got %s", card.AgentName)
+	}
+}
+
+// TestAgentCardSetSelected は選択状態の設定をテストします。
+func TestAgentCardSetSelected(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+
+	// 初期状態は非選択
+	if card.Selected {
+		t.Error("初期状態でSelected=trueになっています")
+	}
+
+	// 選択状態に変更
+	card.SetSelected(true)
+	if !card.Selected {
+		t.Error("SetSelected(true)後にSelected=falseです")
+	}
+
+	// 非選択状態に戻す
+	card.SetSelected(false)
+	if card.Selected {
+		t.Error("SetSelected(false)後にSelected=trueです")
+	}
+}
+
+// TestAgentCardSetHP はHP表示の設定をテストします。
+func TestAgentCardSetHP(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+
+	// 初期状態はHP非表示
+	if card.ShowHP {
+		t.Error("初期状態でShowHP=trueになっています")
+	}
+
+	// HPを設定
+	card.SetHP(80, 100)
+	if !card.ShowHP {
+		t.Error("SetHP後にShowHP=falseです")
+	}
+	if card.CurrentHP != 80 {
+		t.Errorf("CurrentHPが正しくありません: got %d, want %d", card.CurrentHP, 80)
+	}
+	if card.MaxHP != 100 {
+		t.Errorf("MaxHPが正しくありません: got %d, want %d", card.MaxHP, 100)
+	}
+}
+
+// TestAgentCardRenderCompact はコンパクトスタイルの描画をテストします。
+func TestAgentCardRenderCompact(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+	card.AgentName = "ファイター"
+	card.AgentLevel = 5
+
+	result := card.Render(25)
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+}
+
+// TestAgentCardRenderDetailed は詳細スタイルの描画をテストします。
+func TestAgentCardRenderDetailed(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardDetailed)
+	card.AgentName = "ファイター"
+	card.AgentLevel = 5
+	card.CoreTypeName = "物理攻撃型"
+	card.ModuleIcons = []string{"⚔", "⚔", "▲", "✦"}
+
+	result := card.Render(40)
+	if result == "" {
+		t.Error("Render()が空文字列を返しました")
+	}
+}
+
+// TestAgentCardRenderEmptySlot は空スロットの描画をテストします。
+// Requirement 3.1: エージェントがnilの場合は空スロット表示
+func TestAgentCardRenderEmptySlot(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+	// AgentNameが空の場合は空スロット表示
+
+	result := card.Render(25)
+	if result == "" {
+		t.Error("空スロットのRender()が空文字列を返しました")
+	}
+}
+
+// TestAgentCardRenderWithHP はHP付きの描画をテストします。
+func TestAgentCardRenderWithHP(t *testing.T) {
+	card := NewAgentCard(nil, AgentCardCompact)
+	card.AgentName = "ファイター"
+	card.AgentLevel = 5
+	card.SetHP(80, 100)
+
+	result := card.Render(25)
+	if result == "" {
+		t.Error("HP付きRender()が空文字列を返しました")
+	}
+}

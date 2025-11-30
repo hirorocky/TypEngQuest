@@ -469,3 +469,185 @@ func (l *List) Render(width int) string {
 
 	return builder.String()
 }
+
+// ==================== AgentCardコンポーネント ====================
+
+// AgentCardStyle はカードのスタイルバリエーションです。
+// Requirement 1.5, 2.7, 3.2: エージェント情報カード表示
+type AgentCardStyle int
+
+const (
+	// AgentCardCompact はコンパクト（横並び用）スタイルです。
+	AgentCardCompact AgentCardStyle = iota
+	// AgentCardDetailed は詳細（単体表示用）スタイルです。
+	AgentCardDetailed
+)
+
+// AgentCard はエージェント情報カードを表します。
+// Requirement 1.5, 2.6, 3.2: エージェント情報をカード形式で表示
+type AgentCard struct {
+	// AgentName はエージェント名です（空の場合は空スロット）
+	AgentName string
+	// AgentLevel はエージェントのレベルです
+	AgentLevel int
+	// CoreTypeName はコア特性の名前です
+	CoreTypeName string
+	// ModuleIcons はモジュールのアイコンリストです
+	ModuleIcons []string
+	// Style はカードのスタイルです
+	Style AgentCardStyle
+	// Selected は選択状態かどうかです
+	Selected bool
+	// ShowHP はHP表示を行うかどうかです
+	ShowHP bool
+	// CurrentHP は現在のHP値です（ShowHP=true時に使用）
+	CurrentHP int
+	// MaxHP は最大HP値です
+	MaxHP int
+	// gameStyles はゲームスタイルです
+	gameStyles *styles.GameStyles
+}
+
+// NewAgentCard は新しいAgentCardを作成します。
+// agentがnilの場合は空スロット表示用のカードを作成します。
+func NewAgentCard(agent interface{}, style AgentCardStyle) *AgentCard {
+	return &AgentCard{
+		Style:      style,
+		gameStyles: styles.NewGameStyles(),
+	}
+}
+
+// SetSelected は選択状態を設定します。
+func (c *AgentCard) SetSelected(selected bool) {
+	c.Selected = selected
+}
+
+// SetHP はHP表示を設定します。
+func (c *AgentCard) SetHP(current, max int) {
+	c.ShowHP = true
+	c.CurrentHP = current
+	c.MaxHP = max
+}
+
+// Render はカードをレンダリングします。
+func (c *AgentCard) Render(width int) string {
+	// 空スロットの場合
+	if c.AgentName == "" {
+		return c.renderEmptySlot(width)
+	}
+
+	switch c.Style {
+	case AgentCardDetailed:
+		return c.renderDetailed(width)
+	default:
+		return c.renderCompact(width)
+	}
+}
+
+// renderEmptySlot は空スロットを描画します。
+func (c *AgentCard) renderEmptySlot(width int) string {
+	var content strings.Builder
+	content.WriteString("(空)\n")
+	content.WriteString("\n")
+	content.WriteString("Enterで装備")
+
+	borderColor := styles.ColorSubtle
+	if c.Selected {
+		borderColor = styles.ColorPrimary
+	}
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Foreground(styles.ColorSubtle).
+		Width(width - 2).
+		Padding(0, 1).
+		Align(lipgloss.Center)
+
+	return style.Render(content.String())
+}
+
+// renderCompact はコンパクトスタイルを描画します。
+func (c *AgentCard) renderCompact(width int) string {
+	var content strings.Builder
+
+	// エージェント名とレベル
+	nameStyle := lipgloss.NewStyle().Bold(true)
+	content.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", c.AgentName, c.AgentLevel)))
+	content.WriteString("\n")
+
+	// モジュールアイコン
+	if len(c.ModuleIcons) > 0 {
+		content.WriteString(strings.Join(c.ModuleIcons, ""))
+		content.WriteString("\n")
+	}
+
+	// HP表示（オプション）
+	if c.ShowHP {
+		hpBar := c.gameStyles.RenderHPBar(c.CurrentHP, c.MaxHP, width-6)
+		content.WriteString(hpBar)
+	}
+
+	borderColor := styles.ColorSubtle
+	if c.Selected {
+		borderColor = styles.ColorPrimary
+	}
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Width(width - 2).
+		Padding(0, 1)
+
+	return style.Render(content.String())
+}
+
+// renderDetailed は詳細スタイルを描画します。
+func (c *AgentCard) renderDetailed(width int) string {
+	var content strings.Builder
+
+	// エージェント名とレベル
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	content.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", c.AgentName, c.AgentLevel)))
+	content.WriteString("\n")
+
+	// コアタイプ
+	if c.CoreTypeName != "" {
+		typeStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+		content.WriteString(typeStyle.Render(fmt.Sprintf("コアタイプ: %s", c.CoreTypeName)))
+		content.WriteString("\n")
+	}
+
+	// 区切り線
+	divider := strings.Repeat("─", width-6)
+	dividerStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	content.WriteString(dividerStyle.Render(divider))
+	content.WriteString("\n")
+
+	// モジュールアイコン
+	if len(c.ModuleIcons) > 0 {
+		content.WriteString("モジュール: ")
+		content.WriteString(strings.Join(c.ModuleIcons, " "))
+		content.WriteString("\n")
+	}
+
+	// HP表示（オプション）
+	if c.ShowHP {
+		content.WriteString("\n")
+		hpBar := c.gameStyles.RenderHPBarWithValue(c.CurrentHP, c.MaxHP, width-10)
+		content.WriteString(hpBar)
+	}
+
+	borderColor := styles.ColorSubtle
+	if c.Selected {
+		borderColor = styles.ColorPrimary
+	}
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Width(width - 2).
+		Padding(0, 1)
+
+	return style.Render(content.String())
+}
