@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ==================== Task 10.4: エージェント管理画面 ====================
@@ -64,8 +65,8 @@ type AgentManagementScreen struct {
 	width          int
 	height         int
 	// UI改善: 確認ダイアログ
-	confirmDialog     *components.ConfirmDialog
-	pendingDeleteIdx  int // 削除待ちのエージェントインデックス
+	confirmDialog    *components.ConfirmDialog
+	pendingDeleteIdx int // 削除待ちのエージェントインデックス
 	// 装備タブ用: 選択中のスロットインデックス (0-2)
 	selectedEquipSlot int
 }
@@ -637,7 +638,7 @@ func (s *AgentManagementScreen) renderCoreListItems() string {
 				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s Lv.%d (%s)", core.Name, core.Level, core.Type.Name)
+		item := fmt.Sprintf("%s Lv.%d", core.Type.Name, core.Level)
 		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
@@ -1238,4 +1239,3 @@ func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) st
 		return "•"
 	}
 }
-
