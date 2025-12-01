@@ -87,3 +87,10 @@ jobs:
         with:
           files: artifacts/*
           generate_release_notes: true
+
+      - name: Trigger Homebrew Tap update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          repository: hirorocky/homebrew-blitztypingoperator
+          event-type: release-created

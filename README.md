@@ -12,6 +12,13 @@
 
 ## インストール
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew tap hirorocky/blitztypingoperator
+brew install blitztypingoperator
+```
+
 ### GitHub Releases からダウンロード
 
 [Releases](../../releases) ページから、お使いのOS・アーキテクチャに合ったファイルをダウンロードしてください。
