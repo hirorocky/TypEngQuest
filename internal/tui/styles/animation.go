@@ -498,6 +498,12 @@ func (a *AnimatedHPBar) GetCurrentHP() int {
 	return int(a.CurrentDisplayHP + 0.5)
 }
 
+// ForceComplete はアニメーションを強制完了し、表示HPを目標HPに即座に設定します。
+func (a *AnimatedHPBar) ForceComplete() {
+	a.CurrentDisplayHP = float64(a.TargetHP)
+	a.IsAnimating = false
+}
+
 // ==================== FloatingDamageManager ====================
 
 // FloatingText は浮遊テキストの状態を表します。

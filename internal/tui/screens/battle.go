@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/typing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ==================== Task 10.3: バトル画面 ====================
@@ -56,8 +57,8 @@ type BattleScreen struct {
 	equippedAgents []*domain.AgentModel
 
 	// モジュールスロット
-	moduleSlots   []ModuleSlot
-	selectedSlot  int
+	moduleSlots  []ModuleSlot
+	selectedSlot int
 
 	// エージェント選択状態（UI改善: 3エリアレイアウト用）
 	selectedAgentIdx int
@@ -89,11 +90,11 @@ type BattleScreen struct {
 	showingResult bool
 
 	// UI
-	styles         *styles.GameStyles
+	styles          *styles.GameStyles
 	winLoseRenderer ascii.WinLoseRenderer
-	width          int
-	height         int
-	message        string
+	width           int
+	height          int
+	message         string
 
 	// アニメーション（UI改善: フローティングダメージ、HPバーアニメーション）
 	floatingDamageManager *styles.FloatingDamageManager
@@ -239,6 +240,15 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 	// 勝敗判定（結果表示状態に入る）
 	if s.checkGameOver() {
 		s.showingResult = true
+		// HP表示を実際のHPに即座に合わせる
+		if s.enemy.HP <= 0 {
+			s.enemyHPBar.SetTarget(0)
+			s.enemyHPBar.ForceComplete()
+		}
+		if s.player.HP <= 0 {
+			s.playerHPBar.SetTarget(0)
+			s.playerHPBar.ForceComplete()
+		}
 		return s, s.tick()
 	}
 
@@ -267,6 +277,15 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 		// 攻撃後の敗北判定（結果表示状態に入る）
 		if s.checkGameOver() {
 			s.showingResult = true
+			// HP表示を実際のHPに即座に合わせる
+			if s.enemy.HP <= 0 {
+				s.enemyHPBar.SetTarget(0)
+				s.enemyHPBar.ForceComplete()
+			}
+			if s.player.HP <= 0 {
+				s.playerHPBar.SetTarget(0)
+				s.playerHPBar.ForceComplete()
+			}
 			return s, s.tick()
 		}
 	}
@@ -1098,6 +1117,52 @@ func (s *BattleScreen) renderTimeProgressBar(remainingSeconds float64, ratio flo
 	return barStyle.Render("[" + barWithText + "]")
 }
 
+// renderEnemyActionBar は敵の次回行動までのプログレスバーを描画します。
+func (s *BattleScreen) renderEnemyActionBar(remainingSeconds float64, ratio float64) string {
+	barWidth := 40
+	timeText := fmt.Sprintf("%.1fs", remainingSeconds)
+
+	// 塗りつぶし部分の計算
+	filledWidth := int(float64(barWidth) * ratio)
+	if filledWidth < 0 {
+		filledWidth = 0
+	}
+	if filledWidth > barWidth {
+		filledWidth = barWidth
+	}
+
+	// プログレスバー文字列を構築
+	filled := strings.Repeat("█", filledWidth)
+	empty := strings.Repeat("░", barWidth-filledWidth)
+	bar := filled + empty
+	barRunes := []rune(bar)
+
+	// テキストの位置を計算
+	textStart := (barWidth - len(timeText)) / 2
+	if textStart < 0 {
+		textStart = 0
+	}
+	textEnd := textStart + len(timeText)
+	if textEnd > barWidth {
+		textEnd = barWidth
+	}
+
+	// スタイル定義
+	barStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	textStyle := lipgloss.NewStyle().Foreground(styles.ColorSelectedFg).Bold(true)
+	bracketStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+
+	// バーを3つの部分に分けてレンダリング（前半バー + テキスト + 後半バー）
+	beforeText := string(barRunes[:textStart])
+	afterText := string(barRunes[textEnd:])
+
+	return bracketStyle.Render("[") +
+		barStyle.Render(beforeText) +
+		textStyle.Render(timeText) +
+		barStyle.Render(afterText) +
+		bracketStyle.Render("]")
+}
+
 // UpdateCooldowns はクールダウンを更新します。
 func (s *BattleScreen) UpdateCooldowns(deltaSeconds float64) {
 	for i := range s.moduleSlots {
@@ -1173,20 +1238,22 @@ func (s *BattleScreen) renderEnemyArea() string {
 		builder.WriteString("\n")
 	}
 
-	// 次の敵攻撃までの時間
-	remaining := time.Until(s.nextEnemyAttack)
-	if remaining < 0 {
-		remaining = 0
-	}
-	timerText := fmt.Sprintf("次の敵行動まで: %.1f秒", remaining.Seconds())
-	timerStyle := lipgloss.NewStyle().Foreground(styles.ColorWarning)
-	builder.WriteString(timerStyle.Render(timerText))
-	builder.WriteString("\n")
-
 	// 行動予告
 	icon, actionText, actionColor := s.getActionDisplay()
 	actionStyle := lipgloss.NewStyle().Foreground(actionColor).Bold(true)
 	builder.WriteString(actionStyle.Render(fmt.Sprintf("%s %s", icon, actionText)))
+	builder.WriteString("\n")
+
+	// 次の敵攻撃までの時間（プログレスバー）
+	remaining := time.Until(s.nextEnemyAttack)
+	if remaining < 0 {
+		remaining = 0
+	}
+	ratio := remaining.Seconds() / s.enemy.AttackInterval.Seconds()
+	if ratio > 1 {
+		ratio = 1
+	}
+	builder.WriteString(s.renderEnemyActionBar(remaining.Seconds(), ratio))
 
 	// エリアボックス
 	areaStyle := lipgloss.NewStyle().
@@ -1197,7 +1264,7 @@ func (s *BattleScreen) renderEnemyArea() string {
 
 	title := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
-		Render("───────────────────────────  敵情報エリア  ───────────────────────────")
+		Render("─────────────────────────────────  ENEMY  ─────────────────────────────────")
 
 	return lipgloss.JoinVertical(lipgloss.Center,
 		title,
@@ -1208,7 +1275,15 @@ func (s *BattleScreen) renderEnemyArea() string {
 // renderAgentArea はエージェントエリア（3体横並びカード）をレンダリングします。
 // UI-Improvement Requirement 3.2: エージェント横並びカード表示
 func (s *BattleScreen) renderAgentArea() string {
-	cardWidth := 36
+	// 画面幅に基づいてカード幅を計算（余白を最小限に）
+	// 外枠: border(2) + padding(4) = 6
+	// カード間スペース: 1 × 2 = 2
+	// カードボーダー: 2 × 3 = 6
+	// 利用可能幅 = s.width - 4(外枠Width調整) - 6(外枠) - 2(カード間) - 6(カードボーダー) = s.width - 18
+	cardWidth := (s.width - 18) / 3
+	if cardWidth < 30 {
+		cardWidth = 30 // 最小幅を確保
+	}
 	var cards []string
 
 	for i := 0; i < 3; i++ {
@@ -1285,8 +1360,8 @@ func (s *BattleScreen) renderAgentArea() string {
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
 
-	// カードを横に並べる
-	agentCards := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], "  ", cards[1], "  ", cards[2])
+	// カードを横に並べる（スペースを最小限に）
+	agentCards := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], " ", cards[1], " ", cards[2])
 
 	// エリアボックス
 	areaStyle := lipgloss.NewStyle().
@@ -1297,7 +1372,7 @@ func (s *BattleScreen) renderAgentArea() string {
 
 	title := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
-		Render("─────────────────────────  エージェントエリア  ─────────────────────────")
+		Render("────────────────────────────────  PLAYER  ────────────────────────────────")
 
 	return lipgloss.JoinVertical(lipgloss.Center,
 		title,
@@ -1328,14 +1403,7 @@ func (s *BattleScreen) renderResultArea() string {
 		Padding(2, 2).
 		Width(s.width - 4)
 
-	title := lipgloss.NewStyle().
-		Foreground(styles.ColorSubtle).
-		Render("─────────────────────────  エージェントエリア  ─────────────────────────")
-
-	return lipgloss.JoinVertical(lipgloss.Center,
-		title,
-		areaStyle.Render(centeredArt),
-	)
+	return areaStyle.Render(centeredArt)
 }
 
 // renderPlayerArea はプレイヤー情報エリアをレンダリングします。
@@ -1404,14 +1472,7 @@ func (s *BattleScreen) renderPlayerArea() string {
 		Padding(1, 2).
 		Width(s.width - 4)
 
-	title := lipgloss.NewStyle().
-		Foreground(styles.ColorSubtle).
-		Render("────────────────────────  プレイヤー情報エリア  ────────────────────────")
-
-	return lipgloss.JoinVertical(lipgloss.Center,
-		title,
-		areaStyle.Render(builder.String()),
-	)
+	return areaStyle.Render(builder.String())
 }
 
 // getModulesForAgent は指定エージェントのモジュールスロットを取得します。
