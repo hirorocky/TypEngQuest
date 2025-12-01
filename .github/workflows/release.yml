@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -15,27 +15,27 @@ jobs:
         include:
           - goos: darwin
             goarch: amd64
-            suffix: ''
+            suffix: ""
             archive: tar.gz
           - goos: darwin
             goarch: arm64
-            suffix: ''
+            suffix: ""
             archive: tar.gz
           - goos: linux
             goarch: amd64
-            suffix: ''
+            suffix: ""
             archive: tar.gz
           - goos: linux
             goarch: arm64
-            suffix: ''
+            suffix: ""
             archive: tar.gz
           - goos: windows
             goarch: amd64
-            suffix: '.exe'
+            suffix: ".exe"
             archive: zip
           - goos: windows
             goarch: arm64
-            suffix: '.exe'
+            suffix: ".exe"
             archive: zip
 
     runs-on: ubuntu-latest
@@ -46,30 +46,30 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.4'
+          go-version: "1.25.4"
 
       - name: Build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          go build -ldflags="-s -w" -o TypEngQuest${{ matrix.suffix }} ./cmd/TypEngQuest
+          go build -ldflags="-s -w" -o BlitzTypingOperator${{ matrix.suffix }} ./cmd/BlitzTypingOperator
 
       - name: Create Archive (tar.gz)
         if: matrix.archive == 'tar.gz'
         run: |
-          tar -czvf TypEngQuest-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz TypEngQuest${{ matrix.suffix }}
+          tar -czvf BlitzTypingOperator-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz BlitzTypingOperator${{ matrix.suffix }}
 
       - name: Create Archive (zip)
         if: matrix.archive == 'zip'
         run: |
-          zip TypEngQuest-${{ matrix.goos }}-${{ matrix.goarch }}.zip TypEngQuest${{ matrix.suffix }}
+          zip BlitzTypingOperator-${{ matrix.goos }}-${{ matrix.goarch }}.zip BlitzTypingOperator${{ matrix.suffix }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TypEngQuest-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: TypEngQuest-${{ matrix.goos }}-${{ matrix.goarch }}.*
+          name: BlitzTypingOperator-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: BlitzTypingOperator-${{ matrix.goos }}-${{ matrix.goarch }}.*
 
   release:
     needs: build
