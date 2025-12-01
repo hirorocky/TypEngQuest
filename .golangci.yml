@@ -1,0 +1,36 @@
+# golangci-lint 設定ファイル (v2)
+# https://golangci-lint.run/usage/configuration/
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    - errcheck      # エラーチェック漏れの検出
+    - govet         # go vetと同等のチェック
+    - staticcheck   # 静的解析
+    - unused        # 未使用コードの検出
+    - ineffassign   # 無効な代入の検出
+    - misspell      # スペルミスの検出
+  settings:
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - staticcheck
+
+formatters:
+  enable:
+    - gofmt         # フォーマットチェック
+    - goimports     # import文の整理チェック
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

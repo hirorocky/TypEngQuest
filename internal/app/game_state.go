@@ -470,7 +470,7 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 				passiveSkill,
 			)
 			coreMap[coreSave.ID] = core
-			invManager.AddCore(core)
+			_ = invManager.AddCore(core)
 		}
 
 		// モジュールを再構築
@@ -479,7 +479,7 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 			if moduleDef != nil {
 				for i := 0; i < count; i++ {
 					module := moduleDef.ToDomain()
-					invManager.AddModule(module)
+					_ = invManager.AddModule(module)
 				}
 			}
 		}
@@ -516,7 +516,7 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 
 			// エージェントを再構築
 			agentModel := domain.NewAgent(agentSave.ID, core, modules)
-			agentMgr.AddAgent(agentModel)
+			_ = agentMgr.AddAgent(agentModel)
 		}
 	}
 
@@ -525,7 +525,7 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 	if data.Player != nil {
 		for slot, agentID := range data.Player.EquippedAgentIDs {
 			if agentID != "" {
-				agentMgr.EquipAgent(slot, agentID, player)
+				_ = agentMgr.EquipAgent(slot, agentID, player)
 			}
 		}
 	}

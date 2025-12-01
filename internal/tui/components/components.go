@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/tui/styles"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ==================== メニューコンポーネント ====================
@@ -562,7 +563,7 @@ func (c *AgentCard) renderEmptySlot(width int) string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
 		Foreground(styles.ColorSubtle).
-		Width(width - 2).
+		Width(width-2).
 		Padding(0, 1).
 		Align(lipgloss.Center)
 
@@ -598,7 +599,7 @@ func (c *AgentCard) renderCompact(width int) string {
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
-		Width(width - 2).
+		Width(width-2).
 		Padding(0, 1)
 
 	return style.Render(content.String())
@@ -648,7 +649,7 @@ func (c *AgentCard) renderDetailed(width int) string {
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
-		Width(width - 2).
+		Width(width-2).
 		Padding(0, 1)
 
 	return style.Render(content.String())

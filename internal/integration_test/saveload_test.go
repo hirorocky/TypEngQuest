@@ -122,7 +122,7 @@ func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
 
 	// バックアップを確認
 	bak1Path := filepath.Join(tempDir, "save.json.bak1")
-	_, err = os.Stat(bak1Path)
+	_, _ = os.Stat(bak1Path)
 	// 初回セーブ時はバックアップがないかもしれない
 
 	// もう一度セーブしてバックアップを作成

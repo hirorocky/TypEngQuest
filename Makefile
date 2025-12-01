@@ -1,7 +1,7 @@
 # BlitzTypingOperator Makefile
 # Requirement 21: 拡張性 - データファイル埋め込みビルド
 
-.PHONY: build build-release clean test run help
+.PHONY: build build-release clean test run lint help
 
 # デフォルトターゲット
 all: build
@@ -26,6 +26,11 @@ test-verbose:
 	@echo "Running tests (verbose)..."
 	go test -v ./...
 
+# Lint実行
+lint:
+	@echo "Running linter..."
+	golangci-lint run ./...
+
 # アプリケーション実行（埋め込みデータ使用）
 run: build
 	@echo "Running BlitzTypingOperator..."
@@ -45,6 +50,7 @@ help:
 	@echo "  build-release  - Build with optimizations"
 	@echo "  test           - Run all tests"
 	@echo "  test-verbose   - Run tests with verbose output"
+	@echo "  lint           - Run golangci-lint"
 	@echo "  run            - Build and run with embedded data"
 	@echo "  clean          - Remove build artifacts"
 	@echo "  help           - Show this help message"

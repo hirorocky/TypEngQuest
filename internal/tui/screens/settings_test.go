@@ -116,11 +116,11 @@ func TestSettingsNavigation(t *testing.T) {
 func createTestSettings() *SettingsData {
 	return &SettingsData{
 		Keybinds: map[string]string{
-			"select":    "enter",
-			"cancel":    "esc",
-			"move_up":   "k",
-			"move_down": "j",
-			"move_left": "h",
+			"select":     "enter",
+			"cancel":     "esc",
+			"move_up":    "k",
+			"move_down":  "j",
+			"move_left":  "h",
 			"move_right": "l",
 		},
 		SoundVolume: 100,

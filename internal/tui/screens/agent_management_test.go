@@ -4,8 +4,9 @@ package screens
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/domain"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ==================== Task 10.4: エージェント管理画面のテスト ====================

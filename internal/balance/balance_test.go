@@ -89,10 +89,10 @@ func TestTypingChallengeTextLength(t *testing.T) {
 
 	// 難易度ごとのテキスト長さ範囲
 	tests := []struct {
-		name        string
-		difficulty  int // 1:Easy, 2:Medium, 3:Hard
-		wantMinLen  int
-		wantMaxLen  int
+		name       string
+		difficulty int // 1:Easy, 2:Medium, 3:Hard
+		wantMinLen int
+		wantMaxLen int
 	}{
 		{"Easy", 1, 3, 6},
 		{"Medium", 2, 7, 11},

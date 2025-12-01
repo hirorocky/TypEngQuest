@@ -6,9 +6,10 @@ package agent
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/inventory"
+
+	"github.com/google/uuid"
 )
 
 // MaxEquipmentSlots はエージェント装備スロットの最大数です。

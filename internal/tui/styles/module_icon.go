@@ -3,8 +3,9 @@
 package styles
 
 import (
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/domain"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // モジュールカテゴリに対応するアイコン
@@ -19,11 +20,11 @@ var moduleIcons = map[domain.ModuleCategory]string{
 
 // モジュールカテゴリに対応するカラー
 var moduleCategoryColors = map[domain.ModuleCategory]lipgloss.Color{
-	domain.PhysicalAttack: ColorDamage,  // 赤系
-	domain.MagicAttack:    ColorInfo,    // 青系
-	domain.Heal:           ColorHPHigh,  // 緑系
-	domain.Buff:           ColorBuff,    // 青系
-	domain.Debuff:         ColorDebuff,  // ピンク系
+	domain.PhysicalAttack: ColorDamage, // 赤系
+	domain.MagicAttack:    ColorInfo,   // 青系
+	domain.Heal:           ColorHPHigh, // 緑系
+	domain.Buff:           ColorBuff,   // 青系
+	domain.Debuff:         ColorDebuff, // ピンク系
 }
 
 // GetModuleIcon はモジュールカテゴリに対応するアイコンを返します。

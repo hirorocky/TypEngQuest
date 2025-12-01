@@ -185,13 +185,13 @@ func (s *AgentManagementScreen) handleEquipKeyMsg(msg tea.KeyMsg) (tea.Model, te
 		// 選択中のエージェントを選択中のスロットに装備
 		if s.selectedIndex < len(s.agentList) {
 			agent := s.agentList[s.selectedIndex]
-			s.inventory.EquipAgent(s.selectedEquipSlot, agent)
+			_ = s.inventory.EquipAgent(s.selectedEquipSlot, agent)
 			s.updateCurrentList()
 		}
 	case "backspace":
 		// 選択中のスロットからエージェントを取り外し
 		if s.equipSlots[s.selectedEquipSlot] != nil {
-			s.inventory.UnequipAgent(s.selectedEquipSlot)
+			_ = s.inventory.UnequipAgent(s.selectedEquipSlot)
 			s.updateCurrentList()
 		}
 	case "d":
@@ -341,7 +341,7 @@ func (s *AgentManagementScreen) handleEquipEnter() (tea.Model, tea.Cmd) {
 	if s.selectedIndex < 3 {
 		// 装備解除
 		if s.equipSlots[s.selectedIndex] != nil {
-			s.inventory.UnequipAgent(s.selectedIndex)
+			_ = s.inventory.UnequipAgent(s.selectedIndex)
 			s.updateCurrentList()
 		}
 	} else {
@@ -351,7 +351,7 @@ func (s *AgentManagementScreen) handleEquipEnter() (tea.Model, tea.Cmd) {
 			// 空きスロットを探す
 			for i := 0; i < 3; i++ {
 				if s.equipSlots[i] == nil {
-					s.inventory.EquipAgent(i, s.agentList[agentIndex])
+					_ = s.inventory.EquipAgent(i, s.agentList[agentIndex])
 					s.updateCurrentList()
 					break
 				}
@@ -405,12 +405,12 @@ func (s *AgentManagementScreen) executeDelete() {
 	switch s.currentTab {
 	case TabCoreList:
 		if s.pendingDeleteIdx < len(s.coreList) {
-			s.inventory.RemoveCore(s.coreList[s.pendingDeleteIdx].ID)
+			_ = s.inventory.RemoveCore(s.coreList[s.pendingDeleteIdx].ID)
 			s.updateCurrentList()
 		}
 	case TabModuleList:
 		if s.pendingDeleteIdx < len(s.moduleList) {
-			s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].ID)
+			_ = s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].ID)
 			s.updateCurrentList()
 		}
 	case TabEquip:
@@ -463,12 +463,12 @@ func (s *AgentManagementScreen) executeSynthesis() {
 	agent := domain.NewAgent(agentID, s.synthesisState.selectedCore, s.synthesisState.selectedModules)
 
 	// インベントリに追加
-	s.inventory.AddAgent(agent)
+	_ = s.inventory.AddAgent(agent)
 
 	// 使用した素材を削除
-	s.inventory.RemoveCore(s.synthesisState.selectedCore.ID)
+	_ = s.inventory.RemoveCore(s.synthesisState.selectedCore.ID)
 	for _, m := range s.synthesisState.selectedModules {
-		s.inventory.RemoveModule(m.ID)
+		_ = s.inventory.RemoveModule(m.ID)
 	}
 
 	s.updateCurrentList()

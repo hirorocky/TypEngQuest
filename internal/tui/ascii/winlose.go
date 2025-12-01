@@ -6,8 +6,9 @@ package ascii
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/tui/styles"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // WINのASCIIアート

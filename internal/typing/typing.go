@@ -55,9 +55,9 @@ type Challenge struct {
 // ChallengeGenerator はタイピングチャレンジを生成する構造体です。
 // Requirements 16.5-16.9
 type ChallengeGenerator struct {
-	dictionary   *Dictionary
-	lastText     string
-	rng          *rand.Rand
+	dictionary *Dictionary
+	lastText   string
+	rng        *rand.Rand
 }
 
 // NewChallengeGenerator は新しいChallengeGeneratorを作成します。

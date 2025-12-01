@@ -173,8 +173,8 @@ func RecoverToError(r interface{}) error {
 // ==================================================
 
 var (
-	debugMode     bool
-	debugModeMu   sync.RWMutex
+	debugMode   bool
+	debugModeMu sync.RWMutex
 )
 
 // SetDebugMode はデバッグモードを設定します。
@@ -231,7 +231,7 @@ func (l *Logger) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.file != nil {
-		l.file.Close()
+		_ = l.file.Close()
 		l.file = nil
 	}
 }
@@ -257,7 +257,7 @@ func (l *Logger) log(level LogLevel, message string) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	logLine := fmt.Sprintf("[%s] [%s] %s\n", timestamp, levelStr, message)
-	l.file.WriteString(logLine)
+	_, _ = l.file.WriteString(logLine)
 }
 
 // Error はエラーレベルのログを書き込みます。

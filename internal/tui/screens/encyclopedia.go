@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ==================== Task 10.5: 図鑑画面 ====================
@@ -39,12 +40,12 @@ type EncyclopediaData interface {
 // EncyclopediaScreen は図鑑画面を表します。
 // Requirements: 14.1-14.11
 type EncyclopediaScreen struct {
-	data             *EncyclopediaTestData
-	currentCategory  EncyclopediaCategory
-	selectedIndex    int
-	styles           *styles.GameStyles
-	width            int
-	height           int
+	data            *EncyclopediaTestData
+	currentCategory EncyclopediaCategory
+	selectedIndex   int
+	styles          *styles.GameStyles
+	width           int
+	height          int
 }
 
 // NewEncyclopediaScreen は新しいEncyclopediaScreenを作成します。

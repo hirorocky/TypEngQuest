@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/domain"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ==================== Task 10.3: バトル画面のテスト ====================
@@ -389,14 +390,14 @@ func TestBattleScreenResultWaitsForEnter(t *testing.T) {
 	screen := NewBattleScreen(enemy, player, agents)
 
 	// TickMsgを送信して敗北状態に
-	_, cmd := screen.Update(BattleTickMsg{})
+	_, _ = screen.Update(BattleTickMsg{})
 
 	// 結果表示状態ではシーン遷移コマンドは返されない（tickのみ継続）
 	// ただしtickは継続するのでcmdがnilではない可能性がある
 	if screen.IsShowingResult() {
 		// Enterを押さない限りBattleResultMsgは発行されない
 		// 他のキーを押しても遷移しない
-		_, cmd = screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+		_, _ = screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
 
 		// まだ結果表示状態のはず
 		if !screen.IsShowingResult() {
@@ -405,7 +406,7 @@ func TestBattleScreenResultWaitsForEnter(t *testing.T) {
 	}
 
 	// Enterを押すとBattleResultMsgが返される
-	_, cmd = screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	if cmd == nil {
 		t.Error("Enter押下後にコマンドが返されていません")

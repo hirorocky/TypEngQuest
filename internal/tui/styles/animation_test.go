@@ -79,9 +79,9 @@ func TestHighlightMessage(t *testing.T) {
 	styles := NewGameStyles()
 
 	tests := []struct {
-		name     string
-		message  string
-		msgType  MessageType
+		name    string
+		message string
+		msgType MessageType
 	}{
 		{"レベルクリア", "Level Clear!", MessageTypeSuccess},
 		{"アイテム獲得", "Core acquired!", MessageTypeInfo},
@@ -120,9 +120,9 @@ func TestCooldownProgressBar(t *testing.T) {
 	styles := NewGameStyles()
 
 	tests := []struct {
-		name        string
-		remaining   float64
-		total       float64
+		name      string
+		remaining float64
+		total     float64
 	}{
 		{"満タン", 5.0, 5.0},
 		{"半分", 2.5, 5.0},

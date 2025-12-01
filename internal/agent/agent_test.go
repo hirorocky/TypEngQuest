@@ -163,7 +163,7 @@ func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 	moduleInv.Add(domain.NewModule("m1", "物理打撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
 	moduleInv.Add(domain.NewModule("m2", "ファイアボール", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", ""))
 	moduleInv.Add(domain.NewModule("m3", "ヒールLv2", domain.Heal, 2, []string{"heal_mid"}, 16.0, "MAG", "")) // 互換性なし
-	moduleInv.Add(domain.NewModule("m4", "攻撃バフ", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""))   // 互換性なし
+	moduleInv.Add(domain.NewModule("m4", "攻撃バフ", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""))    // 互換性なし
 
 	manager := NewAgentManager(coreInv, moduleInv)
 

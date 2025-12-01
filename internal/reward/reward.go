@@ -7,10 +7,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/google/uuid"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/inventory"
 	"hirorocky/type-battle/internal/loader"
+
+	"github.com/google/uuid"
 )
 
 // ドロップ関連の定数
@@ -410,7 +411,7 @@ func (c *RewardCalculator) AddRewardsToInventory(
 			warning.SuggestDiscard = true
 			tempStorage.AddCore(core)
 		} else {
-			coreInv.Add(core)
+			_ = coreInv.Add(core)
 		}
 	}
 
@@ -421,7 +422,7 @@ func (c *RewardCalculator) AddRewardsToInventory(
 			warning.SuggestDiscard = true
 			tempStorage.AddModule(module)
 		} else {
-			moduleInv.Add(module)
+			_ = moduleInv.Add(module)
 		}
 	}
 

@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/tui/styles"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ==================== Task 9.1: ホーム画面の統合テスト ====================

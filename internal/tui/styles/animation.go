@@ -271,18 +271,18 @@ type AnimationState struct {
 
 // DamageAnimation はダメージアニメーションの状態を表します。
 type DamageAnimation struct {
-	Amount       int
-	FrameIndex   int
-	RemainingMS  int
-	Position     Position
+	Amount      int
+	FrameIndex  int
+	RemainingMS int
+	Position    Position
 }
 
 // HealAnimation は回復アニメーションの状態を表します。
 type HealAnimation struct {
-	Amount       int
-	FrameIndex   int
-	RemainingMS  int
-	Position     Position
+	Amount      int
+	FrameIndex  int
+	RemainingMS int
+	Position    Position
 }
 
 // TimedMessage は時限付きメッセージを表します。

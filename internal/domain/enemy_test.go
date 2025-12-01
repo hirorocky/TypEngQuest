@@ -29,12 +29,12 @@ func TestEnemyPhase_String(t *testing.T) {
 // TestEnemyType_フィールドの確認 はEnemyType構造体のフィールドが正しく設定されることを確認します。
 func TestEnemyType_フィールドの確認(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                "goblin",
-		Name:              "ゴブリン",
-		BaseHP:            100,
-		BaseAttackPower:   10,
+		ID:                 "goblin",
+		Name:               "ゴブリン",
+		BaseHP:             100,
+		BaseAttackPower:    10,
 		BaseAttackInterval: 3 * time.Second,
-		AttackType:        "physical",
+		AttackType:         "physical",
 	}
 
 	if enemyType.ID != "goblin" {
@@ -61,10 +61,10 @@ func TestEnemyType_フィールドの確認(t *testing.T) {
 // Requirements 11.15, 13.2, 13.3に基づく
 func TestEnemyModel_フィールドの確認(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                "goblin",
-		Name:              "ゴブリン",
-		BaseHP:            100,
-		BaseAttackPower:   10,
+		ID:                 "goblin",
+		Name:               "ゴブリン",
+		BaseHP:             100,
+		BaseAttackPower:    10,
 		BaseAttackInterval: 3 * time.Second,
 	}
 
@@ -110,10 +110,10 @@ func TestEnemyModel_フィールドの確認(t *testing.T) {
 // TestNewEnemy_敵作成 はNewEnemy関数で敵が正しく作成されることを確認します。
 func TestNewEnemy_敵作成(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                "goblin",
-		Name:              "ゴブリン",
-		BaseHP:            100,
-		BaseAttackPower:   10,
+		ID:                 "goblin",
+		Name:               "ゴブリン",
+		BaseHP:             100,
+		BaseAttackPower:    10,
 		BaseAttackInterval: 3 * time.Second,
 	}
 

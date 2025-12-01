@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"hirorocky/type-battle/internal/tui/styles"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hirorocky/type-battle/internal/tui/styles"
 )
 
 // ==================== Task 10.7: 設定画面 ====================

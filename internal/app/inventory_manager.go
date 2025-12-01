@@ -86,7 +86,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 		Description: "全ステータスにバランスボーナスを得る",
 	}
 	core := domain.NewCore("core_001", "初期コア", 1, allRounderType, passiveSkill)
-	m.cores.Add(core)
+	_ = m.cores.Add(core)
 
 	attackerType := domain.CoreType{
 		ID:             "attacker",
@@ -102,49 +102,49 @@ func (m *InventoryManager) InitializeWithDefaults() {
 		Description: "攻撃力にボーナスを得る",
 	}
 	core2 := domain.NewCore("core_002", "アタッカーコア", 1, attackerType, attackerSkill)
-	m.cores.Add(core2)
+	_ = m.cores.Add(core2)
 
 	// 初期モジュールを追加
 	physicalMod := domain.NewModule(
 		"mod_001", "斬撃", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 10.0, "STR", "基本的な物理攻撃",
 	)
-	m.modules.Add(physicalMod)
+	_ = m.modules.Add(physicalMod)
 
 	magicMod := domain.NewModule(
 		"mod_002", "火球", domain.MagicAttack, 1,
 		[]string{"magic_low", "fire"}, 12.0, "MAG", "火属性の魔法攻撃",
 	)
-	m.modules.Add(magicMod)
+	_ = m.modules.Add(magicMod)
 
 	healMod := domain.NewModule(
 		"mod_003", "ヒール", domain.Heal, 1,
 		[]string{"heal_low"}, 15.0, "MAG", "基本的な回復魔法",
 	)
-	m.modules.Add(healMod)
+	_ = m.modules.Add(healMod)
 
 	buffMod := domain.NewModule(
 		"mod_004", "攻撃力アップ", domain.Buff, 1,
 		[]string{"buff_low"}, 5.0, "LUK", "攻撃力を上昇させる",
 	)
-	m.modules.Add(buffMod)
+	_ = m.modules.Add(buffMod)
 
 	// 追加の初期モジュール（合成後も所持できるように）
 	extraMod1 := domain.NewModule(
 		"mod_005", "突き", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 8.0, "STR", "素早い物理攻撃",
 	)
-	m.modules.Add(extraMod1)
+	_ = m.modules.Add(extraMod1)
 
 	extraMod2 := domain.NewModule(
 		"mod_006", "氷結", domain.MagicAttack, 1,
 		[]string{"magic_low", "ice"}, 11.0, "MAG", "氷属性の魔法攻撃",
 	)
-	m.modules.Add(extraMod2)
+	_ = m.modules.Add(extraMod2)
 
 	extraMod3 := domain.NewModule(
 		"mod_007", "防御アップ", domain.Buff, 1,
 		[]string{"buff_low"}, 4.0, "LUK", "防御力を上昇させる",
 	)
-	m.modules.Add(extraMod3)
+	_ = m.modules.Add(extraMod3)
 }

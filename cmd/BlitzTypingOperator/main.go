@@ -16,9 +16,10 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/app"
 	"hirorocky/type-battle/internal/embedded"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {

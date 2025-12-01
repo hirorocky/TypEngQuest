@@ -31,7 +31,7 @@ func TestTypingAchievements_WPMMilestones(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			manager = NewAchievementManager() // リセット
+			manager = NewAchievementManager()                             // リセット
 			notifications := manager.CheckTypingAchievements(tt.wpm, 100) // 100%正確性
 			unlocked := manager.IsUnlocked(tt.expectedID)
 
@@ -50,14 +50,14 @@ func TestTypingAchievements_PerfectAccuracy(t *testing.T) {
 	manager := NewAchievementManager()
 
 	// 99%正確性では解除されない
-	notifications := manager.CheckTypingAchievements(50, 99)
+	_ = manager.CheckTypingAchievements(50, 99)
 	if manager.IsUnlocked(AchievementPerfectAccuracy) {
 		t.Error("99%正確性では実績が解除されるべきではありません")
 	}
 
 	// 100%正確性で解除
 	manager = NewAchievementManager()
-	notifications = manager.CheckTypingAchievements(50, 100)
+	notifications := manager.CheckTypingAchievements(50, 100)
 	if !manager.IsUnlocked(AchievementPerfectAccuracy) {
 		t.Error("100%正確性で実績が解除されるべきです")
 	}
@@ -160,14 +160,14 @@ func TestBattleAchievements_NoDamageClear(t *testing.T) {
 	manager := NewAchievementManager()
 
 	// ダメージを受けた場合は解除されない
-	notifications := manager.CheckBattleAchievements(1, 1, false)
+	_ = manager.CheckBattleAchievements(1, 1, false)
 	if manager.IsUnlocked(AchievementNoDamage) {
 		t.Error("ダメージを受けた場合は実績が解除されるべきではありません")
 	}
 
 	// ノーダメージで解除
 	manager = NewAchievementManager()
-	notifications = manager.CheckBattleAchievements(1, 1, true)
+	notifications := manager.CheckBattleAchievements(1, 1, true)
 	if !manager.IsUnlocked(AchievementNoDamage) {
 		t.Error("ノーダメージクリアで実績が解除されるべきです")
 	}

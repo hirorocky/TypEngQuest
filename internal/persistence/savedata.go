@@ -242,20 +242,17 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	// 一時ファイルの検証（読み込んでパースできるか確認）
 	tmpData, err := os.ReadFile(tmpPath)
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("一時ファイルの検証読み込みに失敗: %w", err)
 	}
 	var validateData SaveData
 	if err := json.Unmarshal(tmpData, &validateData); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("一時ファイルの検証パースに失敗: %w", err)
 	}
 
-	// バックアップローテーション
-	if err := io.RotateBackups(); err != nil {
-		// バックアップの失敗はログに記録するが、セーブは続行
-		// 実際のアプリケーションではログ出力を追加
-	}
+	// バックアップローテーション（失敗してもセーブは続行）
+	_ = io.RotateBackups()
 
 	// 原子的リネーム
 	savePath := filepath.Join(io.saveDir, SaveFileName)
@@ -287,7 +284,7 @@ func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 			// バックアップからの復元に成功
 			// メインファイルを復元
 			if jsonData, marshalErr := json.MarshalIndent(data, "", "  "); marshalErr == nil {
-				os.WriteFile(savePath, jsonData, 0644)
+				_ = os.WriteFile(savePath, jsonData, 0644)
 			}
 			return data, nil
 		}
@@ -332,16 +329,16 @@ func (io *SaveDataIO) LoadFromBackup(backupIndex int) (*SaveData, error) {
 // Requirement 17.7: バックアップローテーション（直近3世代保持）
 // save.json → save.json.bak1 → save.json.bak2 → save.json.bak3 (削除)
 func (io *SaveDataIO) RotateBackups() error {
-	// 古いバックアップを削除
+	// 古いバックアップを削除（存在しない場合は無視）
 	bak3 := filepath.Join(io.saveDir, "save.json.bak3")
-	os.Remove(bak3) // エラーは無視（存在しない場合）
+	_ = os.Remove(bak3)
 
 	// バックアップをシフト
 	for i := MaxBackupCount - 1; i >= 1; i-- {
 		oldPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
 		newPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i+1))
 		if _, err := os.Stat(oldPath); err == nil {
-			os.Rename(oldPath, newPath)
+			_ = os.Rename(oldPath, newPath)
 		}
 	}
 
@@ -351,7 +348,7 @@ func (io *SaveDataIO) RotateBackups() error {
 	if _, err := os.Stat(savePath); err == nil {
 		data, err := os.ReadFile(savePath)
 		if err == nil {
-			os.WriteFile(bak1, data, 0644)
+			_ = os.WriteFile(bak1, data, 0644)
 		}
 	}
 
@@ -363,12 +360,12 @@ func (io *SaveDataIO) RotateBackups() error {
 func (io *SaveDataIO) ResetSaveData() error {
 	// メインセーブファイルを削除
 	savePath := filepath.Join(io.saveDir, SaveFileName)
-	os.Remove(savePath)
+	_ = os.Remove(savePath)
 
 	// バックアップファイルも削除
 	for i := 1; i <= MaxBackupCount; i++ {
 		backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
-		os.Remove(backupPath)
+		_ = os.Remove(backupPath)
 	}
 
 	return nil
