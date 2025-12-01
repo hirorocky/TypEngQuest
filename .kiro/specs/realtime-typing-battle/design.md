@@ -1129,7 +1129,7 @@ type ExternalData struct {
 
 ### Physical Data Model (JSON Files)
 
-**Save Data File** (`~/.TypEngQuest/save.json`):
+**Save Data File** (`~/.BlitzTypingOperator/save.json`):
 ```json
 {
   "version": "1.0.0",
@@ -1182,7 +1182,7 @@ type ExternalData struct {
 ```
 
 **File Locations**:
-- セーブデータ: `~/.TypEngQuest/save.json`, `~/.TypEngQuest/save.json.bak1`, `.bak2`, `.bak3`
+- セーブデータ: `~/.BlitzTypingOperator/save.json`, `~/.BlitzTypingOperator/save.json.bak1`, `.bak2`, `.bak3`
 - 外部定義: `data/cores.json`, `data/modules.json`, `data/enemies.json`, `data/words.json`
 
 **Backup Strategy**:
@@ -1226,7 +1226,7 @@ type ExternalData struct {
 ### Monitoring
 
 **Error Tracking**:
-- デバッグモードでエラー詳細をログファイルに記録（`~/.TypEngQuest/debug.log`）
+- デバッグモードでエラー詳細をログファイルに記録（`~/.BlitzTypingOperator/debug.log`）
 - 重要なエラー（セーブ失敗、データ破損）はログに記録
 
 **Health Monitoring**:

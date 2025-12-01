@@ -1,4 +1,4 @@
-# TypEngQuest Makefile
+# BlitzTypingOperator Makefile
 # Requirement 21: 拡張性 - データファイル埋め込みビルド
 
 .PHONY: build build-release clean test run help
@@ -8,13 +8,13 @@ all: build
 
 # 開発用ビルド
 build:
-	@echo "Building TypEngQuest..."
-	go build -o TypEngQuest ./cmd/TypEngQuest
+	@echo "Building BlitzTypingOperator..."
+	go build -o BlitzTypingOperator ./cmd/BlitzTypingOperator
 
 # リリース用ビルド（最適化あり）
 build-release:
-	@echo "Building TypEngQuest (release)..."
-	go build -ldflags="-s -w" -o TypEngQuest ./cmd/TypEngQuest
+	@echo "Building BlitzTypingOperator (release)..."
+	go build -ldflags="-s -w" -o BlitzTypingOperator ./cmd/BlitzTypingOperator
 
 # テスト実行
 test:
@@ -28,17 +28,17 @@ test-verbose:
 
 # アプリケーション実行（埋め込みデータ使用）
 run: build
-	@echo "Running TypEngQuest..."
-	./TypEngQuest
+	@echo "Running BlitzTypingOperator..."
+	./BlitzTypingOperator
 
 # クリーンアップ
 clean:
 	@echo "Cleaning up..."
-	@rm -f TypEngQuest
+	@rm -f BlitzTypingOperator
 
 # ヘルプ
 help:
-	@echo "TypEngQuest Makefile"
+	@echo "BlitzTypingOperator Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  build          - Build the application"
@@ -50,4 +50,4 @@ help:
 	@echo "  help           - Show this help message"
 	@echo ""
 	@echo "To use external data:"
-	@echo "  ./TypEngQuest -data /path/to/custom_data"
+	@echo "  ./BlitzTypingOperator -data /path/to/custom_data"

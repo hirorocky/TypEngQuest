@@ -1,4 +1,4 @@
-// Package app は TypEngQuest TUIゲームのRootModelを提供します。
+// Package app は BlitzTypingOperator TUIゲームのRootModelを提供します。
 // RootModelはゲーム全体の状態管理とシーンルーティングを担当します。
 package app
 
@@ -19,7 +19,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// RootModel は TypEngQuestゲームのメインアプリケーション状態を表します。
+// RootModel は BlitzTypingOperatorゲームのメインアプリケーション状態を表します。
 // Bubbletea TUIフレームワークのtea.Modelインターフェースを実装し、
 // ゲーム全体の状態管理とシーン間の遷移を統括します。
 //
@@ -74,7 +74,7 @@ type RootModel struct {
 func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	// セーブディレクトリを決定
 	homeDir, _ := os.UserHomeDir()
-	saveDir := filepath.Join(homeDir, ".TypEngQuest")
+	saveDir := filepath.Join(homeDir, ".BlitzTypingOperator")
 	saveDataIO := persistence.NewSaveDataIO(saveDir)
 
 	// 外部データをロード
@@ -688,7 +688,7 @@ func (m *RootModel) renderCurrentScene() string {
 
 // renderPlaceholder はプレースホルダー画面をレンダリングします。
 func (m *RootModel) renderPlaceholder(name string) string {
-	title := m.styles.Title.Render("TypEngQuest")
+	title := m.styles.Title.Render("BlitzTypingOperator")
 	info := m.styles.Subtle.Render(name + " (準備中)")
 	hint := m.styles.Subtle.Render("Esc: ホームに戻る  q: 終了")
 	return title + "\n\n" + info + "\n\n" + hint

@@ -1,4 +1,4 @@
-// Package app は TypEngQuest TUIゲームの統計マネージャーを提供します。
+// Package app は BlitzTypingOperator TUIゲームの統計マネージャーを提供します。
 package app
 
 // StatisticsManager はゲームの統計情報を管理する構造体です。

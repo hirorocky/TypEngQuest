@@ -62,12 +62,12 @@ func TestASCIILogoGetHeight(t *testing.T) {
 	}
 }
 
-// TestASCIILogoContainsTypEngQuest はロゴに「TYPENGQUEST」が含まれることを確認します。
-func TestASCIILogoContainsTypEngQuest(t *testing.T) {
+// TestASCIILogoContainsBlitzTypingOperator はロゴに「BLITZTYPINGOPERATOR」が含まれることを確認します。
+func TestASCIILogoContainsBlitzTypingOperator(t *testing.T) {
 	logo := NewASCIILogo()
 	output := logo.Render(false)
 
-	// ASCIIアートなのでTYPENGQUESTの文字が形作られていることを確認
+	// ASCIIアートなのでBLITZTYPINGOPERATORの文字が形作られていることを確認
 	// 少なくともロゴは空ではない
 	if len(output) < 50 {
 		t.Errorf("ロゴのサイズが小さすぎます: %d文字", len(output))

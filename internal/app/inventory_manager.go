@@ -1,4 +1,4 @@
-// Package app は TypEngQuest TUIゲームのインベントリマネージャーを提供します。
+// Package app は BlitzTypingOperator TUIゲームのインベントリマネージャーを提供します。
 package app
 
 import (

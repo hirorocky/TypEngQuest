@@ -3,8 +3,9 @@ package app
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/embedded"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // === シーン定義のテスト ===
@@ -287,7 +288,7 @@ func TestRootModel_View_ValidTerminal(t *testing.T) {
 		t.Fatal("View should not be empty for valid terminal")
 	}
 
-	// TypEngQuestの文字列が含まれているべき
+	// BlitzTypingOperatorの文字列が含まれているべき
 	if len(view) < 10 {
 		t.Error("View should contain game title or content")
 	}

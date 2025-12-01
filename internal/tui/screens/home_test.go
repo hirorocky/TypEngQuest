@@ -4,8 +4,9 @@ package screens
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"hirorocky/type-battle/internal/domain"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ==================== Task 10.1: ホーム画面のテスト ====================
@@ -137,7 +138,7 @@ func TestHomeScreenHasASCIILogo(t *testing.T) {
 	rendered := screen.View()
 
 	// ロゴの特徴的な文字が含まれることを確認（フィグレット風）
-	// TypEngQuestロゴは「╔╦╗」などの文字を使用
+	// BlitzTypingOperatorロゴは「╔╦╗」などの文字を使用
 	if !containsAny(rendered, "╔", "╗", "╚", "╝") {
 		t.Error("ASCIIアートロゴが表示されていません")
 	}

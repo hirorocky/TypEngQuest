@@ -9,12 +9,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TypEngQuestロゴのASCIIアート（フィグレット風）
+// BlitzTypingOperatorロゴのASCIIアート（フィグレット風）
 // Requirement 1.1: 5-8行程度のフィグレット風ASCIIアートでゲームロゴを表示
-var typEngQuestLogo = []string{
-	"╔╦╗╦ ╦╔═╗╔═╗╔╗╔╔═╗╔═╗╦ ╦╔═╗╔═╗╔╦╗",
-	" ║ ╚╦╝╠═╝║╣ ║║║║ ╦║ ║║ ║║╣ ╚═╗ ║ ",
-	" ╩  ╩ ╩  ╚═╝╝╚╝╚═╝╚╩╝╚═╝╚═╝╚═╝ ╩ ",
+var blitzTypingOperatorLogo = []string{
+	"╔╗ ╦  ╦╔╦╗╔═╗╔╦╗╦ ╦╔═╗╦╔╗╔╔═╗╔═╗╔═╗╔═╗╦═╗╔═╗╔╦╗╔═╗╦═╗",
+	"╠╩╗║  ║ ║ ╔═╝ ║ ╚╦╝╠═╝║║║║║ ╦║ ║╠═╝║╣ ╠╦╝╠═╣ ║ ║ ║╠╦╝",
+	"╚═╝╩═╝╩ ╩ ╚═╝ ╩  ╩ ╩  ╩╝╚╝╚═╝╚═╝╩  ╚═╝╩╚═╩ ╩ ╩ ╚═╝╩╚═",
 }
 
 // ロゴのカラー定義
@@ -49,7 +49,7 @@ type asciiLogo struct {
 func NewASCIILogo() ASCIILogoRenderer {
 	// 幅は最長の行の長さを計算
 	maxWidth := 0
-	for _, line := range typEngQuestLogo {
+	for _, line := range blitzTypingOperatorLogo {
 		lineWidth := len([]rune(line))
 		if lineWidth > maxWidth {
 			maxWidth = lineWidth
@@ -57,9 +57,9 @@ func NewASCIILogo() ASCIILogoRenderer {
 	}
 
 	return &asciiLogo{
-		lines:  typEngQuestLogo,
+		lines:  blitzTypingOperatorLogo,
 		width:  maxWidth,
-		height: len(typEngQuestLogo),
+		height: len(blitzTypingOperatorLogo),
 	}
 }
 
