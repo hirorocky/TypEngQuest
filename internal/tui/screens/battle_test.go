@@ -572,8 +572,8 @@ func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
 
 	rendered := screen.View()
 
-	// 次の敵行動の表示が含まれること
-	if !strings.Contains(rendered, "次の敵行動") {
+	// 行動予告（物理攻撃/魔法攻撃など）の表示が含まれること
+	if !strings.Contains(rendered, "ダメージ") {
 		t.Error("敵攻撃タイマー表示がありません")
 	}
 }
