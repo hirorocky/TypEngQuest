@@ -29,9 +29,9 @@ var (
 	// ColorTypingCompleted は完了済み文字の色（緑）
 	ColorTypingCompleted = lipgloss.Color("#04B575")
 	// ColorTypingCurrent は入力中文字の色（背景ハイライト）
-	ColorTypingCurrent = lipgloss.Color("#FFB454")
+	ColorTypingCurrent = lipgloss.Color("#FFFFFF")
 	// ColorTypingRemaining は未入力文字の色（薄グレー）
-	ColorTypingRemaining = lipgloss.Color("#6C6C6C")
+	ColorTypingRemaining = lipgloss.Color("#AAAAAA")
 	// ColorTypingIncorrect は誤入力文字の色（赤）
 	ColorTypingIncorrect = lipgloss.Color("#FF4672")
 )
