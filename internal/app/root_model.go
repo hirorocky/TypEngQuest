@@ -54,6 +54,9 @@ type RootModel struct {
 	// statusMessage はステータスメッセージ（セーブ/ロード結果など）です
 	statusMessage string
 
+	// sceneRouter はシーン遷移を管理します
+	sceneRouter *SceneRouter
+
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
 	battleSelectScreen      *screens.BattleSelectScreen
@@ -159,6 +162,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		styles:                  NewStyles(),
 		saveDataIO:              saveDataIO,
 		statusMessage:           statusMessage,
+		sceneRouter:             NewSceneRouter(),
 		homeScreen:              homeScreen,
 		battleSelectScreen:      battleSelectScreen,
 		agentManagementScreen:   agentManagementScreen,
@@ -586,11 +590,19 @@ func (m *RootModel) handleScreenSceneChange(sceneName string) {
 		m.homeScreen.ClearStatusMessage()
 	}
 
+	// シーン固有の前処理を実行
+	m.prepareSceneTransition(sceneName)
+
+	// SceneRouterを使用してシーンを取得
+	m.currentScene = m.sceneRouter.Route(sceneName)
+}
+
+// prepareSceneTransition はシーン遷移前の準備処理を実行します。
+func (m *RootModel) prepareSceneTransition(sceneName string) {
 	switch sceneName {
 	case "home":
 		// ホーム画面の最高到達レベルを更新
 		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
-		m.currentScene = SceneHome
 	case "battle_select":
 		// バトル選択画面を再初期化してリセット
 		invAdapter := &inventoryProviderAdapter{
@@ -602,25 +614,14 @@ func (m *RootModel) handleScreenSceneChange(sceneName string) {
 			m.gameState.MaxLevelReached,
 			invAdapter,
 		)
-		m.currentScene = SceneBattleSelect
-	case "battle":
-		m.currentScene = SceneBattle
-	case "agent_management":
-		m.currentScene = SceneAgentManagement
 	case "encyclopedia":
 		// 最新の図鑑データで画面を再初期化
 		encycData := createEncyclopediaDataFromGameState(m.gameState)
 		m.encyclopediaScreen = screens.NewEncyclopediaScreen(encycData)
-		m.currentScene = SceneEncyclopedia
 	case "stats_achievements":
 		// 最新の統計データで画面を再初期化
 		statsData := createStatsDataFromGameState(m.gameState)
 		m.statsAchievementsScreen = screens.NewStatsAchievementsScreen(statsData)
-		m.currentScene = SceneAchievement
-	case "settings":
-		m.currentScene = SceneSettings
-	case "reward":
-		m.currentScene = SceneReward
 	}
 }
 

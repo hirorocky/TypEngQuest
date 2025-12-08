@@ -62,7 +62,7 @@
 ### Phase 3: root_model.goの分割
 
 - [ ] 4. root_model.goのファイル分割
-- [ ] 4.1 シーンルーティングロジックを分離する
+- [x] 4.1 シーンルーティングロジックを分離する
   - `internal/app/scene_router.go`を新規作成する
   - SceneRouter構造体とハンドラーマップを定義する
   - シーン遷移ロジックをroot_model.goから移動する
