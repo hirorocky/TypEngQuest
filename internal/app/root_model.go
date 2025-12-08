@@ -8,12 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"hirorocky/type-battle/internal/agent"
-	"hirorocky/type-battle/internal/battle"
-	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 
@@ -127,11 +123,11 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	}
 
 	// インベントリプロバイダーアダプターを作成（複数画面で共有）
-	invAdapter := &inventoryProviderAdapter{
-		inv:      gameState.Inventory(),
-		agentMgr: gameState.AgentManager(),
-		player:   gameState.Player(),
-	}
+	invAdapter := NewInventoryProviderAdapter(
+		gameState.Inventory(),
+		gameState.AgentManager(),
+		gameState.Player(),
+	)
 
 	// ScreenFactoryを作成
 	screenFactory := NewScreenFactory(gameState)
@@ -170,180 +166,6 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		encyclopediaScreen:      encyclopediaScreen,
 		statsAchievementsScreen: statsAchievementsScreen,
 		settingsScreen:          settingsScreen,
-	}
-}
-
-// inventoryProviderAdapter はInventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させます。
-// コア・モジュールの管理はInventoryManager、エージェント・装備の管理はAgentManagerが担当します。
-type inventoryProviderAdapter struct {
-	inv      *InventoryManager
-	agentMgr *agent.AgentManager
-	player   *domain.PlayerModel
-}
-
-func (a *inventoryProviderAdapter) GetCores() []*domain.CoreModel {
-	return a.inv.GetCores()
-}
-
-func (a *inventoryProviderAdapter) GetModules() []*domain.ModuleModel {
-	return a.inv.GetModules()
-}
-
-func (a *inventoryProviderAdapter) GetAgents() []*domain.AgentModel {
-	return a.agentMgr.GetAgents()
-}
-
-func (a *inventoryProviderAdapter) GetEquippedAgents() []*domain.AgentModel {
-	return a.agentMgr.GetEquippedAgents()
-}
-
-func (a *inventoryProviderAdapter) AddAgent(agent *domain.AgentModel) error {
-	return a.agentMgr.AddAgent(agent)
-}
-
-func (a *inventoryProviderAdapter) RemoveCore(id string) error {
-	return a.inv.RemoveCore(id)
-}
-
-func (a *inventoryProviderAdapter) RemoveModule(id string) error {
-	return a.inv.RemoveModule(id)
-}
-
-func (a *inventoryProviderAdapter) EquipAgent(slot int, agentModel *domain.AgentModel) error {
-	return a.agentMgr.EquipAgent(slot, agentModel.ID, a.player)
-}
-
-func (a *inventoryProviderAdapter) UnequipAgent(slot int) error {
-	return a.agentMgr.UnequipAgent(slot, a.player)
-}
-
-// createStatsDataFromGameState はGameStateから統計データを生成します。
-func createStatsDataFromGameState(gs *GameState) *screens.StatsTestData {
-	stats := gs.Statistics()
-	achievements := gs.Achievements()
-
-	// 実績データを変換
-	allAchievements := achievements.GetAllAchievements()
-	achievementData := make([]screens.AchievementData, 0, len(allAchievements))
-	for _, ach := range allAchievements {
-		achievementData = append(achievementData, screens.AchievementData{
-			ID:          ach.ID,
-			Name:        ach.Name,
-			Description: ach.Description,
-			Achieved:    achievements.IsUnlocked(ach.ID),
-		})
-	}
-
-	return &screens.StatsTestData{
-		TypingStats: screens.TypingStatsData{
-			MaxWPM:               stats.Typing().MaxWPM,
-			AverageWPM:           stats.GetAverageWPM(),
-			PerfectAccuracyCount: stats.Typing().PerfectAccuracyCount,
-			TotalCharacters:      stats.Typing().TotalCharacters,
-		},
-		BattleStats: screens.BattleStatsData{
-			TotalBattles:    stats.Battle().TotalBattles,
-			Wins:            stats.Battle().Wins,
-			Losses:          stats.Battle().Losses,
-			MaxLevelReached: gs.MaxLevelReached,
-		},
-		Achievements: achievementData,
-	}
-}
-
-// createSettingsDataFromGameState はGameStateから設定データを生成します。
-func createSettingsDataFromGameState(gs *GameState) *screens.SettingsData {
-	settings := gs.Settings()
-	return &screens.SettingsData{
-		Keybinds:    settings.Keybinds(),
-		SoundVolume: settings.SoundVolume(),
-		Difficulty:  string(settings.Difficulty()),
-	}
-}
-
-// createDefaultEncyclopediaData は図鑑のデフォルトデータを作成します。
-func createDefaultEncyclopediaData() *screens.EncyclopediaTestData {
-	coreTypes := []domain.CoreType{
-		{
-			ID:             "all_rounder",
-			Name:           "オールラウンダー",
-			StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-			PassiveSkillID: "balance_mastery",
-			AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
-			MinDropLevel:   1,
-		},
-		{
-			ID:             "attacker",
-			Name:           "攻撃バランス",
-			StatWeights:    map[string]float64{"STR": 1.2, "MAG": 1.2, "SPD": 0.8, "LUK": 0.8},
-			PassiveSkillID: "attack_boost",
-			AllowedTags:    []string{"physical_low", "physical_mid", "magic_low", "magic_mid"},
-			MinDropLevel:   1,
-		},
-		{
-			ID:             "healer",
-			Name:           "ヒーラー",
-			StatWeights:    map[string]float64{"STR": 0.8, "MAG": 1.4, "SPD": 0.9, "LUK": 0.9},
-			PassiveSkillID: "heal_boost",
-			AllowedTags:    []string{"heal_low", "heal_mid", "magic_low", "buff_low"},
-			MinDropLevel:   5,
-		},
-		{
-			ID:             "tank",
-			Name:           "タンク",
-			StatWeights:    map[string]float64{"STR": 1.1, "MAG": 0.7, "SPD": 0.7, "LUK": 1.5},
-			PassiveSkillID: "defense_boost",
-			AllowedTags:    []string{"physical_low", "buff_low", "buff_mid"},
-			MinDropLevel:   3,
-		},
-	}
-	moduleTypes := []screens.ModuleTypeInfo{
-		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: domain.PhysicalAttack, Level: 1, Description: "基本的な物理攻撃"},
-		{ID: "magic_lv1", Name: "魔法攻撃Lv1", Category: domain.MagicAttack, Level: 1, Description: "基本的な魔法攻撃"},
-		{ID: "heal_lv1", Name: "回復Lv1", Category: domain.Heal, Level: 1, Description: "基本的な回復"},
-		{ID: "buff_lv1", Name: "バフLv1", Category: domain.Buff, Level: 1, Description: "味方を強化"},
-		{ID: "debuff_lv1", Name: "デバフLv1", Category: domain.Debuff, Level: 1, Description: "敵を弱体化"},
-	}
-	enemyTypes := []domain.EnemyType{
-		{ID: "goblin", Name: "ゴブリン", BaseHP: 100, BaseAttackPower: 10, BaseAttackInterval: 3000000000, AttackType: "physical"},
-		{ID: "orc", Name: "オーク", BaseHP: 200, BaseAttackPower: 15, BaseAttackInterval: 4000000000, AttackType: "physical"},
-		{ID: "dragon", Name: "ドラゴン", BaseHP: 500, BaseAttackPower: 30, BaseAttackInterval: 5000000000, AttackType: "magic"},
-	}
-
-	return &screens.EncyclopediaTestData{
-		AllCoreTypes:        coreTypes,
-		AllModuleTypes:      moduleTypes,
-		AllEnemyTypes:       enemyTypes,
-		AcquiredCoreTypes:   []string{"all_rounder"},
-		AcquiredModuleTypes: []string{"physical_lv1"},
-		EncounteredEnemies:  []string{},
-	}
-}
-
-// createEncyclopediaDataFromGameState はGameStateから図鑑データを生成します。
-func createEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaTestData {
-	// 基本データを取得
-	baseData := createDefaultEncyclopediaData()
-
-	// 所持コアタイプを取得
-	acquiredCoreTypes := make([]string, 0)
-	for _, core := range gs.Inventory().GetCores() {
-		acquiredCoreTypes = append(acquiredCoreTypes, core.Type.ID)
-	}
-
-	// 所持モジュールタイプを取得
-	acquiredModuleTypes := make([]string, 0)
-	for _, module := range gs.Inventory().GetModules() {
-		acquiredModuleTypes = append(acquiredModuleTypes, module.ID)
-	}
-
-	return &screens.EncyclopediaTestData{
-		AllCoreTypes:        baseData.AllCoreTypes,
-		AllModuleTypes:      baseData.AllModuleTypes,
-		AllEnemyTypes:       baseData.AllEnemyTypes,
-		AcquiredCoreTypes:   acquiredCoreTypes,
-		AcquiredModuleTypes: acquiredModuleTypes,
-		EncounteredEnemies:  gs.GetEncounteredEnemies(),
 	}
 }
 
@@ -456,7 +278,7 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 		m.gameState.CheckBattleAchievementsWithNoDamage(noDamage)
 
 		// バトル統計を変換
-		rewardStats := convertBattleStatsToRewardStats(result.Stats)
+		rewardStats := ConvertBattleStatsToRewardStats(result.Stats)
 
 		// 報酬を計算
 		rewardResult := m.gameState.RewardCalculator().CalculateRewards(
@@ -504,21 +326,6 @@ func (m *RootModel) performAutoSave() {
 	} else {
 		m.statusMessage = "オートセーブしました"
 		m.homeScreen.SetStatusMessage(m.statusMessage)
-	}
-}
-
-// convertBattleStatsToRewardStats はバトル統計を報酬用統計に変換します。
-func convertBattleStatsToRewardStats(stats *battle.BattleStatistics) *reward.BattleStatistics {
-	if stats == nil {
-		return &reward.BattleStatistics{}
-	}
-	return &reward.BattleStatistics{
-		TotalWPM:         stats.TotalWPM,
-		TotalAccuracy:    stats.TotalAccuracy,
-		TotalTypingCount: stats.TotalTypingCount,
-		TotalDamageDealt: stats.TotalDamageDealt,
-		TotalDamageTaken: stats.TotalDamageTaken,
-		TotalHealAmount:  stats.TotalHealAmount,
 	}
 }
 
@@ -622,11 +429,11 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 
 // createInventoryAdapter はインベントリプロバイダーアダプターを作成します。
 func (m *RootModel) createInventoryAdapter() *inventoryProviderAdapter {
-	return &inventoryProviderAdapter{
-		inv:      m.gameState.Inventory(),
-		agentMgr: m.gameState.AgentManager(),
-		player:   m.gameState.Player(),
-	}
+	return NewInventoryProviderAdapter(
+		m.gameState.Inventory(),
+		m.gameState.AgentManager(),
+		m.gameState.Player(),
+	)
 }
 
 // View はアプリケーションの現在の状態を文字列としてレンダリングします。

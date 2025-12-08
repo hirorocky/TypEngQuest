@@ -49,18 +49,18 @@ func (f *ScreenFactory) CreateAgentManagementScreen(invProvider InventoryProvide
 
 // CreateEncyclopediaScreen は図鑑画面を作成します。
 func (f *ScreenFactory) CreateEncyclopediaScreen() *screens.EncyclopediaScreen {
-	encycData := createEncyclopediaDataFromGameState(f.gameState)
+	encycData := CreateEncyclopediaDataFromGameState(f.gameState)
 	return screens.NewEncyclopediaScreen(encycData)
 }
 
 // CreateStatsAchievementsScreen は統計・実績画面を作成します。
 func (f *ScreenFactory) CreateStatsAchievementsScreen() *screens.StatsAchievementsScreen {
-	statsData := createStatsDataFromGameState(f.gameState)
+	statsData := CreateStatsDataFromGameState(f.gameState)
 	return screens.NewStatsAchievementsScreen(statsData)
 }
 
 // CreateSettingsScreen は設定画面を作成します。
 func (f *ScreenFactory) CreateSettingsScreen() *screens.SettingsScreen {
-	settingsData := createSettingsDataFromGameState(f.gameState)
+	settingsData := CreateSettingsDataFromGameState(f.gameState)
 	return screens.NewSettingsScreen(settingsData)
 }

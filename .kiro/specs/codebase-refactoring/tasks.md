@@ -61,7 +61,7 @@
 
 ### Phase 3: root_model.goの分割
 
-- [ ] 4. root_model.goのファイル分割
+- [x] 4. root_model.goのファイル分割
 - [x] 4.1 シーンルーティングロジックを分離する
   - `internal/app/scene_router.go`を新規作成する
   - SceneRouter構造体とハンドラーマップを定義する
@@ -76,7 +76,7 @@
   - root_model.goからの画面生成ロジックを移動する
   - _Requirements: 4.3_
 
-- [ ] 4.3 アダプターとヘルパー関数を分離する
+- [x] 4.3 アダプターとヘルパー関数を分離する
   - `internal/app/adapters.go`を新規作成し、inventoryProviderAdapter等を移動する
   - `internal/app/helpers.go`を新規作成し、createStatsDataFromGameState等のヘルパー関数を移動する
   - root_model.goが300行以下になることを確認する
