@@ -56,6 +56,12 @@ type RootModel struct {
 	// screenFactory は画面インスタンスを生成します
 	screenFactory *ScreenFactory
 
+	// messageHandlers はメッセージハンドリングを管理します
+	messageHandlers *MessageHandlers
+
+	// screenMap は画面のレンダリングと転送を管理します
+	screenMap *ScreenMap
+
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
 	battleSelectScreen      *screens.BattleSelectScreen
@@ -151,7 +157,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	// 設定画面を初期化
 	settingsScreen := screenFactory.CreateSettingsScreen()
 
-	return &RootModel{
+	model := &RootModel{
 		ready:                   false,
 		currentScene:            SceneHome,
 		gameState:               gameState,
@@ -167,6 +173,12 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		statsAchievementsScreen: statsAchievementsScreen,
 		settingsScreen:          settingsScreen,
 	}
+
+	// メッセージハンドラーと画面マップを初期化
+	model.messageHandlers = NewMessageHandlers(model)
+	model.screenMap = NewScreenMap(model)
+
+	return model
 }
 
 // Init はアプリケーションを初期化し、初期コマンドを返します。
@@ -179,72 +191,21 @@ func (m *RootModel) Init() tea.Cmd {
 
 // Update は受信メッセージを処理し、モデルの状態を更新します。
 // Elm Architectureのコアとなるメソッドで、すべての状態変更はここを通じて行われます。
+// メッセージハンドラーに処理を委譲することで循環的複雑度を削減しています。
 //
 // 処理されるメッセージ：
 // - tea.WindowSizeMsg: ターミナルサイズの変更
 // - tea.KeyMsg: キーボード入力（終了操作など）
 // - ChangeSceneMsg: シーン遷移要求
 // - screens.ChangeSceneMsg: 各画面からのシーン遷移要求
+// - screens.StartBattleMsg: バトル開始要求
+// - screens.BattleTickMsg: バトルのtick更新
+// - screens.BattleResultMsg: バトル結果
 //
 // 更新されたモデルと実行するコマンドを返します。
 func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.terminalState = NewTerminalState(msg.Width, msg.Height)
-		m.ready = m.terminalState.IsValid()
-		// 各画面にもサイズ変更を通知
-		if m.homeScreen != nil {
-			m.homeScreen.Update(msg)
-		}
-		return m, nil
-
-	case tea.KeyMsg:
-		// グローバルなキー処理
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
-		case "esc":
-			// ホーム画面以外ならホームに戻る
-			if m.currentScene != SceneHome {
-				m.currentScene = SceneHome
-				return m, nil
-			}
-		case "q":
-			// ホーム画面でのみ終了可能
-			if m.currentScene == SceneHome {
-				return m, tea.Quit
-			}
-		}
-		// 各画面に入力を転送
-		return m.forwardToCurrentScene(msg)
-
-	case ChangeSceneMsg:
-		m.currentScene = msg.Scene
-		return m, nil
-
-	case screens.ChangeSceneMsg:
-		// 画面からのシーン遷移要求を処理
-		m.handleScreenSceneChange(msg.Scene)
-		return m, nil
-
-	case screens.StartBattleMsg:
-		// バトル開始メッセージを処理
-		cmd := m.startBattle(msg.Level)
-		return m, cmd
-
-	case screens.BattleTickMsg:
-		// バトル画面のtickメッセージを転送
-		if m.currentScene == SceneBattle && m.battleScreen != nil {
-			_, cmd := m.battleScreen.Update(msg)
-			return m, cmd
-		}
-
-	case screens.BattleResultMsg:
-		// バトル結果を処理
-		m.handleBattleResult(msg)
-		return m, nil
-	}
-	return m, nil
+	// メッセージハンドラーに処理を委譲
+	return m.messageHandlers.Handle(msg)
 }
 
 // handleBattleResult はバトル結果を処理します。
@@ -349,48 +310,6 @@ func (m *RootModel) startBattle(level int) tea.Cmd {
 	return m.battleScreen.Init()
 }
 
-// forwardToCurrentScene は現在のシーンにメッセージを転送します。
-func (m *RootModel) forwardToCurrentScene(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	switch m.currentScene {
-	case SceneHome:
-		if m.homeScreen != nil {
-			_, cmd = m.homeScreen.Update(msg)
-		}
-	case SceneBattleSelect:
-		if m.battleSelectScreen != nil {
-			_, cmd = m.battleSelectScreen.Update(msg)
-		}
-	case SceneBattle:
-		if m.battleScreen != nil {
-			_, cmd = m.battleScreen.Update(msg)
-		}
-	case SceneAgentManagement:
-		if m.agentManagementScreen != nil {
-			_, cmd = m.agentManagementScreen.Update(msg)
-		}
-	case SceneEncyclopedia:
-		if m.encyclopediaScreen != nil {
-			_, cmd = m.encyclopediaScreen.Update(msg)
-		}
-	case SceneAchievement:
-		if m.statsAchievementsScreen != nil {
-			_, cmd = m.statsAchievementsScreen.Update(msg)
-		}
-	case SceneSettings:
-		if m.settingsScreen != nil {
-			_, cmd = m.settingsScreen.Update(msg)
-		}
-	case SceneReward:
-		if m.rewardScreen != nil {
-			_, cmd = m.rewardScreen.Update(msg)
-		}
-	}
-
-	return m, cmd
-}
-
 // handleScreenSceneChange は画面からのシーン遷移要求を処理します。
 func (m *RootModel) handleScreenSceneChange(sceneName string) {
 	// ホーム画面から別の画面に遷移する場合、ステータスメッセージをクリア
@@ -456,58 +375,9 @@ func (m *RootModel) View() string {
 }
 
 // renderCurrentScene は現在のシーンに応じたビューを返します。
+// ScreenMapに処理を委譲することで循環的複雑度を削減しています。
 func (m *RootModel) renderCurrentScene() string {
-	switch m.currentScene {
-	case SceneHome:
-		if m.homeScreen != nil {
-			return m.homeScreen.View()
-		}
-	case SceneBattleSelect:
-		if m.battleSelectScreen != nil {
-			return m.battleSelectScreen.View()
-		}
-		return m.renderPlaceholder("バトル選択画面")
-	case SceneBattle:
-		if m.battleScreen != nil {
-			return m.battleScreen.View()
-		}
-		return m.renderPlaceholder("バトル画面")
-	case SceneAgentManagement:
-		if m.agentManagementScreen != nil {
-			return m.agentManagementScreen.View()
-		}
-		return m.renderPlaceholder("エージェント管理画面")
-	case SceneEncyclopedia:
-		if m.encyclopediaScreen != nil {
-			return m.encyclopediaScreen.View()
-		}
-		return m.renderPlaceholder("図鑑画面")
-	case SceneAchievement:
-		if m.statsAchievementsScreen != nil {
-			return m.statsAchievementsScreen.View()
-		}
-		return m.renderPlaceholder("統計・実績画面")
-	case SceneSettings:
-		if m.settingsScreen != nil {
-			return m.settingsScreen.View()
-		}
-		return m.renderPlaceholder("設定画面")
-	case SceneReward:
-		if m.rewardScreen != nil {
-			return m.rewardScreen.View()
-		}
-		return m.renderPlaceholder("報酬画面")
-	}
-
-	return m.renderPlaceholder("不明な画面")
-}
-
-// renderPlaceholder はプレースホルダー画面をレンダリングします。
-func (m *RootModel) renderPlaceholder(name string) string {
-	title := m.styles.Title.Render("BlitzTypingOperator")
-	info := m.styles.Subtle.Render(name + " (準備中)")
-	hint := m.styles.Subtle.Render("Esc: ホームに戻る  q: 終了")
-	return title + "\n\n" + info + "\n\n" + hint
+	return m.screenMap.RenderScene(m.currentScene)
 }
 
 // GameState はゲーム全体の状態への参照を返します。
