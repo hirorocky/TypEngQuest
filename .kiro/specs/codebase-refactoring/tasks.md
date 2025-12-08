@@ -164,7 +164,7 @@
   - パッケージ構造を初期化する
   - _Requirements: 10.1_
 
-- [ ] 10.2 (P) 永続化アダプターを実装する
+- [x] 10.2 (P) 永続化アダプターを実装する
   - `internal/adapter/persistence_adapter.go`を作成する
   - SaveData <-> GameState変換ロジックを集約する
   - 後方互換性を保証する変換処理を実装する
