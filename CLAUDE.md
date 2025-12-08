@@ -22,6 +22,7 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 
 ## Coding Style
 - コード内のコメントは日本語で記述すること
+- コメントには要件番号など実装に寄りすぎた情報を含めないこと
 
 ## Minimal Workflow
 - Phase 0 (optional): `/kiro:steering`, `/kiro:steering-custom`
