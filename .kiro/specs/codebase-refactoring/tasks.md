@@ -29,7 +29,7 @@
   - _Requirements: 1.4, 1.5, 1.6_
 
 - [ ] 2. 定数の一元管理
-- [ ] 2.1 定数パッケージを作成する
+- [x] 2.1 定数パッケージを作成する
   - `internal/config/constants.go`を新規作成する
   - バトル設定定数（BattleTickInterval: 100ms, DefaultModuleCooldown: 5.0, AccuracyPenaltyThreshold: 0.5, MinEnemyAttackInterval: 500ms）を定義する
   - 効果持続時間定数（BuffDuration: 10.0, DebuffDuration: 8.0）を定義する
