@@ -10,19 +10,19 @@
 
 ### Phase 1: デッドコード削除と定数化
 
-- [ ] 1. デッドコード削除
-- [ ] 1.1 (P) appパッケージのデッドコードを削除する
+- [x] 1. デッドコード削除
+- [x] 1.1 (P) appパッケージのデッドコードを削除する
   - `internal/app/app.go`ファイルを完全に削除する
   - `app_test.go`から旧Model構造体関連のテスト（TestNewApp, TestAppImplementsTeaModel, TestAppInit, TestAppUpdate, TestAppView, TestAppViewContainsGameTitle）を削除する
   - RootModelが正常に動作することを確認する
   - _Requirements: 1.1, 1.2_
 
-- [ ] 1.2 (P) domainパッケージの未使用メソッドを削除する
+- [x] 1.2 (P) domainパッケージの未使用メソッドを削除する
   - `agent.go`から未使用メソッド（GetModule, GetModuleCount, GetCoreName）を削除する
   - `GetCoreTypeName()`は使用中のため保持する
   - _Requirements: 1.3, 1.6_
 
-- [ ] 1.3 (P) moduleとeffect_tableの未使用メソッドを削除する
+- [x] 1.3 (P) moduleとeffect_tableの未使用メソッドを削除する
   - `module.go`から未使用メソッド（IsAttack, IsSupport, TargetsEnemy, TargetsPlayer, GetCategoryTag, DefaultStatRef）を削除する
   - `effect_table.go`から未使用メソッド（IsPermanent, IsExpired, FindByID, Clear）を削除する
   - `GetRowsBySource()`は使用中のため保持する
