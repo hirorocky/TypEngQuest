@@ -3,6 +3,7 @@ package app
 
 import (
 	"fmt"
+	"log/slog"
 
 	"hirorocky/type-battle/internal/achievement"
 	"hirorocky/type-battle/internal/agent"
@@ -470,7 +471,13 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 				passiveSkill,
 			)
 			coreMap[coreSave.ID] = core
-			_ = invManager.AddCore(core)
+			if err := invManager.AddCore(core); err != nil {
+				slog.Error("コア追加に失敗",
+					slog.String("core_id", core.ID),
+					slog.String("core_type", core.Type.ID),
+					slog.Any("error", err),
+				)
+			}
 		}
 
 		// モジュールを再構築
@@ -479,7 +486,13 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 			if moduleDef != nil {
 				for i := 0; i < count; i++ {
 					module := moduleDef.ToDomain()
-					_ = invManager.AddModule(module)
+					if err := invManager.AddModule(module); err != nil {
+						slog.Error("モジュール追加に失敗",
+							slog.String("module_id", module.ID),
+							slog.String("module_name", module.Name),
+							slog.Any("error", err),
+						)
+					}
 				}
 			}
 		}
@@ -516,7 +529,12 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 
 			// エージェントを再構築
 			agentModel := domain.NewAgent(agentSave.ID, core, modules)
-			_ = agentMgr.AddAgent(agentModel)
+			if err := agentMgr.AddAgent(agentModel); err != nil {
+				slog.Error("エージェント追加に失敗",
+					slog.String("agent_id", agentModel.ID),
+					slog.Any("error", err),
+				)
+			}
 		}
 	}
 
@@ -525,7 +543,13 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 	if data.Player != nil {
 		for slot, agentID := range data.Player.EquippedAgentIDs {
 			if agentID != "" {
-				_ = agentMgr.EquipAgent(slot, agentID, player)
+				if err := agentMgr.EquipAgent(slot, agentID, player); err != nil {
+					slog.Error("エージェント装備に失敗",
+						slog.Int("slot", slot),
+						slog.String("agent_id", agentID),
+						slog.Any("error", err),
+					)
+				}
 			}
 		}
 	}
