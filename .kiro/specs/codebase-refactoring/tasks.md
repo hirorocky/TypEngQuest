@@ -176,7 +176,7 @@
   - GameStateから各画面用データへの変換を一元管理する
   - _Requirements: 10.3_
 
-- [ ] 10.4 (P) 報酬アダプターを実装する
+- [x] 10.4 (P) 報酬アダプターを実装する
   - `internal/adapter/reward_adapter.go`を作成する
   - ConvertBattleStatsToRewardStats関数を実装する
   - バトル統計から報酬用統計への変換を担当する
