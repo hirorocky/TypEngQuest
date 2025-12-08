@@ -45,6 +45,25 @@ func (c ModuleCategory) String() string {
 	}
 }
 
+// Icon はモジュールカテゴリのアイコンを返します。
+// 要件 7.3: カテゴリごとにアイコン文字を返す
+func (c ModuleCategory) Icon() string {
+	switch c {
+	case PhysicalAttack:
+		return "⚔"
+	case MagicAttack:
+		return "✦"
+	case Heal:
+		return "♥"
+	case Buff:
+		return "▲"
+	case Debuff:
+		return "▼"
+	default:
+		return "•"
+	}
+}
+
 // GetLevelSuffix はレベルに応じた接尾辞（low, mid, high）を返します。
 // レベル1はlow、レベル2はmid、レベル3以上はhighです。
 func GetLevelSuffix(level int) string {

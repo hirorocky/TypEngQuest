@@ -555,19 +555,7 @@ func (s *BattleScreen) getSelectedModuleInAgent(agentIdx int) int {
 
 // getModuleIcon はモジュールカテゴリのアイコンを返します。
 // UI-Improvement Requirement 3.6: モジュールカテゴリアイコン
+// 要件 7.3: domain.ModuleCategory.Icon()に委譲
 func (s *BattleScreen) getModuleIcon(category domain.ModuleCategory) string {
-	switch category {
-	case domain.PhysicalAttack:
-		return "⚔"
-	case domain.MagicAttack:
-		return "✦"
-	case domain.Heal:
-		return "♥"
-	case domain.Buff:
-		return "▲"
-	case domain.Debuff:
-		return "▼"
-	default:
-		return "•"
-	}
+	return category.Icon()
 }

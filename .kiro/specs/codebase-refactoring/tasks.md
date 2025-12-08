@@ -125,7 +125,7 @@
   - battle.goの重複HP表示コードをこのコンポーネントに置換する
   - _Requirements: 7.1, 7.2_
 
-- [ ] 7.2 (P) モジュールアイコンメソッドを追加する
+- [x] 7.2 (P) モジュールアイコンメソッドを追加する
   - `domain/module.go`のModuleCategoryにIcon()メソッドを追加する
   - カテゴリ（PhysicalAttack, MagicAttack, Heal, Buff, Debuff）ごとにアイコン文字を返す
   - battle.goのgetModuleIconロジックをこのメソッドに置換する

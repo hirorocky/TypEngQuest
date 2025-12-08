@@ -265,3 +265,47 @@ func TestGetLevelSuffix(t *testing.T) {
 		})
 	}
 }
+
+// ==================== Task 7.2: Icon()メソッドのテスト ====================
+
+// TestModuleCategory_Icon はModuleCategoryのIcon()メソッドが正しいアイコンを返すことを確認します。
+// 要件 7.3: カテゴリごとにアイコン文字を返す
+func TestModuleCategory_Icon(t *testing.T) {
+	tests := []struct {
+		category ModuleCategory
+		expected string
+	}{
+		{PhysicalAttack, "⚔"},
+		{MagicAttack, "✦"},
+		{Heal, "♥"},
+		{Buff, "▲"},
+		{Debuff, "▼"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.category.String(), func(t *testing.T) {
+			result := tt.category.Icon()
+			if result != tt.expected {
+				t.Errorf("Icon()が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestModuleCategory_Icon_Unknown は未知のカテゴリに対してIcon()がデフォルト値を返すことを確認します。
+func TestModuleCategory_Icon_Unknown(t *testing.T) {
+	unknownCategory := ModuleCategory("unknown")
+	result := unknownCategory.Icon()
+	if result != "•" {
+		t.Errorf("未知のカテゴリに対するIcon()が期待値と異なります: got %s, want •", result)
+	}
+}
+
+// TestModuleCategory_Icon_Empty は空のカテゴリに対してIcon()がデフォルト値を返すことを確認します。
+func TestModuleCategory_Icon_Empty(t *testing.T) {
+	emptyCategory := ModuleCategory("")
+	result := emptyCategory.Icon()
+	if result != "•" {
+		t.Errorf("空のカテゴリに対するIcon()が期待値と異なります: got %s, want •", result)
+	}
+}
