@@ -118,7 +118,7 @@
 ### Phase 6: コード重複解消と共通コンポーネント
 
 - [ ] 7. 共通コンポーネントの作成
-- [ ] 7.1 (P) HP表示コンポーネントを作成する
+- [x] 7.1 (P) HP表示コンポーネントを作成する
   - `internal/tui/components/hp_display.go`を新規作成する
   - RenderHP()関数でHPバー、数値表示、色分けロジックを共通化する
   - RenderHPWithLabel()でラベル付き表示をサポートする
