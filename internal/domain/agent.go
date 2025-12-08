@@ -48,28 +48,6 @@ func NewAgent(id string, core *CoreModel, modules []*ModuleModel) *AgentModel {
 	}
 }
 
-// GetModule は指定されたインデックスのモジュールを返します。
-// インデックスが範囲外の場合はnilを返します。
-func (a *AgentModel) GetModule(index int) *ModuleModel {
-	if index < 0 || index >= len(a.Modules) {
-		return nil
-	}
-	return a.Modules[index]
-}
-
-// GetModuleCount は装備しているモジュールの数を返します。
-func (a *AgentModel) GetModuleCount() int {
-	return len(a.Modules)
-}
-
-// GetCoreName はコアの名前を返します。
-func (a *AgentModel) GetCoreName() string {
-	if a.Core == nil {
-		return ""
-	}
-	return a.Core.Name
-}
-
 // GetCoreTypeName はコア特性の名前を返します。
 func (a *AgentModel) GetCoreTypeName() string {
 	if a.Core == nil {
