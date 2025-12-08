@@ -4,6 +4,7 @@ package app
 
 import (
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -489,11 +490,14 @@ func (m *RootModel) performAutoSave() {
 	}
 
 	saveData := m.gameState.ToSaveData()
-	if err := m.saveDataIO.SaveGame(saveData); err == nil {
-		m.statusMessage = "オートセーブしました"
+	if err := m.saveDataIO.SaveGame(saveData); err != nil {
+		slog.Error("オートセーブに失敗",
+			slog.Any("error", err),
+		)
+		m.statusMessage = "オートセーブに失敗しました"
 		m.homeScreen.SetStatusMessage(m.statusMessage)
 	} else {
-		m.statusMessage = "オートセーブに失敗しました"
+		m.statusMessage = "オートセーブしました"
 		m.homeScreen.SetStatusMessage(m.statusMessage)
 	}
 }

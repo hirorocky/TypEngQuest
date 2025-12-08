@@ -4,6 +4,7 @@
 package reward
 
 import (
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -411,7 +412,13 @@ func (c *RewardCalculator) AddRewardsToInventory(
 			warning.SuggestDiscard = true
 			tempStorage.AddCore(core)
 		} else {
-			_ = coreInv.Add(core)
+			if err := coreInv.Add(core); err != nil {
+				slog.Error("報酬コアのインベントリ追加に失敗",
+					slog.String("core_id", core.ID),
+					slog.String("core_type", core.Type.ID),
+					slog.Any("error", err),
+				)
+			}
 		}
 	}
 
@@ -422,7 +429,13 @@ func (c *RewardCalculator) AddRewardsToInventory(
 			warning.SuggestDiscard = true
 			tempStorage.AddModule(module)
 		} else {
-			_ = moduleInv.Add(module)
+			if err := moduleInv.Add(module); err != nil {
+				slog.Error("報酬モジュールのインベントリ追加に失敗",
+					slog.String("module_id", module.ID),
+					slog.String("module_name", module.Name),
+					slog.Any("error", err),
+				)
+			}
 		}
 	}
 
