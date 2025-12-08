@@ -28,7 +28,7 @@
   - `GetRowsBySource()`は使用中のため保持する
   - _Requirements: 1.4, 1.5, 1.6_
 
-- [ ] 2. 定数の一元管理
+- [x] 2. 定数の一元管理
 - [x] 2.1 定数パッケージを作成する
   - `internal/config/constants.go`を新規作成する
   - バトル設定定数（BattleTickInterval: 100ms, DefaultModuleCooldown: 5.0, AccuracyPenaltyThreshold: 0.5, MinEnemyAttackInterval: 500ms）を定義する
@@ -85,7 +85,7 @@
 
 ### Phase 4: game_state.goの分割
 
-- [ ] 5. game_stateパッケージの作成
+- [x] 5. game_stateパッケージの作成
 - [x] 5.1 game_stateディレクトリ構造を作成する
   - `internal/app/game_state/`ディレクトリを新規作成する
   - `state.go`にGameState構造体本体とアクセサメソッドを移動する
@@ -117,7 +117,7 @@
 
 ### Phase 6: コード重複解消と共通コンポーネント
 
-- [ ] 7. 共通コンポーネントの作成
+- [x] 7. 共通コンポーネントの作成
 - [x] 7.1 (P) HP表示コンポーネントを作成する
   - `internal/tui/components/hp_display.go`を新規作成する
   - RenderHP()関数でHPバー、数値表示、色分けロジックを共通化する
@@ -198,8 +198,8 @@
 
 ### Phase 11: 最終検証
 
-- [ ] 12. リファクタリング完了の検証
-- [ ] 12.1 全体テストと動作確認を実施する
+- [x] 12. リファクタリング完了の検証
+- [x] 12.1 全体テストと動作確認を実施する
   - 全ユニットテストが通過することを確認する
   - 既存セーブデータが正常に読み込めることを確認する
   - 実際のゲームプレイで全シーン遷移が動作することを確認する
