@@ -86,7 +86,7 @@
 ### Phase 4: game_state.goの分割
 
 - [ ] 5. game_stateパッケージの作成
-- [ ] 5.1 game_stateディレクトリ構造を作成する
+- [x] 5.1 game_stateディレクトリ構造を作成する
   - `internal/app/game_state/`ディレクトリを新規作成する
   - `state.go`にGameState構造体本体とアクセサメソッドを移動する
   - パッケージとして正しくビルドできることを確認する
