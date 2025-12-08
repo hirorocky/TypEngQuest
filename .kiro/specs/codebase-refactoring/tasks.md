@@ -133,8 +133,8 @@
 
 ### Phase 7: 型名整理
 
-- [ ] 8. 型名のリネーム
-- [ ] 8.1 本番用途の型名を適切な名前に変更する
+- [x] 8. 型名のリネーム
+- [x] 8.1 本番用途の型名を適切な名前に変更する
   - EncyclopediaTestDataをEncyclopediaDataにリネームする
   - StatsTestDataをStatsDataにリネームする
   - 参照箇所を全て更新する

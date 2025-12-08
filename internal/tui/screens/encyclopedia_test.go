@@ -175,7 +175,7 @@ func TestEncyclopediaRender(t *testing.T) {
 
 // ==================== ヘルパー関数 ====================
 
-func createTestEncyclopediaData() *EncyclopediaTestData {
+func createTestEncyclopediaData() *EncyclopediaData {
 	coreTypes := []domain.CoreType{
 		{ID: "all_rounder", Name: "オールラウンダー", StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
 		{ID: "attacker", Name: "攻撃バランス", StatWeights: map[string]float64{"STR": 1.2, "MAG": 1.2, "SPD": 0.8, "LUK": 0.8}},
@@ -194,7 +194,7 @@ func createTestEncyclopediaData() *EncyclopediaTestData {
 		{ID: "dragon", Name: "ドラゴン"},
 	}
 
-	return &EncyclopediaTestData{
+	return &EncyclopediaData{
 		AllCoreTypes:        coreTypes,
 		AllModuleTypes:      moduleTypes,
 		AllEnemyTypes:       enemyTypes,

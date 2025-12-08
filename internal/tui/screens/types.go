@@ -5,8 +5,8 @@ import "hirorocky/type-battle/internal/domain"
 
 // ==================== 共有型定義 ====================
 
-// EncyclopediaTestData は図鑑データです。
-type EncyclopediaTestData struct {
+// EncyclopediaData は図鑑データです。
+type EncyclopediaData struct {
 	AllCoreTypes        []domain.CoreType
 	AllModuleTypes      []ModuleTypeInfo
 	AllEnemyTypes       []domain.EnemyType
@@ -55,8 +55,8 @@ type AchievementData struct {
 	Achieved    bool
 }
 
-// StatsTestData は統計データです。
-type StatsTestData struct {
+// StatsData は統計データです。
+type StatsData struct {
 	TypingStats  TypingStatsData
 	BattleStats  BattleStatsData
 	Achievements []AchievementData

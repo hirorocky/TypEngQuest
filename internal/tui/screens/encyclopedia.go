@@ -27,20 +27,10 @@ const (
 	CategoryEnemy
 )
 
-// EncyclopediaData は図鑑データを提供するインターフェースです。
-type EncyclopediaData interface {
-	GetAllCoreTypes() []domain.CoreType
-	GetAllModuleTypes() []ModuleTypeInfo
-	GetAllEnemyTypes() []domain.EnemyType
-	GetAcquiredCoreTypes() []string
-	GetAcquiredModuleTypes() []string
-	GetEncounteredEnemies() []string
-}
-
 // EncyclopediaScreen は図鑑画面を表します。
 // Requirements: 14.1-14.11
 type EncyclopediaScreen struct {
-	data            *EncyclopediaTestData
+	data            *EncyclopediaData
 	currentCategory EncyclopediaCategory
 	selectedIndex   int
 	styles          *styles.GameStyles
@@ -49,7 +39,7 @@ type EncyclopediaScreen struct {
 }
 
 // NewEncyclopediaScreen は新しいEncyclopediaScreenを作成します。
-func NewEncyclopediaScreen(data *EncyclopediaTestData) *EncyclopediaScreen {
+func NewEncyclopediaScreen(data *EncyclopediaData) *EncyclopediaScreen {
 	return &EncyclopediaScreen{
 		data:            data,
 		currentCategory: CategoryCore,

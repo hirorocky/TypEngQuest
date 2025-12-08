@@ -29,7 +29,7 @@ const (
 // StatsAchievementsScreen は統計・実績画面を表します。
 // Requirements: 15.1-15.11
 type StatsAchievementsScreen struct {
-	data          *StatsTestData
+	data          *StatsData
 	currentTab    StatsTab
 	selectedIndex int
 	styles        *styles.GameStyles
@@ -38,7 +38,7 @@ type StatsAchievementsScreen struct {
 }
 
 // NewStatsAchievementsScreen は新しいStatsAchievementsScreenを作成します。
-func NewStatsAchievementsScreen(data *StatsTestData) *StatsAchievementsScreen {
+func NewStatsAchievementsScreen(data *StatsData) *StatsAchievementsScreen {
 	return &StatsAchievementsScreen{
 		data:          data,
 		currentTab:    TabTypingStats,

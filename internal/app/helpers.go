@@ -9,7 +9,7 @@ import (
 )
 
 // CreateStatsDataFromGameState はGameStateから統計データを生成します。
-func CreateStatsDataFromGameState(gs *GameState) *screens.StatsTestData {
+func CreateStatsDataFromGameState(gs *GameState) *screens.StatsData {
 	stats := gs.Statistics()
 	achievements := gs.Achievements()
 
@@ -25,7 +25,7 @@ func CreateStatsDataFromGameState(gs *GameState) *screens.StatsTestData {
 		})
 	}
 
-	return &screens.StatsTestData{
+	return &screens.StatsData{
 		TypingStats: screens.TypingStatsData{
 			MaxWPM:               stats.Typing().MaxWPM,
 			AverageWPM:           stats.GetAverageWPM(),
@@ -53,7 +53,7 @@ func CreateSettingsDataFromGameState(gs *GameState) *screens.SettingsData {
 }
 
 // CreateDefaultEncyclopediaData は図鑑のデフォルトデータを作成します。
-func CreateDefaultEncyclopediaData() *screens.EncyclopediaTestData {
+func CreateDefaultEncyclopediaData() *screens.EncyclopediaData {
 	coreTypes := []domain.CoreType{
 		{
 			ID:             "all_rounder",
@@ -101,7 +101,7 @@ func CreateDefaultEncyclopediaData() *screens.EncyclopediaTestData {
 		{ID: "dragon", Name: "ドラゴン", BaseHP: 500, BaseAttackPower: 30, BaseAttackInterval: 5000000000, AttackType: "magic"},
 	}
 
-	return &screens.EncyclopediaTestData{
+	return &screens.EncyclopediaData{
 		AllCoreTypes:        coreTypes,
 		AllModuleTypes:      moduleTypes,
 		AllEnemyTypes:       enemyTypes,
@@ -112,7 +112,7 @@ func CreateDefaultEncyclopediaData() *screens.EncyclopediaTestData {
 }
 
 // CreateEncyclopediaDataFromGameState はGameStateから図鑑データを生成します。
-func CreateEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaTestData {
+func CreateEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaData {
 	// 基本データを取得
 	baseData := CreateDefaultEncyclopediaData()
 
@@ -128,7 +128,7 @@ func CreateEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaTes
 		acquiredModuleTypes = append(acquiredModuleTypes, module.ID)
 	}
 
-	return &screens.EncyclopediaTestData{
+	return &screens.EncyclopediaData{
 		AllCoreTypes:        baseData.AllCoreTypes,
 		AllModuleTypes:      baseData.AllModuleTypes,
 		AllEnemyTypes:       baseData.AllEnemyTypes,

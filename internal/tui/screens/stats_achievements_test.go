@@ -157,8 +157,8 @@ func TestStatsAchievementsRender(t *testing.T) {
 
 // ==================== ヘルパー関数 ====================
 
-func createTestStatsData() *StatsTestData {
-	return &StatsTestData{
+func createTestStatsData() *StatsData {
+	return &StatsData{
 		TypingStats: TypingStatsData{
 			MaxWPM:               120,
 			AverageWPM:           85.5,
