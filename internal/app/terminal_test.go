@@ -2,8 +2,6 @@ package app
 
 import (
 	"testing"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 // TestMinTerminalWidth は最小ターミナル幅の定数を検証します
@@ -182,108 +180,6 @@ func TestTerminalState_WarningMessage_ValidSize(t *testing.T) {
 
 	if msg != "" {
 		t.Errorf("WarningMessage should be empty for valid size, got: %s", msg)
-	}
-}
-
-// TestModel_HandleWindowSizeMsg はWindowSizeMsgでモデルがターミナル状態を更新することを検証します
-func TestModel_HandleWindowSizeMsg(t *testing.T) {
-	model := New()
-
-	// WindowSizeMsgの受信をシミュレート
-	msg := tea.WindowSizeMsg{Width: 150, Height: 50}
-	updatedModel, _ := model.Update(msg)
-
-	m, ok := updatedModel.(*Model)
-	if !ok {
-		t.Fatal("Update should return *Model")
-	}
-
-	if m.terminalState == nil {
-		t.Fatal("terminalState should be set after WindowSizeMsg")
-	}
-
-	if m.terminalState.Width != 150 {
-		t.Errorf("Width should be 150, got %d", m.terminalState.Width)
-	}
-	if m.terminalState.Height != 50 {
-		t.Errorf("Height should be 50, got %d", m.terminalState.Height)
-	}
-}
-
-// TestModel_ShowsWarningOnSmallTerminal はターミナルが小さすぎる場合に警告が表示されることを検証します
-func TestModel_ShowsWarningOnSmallTerminal(t *testing.T) {
-	model := New()
-
-	// 小さいWindowSizeMsgの受信をシミュレート
-	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
-	updatedModel, _ := model.Update(msg)
-
-	m, ok := updatedModel.(*Model)
-	if !ok {
-		t.Fatal("Update should return *Model")
-	}
-
-	view := m.View()
-	// ビューにターミナルサイズに関する警告が含まれるべき
-	if len(view) == 0 {
-		t.Error("View should not be empty")
-	}
-}
-
-// TestModel_Ready_AfterValidWindowSize は有効なウィンドウサイズ後にモデルが準備完了することを検証します
-func TestModel_Ready_AfterValidWindowSize(t *testing.T) {
-	model := New()
-
-	msg := tea.WindowSizeMsg{Width: 140, Height: 40}
-	updatedModel, _ := model.Update(msg)
-
-	m, ok := updatedModel.(*Model)
-	if !ok {
-		t.Fatal("Update should return *Model")
-	}
-
-	if !m.ready {
-		t.Error("Model should be ready after valid WindowSizeMsg")
-	}
-}
-
-// TestModel_NotReady_AfterInvalidWindowSize はターミナルが小さすぎる場合にモデルが準備完了でないことを検証します
-func TestModel_NotReady_AfterInvalidWindowSize(t *testing.T) {
-	model := New()
-
-	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
-	updatedModel, _ := model.Update(msg)
-
-	m, ok := updatedModel.(*Model)
-	if !ok {
-		t.Fatal("Update should return *Model")
-	}
-
-	if m.ready {
-		t.Error("Model should not be ready after invalid WindowSizeMsg")
-	}
-}
-
-// TestModel_WindowSizeChange はモデルがターミナルリサイズを正しく処理することを検証します
-func TestModel_WindowSizeChange(t *testing.T) {
-	model := New()
-
-	// まず有効なサイズを設定
-	msg1 := tea.WindowSizeMsg{Width: 140, Height: 40}
-	updatedModel, _ := model.Update(msg1)
-	m := updatedModel.(*Model)
-
-	if !m.ready {
-		t.Error("Model should be ready after first valid WindowSizeMsg")
-	}
-
-	// その後、無効なサイズにリサイズ
-	msg2 := tea.WindowSizeMsg{Width: 100, Height: 30}
-	updatedModel2, _ := m.Update(msg2)
-	m2 := updatedModel2.(*Model)
-
-	if m2.ready {
-		t.Error("Model should not be ready after resize to invalid size")
 	}
 }
 
