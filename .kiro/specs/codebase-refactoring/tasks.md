@@ -69,7 +69,7 @@
   - Route()メソッドでシーン名に基づくルーティングを実装する
   - _Requirements: 4.2, 11.1_
 
-- [ ] 4.2 画面生成ロジックを分離する
+- [x] 4.2 画面生成ロジックを分離する
   - `internal/app/screen_factory.go`を新規作成する
   - ScreenFactory構造体を定義する
   - 各画面の生成メソッド（CreateHomeScreen, CreateBattleSelectScreen, CreateEncyclopediaScreen, CreateStatsScreen等）を実装する

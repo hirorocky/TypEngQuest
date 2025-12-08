@@ -57,6 +57,9 @@ type RootModel struct {
 	// sceneRouter はシーン遷移を管理します
 	sceneRouter *SceneRouter
 
+	// screenFactory は画面インスタンスを生成します
+	screenFactory *ScreenFactory
+
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
 	battleSelectScreen      *screens.BattleSelectScreen
@@ -130,30 +133,27 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		player:   gameState.Player(),
 	}
 
-	// ホーム画面を初期化（AgentProviderとして渡す）
-	homeScreen := screens.NewHomeScreen(gameState.MaxLevelReached, invAdapter)
+	// ScreenFactoryを作成
+	screenFactory := NewScreenFactory(gameState)
+
+	// ホーム画面を初期化
+	homeScreen := screenFactory.CreateHomeScreen(gameState.MaxLevelReached, invAdapter)
 	homeScreen.SetStatusMessage(statusMessage)
 
-	// バトル選択画面を初期化（AgentProviderとして渡す）
-	battleSelectScreen := screens.NewBattleSelectScreen(
-		gameState.MaxLevelReached,
-		invAdapter,
-	)
+	// バトル選択画面を初期化
+	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gameState.MaxLevelReached, invAdapter)
 
-	// エージェント管理画面を初期化（InventoryProviderとして渡す）
-	agentManagementScreen := screens.NewAgentManagementScreen(invAdapter)
+	// エージェント管理画面を初期化
+	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invAdapter)
 
 	// 図鑑画面を初期化
-	encyclopediaData := createDefaultEncyclopediaData()
-	encyclopediaScreen := screens.NewEncyclopediaScreen(encyclopediaData)
+	encyclopediaScreen := screenFactory.CreateEncyclopediaScreen()
 
 	// 統計・実績画面を初期化
-	statsData := createStatsDataFromGameState(gameState)
-	statsAchievementsScreen := screens.NewStatsAchievementsScreen(statsData)
+	statsAchievementsScreen := screenFactory.CreateStatsAchievementsScreen()
 
 	// 設定画面を初期化
-	settingsData := createSettingsDataFromGameState(gameState)
-	settingsScreen := screens.NewSettingsScreen(settingsData)
+	settingsScreen := screenFactory.CreateSettingsScreen()
 
 	return &RootModel{
 		ready:                   false,
@@ -163,6 +163,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		saveDataIO:              saveDataIO,
 		statusMessage:           statusMessage,
 		sceneRouter:             NewSceneRouter(),
+		screenFactory:           screenFactory,
 		homeScreen:              homeScreen,
 		battleSelectScreen:      battleSelectScreen,
 		agentManagementScreen:   agentManagementScreen,
@@ -605,23 +606,26 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
 	case "battle_select":
 		// バトル選択画面を再初期化してリセット
-		invAdapter := &inventoryProviderAdapter{
-			inv:      m.gameState.Inventory(),
-			agentMgr: m.gameState.AgentManager(),
-			player:   m.gameState.Player(),
-		}
-		m.battleSelectScreen = screens.NewBattleSelectScreen(
+		invAdapter := m.createInventoryAdapter()
+		m.battleSelectScreen = m.screenFactory.CreateBattleSelectScreen(
 			m.gameState.MaxLevelReached,
 			invAdapter,
 		)
 	case "encyclopedia":
 		// 最新の図鑑データで画面を再初期化
-		encycData := createEncyclopediaDataFromGameState(m.gameState)
-		m.encyclopediaScreen = screens.NewEncyclopediaScreen(encycData)
+		m.encyclopediaScreen = m.screenFactory.CreateEncyclopediaScreen()
 	case "stats_achievements":
 		// 最新の統計データで画面を再初期化
-		statsData := createStatsDataFromGameState(m.gameState)
-		m.statsAchievementsScreen = screens.NewStatsAchievementsScreen(statsData)
+		m.statsAchievementsScreen = m.screenFactory.CreateStatsAchievementsScreen()
+	}
+}
+
+// createInventoryAdapter はインベントリプロバイダーアダプターを作成します。
+func (m *RootModel) createInventoryAdapter() *inventoryProviderAdapter {
+	return &inventoryProviderAdapter{
+		inv:      m.gameState.Inventory(),
+		agentMgr: m.gameState.AgentManager(),
+		player:   m.gameState.Player(),
 	}
 }
 
