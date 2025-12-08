@@ -170,7 +170,7 @@
   - 後方互換性を保証する変換処理を実装する
   - _Requirements: 10.2, 12.1, 12.2, 12.3_
 
-- [ ] 10.3 (P) 画面データアダプターを実装する
+- [x] 10.3 (P) 画面データアダプターを実装する
   - `internal/adapter/screen_adapter.go`を作成する
   - ToStatsData、ToEncyclopediaData、ToSettingsData関数を実装する
   - GameStateから各画面用データへの変換を一元管理する
