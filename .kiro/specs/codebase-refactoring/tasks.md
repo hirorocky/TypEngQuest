@@ -99,7 +99,7 @@
   - 既存セーブデータの読み込みテストを実施する
   - _Requirements: 5.3, 5.5, 12.1, 12.2, 12.3_
 
-- [ ] 5.3 デフォルト値生成を統合する
+- [x] 5.3 デフォルト値生成を統合する
   - `internal/app/game_state/defaults.go`を新規作成する
   - getDefaultCoreTypeData、getDefaultModuleDefinitionData、getDefaultPassiveSkills等を統合する
   - root_model.goとgame_state.goで重複していたデフォルトデータ生成を単一ソースに一元化する
