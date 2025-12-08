@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
@@ -77,7 +78,7 @@ func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScree
 		inventory:     inventory,
 		currentTab:    TabCoreList,
 		selectedIndex: 0,
-		equipSlots:    make([]*domain.AgentModel, 3),
+		equipSlots:    make([]*domain.AgentModel, config.MaxAgentEquipSlots),
 		synthesisState: SynthesisState{
 			selectedModules: []*domain.ModuleModel{},
 		},
@@ -259,8 +260,8 @@ func (s *AgentManagementScreen) updateCurrentList() {
 	s.agentList = s.inventory.GetAgents()
 
 	equipped := s.inventory.GetEquippedAgents()
-	s.equipSlots = make([]*domain.AgentModel, 3)
-	for i := 0; i < 3 && i < len(equipped); i++ {
+	s.equipSlots = make([]*domain.AgentModel, config.MaxAgentEquipSlots)
+	for i := 0; i < config.MaxAgentEquipSlots && i < len(equipped); i++ {
 		s.equipSlots[i] = equipped[i]
 	}
 }

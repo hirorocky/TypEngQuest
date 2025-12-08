@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/battle"
+	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
@@ -19,7 +20,8 @@ import (
 // ==================== Task 10.3: バトル画面 ====================
 
 // tickInterval はバトル画面の更新間隔です。
-const tickInterval = 100 * time.Millisecond
+// config.BattleTickIntervalを参照しています。
+var tickInterval = config.BattleTickInterval
 
 // BattleTickMsg はバトル画面の定期更新メッセージです。
 type BattleTickMsg struct{}
@@ -157,7 +159,7 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 				AgentIndex:        agentIdx,
 				ModuleIndex:       modIdx,
 				CooldownRemaining: 0,
-				CooldownTotal:     5.0, // デフォルト5秒
+				CooldownTotal:     config.DefaultModuleCooldown,
 			})
 		}
 	}

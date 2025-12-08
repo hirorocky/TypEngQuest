@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"time"
 
+	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/loader"
 
@@ -25,7 +26,8 @@ const (
 
 	// MinAttackInterval は敵の最低攻撃間隔です。
 	// Requirement 20.4: 高レベルでも最低攻撃間隔を保証
-	MinAttackInterval = 500 * time.Millisecond
+	// config.MinEnemyAttackIntervalを参照
+	MinAttackInterval = config.MinEnemyAttackInterval
 
 	// AttackPowerPerLevel はレベルあたりの攻撃力上昇値です。
 	// Requirement 20.2: レベルに応じた攻撃力計算

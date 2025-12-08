@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"time"
 
+	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/typing"
 
@@ -16,7 +17,8 @@ import (
 
 // AccuracyPenaltyThreshold は効果半減の正確性閾値です。
 // Requirement 10.9: 正確性50%未満で効果半減
-const AccuracyPenaltyThreshold = 0.5
+// config.AccuracyPenaltyThresholdを参照するためのエイリアス
+const AccuracyPenaltyThreshold = config.AccuracyPenaltyThreshold
 
 // EffectScaleFactor は効果計算のスケール係数です。
 // ステータス値を適切なダメージ/回復量に変換するための係数
@@ -251,8 +253,8 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 	// Requirement 13.6, 20.4: 高レベル敵ほど短い攻撃間隔
 	intervalReduction := time.Duration(level*50) * time.Millisecond
 	attackInterval := enemyType.BaseAttackInterval - intervalReduction
-	if attackInterval < 500*time.Millisecond {
-		attackInterval = 500 * time.Millisecond
+	if attackInterval < config.MinEnemyAttackInterval {
+		attackInterval = config.MinEnemyAttackInterval
 	}
 
 	return domain.NewEnemy(
@@ -442,7 +444,7 @@ func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
 // ApplyEnemySelfBuff は敵に自己バフを付与します。
 // Requirement 11.18-11.21: 自己バフ行動
 func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuffType) {
-	duration := 10.0 // 10秒間
+	duration := config.BuffDuration
 
 	var modifiers domain.StatModifiers
 	var name string
@@ -475,7 +477,7 @@ func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuff
 // ApplyPlayerDebuff はプレイヤーにデバフを付与します。
 // Requirement 11.22-11.27: プレイヤーへのデバフ
 func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDebuffType) {
-	duration := 8.0 // 8秒間
+	duration := config.DebuffDuration
 
 	var modifiers domain.StatModifiers
 	var name string
@@ -660,7 +662,7 @@ func (e *BattleEngine) ApplyModuleEffect(
 
 // applyPlayerBuff はプレイヤーにバフを付与します。
 func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	duration := 10.0 // 10秒間
+	duration := config.BuffDuration
 
 	modifiers := domain.StatModifiers{}
 	switch module.StatRef {
@@ -687,7 +689,7 @@ func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.Module
 
 // applyEnemyDebuff は敵にデバフを付与します。
 func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	duration := 8.0 // 8秒間
+	duration := config.DebuffDuration
 
 	modifiers := domain.StatModifiers{}
 	switch module.StatRef {
