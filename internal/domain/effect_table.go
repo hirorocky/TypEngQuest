@@ -65,20 +65,6 @@ type EffectRow struct {
 	Modifiers StatModifiers
 }
 
-// IsPermanent は永続効果かどうかを返します。
-// Core特性とModuleパッシブは永続効果です。
-func (r *EffectRow) IsPermanent() bool {
-	return r.Duration == nil
-}
-
-// IsExpired は効果が期限切れかどうかを返します。
-func (r *EffectRow) IsExpired() bool {
-	if r.Duration == nil {
-		return false
-	}
-	return *r.Duration <= 0
-}
-
 // EffectTable は効果テーブルを表す構造体です。
 // コア特性、モジュールパッシブ、バフ、デバフの効果を表形式で管理します。
 type EffectTable struct {
@@ -127,7 +113,8 @@ func (t *EffectTable) UpdateDurations(deltaSeconds float64) {
 func filterExpired(rows []EffectRow) []EffectRow {
 	newRows := make([]EffectRow, 0, len(rows))
 	for _, row := range rows {
-		if !row.IsExpired() {
+		// 永続効果（Duration == nil）または残り時間がある行を保持
+		if row.Duration == nil || *row.Duration > 0 {
 			newRows = append(newRows, row)
 		}
 	}
@@ -193,17 +180,6 @@ func (t *EffectTable) Calculate(baseStats Stats) FinalStats {
 	}
 }
 
-// FindByID はIDで行を検索します。
-// 見つからない場合はnilを返します。
-func (t *EffectTable) FindByID(id string) *EffectRow {
-	for i := range t.Rows {
-		if t.Rows[i].ID == id {
-			return &t.Rows[i]
-		}
-	}
-	return nil
-}
-
 // GetRowsBySource はソース種別で行をフィルタします。
 func (t *EffectTable) GetRowsBySource(sourceType SourceType) []EffectRow {
 	result := make([]EffectRow, 0)
@@ -213,11 +189,6 @@ func (t *EffectTable) GetRowsBySource(sourceType SourceType) []EffectRow {
 		}
 	}
 	return result
-}
-
-// Clear は全ての行を削除します。
-func (t *EffectTable) Clear() {
-	t.Rows = make([]EffectRow, 0)
 }
 
 // FinalStats は効果適用後の最終ステータスを表す構造体です。

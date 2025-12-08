@@ -1,8 +1,6 @@
 // Package domain はゲームのドメインモデルを定義します。
 package domain
 
-import "fmt"
-
 // ModuleCategory はモジュールのカテゴリを表す型です。
 // カテゴリによって効果の種類と参照するステータスが決まります。
 type ModuleCategory string
@@ -45,45 +43,6 @@ func (c ModuleCategory) String() string {
 	default:
 		return "不明"
 	}
-}
-
-// DefaultStatRef はカテゴリのデフォルト参照ステータスを返します。
-// Requirements 6.12-6.16に基づいて各カテゴリの参照ステータスを定義します。
-func (c ModuleCategory) DefaultStatRef() string {
-	switch c {
-	case PhysicalAttack:
-		return "STR" // 6.12: 物理攻撃はSTR参照
-	case MagicAttack:
-		return "MAG" // 6.13: 魔法攻撃はMAG参照
-	case Heal:
-		return "MAG" // 6.14: 回復はMAG参照
-	case Buff:
-		return "SPD" // 6.15: バフはSPD参照（効果時間に影響）
-	case Debuff:
-		return "SPD" // 6.16: デバフはSPD参照（効果時間に影響）
-	default:
-		return "STR"
-	}
-}
-
-// IsAttack はこのカテゴリが攻撃系かどうかを返します。
-func (c ModuleCategory) IsAttack() bool {
-	return c == PhysicalAttack || c == MagicAttack
-}
-
-// IsSupport はこのカテゴリがサポート系（回復、バフ、デバフ）かどうかを返します。
-func (c ModuleCategory) IsSupport() bool {
-	return c == Heal || c == Buff || c == Debuff
-}
-
-// TargetsEnemy はこのカテゴリが敵をターゲットにするかどうかを返します。
-func (c ModuleCategory) TargetsEnemy() bool {
-	return c == PhysicalAttack || c == MagicAttack || c == Debuff
-}
-
-// TargetsPlayer はこのカテゴリがプレイヤーをターゲットにするかどうかを返します。
-func (c ModuleCategory) TargetsPlayer() bool {
-	return c == Heal || c == Buff
 }
 
 // GetLevelSuffix はレベルに応じた接尾辞（low, mid, high）を返します。
@@ -174,25 +133,4 @@ func (m *ModuleModel) IsCompatibleWithCore(core *CoreModel) bool {
 		}
 	}
 	return false
-}
-
-// GetCategoryTag はモジュールのカテゴリとレベルに基づいたタグを返します。
-// 例: physical_low, magic_mid, heal_high
-func (m *ModuleModel) GetCategoryTag() string {
-	prefix := ""
-	switch m.Category {
-	case PhysicalAttack:
-		prefix = "physical"
-	case MagicAttack:
-		prefix = "magic"
-	case Heal:
-		prefix = "heal"
-	case Buff:
-		prefix = "buff"
-	case Debuff:
-		prefix = "debuff"
-	}
-
-	suffix := GetLevelSuffix(m.Level)
-	return fmt.Sprintf("%s_%s", prefix, suffix)
 }
