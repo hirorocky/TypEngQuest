@@ -92,7 +92,7 @@
   - パッケージとして正しくビルドできることを確認する
   - _Requirements: 5.1, 5.2_
 
-- [ ] 5.2 永続化ロジックを分離する
+- [x] 5.2 永続化ロジックを分離する
   - `internal/app/game_state/persistence.go`を新規作成する
   - ToSaveData/FromSaveDataメソッドを移動する
   - セーブデータの後方互換性を維持する
