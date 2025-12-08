@@ -2,6 +2,7 @@
 package app
 
 import (
+	"hirorocky/type-battle/internal/adapter"
 	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/reward"
@@ -139,16 +140,8 @@ func CreateEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaDat
 }
 
 // ConvertBattleStatsToRewardStats はバトル統計を報酬用統計に変換します。
+// adapter層の関数に委譲します。
+// Requirements: 10.5
 func ConvertBattleStatsToRewardStats(stats *battle.BattleStatistics) *reward.BattleStatistics {
-	if stats == nil {
-		return &reward.BattleStatistics{}
-	}
-	return &reward.BattleStatistics{
-		TotalWPM:         stats.TotalWPM,
-		TotalAccuracy:    stats.TotalAccuracy,
-		TotalTypingCount: stats.TotalTypingCount,
-		TotalDamageDealt: stats.TotalDamageDealt,
-		TotalDamageTaken: stats.TotalDamageTaken,
-		TotalHealAmount:  stats.TotalHealAmount,
-	}
+	return adapter.ConvertBattleStatsToRewardStats(stats)
 }
