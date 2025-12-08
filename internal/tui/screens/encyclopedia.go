@@ -557,3 +557,23 @@ func (s *EncyclopediaScreen) renderCompletionRate() string {
 		Align(lipgloss.Center).
 		Render(rateStyle.Render(content))
 }
+
+// ==================== Screenインターフェース実装 ====================
+
+// SetSize は画面サイズを設定します。
+// Screenインターフェースの実装です。
+func (s *EncyclopediaScreen) SetSize(width, height int) {
+	s.width = width
+	s.height = height
+}
+
+// GetTitle は画面のタイトルを返します。
+// Screenインターフェースの実装です。
+func (s *EncyclopediaScreen) GetTitle() string {
+	return "図鑑"
+}
+
+// GetSize は現在の画面サイズを返します。
+func (s *EncyclopediaScreen) GetSize() (width, height int) {
+	return s.width, s.height
+}

@@ -310,3 +310,23 @@ func (s *HomeScreen) SetStatusMessage(msg string) {
 func (s *HomeScreen) ClearStatusMessage() {
 	s.statusMessage = ""
 }
+
+// ==================== Screenインターフェース実装 ====================
+
+// SetSize は画面サイズを設定します。
+// Screenインターフェースの実装です。
+func (s *HomeScreen) SetSize(width, height int) {
+	s.width = width
+	s.height = height
+}
+
+// GetTitle は画面のタイトルを返します。
+// Screenインターフェースの実装です。
+func (s *HomeScreen) GetTitle() string {
+	return "ホーム"
+}
+
+// GetSize は現在の画面サイズを返します。
+func (s *HomeScreen) GetSize() (width, height int) {
+	return s.width, s.height
+}

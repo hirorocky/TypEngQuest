@@ -84,6 +84,80 @@ func TestBaseScreenHandleWindowSizeMsg(t *testing.T) {
 	}
 }
 
+// ==================== 既存画面のインターフェース準拠テスト ====================
+
+// TestHomeScreenImplementsScreen はHomeScreenがScreenインターフェースを実装していることをテストします。
+func TestHomeScreenImplementsScreen(t *testing.T) {
+	screen := NewHomeScreen(1, nil)
+	var _ Screen = screen
+}
+
+// TestHomeScreenSetSizeAndGetTitle はHomeScreenのSetSizeとGetTitleをテストします。
+func TestHomeScreenSetSizeAndGetTitle(t *testing.T) {
+	screen := NewHomeScreen(1, nil)
+
+	// SetSize
+	screen.SetSize(200, 100)
+	w, h := screen.GetSize()
+	if w != 200 || h != 100 {
+		t.Errorf("SetSize/GetSize: got (%d, %d), want (200, 100)", w, h)
+	}
+
+	// GetTitle
+	title := screen.GetTitle()
+	if title != "ホーム" {
+		t.Errorf("GetTitle: got %q, want %q", title, "ホーム")
+	}
+}
+
+// TestEncyclopediaScreenImplementsScreen はEncyclopediaScreenがScreenインターフェースを実装していることをテストします。
+func TestEncyclopediaScreenImplementsScreen(t *testing.T) {
+	screen := NewEncyclopediaScreen(&EncyclopediaData{})
+	var _ Screen = screen
+}
+
+// TestEncyclopediaScreenSetSizeAndGetTitle はEncyclopediaScreenのSetSizeとGetTitleをテストします。
+func TestEncyclopediaScreenSetSizeAndGetTitle(t *testing.T) {
+	screen := NewEncyclopediaScreen(&EncyclopediaData{})
+
+	// SetSize
+	screen.SetSize(150, 75)
+	w, h := screen.GetSize()
+	if w != 150 || h != 75 {
+		t.Errorf("SetSize/GetSize: got (%d, %d), want (150, 75)", w, h)
+	}
+
+	// GetTitle
+	title := screen.GetTitle()
+	if title != "図鑑" {
+		t.Errorf("GetTitle: got %q, want %q", title, "図鑑")
+	}
+}
+
+// TestSettingsScreenImplementsScreen はSettingsScreenがScreenインターフェースを実装していることをテストします。
+func TestSettingsScreenImplementsScreen(t *testing.T) {
+	screen := NewSettingsScreen(&SettingsData{Keybinds: map[string]string{}})
+	var _ Screen = screen
+}
+
+// TestSettingsScreenSetSizeAndGetTitle はSettingsScreenのSetSizeとGetTitleをテストします。
+func TestSettingsScreenSetSizeAndGetTitle(t *testing.T) {
+	screen := NewSettingsScreen(&SettingsData{Keybinds: map[string]string{}})
+
+	// SetSize
+	screen.SetSize(180, 90)
+	w, h := screen.GetSize()
+	if w != 180 || h != 90 {
+		t.Errorf("SetSize/GetSize: got (%d, %d), want (180, 90)", w, h)
+	}
+
+	// GetTitle
+	title := screen.GetTitle()
+	if title != "設定" {
+		t.Errorf("GetTitle: got %q, want %q", title, "設定")
+	}
+}
+
 // ==================== テスト用のScreen実装 ====================
 
 // testScreenImpl はScreenインターフェースのテスト用実装です。

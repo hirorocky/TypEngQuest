@@ -245,3 +245,23 @@ func (s *SettingsScreen) renderKeybindSettings() string {
 
 	return builder.String()
 }
+
+// ==================== Screenインターフェース実装 ====================
+
+// SetSize は画面サイズを設定します。
+// Screenインターフェースの実装です。
+func (s *SettingsScreen) SetSize(width, height int) {
+	s.width = width
+	s.height = height
+}
+
+// GetTitle は画面のタイトルを返します。
+// Screenインターフェースの実装です。
+func (s *SettingsScreen) GetTitle() string {
+	return "設定"
+}
+
+// GetSize は現在の画面サイズを返します。
+func (s *SettingsScreen) GetSize() (width, height int) {
+	return s.width, s.height
+}
