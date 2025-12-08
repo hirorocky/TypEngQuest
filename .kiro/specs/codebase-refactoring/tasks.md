@@ -144,7 +144,7 @@
 ### Phase 8: Screenインターフェースの導入
 
 - [ ] 9. 画面インターフェースの定義
-- [ ] 9.1 Screenインターフェースを作成する
+- [x] 9.1 Screenインターフェースを作成する
   - `internal/tui/screens/types.go`を新規作成する
   - tea.Modelを埋め込んだScreenインターフェースを定義する
   - SetSize(width, height int)とGetTitle() stringメソッドを定義する
