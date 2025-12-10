@@ -10,7 +10,8 @@ Elm Architectureパターンに基づくイベント駆動型設計で、状態�
 ### アプリケーションコア
 **場所**: `/internal/app/`
 **目的**: ゲーム全体の状態管理、シーンルーティング、アプリケーション設定
-**例**: `root_model.go`（メインモデル）、`game_state.go`（ゲーム状態）、`scene.go`（シーン定義）
+**例**: `root_model.go`（メインモデル）、`scene.go`（シーン定義）、`scene_router.go`（シーン遷移）、`screen_factory.go`（画面生成）
+**サブパッケージ**: `/internal/app/game_state/` - GameState構造体、永続化、デフォルト値を分離
 
 ### ドメインモデル
 **場所**: `/internal/domain/`
@@ -29,6 +30,17 @@ Elm Architectureパターンに基づくイベント駆動型設計で、状態�
 ### 専門ドメイン
 **場所**: `/internal/battle/`, `/internal/typing/`, `/internal/achievement/` など
 **目的**: 特定機能のロジックをカプセル化。バトルエンジン、タイピング評価、実績システム等
+
+### アダプター層
+**場所**: `/internal/adapter/`
+**目的**: データ変換ロジックを集約。ドメインモデルとUI/永続化層の境界を明確化
+**例**: `persistence_adapter.go`（SaveData <-> GameState変換）、`screen_adapter.go`（GameState -> 各種ScreenData変換）、`reward_adapter.go`（BattleStats -> RewardStats変換）
+**パターン**: 変換ロジックの一元化により重複防止、テスト容易性向上
+
+### 設定定数
+**場所**: `/internal/config/`
+**目的**: マジックナンバーを一元管理。バトル設定、効果持続時間、インベントリ設定等
+**例**: `constants.go`（`BattleTickInterval`, `DefaultModuleCooldown`, `MaxAgentEquipSlots` など）
 
 ### 埋め込みデータ
 **場所**: `/internal/embedded/`
@@ -73,6 +85,9 @@ import (
 2. **画面の自己完結性**: 各画面は独立して動作可能。RootModelがルーティングを担当
 3. **外部データ駆動**: ゲームコンテンツ（コア、モジュール、敵）はJSONファイルで定義
 4. **テストの同居**: テストファイルは実装と同じディレクトリに配置
+5. **変換ロジックの集約**: 層をまたぐデータ変換はadapterパッケージに集約
+6. **定数の一元管理**: マジックナンバーはconfigパッケージに集約
+7. **ハンドラーマップパターン**: シーン遷移・メッセージ処理はマップ駆動で分岐
 
 ## ドメイン別仕様
 
@@ -87,4 +102,4 @@ import (
 
 ---
 _パターンを記述。新規ファイルがパターンに従えばsteeringの更新は不要_
-_updated_at: 2025-12-01_
+_updated_at: 2025-12-10_
