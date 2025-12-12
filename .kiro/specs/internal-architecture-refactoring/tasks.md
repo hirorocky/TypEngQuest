@@ -29,27 +29,27 @@
 
 ## Phase 2: ユースケース層の再編成
 
-- [ ] 2. ユースケース層の基盤移動
-- [ ] 2.1 ゲーム状態管理のユースケース化
+- [x] 2. ユースケース層の基盤移動
+- [x] 2.1 ゲーム状態管理のユースケース化
   - app/game_state.goのGameState構造体とそのメソッドをusecase/game_stateに移動
   - app/inventory_manager.goの機能をusecase/game_stateに統合
   - app/game_state/サブディレクトリの重複コードを解消し削除
   - InventoryManagerとStatisticsManagerの重複定義を解消
   - _Requirements: 4.1, 4.2, 4.5, 14.1, 14.2, 14.3_
 
-- [ ] 2.2 統計管理のユースケース化
+- [x] 2.2 統計管理のユースケース化
   - app/statistics_manager.goをusecase/statisticsに移動
   - ゲーム統計の管理ロジックを独立したユースケースとして分離
   - 重複定義を解消して単一ソースを維持
   - _Requirements: 4.3, 14.3_
 
-- [ ] 2.3 (P) 設定管理のユースケース化
+- [x] 2.3 (P) 設定管理のユースケース化
   - app/settings.goをusecase/settingsに移動
   - ゲーム設定の管理ロジックを独立したユースケースとして分離
   - 重複定義を解消して単一ソースを維持
   - _Requirements: 4.4, 14.4_
 
-- [ ] 2.4 (P) デフォルトデータの適切な配置
+- [x] 2.4 (P) デフォルトデータの適切な配置
   - app/game_state/defaults.goのデフォルトデータ定義をinfra/defaultsまたはembeddedに移動
   - getDefaultCoreTypeData等のデフォルト生成関数の重複を解消
   - _Requirements: 6.2, 14.5, 14.6_
@@ -89,24 +89,24 @@
 
 ## Phase 4: tui/presenter層の新設
 
-- [ ] 4. UIデータ変換層の構築
-- [ ] 4.1 presenter層の基盤構築とインベントリプレゼンター
+- [x] 4. UIデータ変換層の構築
+- [x] 4.1 presenter層の基盤構築とインベントリプレゼンター
   - tui/presenterディレクトリを新設
   - app/adapters.goのinventoryProviderAdapterをtui/presenter/inventory_presenter.goに移動
   - InventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させる
   - _Requirements: 5.1, 5.2_
 
-- [ ] 4.2 (P) 統計プレゼンターの実装
+- [x] 4.2 (P) 統計プレゼンターの実装
   - app/helpers.goのCreateStatsDataFromGameStateをtui/presenter/stats_presenter.goに移動
   - GameStateから統計表示用のStatsDataを生成するロジックを実装
   - _Requirements: 5.3_
 
-- [ ] 4.3 (P) 設定プレゼンターの実装
+- [x] 4.3 (P) 設定プレゼンターの実装
   - app/helpers.goのCreateSettingsDataFromGameStateをtui/presenter/settings_presenter.goに移動
   - GameStateから設定表示用のSettingsDataを生成するロジックを実装
   - _Requirements: 5.3_
 
-- [ ] 4.4 (P) 図鑑プレゼンターの実装
+- [x] 4.4 (P) 図鑑プレゼンターの実装
   - app/helpers.goのCreateEncyclopediaDataFromGameStateをtui/presenter/encyclopedia_presenter.goに移動
   - GameStateから図鑑表示用のEncyclopediaDataを生成するロジックを実装
   - _Requirements: 5.3_
