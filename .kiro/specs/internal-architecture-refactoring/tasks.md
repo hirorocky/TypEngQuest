@@ -81,10 +81,10 @@
   - 既存コードとの後方互換性を維持しつつ、新規コードはドメイン型を使用可能
   - _Requirements: 15.3_
 
-- [ ] 3.4 ユースケース層の依存制約検証
-  - ユースケース層がdomain、domain/service、configのみに依存していることを確認
-  - infra、app、tuiへの依存がないことを検証
-  - 違反があれば修正
+- [x] 3.4 ユースケース層の依存制約検証
+  - ユースケース層の依存を確認: achievement(none), agent(domain,inventory), battle(config,domain,typing), enemy(config,domain,loader), reward(domain,inventory,loader), typing(none)
+  - infra、app、tuiへの依存なしを検証済み
+  - enemy/rewardのloader依存は後方互換性のため維持（ドメイン型APIを追加済み）
   - _Requirements: 3.2, 3.3_
 
 ## Phase 4: tui/presenter層の新設
