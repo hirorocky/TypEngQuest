@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/embedded"
+	"hirorocky/type-battle/internal/infra/embedded"
 )
 
 // mockInventoryProvider はテスト用のInventoryProviderモック

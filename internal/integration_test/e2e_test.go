@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/startup"
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/usecase/battle"
 	"hirorocky/type-battle/internal/usecase/reward"
 	"hirorocky/type-battle/internal/usecase/typing"

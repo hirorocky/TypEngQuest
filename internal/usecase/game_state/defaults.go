@@ -2,7 +2,7 @@ package game_state
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/infra/loader"
 )
 
 // GetDefaultCoreTypeData はデフォルトのコア特性データを返します。

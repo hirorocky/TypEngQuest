@@ -10,7 +10,7 @@ import (
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/infra/loader"
 
 	"github.com/google/uuid"
 )

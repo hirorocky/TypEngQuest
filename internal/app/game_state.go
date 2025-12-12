@@ -3,8 +3,8 @@
 package app
 
 import (
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
 	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 )
 

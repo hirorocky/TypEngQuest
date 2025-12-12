@@ -4,7 +4,7 @@ package game_state
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/infra/persistence"
 )
 
 // === ToSaveData のテスト ===

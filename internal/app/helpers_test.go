@@ -4,7 +4,7 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/embedded"
+	"hirorocky/type-battle/internal/infra/embedded"
 )
 
 // TestCreateStatsDataFromGameState は統計データ生成を検証します

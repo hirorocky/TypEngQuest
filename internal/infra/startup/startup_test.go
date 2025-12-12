@@ -5,7 +5,7 @@ package startup
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/infra/loader"
 )
 
 // createTestExternalData はテスト用の外部データを作成します。

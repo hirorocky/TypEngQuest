@@ -58,14 +58,20 @@ config       ← 横断的関心事（全層から参照可能）
 - `effect_service.go`: エフェクト計算・更新
 
 ### usecase層 - ユースケース
-**場所**: `/internal/battle/`, `/internal/typing/`, `/internal/achievement/` など
+**場所**: `/internal/usecase/`
 **目的**: ドメインオブジェクト + ドメインサービスを組み合わせたアプリケーション固有の処理フロー
-**パッケージ**: `battle`, `typing`, `agent`, `enemy`, `inventory`, `reward`, `achievement`, `balance`
+**サブパッケージ**: `battle`, `typing`, `agent`, `enemy`, `inventory`, `reward`, `achievement`, `balance`, `game_state`
 
 ### infra層 - インフラストラクチャ
-**場所**: `/internal/persistence/`, `/internal/loader/`, `/internal/infra/terminal/` など
+**場所**: `/internal/infra/`
 **目的**: 外部リソース（ファイル、ターミナル等）とのやり取り
-**パッケージ**: `persistence`, `loader`, `embedded`, `errorhandler`, `startup`, `infra/terminal`
+**サブパッケージ**:
+- `infra/persistence/`: セーブ/ロード永続化
+- `infra/loader/`: JSONデータローダー
+- `infra/embedded/`: 埋め込みデータ（Go embed.FS）
+- `infra/errorhandler/`: エラーハンドリング
+- `infra/startup/`: 起動処理
+- `infra/terminal/`: ターミナル環境検証
 
 ### tui層 - UI
 **場所**: `/internal/tui/`
@@ -83,7 +89,7 @@ config       ← 横断的関心事（全層から参照可能）
 **例**: `constants.go`（`BattleTickInterval`, `DefaultModuleCooldown`, `MaxAgentEquipSlots` など）
 
 ### embedded - 埋め込みデータ
-**場所**: `/internal/embedded/`
+**場所**: `/internal/infra/embedded/`
 **目的**: ビルド時にバイナリに埋め込むデータファイル（Go embed.FS使用）
 **例**: `embedded.go`（埋め込み定義）、`data/`（JSONデータファイル）
 

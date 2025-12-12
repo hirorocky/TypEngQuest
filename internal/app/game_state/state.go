@@ -4,7 +4,7 @@ package game_state
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/infra/loader"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"

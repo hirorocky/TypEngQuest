@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/infra/terminal"
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/tui/styles"
 

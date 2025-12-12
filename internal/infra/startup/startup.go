@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
 )
 
 // 初期モジュールID定義（マスタデータのmodules.jsonと一致させる）

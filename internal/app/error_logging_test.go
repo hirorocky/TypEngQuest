@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
 )
 
 // テスト用のログバッファとハンドラーを作成するヘルパー関数

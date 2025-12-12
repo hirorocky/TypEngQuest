@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/infra/loader"
 )
 
 // ==================== Task 9.1: 敵ステータス計算 ====================

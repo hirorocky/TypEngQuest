@@ -17,7 +17,7 @@ import (
 	"os"
 
 	"hirorocky/type-battle/internal/app"
-	"hirorocky/type-battle/internal/embedded"
+	"hirorocky/type-battle/internal/infra/embedded"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

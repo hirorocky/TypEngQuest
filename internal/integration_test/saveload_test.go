@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/startup"
+	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/startup"
 )
 
 // ==================================================

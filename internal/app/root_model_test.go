@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/embedded"
+	"hirorocky/type-battle/internal/infra/embedded"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

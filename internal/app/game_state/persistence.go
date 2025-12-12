@@ -7,8 +7,8 @@ import (
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/loader"
-	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/persistence"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"

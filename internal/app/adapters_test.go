@@ -4,7 +4,7 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/embedded"
+	"hirorocky/type-battle/internal/infra/embedded"
 )
 
 // TestInventoryProviderAdapter_GetCores はGetCoresメソッドを検証します
