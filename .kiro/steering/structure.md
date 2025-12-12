@@ -66,8 +66,8 @@ config       ← 横断的関心事（全層から参照可能）
 **場所**: `/internal/infra/`
 **目的**: 外部リソース（ファイル、ターミナル等）とのやり取り
 **サブパッケージ**:
-- `infra/persistence/`: セーブ/ロード永続化
-- `infra/loader/`: JSONデータローダー
+- `infra/savedata/`: セーブ/ロード永続化
+- `infra/masterdata/`: JSONマスタデータローダー
 - `infra/embedded/`: 埋め込みデータ（Go embed.FS）
 - `infra/errorhandler/`: エラーハンドリング
 - `infra/startup/`: 起動処理
@@ -141,22 +141,22 @@ import (
 
 ## 改善タスク
 
-### loader型のdomain層への移動
+### masterdata型のdomain層への移動
 
-usecase層がinfra層（loader）に依存している問題を解消する。
+usecase層がinfra層（masterdata）に依存している問題を解消する。
 
 **対象パッケージと依存:**
-| パッケージ | 依存しているloader型 |
-|-----------|---------------------|
-| enemy | `loader.EnemyTypeData` |
-| reward | `loader.CoreTypeData`, `loader.ModuleDefinitionData` |
-| game_state | `loader.ExternalData` |
+| パッケージ | 依存しているmasterdata型 |
+|-----------|-------------------------|
+| enemy | `masterdata.EnemyTypeData` |
+| reward | `masterdata.CoreTypeData`, `masterdata.ModuleDefinitionData` |
+| game_state | `masterdata.ExternalData` |
 
 **実施手順:**
-1. `loader.EnemyTypeData` → `domain.EnemyType`に統合（既存の`domain.EnemyType`を拡張）
-2. `loader.CoreTypeData` → `domain.CoreType`に統合
-3. `loader.ModuleDefinitionData` → `domain.ModuleType`として新設
-4. `loader.ExternalData` → loaderはdomain型を返すよう変更
+1. `masterdata.EnemyTypeData` → `domain.EnemyType`に統合（既存の`domain.EnemyType`を拡張）
+2. `masterdata.CoreTypeData` → `domain.CoreType`に統合
+3. `masterdata.ModuleDefinitionData` → `domain.ModuleType`として新設
+4. `masterdata.ExternalData` → masterdataはdomain型を返すよう変更
 5. enemy, reward, game_stateパッケージをdomain型のみ使用するよう修正
 6. 旧API（`EnemyGenerator`, `RewardCalculator`）を削除し、ドメイン型API（`DomainEnemyGenerator`, `DomainRewardCalculator`）に統一
 
@@ -173,4 +173,4 @@ usecase層がinfra層（loader）に依存している問題を解消する。
 
 ---
 _パターンを記述。新規ファイルがパターンに従えばsteeringの更新は不要_
-_updated_at: 2025-12-12_
+_updated_at: 2025-12-13_
