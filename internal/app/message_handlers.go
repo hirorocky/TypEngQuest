@@ -3,6 +3,7 @@
 package app
 
 import (
+	"hirorocky/type-battle/internal/infra/terminal"
 	"hirorocky/type-battle/internal/tui/screens"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -67,7 +68,7 @@ func (mh *MessageHandlers) Handle(msg tea.Msg) (tea.Model, tea.Cmd) {
 // handleWindowSizeMsg はウィンドウサイズ変更を処理します。
 func (mh *MessageHandlers) handleWindowSizeMsg(msg tea.Msg) (tea.Model, tea.Cmd) {
 	windowMsg := msg.(tea.WindowSizeMsg)
-	mh.model.terminalState = NewTerminalState(windowMsg.Width, windowMsg.Height)
+	mh.model.terminalState = terminal.NewTerminalState(windowMsg.Width, windowMsg.Height)
 	mh.model.ready = mh.model.terminalState.IsValid()
 	// 各画面にもサイズ変更を通知
 	if mh.model.homeScreen != nil {

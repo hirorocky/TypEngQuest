@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"hirorocky/type-battle/internal/infra/terminal"
 	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
 	"hirorocky/type-battle/internal/startup"
 	"hirorocky/type-battle/internal/tui/screens"
+	"hirorocky/type-battle/internal/tui/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -39,10 +41,10 @@ type RootModel struct {
 	gameState *GameState
 
 	// terminalState は現在のターミナルサイズと検証状態を保持します
-	terminalState *TerminalState
+	terminalState *terminal.TerminalState
 
 	// styles はアプリケーションのlipglossスタイルを保持します
-	styles *Styles
+	styles *styles.GameStyles
 
 	// saveDataIO はセーブデータの読み書きを担当します
 	saveDataIO *persistence.SaveDataIO
@@ -161,7 +163,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		ready:                   false,
 		currentScene:            SceneHome,
 		gameState:               gameState,
-		styles:                  NewStyles(),
+		styles:                  styles.NewGameStyles(),
 		saveDataIO:              saveDataIO,
 		statusMessage:           statusMessage,
 		sceneRouter:             NewSceneRouter(),
@@ -360,13 +362,13 @@ func (m *RootModel) createInventoryAdapter() *inventoryProviderAdapter {
 func (m *RootModel) View() string {
 	// ターミナル状態がまだ設定されていない場合、ローディングメッセージを表示
 	if m.terminalState == nil {
-		return m.styles.Subtle.Render("Loading...")
+		return m.styles.Text.Subtle.Render("Loading...")
 	}
 
 	// ターミナルが小さすぎる場合、警告メッセージを表示
 	if !m.terminalState.IsValid() {
-		warning := m.styles.Warning.Render(m.terminalState.WarningMessage())
-		quitHint := m.styles.Subtle.Render("Press q to quit.")
+		warning := m.styles.Text.Warning.Render(m.terminalState.WarningMessage())
+		quitHint := m.styles.Text.Subtle.Render("Press q to quit.")
 		return warning + "\n\n" + quitHint
 	}
 
@@ -398,12 +400,12 @@ func (m *RootModel) ChangeScene(scene Scene) {
 
 // TerminalState は現在のターミナル状態への参照を返します。
 // WindowSizeMsgを受信するまではnilが返されます。
-func (m *RootModel) TerminalState() *TerminalState {
+func (m *RootModel) TerminalState() *terminal.TerminalState {
 	return m.terminalState
 }
 
 // Styles はアプリケーションのスタイル設定への参照を返します。
-func (m *RootModel) Styles() *Styles {
+func (m *RootModel) Styles() *styles.GameStyles {
 	return m.styles
 }
 

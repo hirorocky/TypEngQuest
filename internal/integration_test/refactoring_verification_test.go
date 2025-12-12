@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/adapter"
+	"hirorocky/type-battle/internal/app"
 	gamestate "hirorocky/type-battle/internal/app/game_state"
 	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/persistence"
+	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/typing"
@@ -181,9 +182,9 @@ func TestRefactoring_GameStateRoundTrip(t *testing.T) {
 	}
 }
 
-// TestRefactoring_AdapterLayerIntegration はアダプター層の統合を検証します。
+// TestRefactoring_DataConversionIntegration はデータ変換の統合を検証します。
 // 要件10.2-10.5: データ変換層の正常動作
-func TestRefactoring_AdapterLayerIntegration(t *testing.T) {
+func TestRefactoring_DataConversionIntegration(t *testing.T) {
 	externalData := createTestExternalData()
 	initializer := startup.NewNewGameInitializer(externalData)
 	saveData := initializer.InitializeNewGame()
@@ -197,41 +198,14 @@ func TestRefactoring_AdapterLayerIntegration(t *testing.T) {
 		t.Fatal("ToSaveData should not return nil")
 	}
 
-	// ScreenAdapter: StatsSourceDataを構築してStatsDataへの変換
-	screenAdapter := adapter.NewScreenAdapter()
-	statsSource := &adapter.StatsSourceData{
-		TypingStats: adapter.TypingSourceStats{
-			MaxWPM:               gs.Statistics().Typing().MaxWPM,
-			AverageWPM:           gs.Statistics().GetAverageWPM(),
-			PerfectAccuracyCount: gs.Statistics().Typing().PerfectAccuracyCount,
-			TotalCharacters:      gs.Statistics().Typing().TotalCharacters,
-		},
-		BattleStats: adapter.BattleSourceStats{
-			TotalBattles:    gs.Statistics().Battle().TotalBattles,
-			Wins:            gs.Statistics().Battle().Wins,
-			Losses:          gs.Statistics().Battle().Losses,
-			MaxLevelReached: gs.MaxLevelReached,
-		},
-	}
-	statsData := screenAdapter.ToStatsData(statsSource)
-	if statsData == nil {
-		t.Fatal("ToStatsData should not return nil")
-	}
-	if statsData.BattleStats.TotalBattles != 0 {
-		t.Errorf("New game TotalBattles expected 0, got %d", statsData.BattleStats.TotalBattles)
+	// StatsDataの検証（新規ゲームなので全て0）
+	if gs.Statistics().Battle().TotalBattles != 0 {
+		t.Errorf("New game TotalBattles expected 0, got %d", gs.Statistics().Battle().TotalBattles)
 	}
 
-	// ScreenAdapter: EncyclopediaDataへの変換
-	encycSource := &adapter.EncyclopediaSourceData{
-		AllCoreTypes:       []domain.CoreType{},
-		AllModuleTypes:     []adapter.ModuleTypeSourceInfo{},
-		AllEnemyTypes:      []domain.EnemyType{},
-		AcquiredCoreTypes:  []string{},
-		EncounteredEnemies: gs.GetEncounteredEnemies(),
-	}
-	encycData := screenAdapter.ToEncyclopediaData(encycSource)
-	if encycData == nil {
-		t.Fatal("ToEncyclopediaData should not return nil")
+	// EncounteredEnemiesの検証（初期状態は空）
+	if len(gs.GetEncounteredEnemies()) != 0 {
+		t.Errorf("New game EncounteredEnemies expected 0, got %d", len(gs.GetEncounteredEnemies()))
 	}
 }
 
@@ -424,9 +398,9 @@ func TestRefactoring_TypeRenaming(t *testing.T) {
 	}
 }
 
-// TestRefactoring_RewardAdapterConversion は報酬アダプターの変換を検証します。
+// TestRefactoring_RewardConversion は報酬変換を検証します。
 // 要件10.4: 報酬アダプターの実装
-func TestRefactoring_RewardAdapterConversion(t *testing.T) {
+func TestRefactoring_RewardConversion(t *testing.T) {
 	// バトル統計を作成
 	battleStats := &battle.BattleStatistics{
 		TotalWPM:         250.0,
@@ -437,8 +411,8 @@ func TestRefactoring_RewardAdapterConversion(t *testing.T) {
 		TotalHealAmount:  20,
 	}
 
-	// RewardAdapter経由で変換
-	rewardStats := adapter.ConvertBattleStatsToRewardStats(battleStats)
+	// app層の変換関数を使用
+	rewardStats := app.ConvertBattleStatsToRewardStats(battleStats)
 
 	// 変換結果の検証
 	if rewardStats == nil {
@@ -480,19 +454,12 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		t.Fatal("GameState変換に失敗")
 	}
 
-	// 4. アダプター層による画面データ変換
-	screenAdapter := adapter.NewScreenAdapter()
-	statsSource := &adapter.StatsSourceData{
-		TypingStats: adapter.TypingSourceStats{
-			MaxWPM: gs.Statistics().Typing().MaxWPM,
-		},
-		BattleStats: adapter.BattleSourceStats{
-			TotalBattles: gs.Statistics().Battle().TotalBattles,
-		},
+	// 4. GameStateの統計データ確認
+	if gs.Statistics() == nil {
+		t.Fatal("Statistics should not be nil")
 	}
-	statsData := screenAdapter.ToStatsData(statsSource)
-	if statsData == nil {
-		t.Fatal("StatsData変換に失敗")
+	if gs.Statistics().Battle().TotalBattles != 0 {
+		t.Errorf("Initial TotalBattles expected 0, got %d", gs.Statistics().Battle().TotalBattles)
 	}
 
 	// 5. バトルエンジンの動作確認
@@ -538,8 +505,8 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		t.Error("勝利であるべき")
 	}
 
-	// 8. 報酬アダプターの変換
-	rewardStats := adapter.ConvertBattleStatsToRewardStats(result.Stats)
+	// 8. 報酬統計の変換（app層の関数を使用）
+	rewardStats := app.ConvertBattleStatsToRewardStats(result.Stats)
 	if rewardStats == nil {
 		t.Fatal("報酬統計の変換に失敗")
 	}
@@ -567,3 +534,6 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		t.Errorf("Final Victories expected 1, got %d", finalLoadedData.Statistics.Victories)
 	}
 }
+
+// reward.BattleStatisticsが正しくインポートされていることを確認するダミー関数
+var _ = reward.BattleStatistics{}

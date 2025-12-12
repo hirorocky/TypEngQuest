@@ -1,115 +1,12 @@
 // Package balance はゲームバランスパラメータを管理します。
 // HP係数、敵ステータススケーリング、ドロップ確率などのゲーム調整値を集約管理します。
 // Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7
+//
+// シーン定義とシーン遷移ルールはapp/scene.goで管理されます。
 package balance
 
 // ==================================================
-// シーン定義 (Task 16.1)
-// ==================================================
-
-// シーン定数
-const (
-	SceneHome            = "home"
-	SceneBattleSelect    = "battle_select"
-	SceneBattle          = "battle"
-	SceneAgentManagement = "agent_management"
-	SceneEncyclopedia    = "encyclopedia"
-	SceneStatistics      = "statistics"
-	SceneSettings        = "settings"
-	SceneReward          = "reward"
-)
-
-// GetAllScenes は全てのシーン定数を返します。
-func GetAllScenes() []string {
-	return []string{
-		SceneHome,
-		SceneBattleSelect,
-		SceneBattle,
-		SceneAgentManagement,
-		SceneEncyclopedia,
-		SceneStatistics,
-		SceneSettings,
-		SceneReward,
-	}
-}
-
-// ==================================================
-// セーブイベント定義 (Task 16.1)
-// ==================================================
-
-// セーブイベント定数
-const (
-	SaveEventBattleEnd       = "battle_end"
-	SaveEventItemAcquired    = "item_acquired"
-	SaveEventAgentSynthesis  = "agent_synthesis"
-	SaveEventEquipmentChange = "equipment_change"
-	SaveEventSettingsChange  = "settings_change"
-)
-
-// GetSaveEvents は全てのセーブイベント定数を返します。
-func GetSaveEvents() []string {
-	return []string{
-		SaveEventBattleEnd,
-		SaveEventItemAcquired,
-		SaveEventAgentSynthesis,
-		SaveEventEquipmentChange,
-		SaveEventSettingsChange,
-	}
-}
-
-// ==================================================
-// シーン遷移ルール (Task 16.1)
-// ==================================================
-
-// allowedTransitions は許可されたシーン遷移を定義します。
-var allowedTransitions = map[string][]string{
-	SceneHome: {
-		SceneBattleSelect,
-		SceneAgentManagement,
-		SceneEncyclopedia,
-		SceneStatistics,
-		SceneSettings,
-	},
-	SceneBattleSelect: {
-		SceneHome,
-		SceneBattle,
-	},
-	SceneBattle: {
-		SceneReward, // 勝利/敗北後のみ
-	},
-	SceneReward: {
-		SceneHome,
-	},
-	SceneAgentManagement: {
-		SceneHome,
-	},
-	SceneEncyclopedia: {
-		SceneHome,
-	},
-	SceneStatistics: {
-		SceneHome,
-	},
-	SceneSettings: {
-		SceneHome,
-	},
-}
-
-// IsTransitionAllowed は指定されたシーン遷移が許可されているかを返します。
-func IsTransitionAllowed(from, to string) bool {
-	allowedTo, exists := allowedTransitions[from]
-	if !exists {
-		return false
-	}
-	for _, allowed := range allowedTo {
-		if allowed == to {
-			return true
-		}
-	}
-	return false
-}
-
-// ==================================================
-// ゲームバランス設定 (Task 16.2)
+// ゲームバランス設定
 // ==================================================
 
 // Config はゲームバランスの設定を保持する構造体です。

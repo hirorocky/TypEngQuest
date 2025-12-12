@@ -91,8 +91,8 @@ func (sm *ScreenMap) MapCount() int {
 
 // renderPlaceholder はプレースホルダー画面をレンダリングします。
 func (sm *ScreenMap) renderPlaceholder(scene Scene) string {
-	title := sm.model.styles.Title.Render("BlitzTypingOperator")
-	info := sm.model.styles.Subtle.Render(scene.String() + " (準備中)")
-	hint := sm.model.styles.Subtle.Render("Esc: ホームに戻る  q: 終了")
+	title := sm.model.styles.Text.Title.Render("BlitzTypingOperator")
+	info := sm.model.styles.Text.Subtle.Render(scene.String() + " (準備中)")
+	hint := sm.model.styles.Text.Subtle.Render("Esc: ホームに戻る  q: 終了")
 	return title + "\n\n" + info + "\n\n" + hint
 }
