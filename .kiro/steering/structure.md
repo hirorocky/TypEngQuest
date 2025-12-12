@@ -133,6 +133,28 @@ import (
 7. **定数の一元管理**: マジックナンバーはconfigパッケージに集約
 8. **ハンドラーマップパターン**: シーン遷移・メッセージ処理はマップ駆動で分岐
 
+## 将来の改善事項
+
+### usecase層からinfra層への依存解消
+
+現在、以下のパッケージは後方互換性のためinfra層（loader）に依存しています：
+
+| パッケージ | 依存先 | 状態 | 対応 |
+|-----------|--------|------|------|
+| usecase/enemy | loader | 後方互換性維持 | DomainEnemyGenerator追加済み |
+| usecase/reward | loader | 後方互換性維持 | DomainRewardCalculator追加済み |
+| usecase/game_state | loader, persistence | セーブ/ロード機能 | persistence.goに分離済み |
+
+**新規コード向けのドメイン型API:**
+- `enemy.DomainEnemyGenerator`: `domain.EnemyType`を直接使用するAPI
+- `reward.DomainRewardCalculator`: ドメイン型のみを使用するAPI
+
+**将来的な完全解消のための方針:**
+1. loaderパッケージの型をdomain層に移動
+2. 既存APIを段階的に非推奨化
+3. 新規コードはドメイン型APIを使用
+4. 移行完了後に旧APIを削除
+
 ## ドメイン別仕様
 
 各ドメインの詳細な要件・仕様は `.kiro/steering/specifications/` 配下を参照:
