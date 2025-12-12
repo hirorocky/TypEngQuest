@@ -75,3 +75,39 @@ func TestInventoryProviderAdapter_ImplementsInterface(t *testing.T) {
 	// InventoryProviderインターフェースを実装していることを確認
 	var _ InventoryProvider = adapter
 }
+
+// TestAdapterDelegate_CoreOperations はアダプターが正しくコア操作を委譲することを検証します
+func TestAdapterDelegate_CoreOperations(t *testing.T) {
+	model := NewRootModel("", embedded.Data)
+	adapter := model.createInventoryAdapter()
+
+	// コア一覧取得
+	cores := adapter.GetCores()
+	if cores == nil {
+		t.Fatal("GetCores should return non-nil slice")
+	}
+
+	// モジュール一覧取得
+	modules := adapter.GetModules()
+	if modules == nil {
+		t.Fatal("GetModules should return non-nil slice")
+	}
+}
+
+// TestAdapterDelegate_AgentOperations はアダプターが正しくエージェント操作を委譲することを検証します
+func TestAdapterDelegate_AgentOperations(t *testing.T) {
+	model := NewRootModel("", embedded.Data)
+	adapter := model.createInventoryAdapter()
+
+	// エージェント一覧取得
+	agents := adapter.GetAgents()
+	if agents == nil {
+		t.Fatal("GetAgents should return non-nil slice")
+	}
+
+	// 装備エージェント一覧取得
+	equipped := adapter.GetEquippedAgents()
+	if equipped == nil {
+		t.Fatal("GetEquippedAgents should return non-nil slice")
+	}
+}

@@ -236,8 +236,8 @@
   - ビルドとテストで動作確認（全パスOK）
   - _Requirements: 14.5, 14.6, 17.1, 17.4_
 
-- [ ] 9.6 (オプション) ヘルパー・アダプターの整理
-  - app/helpers.goの関数をtui/presenterへの呼び出しに置き換え可能か検討
-  - app/adapters.goの削除可能性を検討
-  - 後方互換性を維持しつつ段階的に整理
+- [x] 9.6 (オプション) ヘルパー・アダプターの整理
+  - app/helpers.goの関数をtui/presenterへの呼び出しに置き換え完了
+  - app/adapters.goをtui/presenterへの型エイリアスと委譲に変更完了
+  - 後方互換性を維持（app層のAPIは維持したまま内部をtui/presenterに委譲）
   - _Requirements: 5.4, 10.3_

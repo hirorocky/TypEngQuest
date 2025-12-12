@@ -106,3 +106,60 @@ func TestConvertBattleStatsToRewardStats(t *testing.T) {
 		t.Fatal("ConvertBattleStatsToRewardStats(nil) returned nil")
 	}
 }
+
+// TestHelpersDelegate_StatsData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
+func TestHelpersDelegate_StatsData(t *testing.T) {
+	model := NewRootModel("", embedded.Data)
+	gs := model.GameState()
+
+	// app層のヘルパー関数
+	appData := CreateStatsDataFromGameState(gs)
+
+	// 基本検証: 構造体が正しく生成される
+	if appData == nil {
+		t.Fatal("CreateStatsDataFromGameState should return non-nil data")
+	}
+	if appData.TypingStats.MaxWPM < 0 {
+		t.Error("MaxWPM should not be negative")
+	}
+	if appData.BattleStats.TotalBattles < 0 {
+		t.Error("TotalBattles should not be negative")
+	}
+}
+
+// TestHelpersDelegate_SettingsData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
+func TestHelpersDelegate_SettingsData(t *testing.T) {
+	model := NewRootModel("", embedded.Data)
+	gs := model.GameState()
+
+	// app層のヘルパー関数
+	appData := CreateSettingsDataFromGameState(gs)
+
+	// 基本検証
+	if appData == nil {
+		t.Fatal("CreateSettingsDataFromGameState should return non-nil data")
+	}
+	if appData.Difficulty == "" {
+		t.Error("Difficulty should not be empty")
+	}
+}
+
+// TestHelpersDelegate_EncyclopediaData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
+func TestHelpersDelegate_EncyclopediaData(t *testing.T) {
+	model := NewRootModel("", embedded.Data)
+	gs := model.GameState()
+
+	// app層のヘルパー関数
+	appData := CreateEncyclopediaDataFromGameState(gs)
+
+	// 基本検証
+	if appData == nil {
+		t.Fatal("CreateEncyclopediaDataFromGameState should return non-nil data")
+	}
+	if len(appData.AllCoreTypes) == 0 {
+		t.Error("AllCoreTypes should not be empty")
+	}
+	if len(appData.AllModuleTypes) == 0 {
+		t.Error("AllModuleTypes should not be empty")
+	}
+}

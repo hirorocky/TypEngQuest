@@ -1,64 +1,23 @@
 // Package app は BlitzTypingOperator TUIゲームのアダプター定義を提供します。
+// このファイルはtui/presenterパッケージへの委譲を提供し、後方互換性を維持します。
 package app
 
 import (
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/usecase/agent"
 )
 
-// inventoryProviderAdapter はInventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させます。
-// コア・モジュールの管理はInventoryManager、エージェント・装備の管理はAgentManagerが担当します。
-type inventoryProviderAdapter struct {
-	inv      *InventoryManager
-	agentMgr *agent.AgentManager
-	player   *domain.PlayerModel
-}
+// inventoryProviderAdapter はtui/presenter.InventoryProviderAdapterへの型エイリアスです。
+// 後方互換性のため非公開の小文字名を維持します。
+type inventoryProviderAdapter = presenter.InventoryProviderAdapter
 
 // NewInventoryProviderAdapter は新しいInventoryProviderAdapterを作成します。
+// tui/presenter.NewInventoryProviderAdapter に委譲します。
 func NewInventoryProviderAdapter(
 	inv *InventoryManager,
 	agentMgr *agent.AgentManager,
 	player *domain.PlayerModel,
 ) *inventoryProviderAdapter {
-	return &inventoryProviderAdapter{
-		inv:      inv,
-		agentMgr: agentMgr,
-		player:   player,
-	}
-}
-
-func (a *inventoryProviderAdapter) GetCores() []*domain.CoreModel {
-	return a.inv.GetCores()
-}
-
-func (a *inventoryProviderAdapter) GetModules() []*domain.ModuleModel {
-	return a.inv.GetModules()
-}
-
-func (a *inventoryProviderAdapter) GetAgents() []*domain.AgentModel {
-	return a.agentMgr.GetAgents()
-}
-
-func (a *inventoryProviderAdapter) GetEquippedAgents() []*domain.AgentModel {
-	return a.agentMgr.GetEquippedAgents()
-}
-
-func (a *inventoryProviderAdapter) AddAgent(agent *domain.AgentModel) error {
-	return a.agentMgr.AddAgent(agent)
-}
-
-func (a *inventoryProviderAdapter) RemoveCore(id string) error {
-	return a.inv.RemoveCore(id)
-}
-
-func (a *inventoryProviderAdapter) RemoveModule(id string) error {
-	return a.inv.RemoveModule(id)
-}
-
-func (a *inventoryProviderAdapter) EquipAgent(slot int, agentModel *domain.AgentModel) error {
-	return a.agentMgr.EquipAgent(slot, agentModel.ID, a.player)
-}
-
-func (a *inventoryProviderAdapter) UnequipAgent(slot int) error {
-	return a.agentMgr.UnequipAgent(slot, a.player)
+	return presenter.NewInventoryProviderAdapter(inv, agentMgr, player)
 }
