@@ -4,12 +4,12 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/infra/embedded"
+	"hirorocky/type-battle/internal/infra/masterdata"
 )
 
 // TestCreateStatsDataFromGameState は統計データ生成を検証します
 func TestCreateStatsDataFromGameState(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	statsData := CreateStatsDataFromGameState(gs)
@@ -20,7 +20,7 @@ func TestCreateStatsDataFromGameState(t *testing.T) {
 
 // TestCreateStatsDataFromGameState_HasTypingStats はタイピング統計を含むことを検証します
 func TestCreateStatsDataFromGameState_HasTypingStats(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	statsData := CreateStatsDataFromGameState(gs)
@@ -33,7 +33,7 @@ func TestCreateStatsDataFromGameState_HasTypingStats(t *testing.T) {
 
 // TestCreateStatsDataFromGameState_HasBattleStats はバトル統計を含むことを検証します
 func TestCreateStatsDataFromGameState_HasBattleStats(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	statsData := CreateStatsDataFromGameState(gs)
@@ -46,7 +46,7 @@ func TestCreateStatsDataFromGameState_HasBattleStats(t *testing.T) {
 
 // TestCreateSettingsDataFromGameState は設定データ生成を検証します
 func TestCreateSettingsDataFromGameState(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	settingsData := CreateSettingsDataFromGameState(gs)
@@ -89,7 +89,7 @@ func TestCreateDefaultEncyclopediaData_HasEnemyTypes(t *testing.T) {
 
 // TestCreateEncyclopediaDataFromGameState はGameStateからの図鑑データ生成を検証します
 func TestCreateEncyclopediaDataFromGameState(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	data := CreateEncyclopediaDataFromGameState(gs)
@@ -109,7 +109,7 @@ func TestConvertBattleStatsToRewardStats(t *testing.T) {
 
 // TestHelpersDelegate_StatsData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
 func TestHelpersDelegate_StatsData(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	// app層のヘルパー関数
@@ -129,7 +129,7 @@ func TestHelpersDelegate_StatsData(t *testing.T) {
 
 // TestHelpersDelegate_SettingsData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
 func TestHelpersDelegate_SettingsData(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	// app層のヘルパー関数
@@ -146,7 +146,7 @@ func TestHelpersDelegate_SettingsData(t *testing.T) {
 
 // TestHelpersDelegate_EncyclopediaData はヘルパー関数がtui/presenterと同等の結果を返すことを検証します
 func TestHelpersDelegate_EncyclopediaData(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	// app層のヘルパー関数

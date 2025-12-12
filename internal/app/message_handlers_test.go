@@ -4,7 +4,7 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/infra/embedded"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/tui/screens"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,7 +12,7 @@ import (
 
 // TestNewMessageHandlers はMessageHandlersが正しく初期化されることを検証します
 func TestNewMessageHandlers(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 	if handlers == nil {
 		t.Fatal("NewMessageHandlers() returned nil")
@@ -21,7 +21,7 @@ func TestNewMessageHandlers(t *testing.T) {
 
 // TestMessageHandlers_HandleWindowSizeMsg はWindowSizeMsgが正しく処理されることを検証します
 func TestMessageHandlers_HandleWindowSizeMsg(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	msg := tea.WindowSizeMsg{Width: 150, Height: 50}
@@ -41,7 +41,7 @@ func TestMessageHandlers_HandleWindowSizeMsg(t *testing.T) {
 
 // TestMessageHandlers_HandleChangeSceneMsg はChangeSceneMsgが正しく処理されることを検証します
 func TestMessageHandlers_HandleChangeSceneMsg(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	msg := ChangeSceneMsg{Scene: SceneBattleSelect}
@@ -54,7 +54,7 @@ func TestMessageHandlers_HandleChangeSceneMsg(t *testing.T) {
 
 // TestMessageHandlers_HandleScreensChangeSceneMsg は画面からのシーン遷移要求が処理されることを検証します
 func TestMessageHandlers_HandleScreensChangeSceneMsg(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	msg := screens.ChangeSceneMsg{Scene: "battle_select"}
@@ -67,7 +67,7 @@ func TestMessageHandlers_HandleScreensChangeSceneMsg(t *testing.T) {
 
 // TestMessageHandlers_HandleCtrlC はCtrl+Cでtea.Quitが返されることを検証します
 func TestMessageHandlers_HandleCtrlC(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	// まずWindowSizeMsgで初期化
@@ -88,7 +88,7 @@ func TestMessageHandlers_HandleCtrlC(t *testing.T) {
 
 // TestMessageHandlers_HandleEscKey はEscキーでホーム以外からホームに戻ることを検証します
 func TestMessageHandlers_HandleEscKey(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	// まずWindowSizeMsgで初期化
@@ -111,7 +111,7 @@ func TestMessageHandlers_HandleEscKey(t *testing.T) {
 
 // TestMessageHandlers_HandleQKeyOnHome はホーム画面でQキーが終了することを検証します
 func TestMessageHandlers_HandleQKeyOnHome(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	// まずWindowSizeMsgで初期化
@@ -133,7 +133,7 @@ func TestMessageHandlers_HandleQKeyOnHome(t *testing.T) {
 
 // TestMessageHandlers_HandleQKeyNotOnHome はホーム以外でQキーが終了しないことを検証します
 func TestMessageHandlers_HandleQKeyNotOnHome(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	// まずWindowSizeMsgで初期化
@@ -159,7 +159,7 @@ func TestMessageHandlers_HandleQKeyNotOnHome(t *testing.T) {
 
 // TestMessageHandlers_HandlerCount はハンドラー数が適切であることを検証します
 func TestMessageHandlers_HandlerCount(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	handlers := NewMessageHandlers(model)
 
 	// ハンドラー数を取得
@@ -174,7 +174,7 @@ func TestMessageHandlers_HandlerCount(t *testing.T) {
 
 // TestNewScreenMap は画面マップが正しく初期化されることを検証します
 func TestNewScreenMap(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	screenMap := NewScreenMap(model)
 	if screenMap == nil {
 		t.Fatal("NewScreenMap() returned nil")
@@ -183,7 +183,7 @@ func TestNewScreenMap(t *testing.T) {
 
 // TestScreenMap_GetScreen は各シーンに対して正しい画面が返されることを検証します
 func TestScreenMap_GetScreen(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	screenMap := NewScreenMap(model)
 
 	tests := []struct {
@@ -210,7 +210,7 @@ func TestScreenMap_GetScreen(t *testing.T) {
 
 // TestScreenMap_RenderScene はシーンに応じた描画が行われることを検証します
 func TestScreenMap_RenderScene(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	screenMap := NewScreenMap(model)
 
 	// ホーム画面のレンダリング
@@ -222,7 +222,7 @@ func TestScreenMap_RenderScene(t *testing.T) {
 
 // TestScreenMap_ForwardMessage はメッセージが正しく転送されることを検証します
 func TestScreenMap_ForwardMessage(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	screenMap := NewScreenMap(model)
 
 	// キーメッセージを転送
@@ -236,7 +236,7 @@ func TestScreenMap_ForwardMessage(t *testing.T) {
 
 // TestScreenMap_MapCount は画面マップの要素数が適切であることを検証します
 func TestScreenMap_MapCount(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	screenMap := NewScreenMap(model)
 
 	count := screenMap.MapCount()

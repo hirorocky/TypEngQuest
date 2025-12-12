@@ -67,8 +67,7 @@ config       ← 横断的関心事（全層から参照可能）
 **目的**: 外部リソース（ファイル、ターミナル等）とのやり取り
 **サブパッケージ**:
 - `infra/savedata/`: セーブ/ロード永続化
-- `infra/masterdata/`: JSONマスタデータローダー
-- `infra/embedded/`: 埋め込みデータ（Go embed.FS）
+- `infra/masterdata/`: JSONマスタデータローダー＋埋め込みデータ（Go embed.FS）
 - `infra/errorhandler/`: エラーハンドリング
 - `infra/startup/`: 起動処理
 - `infra/terminal/`: ターミナル環境検証
@@ -87,11 +86,6 @@ config       ← 横断的関心事（全層から参照可能）
 **場所**: `/internal/config/`
 **目的**: マジックナンバーを一元管理。バトル設定、効果持続時間、インベントリ設定等
 **例**: `constants.go`（`BattleTickInterval`, `DefaultModuleCooldown`, `MaxAgentEquipSlots` など）
-
-### embedded - 埋め込みデータ
-**場所**: `/internal/infra/embedded/`
-**目的**: ビルド時にバイナリに埋め込むデータファイル（Go embed.FS使用）
-**例**: `embedded.go`（埋め込み定義）、`data/`（JSONデータファイル）
 
 ### integration_test - 統合テスト
 **場所**: `/internal/integration_test/`

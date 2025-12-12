@@ -2,23 +2,17 @@
 package masterdata
 
 import (
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
-// getProjectDataDir は埋め込みデータディレクトリのパスを返します。
-func getProjectDataDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	// internal/loader/ から1階層上が internal/
-	internalDir := filepath.Dir(filepath.Dir(filename))
-	return filepath.Join(internalDir, "embedded", "data")
+// createTestLoader は埋め込みデータを使用するDataLoaderを作成します。
+func createTestLoader() *DataLoader {
+	return NewEmbeddedDataLoader(EmbeddedData, "data")
 }
 
 // TestCoresJSONExists はcores.jsonの存在と内容を検証します。
 func TestCoresJSONExists(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	coreTypes, err := loader.LoadCoreTypes()
 	if err != nil {
@@ -58,8 +52,7 @@ func TestCoresJSONExists(t *testing.T) {
 
 // TestModulesJSONExists はmodules.jsonの存在と内容を検証します。
 func TestModulesJSONExists(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	modules, err := loader.LoadModuleDefinitions()
 	if err != nil {
@@ -93,8 +86,7 @@ func TestModulesJSONExists(t *testing.T) {
 
 // TestEnemiesJSONExists はenemies.jsonの存在と内容を検証します。
 func TestEnemiesJSONExists(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	enemyTypes, err := loader.LoadEnemyTypes()
 	if err != nil {
@@ -121,8 +113,7 @@ func TestEnemiesJSONExists(t *testing.T) {
 
 // TestWordsJSONExists はwords.jsonの存在と内容を検証します。
 func TestWordsJSONExists(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	dictionary, err := loader.LoadTypingDictionary()
 	if err != nil {
@@ -166,8 +157,7 @@ func TestWordsJSONExists(t *testing.T) {
 
 // TestAllDataFilesLoadable は全データファイルが正常にロードできることを検証します。
 func TestAllDataFilesLoadable(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	externalData, err := loader.LoadAllExternalData()
 	if err != nil {
@@ -191,8 +181,7 @@ func TestAllDataFilesLoadable(t *testing.T) {
 
 // TestCoreTypeStatWeightsAreValid はコア特性のステータス重みが有効な範囲内かを検証します。
 func TestCoreTypeStatWeightsAreValid(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	coreTypes, err := loader.LoadCoreTypes()
 	if err != nil {
@@ -219,8 +208,7 @@ func TestCoreTypeStatWeightsAreValid(t *testing.T) {
 // 注: Requirement 5.18により、初期段階では高レベルモジュールを装備可能な特化コアは用意されていません。
 // Lv1モジュール（_low タグ）のみが初期コアで使用可能であることを検証します。
 func TestModuleTagsMatchCoreAllowedTags(t *testing.T) {
-	dataDir := getProjectDataDir()
-	loader := NewDataLoader(dataDir)
+	loader := createTestLoader()
 
 	coreTypes, err := loader.LoadCoreTypes()
 	if err != nil {

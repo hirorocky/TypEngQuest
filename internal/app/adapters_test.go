@@ -4,12 +4,12 @@ package app
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/infra/embedded"
+	"hirorocky/type-battle/internal/infra/masterdata"
 )
 
 // TestInventoryProviderAdapter_GetCores はGetCoresメソッドを検証します
 func TestInventoryProviderAdapter_GetCores(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	cores := adapter.GetCores()
@@ -20,7 +20,7 @@ func TestInventoryProviderAdapter_GetCores(t *testing.T) {
 
 // TestInventoryProviderAdapter_GetModules はGetModulesメソッドを検証します
 func TestInventoryProviderAdapter_GetModules(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	modules := adapter.GetModules()
@@ -31,7 +31,7 @@ func TestInventoryProviderAdapter_GetModules(t *testing.T) {
 
 // TestInventoryProviderAdapter_GetAgents はGetAgentsメソッドを検証します
 func TestInventoryProviderAdapter_GetAgents(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	agents := adapter.GetAgents()
@@ -42,7 +42,7 @@ func TestInventoryProviderAdapter_GetAgents(t *testing.T) {
 
 // TestInventoryProviderAdapter_GetEquippedAgents はGetEquippedAgentsメソッドを検証します
 func TestInventoryProviderAdapter_GetEquippedAgents(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	equippedAgents := adapter.GetEquippedAgents()
@@ -53,7 +53,7 @@ func TestInventoryProviderAdapter_GetEquippedAgents(t *testing.T) {
 
 // TestNewInventoryProviderAdapter は新しいアダプターの生成を検証します
 func TestNewInventoryProviderAdapter(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	gs := model.GameState()
 
 	adapter := NewInventoryProviderAdapter(
@@ -69,7 +69,7 @@ func TestNewInventoryProviderAdapter(t *testing.T) {
 
 // TestInventoryProviderAdapter_ImplementsInterface はインターフェース準拠を検証します
 func TestInventoryProviderAdapter_ImplementsInterface(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	// InventoryProviderインターフェースを実装していることを確認
@@ -78,7 +78,7 @@ func TestInventoryProviderAdapter_ImplementsInterface(t *testing.T) {
 
 // TestAdapterDelegate_CoreOperations はアダプターが正しくコア操作を委譲することを検証します
 func TestAdapterDelegate_CoreOperations(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	// コア一覧取得
@@ -96,7 +96,7 @@ func TestAdapterDelegate_CoreOperations(t *testing.T) {
 
 // TestAdapterDelegate_AgentOperations はアダプターが正しくエージェント操作を委譲することを検証します
 func TestAdapterDelegate_AgentOperations(t *testing.T) {
-	model := NewRootModel("", embedded.Data)
+	model := NewRootModel("", masterdata.EmbeddedData)
 	adapter := model.createInventoryAdapter()
 
 	// エージェント一覧取得
