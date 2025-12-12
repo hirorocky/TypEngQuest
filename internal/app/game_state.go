@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log/slog"
 
-	"hirorocky/type-battle/internal/achievement"
-	"hirorocky/type-battle/internal/agent"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/enemy"
-	"hirorocky/type-battle/internal/inventory"
 	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/reward"
+	"hirorocky/type-battle/internal/usecase/achievement"
+	"hirorocky/type-battle/internal/usecase/agent"
+	"hirorocky/type-battle/internal/usecase/enemy"
+	"hirorocky/type-battle/internal/usecase/inventory"
+	"hirorocky/type-battle/internal/usecase/reward"
 )
 
 // GameState はゲーム全体の状態を保持する構造体です。

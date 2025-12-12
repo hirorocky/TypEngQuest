@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/tui/styles"
+	"hirorocky/type-battle/internal/usecase/reward"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

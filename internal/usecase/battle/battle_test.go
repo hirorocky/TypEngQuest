@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/typing"
+	"hirorocky/type-battle/internal/usecase/typing"
 )
 
 // ==================== バトル初期化テスト（Task 7.1） ====================

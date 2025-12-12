@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/inventory"
+	"hirorocky/type-battle/internal/usecase/inventory"
 
 	"github.com/google/uuid"
 )

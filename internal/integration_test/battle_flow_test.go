@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/typing"
+	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/typing"
 )
 
 // ==================================================

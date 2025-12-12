@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/inventory"
+	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
 // InventoryManager はゲーム全体のインベントリを統合管理する構造体です。

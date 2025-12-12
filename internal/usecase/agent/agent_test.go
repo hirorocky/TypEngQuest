@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/inventory"
+	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
 // ==================== コア特性とモジュールタグ互換性検証テスト（Task 5.1） ====================

@@ -2,10 +2,10 @@
 package app
 
 import (
-	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/tui/screens"
+	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/reward"
 )
 
 // CreateStatsDataFromGameState はGameStateから統計データを生成します。

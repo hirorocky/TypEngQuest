@@ -54,7 +54,7 @@
   - getDefaultCoreTypeData等のデフォルト生成関数の重複を解消
   - _Requirements: 6.2, 14.5, 14.6_
 
-- [ ] 2.5 既存ユースケースパッケージの移動
+- [x] 2.5 既存ユースケースパッケージの移動
   - battle、typing、agent、enemy、inventory、reward、achievement、balanceをusecase/配下に移動
   - 各パッケージのインポートパスを更新
   - ビルドとテストで動作確認

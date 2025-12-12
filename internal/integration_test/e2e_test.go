@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/loader"
 	"hirorocky/type-battle/internal/persistence"
-	"hirorocky/type-battle/internal/reward"
 	"hirorocky/type-battle/internal/startup"
-	"hirorocky/type-battle/internal/typing"
+	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/typing"
 )
 
 // createTestExternalData はテスト用の外部データを作成します。

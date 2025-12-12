@@ -6,12 +6,12 @@ package screens
 import (
 	"time"
 
-	"hirorocky/type-battle/internal/battle"
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
-	"hirorocky/type-battle/internal/typing"
+	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

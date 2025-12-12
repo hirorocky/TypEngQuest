@@ -2,8 +2,8 @@
 package app
 
 import (
-	"hirorocky/type-battle/internal/agent"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/usecase/agent"
 )
 
 // inventoryProviderAdapter はInventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させます。
