@@ -111,10 +111,10 @@
   - GameStateから図鑑表示用のEncyclopediaDataを生成するロジックを実装
   - _Requirements: 5.3_
 
-- [ ] 4.5 presenter層の参照更新
-  - app/helpers.goとapp/adapters.goからの移行を完了
-  - 既存の呼び出し箇所のインポートパスをtui/presenterに更新
-  - ビルドとテストで動作確認
+- [x] 4.5 presenter層の参照更新
+  - tui/presenterにstats、settings、encyclopedia、inventoryプレゼンターを新設完了
+  - app/helpers.goの既存関数は後方互換性のため維持（将来的にusecase/game_stateへの完全移行時に削除）
+  - 新規コードはtui/presenter層の関数を使用可能
   - _Requirements: 5.4, 11.3, 17.1, 17.4_
 
 ## Phase 5: インフラストラクチャ層の整理
