@@ -419,8 +419,8 @@ func (g *GameState) ToSaveData() *persistence.SaveData {
 	saveData.Statistics.TotalCharactersTyped = stats.Typing().TotalCharacters
 	saveData.Statistics.EncounteredEnemies = g.encounteredEnemies
 
-	// 実績
-	saveData.Achievements = g.achievements.ToSaveData()
+	// 実績（ドメイン型を経由してセーブデータ型に変換）
+	saveData.Achievements = persistence.AchievementStateToSaveData(g.achievements.GetUnlockedIDs())
 
 	// 設定
 	saveData.Settings.KeyBindings = g.settings.Keybinds()
@@ -554,10 +554,11 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 		}
 	}
 
-	// 実績マネージャーを作成
+	// 実績マネージャーを作成（セーブデータ型からドメイン型に変換してロード）
 	achievementMgr := achievement.NewAchievementManager()
 	if data.Achievements != nil {
-		achievementMgr.LoadFromSaveData(data.Achievements)
+		unlockedIDs := persistence.SaveDataToAchievementState(data.Achievements)
+		achievementMgr.LoadFromUnlockedIDs(unlockedIDs)
 	}
 
 	// 統計マネージャーを作成して復元

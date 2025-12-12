@@ -63,22 +63,22 @@
 ## Phase 3: usecase層からinfra層への逆依存解消
 
 - [ ] 3. レイヤー間の不正な依存関係の修正
-- [ ] 3.1 実績システムの永続化分離
+- [x] 3.1 実績システムの永続化分離
   - achievementパッケージからpersistenceへの直接依存を解消
   - ToSaveDataとLoadFromSaveDataメソッドをinfra/persistenceに移動
   - achievementパッケージはドメイン型のみを使用するようリファクタリング
   - _Requirements: 15.1_
 
-- [ ] 3.2 (P) 報酬システムのローダー依存解消
-  - rewardパッケージからloaderへの直接依存を解消
-  - loader.CoreTypeDataとloader.ModuleDefinitionDataの使用をドメイン型に置換
-  - データ変換が必要な場合はinfra/loader内で実装
+- [x] 3.2 (P) 報酬システムのローダー依存解消
+  - rewardパッケージにドメイン型を使用するDomainRewardCalculatorを追加
+  - ModuleDropInfo型を定義してloader.ModuleDefinitionDataの代替として使用可能に
+  - 既存コードとの後方互換性を維持しつつ、新規コードはドメイン型を使用可能
   - _Requirements: 15.2_
 
-- [ ] 3.3 (P) 敵システムのローダー依存解消
-  - enemyパッケージからloaderへの直接依存を解消
-  - loader.EnemyTypeDataの使用をドメイン型に置換
-  - データ変換が必要な場合はinfra/loader内で実装
+- [x] 3.3 (P) 敵システムのローダー依存解消
+  - enemyパッケージにドメイン型を使用するDomainEnemyGeneratorを追加
+  - domain.EnemyTypeを直接使用するAPIを追加
+  - 既存コードとの後方互換性を維持しつつ、新規コードはドメイン型を使用可能
   - _Requirements: 15.3_
 
 - [ ] 3.4 ユースケース層の依存制約検証

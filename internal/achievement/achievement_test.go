@@ -256,15 +256,15 @@ func TestAchievement_SaveLoad(t *testing.T) {
 	manager.CheckTypingAchievements(80, 100)
 	manager.CheckBattleAchievements(50, 25, true)
 
-	// セーブ
-	saveData := manager.ToSaveData()
-	if len(saveData.Unlocked) == 0 {
+	// 解除済み実績IDを取得
+	unlockedIDs := manager.GetUnlockedIDs()
+	if len(unlockedIDs) == 0 {
 		t.Error("解除済み実績がセーブデータに含まれるべきです")
 	}
 
 	// 新しいマネージャーにロード
 	newManager := NewAchievementManager()
-	newManager.LoadFromSaveData(saveData)
+	newManager.LoadFromUnlockedIDs(unlockedIDs)
 
 	// 解除状態が復元されている
 	if !newManager.IsUnlocked(AchievementWPM50) {

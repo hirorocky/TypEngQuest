@@ -3,10 +3,6 @@
 // Requirements: 15.4-15.11
 package achievement
 
-import (
-	"hirorocky/type-battle/internal/persistence"
-)
-
 // ==================================================
 // 実績ID定数
 // ==================================================
@@ -278,30 +274,40 @@ func (m *AchievementManager) GetTotalCount() int {
 }
 
 // ==================================================
-// セーブ/ロード
+// セーブ/ロード（ドメイン型のみ使用）
 // ==================================================
 
-// ToSaveData は現在の状態をセーブデータ形式に変換します。
-func (m *AchievementManager) ToSaveData() *persistence.AchievementsSaveData {
+// GetUnlockedIDs は解除済み実績IDのリストを返します。
+// persistenceへの依存を避けるため、ドメイン型（[]string）で返します。
+func (m *AchievementManager) GetUnlockedIDs() []string {
 	unlocked := make([]string, 0, len(m.unlocked))
 	for id, isUnlocked := range m.unlocked {
 		if isUnlocked {
 			unlocked = append(unlocked, id)
 		}
 	}
-	return &persistence.AchievementsSaveData{
-		Unlocked: unlocked,
-		Progress: make(map[string]int), // 将来的な進捗機能用
+	return unlocked
+}
+
+// LoadFromUnlockedIDs は解除済み実績IDリストから状態を復元します。
+// persistenceへの依存を避けるため、ドメイン型（[]string）を受け取ります。
+func (m *AchievementManager) LoadFromUnlockedIDs(unlockedIDs []string) {
+	m.unlocked = make(map[string]bool)
+	for _, id := range unlockedIDs {
+		m.unlocked[id] = true
 	}
 }
 
-// LoadFromSaveData はセーブデータから状態を復元します。
-func (m *AchievementManager) LoadFromSaveData(data *persistence.AchievementsSaveData) {
-	if data == nil {
-		return
-	}
-	m.unlocked = make(map[string]bool)
-	for _, id := range data.Unlocked {
-		m.unlocked[id] = true
-	}
+// ToSaveData は現在の状態をセーブデータ形式に変換します（後方互換性用）。
+// 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
+// Deprecated: GetUnlockedIDs + persistence.AchievementStateToSaveData を使用してください。
+func (m *AchievementManager) ToSaveData() interface{} {
+	return m.GetUnlockedIDs()
+}
+
+// LoadFromSaveData はセーブデータから状態を復元します（後方互換性用）。
+// 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
+// Deprecated: persistence.SaveDataToAchievementState + LoadFromUnlockedIDs を使用してください。
+func (m *AchievementManager) LoadFromSaveData(unlockedIDs []string) {
+	m.LoadFromUnlockedIDs(unlockedIDs)
 }
