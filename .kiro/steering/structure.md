@@ -133,27 +133,26 @@ import (
 7. **定数の一元管理**: マジックナンバーはconfigパッケージに集約
 8. **ハンドラーマップパターン**: シーン遷移・メッセージ処理はマップ駆動で分岐
 
-## 将来の改善事項
+## 改善タスク
 
-### usecase層からinfra層への依存解消
+### loader型のdomain層への移動
 
-現在、以下のパッケージは後方互換性のためinfra層（loader）に依存しています：
+usecase層がinfra層（loader）に依存している問題を解消する。
 
-| パッケージ | 依存先 | 状態 | 対応 |
-|-----------|--------|------|------|
-| usecase/enemy | loader | 後方互換性維持 | DomainEnemyGenerator追加済み |
-| usecase/reward | loader | 後方互換性維持 | DomainRewardCalculator追加済み |
-| usecase/game_state | loader, persistence | セーブ/ロード機能 | persistence.goに分離済み |
+**対象パッケージと依存:**
+| パッケージ | 依存しているloader型 |
+|-----------|---------------------|
+| enemy | `loader.EnemyTypeData` |
+| reward | `loader.CoreTypeData`, `loader.ModuleDefinitionData` |
+| game_state | `loader.ExternalData` |
 
-**新規コード向けのドメイン型API:**
-- `enemy.DomainEnemyGenerator`: `domain.EnemyType`を直接使用するAPI
-- `reward.DomainRewardCalculator`: ドメイン型のみを使用するAPI
-
-**将来的な完全解消のための方針:**
-1. loaderパッケージの型をdomain層に移動
-2. 既存APIを段階的に非推奨化
-3. 新規コードはドメイン型APIを使用
-4. 移行完了後に旧APIを削除
+**実施手順:**
+1. `loader.EnemyTypeData` → `domain.EnemyType`に統合（既存の`domain.EnemyType`を拡張）
+2. `loader.CoreTypeData` → `domain.CoreType`に統合
+3. `loader.ModuleDefinitionData` → `domain.ModuleType`として新設
+4. `loader.ExternalData` → loaderはdomain型を返すよう変更
+5. enemy, reward, game_stateパッケージをdomain型のみ使用するよう修正
+6. 旧API（`EnemyGenerator`, `RewardCalculator`）を削除し、ドメイン型API（`DomainEnemyGenerator`, `DomainRewardCalculator`）に統一
 
 ## ドメイン別仕様
 
