@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 )
 
 // ==================== Task 9.1: 敵ステータス計算 ====================
@@ -14,7 +14,7 @@ import (
 // TestEnemyStats_HPCalculation はレベルに応じたHP計算をテストします。
 // Requirement 13.2: レベルに応じたHP計算
 func TestEnemyStats_HPCalculation(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -52,7 +52,7 @@ func TestEnemyStats_HPCalculation(t *testing.T) {
 // TestEnemyStats_AttackPowerCalculation はレベルに応じた攻撃力計算をテストします。
 // Requirement 20.2: レベルに応じた攻撃力計算
 func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -85,7 +85,7 @@ func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
 // TestEnemyStats_AttackIntervalCalculation はレベルに応じた攻撃間隔計算をテストします。
 // Requirement 20.3, 20.4: 高レベルほど短い攻撃間隔
 func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -119,7 +119,7 @@ func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
 // TestEnemyStats_AttackIntervalMinimum は攻撃間隔の最低値をテストします。
 // Requirement 20.4: 最低攻撃間隔の保証
 func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "fast_enemy", Name: "高速敵", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -143,7 +143,7 @@ func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
 // TestEnemyVariation_RandomSelection は敵タイプからのランダム選択をテストします。
 // Requirement 13.4, 13.5: 敵タイプのランダム選択
 func TestEnemyVariation_RandomSelection(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 		{ID: "goblin", Name: "ゴブリン", BaseHP: 80, BaseAttackPower: 8,
@@ -172,7 +172,7 @@ func TestEnemyVariation_RandomSelection(t *testing.T) {
 // TestEnemyVariation_SameLevelMultipleTypes は同レベルでの複数バリエーション対応をテストします。
 // Requirement 13.5: 同レベルでも複数の敵バリエーションからランダム選択
 func TestEnemyVariation_SameLevelMultipleTypes(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 		{ID: "goblin", Name: "ゴブリン", BaseHP: 80, BaseAttackPower: 8,
@@ -213,7 +213,7 @@ func TestEnemyLevel_Maximum(t *testing.T) {
 		t.Errorf("レベル上限が100であるべき: got %d", MaxEnemyLevel)
 	}
 
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -248,7 +248,7 @@ func TestEnemyLevel_MaxLevelDefeat(t *testing.T) {
 // TestEnemyLevel_ValidRange は有効なレベル範囲をテストします。
 // Requirement 13.6: 高レベル敵ほど高いステータス
 func TestEnemyLevel_ValidRange(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}
@@ -273,7 +273,7 @@ func TestEnemyLevel_ValidRange(t *testing.T) {
 // TestEnemyGeneration_StatsScaling はステータススケーリングをテストします。
 // Requirement 13.6, 20.2: 高レベルほど高ステータス
 func TestEnemyGeneration_StatsScaling(t *testing.T) {
-	enemyTypes := []loader.EnemyTypeData{
+	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
 			BaseAttackIntervalMS: 3000, AttackType: "physical"},
 	}

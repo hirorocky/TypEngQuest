@@ -12,7 +12,7 @@ import (
 )
 
 // ModuleDropInfo はモジュールドロップに必要な情報を持つ構造体です。
-// loader.ModuleDefinitionDataの代わりにドメイン層で使用できる型として定義します。
+// masterdata.ModuleDefinitionDataの代わりにドメイン層で使用できる型として定義します。
 type ModuleDropInfo struct {
 	// ID はモジュールの一意識別子です。
 	ID string

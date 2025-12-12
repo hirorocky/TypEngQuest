@@ -1,8 +1,8 @@
-// Package loader は外部データファイルのロード処理を提供します。
+// Package masterdata はマスタデータのロード処理を提供します。
 // コア特性、モジュール定義、敵タイプ定義、タイピング辞書などを
 // JSONファイルから読み込みます。
 // Requirements: 5.19, 6.18, 11.14, 16.3, 16.4, 21.6, 21.7
-package loader
+package masterdata
 
 import (
 	"encoding/json"

@@ -1,6 +1,6 @@
-// Package persistence は実績データの永続化アダプターを提供します。
-// achievementパッケージからpersistenceへの依存を解消するための変換関数を含みます。
-package persistence
+// Package savedata は実績データの永続化アダプターを提供します。
+// achievementパッケージからの依存を解消するための変換関数を含みます。
+package savedata
 
 // AchievementStateToSaveData は解除済み実績のリストをセーブデータ形式に変換します。
 // achievementパッケージの内部状態をpersistenceパッケージのセーブデータ型に変換します。

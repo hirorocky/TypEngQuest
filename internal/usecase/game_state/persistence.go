@@ -7,8 +7,8 @@ import (
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"
@@ -17,16 +17,16 @@ import (
 
 // ToSaveData はGameStateをセーブデータに変換します。
 // ID化最適化により、フルオブジェクトではなくID参照を保存します。
-func (g *GameState) ToSaveData() *persistence.SaveData {
-	saveData := persistence.NewSaveData()
+func (g *GameState) ToSaveData() *savedata.SaveData {
+	saveData := savedata.NewSaveData()
 
 	// 最高到達レベル
 	saveData.Statistics.MaxLevelReached = g.MaxLevelReached
 
 	// コアをID化して保存
-	coreInstances := make([]persistence.CoreInstanceSave, 0)
+	coreInstances := make([]savedata.CoreInstanceSave, 0)
 	for _, core := range g.inventory.GetCores() {
-		coreInstances = append(coreInstances, persistence.CoreInstanceSave{
+		coreInstances = append(coreInstances, savedata.CoreInstanceSave{
 			ID:         core.ID,
 			CoreTypeID: core.Type.ID,
 			Level:      core.Level,
@@ -42,15 +42,15 @@ func (g *GameState) ToSaveData() *persistence.SaveData {
 	saveData.Inventory.ModuleCounts = moduleCounts
 
 	// エージェントを保存（コア情報を直接埋め込み）
-	agentInstances := make([]persistence.AgentInstanceSave, 0)
+	agentInstances := make([]savedata.AgentInstanceSave, 0)
 	for _, ag := range g.agentManager.GetAgents() {
 		moduleIDs := make([]string, len(ag.Modules))
 		for i, m := range ag.Modules {
 			moduleIDs[i] = m.ID
 		}
-		agentInstances = append(agentInstances, persistence.AgentInstanceSave{
+		agentInstances = append(agentInstances, savedata.AgentInstanceSave{
 			ID: ag.ID,
-			Core: persistence.CoreInstanceSave{
+			Core: savedata.CoreInstanceSave{
 				ID:         ag.Core.ID,
 				CoreTypeID: ag.Core.Type.ID,
 				Level:      ag.Core.Level,
@@ -85,7 +85,7 @@ func (g *GameState) ToSaveData() *persistence.SaveData {
 	saveData.Statistics.EncounteredEnemies = g.encounteredEnemies
 
 	// 実績（ドメイン型を経由してセーブデータ型に変換）
-	saveData.Achievements = persistence.AchievementStateToSaveData(g.achievements.GetUnlockedIDs())
+	saveData.Achievements = savedata.AchievementStateToSaveData(g.achievements.GetUnlockedIDs())
 
 	// 設定
 	saveData.Settings.KeyBindings = g.settings.Keybinds()
@@ -96,10 +96,10 @@ func (g *GameState) ToSaveData() *persistence.SaveData {
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
 // ID化最適化されたセーブデータからオブジェクトを再構築します。
 // externalDataが提供されている場合はそれを使用し、なければデフォルト値を使用します。
-func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.ExternalData) *GameState {
+func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.ExternalData) *GameState {
 	// マスタデータを取得
-	var coreTypeData []loader.CoreTypeData
-	var moduleDefData []loader.ModuleDefinitionData
+	var coreTypeData []masterdata.CoreTypeData
+	var moduleDefData []masterdata.ModuleDefinitionData
 	var passiveSkills map[string]domain.PassiveSkill
 
 	if len(externalData) > 0 && externalData[0] != nil {
@@ -222,7 +222,7 @@ func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.E
 	// 実績マネージャーを作成（セーブデータ型からドメイン型に変換してロード）
 	achievementMgr := achievement.NewAchievementManager()
 	if data.Achievements != nil {
-		unlockedIDs := persistence.SaveDataToAchievementState(data.Achievements)
+		unlockedIDs := savedata.SaveDataToAchievementState(data.Achievements)
 		achievementMgr.LoadFromUnlockedIDs(unlockedIDs)
 	}
 

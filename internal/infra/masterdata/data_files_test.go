@@ -1,5 +1,5 @@
-// Package loader のテスト - データファイルの存在と内容検証
-package loader
+// Package masterdata のテスト - データファイルの存在と内容検証
+package masterdata
 
 import (
 	"path/filepath"

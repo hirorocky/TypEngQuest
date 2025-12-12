@@ -1,5 +1,5 @@
-// Package loader は外部データファイルのロード処理を提供します。
-package loader
+// Package masterdata はマスタデータのロード処理を提供します。
+package masterdata
 
 import (
 	"os"

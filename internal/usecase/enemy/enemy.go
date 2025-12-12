@@ -10,7 +10,7 @@ import (
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 
 	"github.com/google/uuid"
 )
@@ -42,14 +42,14 @@ const (
 // Requirements: 13.2, 13.4-13.8, 20.2-20.4, 20.8
 type EnemyGenerator struct {
 	// enemyTypes は敵タイプ定義リストです。
-	enemyTypes []loader.EnemyTypeData
+	enemyTypes []masterdata.EnemyTypeData
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
 }
 
 // NewEnemyGenerator は新しいEnemyGeneratorを作成します。
-func NewEnemyGenerator(enemyTypes []loader.EnemyTypeData) *EnemyGenerator {
+func NewEnemyGenerator(enemyTypes []masterdata.EnemyTypeData) *EnemyGenerator {
 	return &EnemyGenerator{
 		enemyTypes: enemyTypes,
 		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -186,7 +186,7 @@ func (g *EnemyGenerator) GenerateWithType(level int, typeID string) *domain.Enem
 	level = g.clampLevel(level)
 
 	// 指定されたタイプを検索
-	var selectedType *loader.EnemyTypeData
+	var selectedType *masterdata.EnemyTypeData
 	for i := range g.enemyTypes {
 		if g.enemyTypes[i].ID == typeID {
 			selectedType = &g.enemyTypes[i]
@@ -215,7 +215,7 @@ func (g *EnemyGenerator) GenerateWithType(level int, typeID string) *domain.Enem
 }
 
 // GetAllEnemyTypes は全ての敵タイプを返します。
-func (g *EnemyGenerator) GetAllEnemyTypes() []loader.EnemyTypeData {
+func (g *EnemyGenerator) GetAllEnemyTypes() []masterdata.EnemyTypeData {
 	return g.enemyTypes
 }
 

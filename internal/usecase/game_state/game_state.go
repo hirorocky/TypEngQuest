@@ -4,7 +4,7 @@ package game_state
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"
@@ -36,7 +36,7 @@ type GameState struct {
 	achievements *achievement.AchievementManager
 
 	// externalData は外部データファイルから読み込んだデータです。
-	externalData *loader.ExternalData
+	externalData *masterdata.ExternalData
 
 	// settings はゲーム設定です。
 	settings *Settings
@@ -123,12 +123,12 @@ func (g *GameState) Achievements() *achievement.AchievementManager {
 }
 
 // ExternalData は外部データを返します。
-func (g *GameState) ExternalData() *loader.ExternalData {
+func (g *GameState) ExternalData() *masterdata.ExternalData {
 	return g.externalData
 }
 
 // SetExternalData は外部データを設定します。
-func (g *GameState) SetExternalData(data *loader.ExternalData) {
+func (g *GameState) SetExternalData(data *masterdata.ExternalData) {
 	g.externalData = data
 }
 
@@ -143,7 +143,7 @@ func (g *GameState) EnemyGenerator() *enemy.EnemyGenerator {
 }
 
 // UpdateEnemyGenerator は外部データで敵生成器を更新します。
-func (g *GameState) UpdateEnemyGenerator(enemyTypes []loader.EnemyTypeData) {
+func (g *GameState) UpdateEnemyGenerator(enemyTypes []masterdata.EnemyTypeData) {
 	if len(enemyTypes) > 0 {
 		g.enemyGenerator = enemy.NewEnemyGenerator(enemyTypes)
 	}

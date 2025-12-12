@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/infra/savedata"
 )
 
 // 初期モジュールID定義（マスタデータのmodules.jsonと一致させる）
@@ -27,12 +27,12 @@ const initialCoreTypeID = "all_rounder"
 // NewGameInitializer は新規ゲーム初期化を担当する構造体です。
 type NewGameInitializer struct {
 	// externalData は外部マスタデータです。
-	externalData *loader.ExternalData
+	externalData *masterdata.ExternalData
 }
 
 // NewNewGameInitializer は新しいNewGameInitializerを作成します。
 // externalData はマスタデータを含む外部データです。
-func NewNewGameInitializer(externalData *loader.ExternalData) *NewGameInitializer {
+func NewNewGameInitializer(externalData *masterdata.ExternalData) *NewGameInitializer {
 	return &NewGameInitializer{
 		externalData: externalData,
 	}
@@ -144,9 +144,9 @@ func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
 // InitializeNewGame は新規ゲームを初期化してセーブデータを作成します。
 // Requirement 17.5: セーブデータ不在時の新規ゲーム開始
 // ID化最適化に対応：フルオブジェクトではなくID参照を保存
-func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
+func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	// 基本のセーブデータを作成
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 
 	// 初期エージェントを作成
 	initialAgent := i.CreateInitialAgent()
@@ -156,10 +156,10 @@ func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
 	for idx, m := range initialAgent.Modules {
 		moduleIDs[idx] = m.ID
 	}
-	saveData.Inventory.AgentInstances = []persistence.AgentInstanceSave{
+	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
 		{
 			ID: initialAgent.ID,
-			Core: persistence.CoreInstanceSave{
+			Core: savedata.CoreInstanceSave{
 				ID:         initialAgent.Core.ID,
 				CoreTypeID: initialAgent.Core.Type.ID,
 				Level:      initialAgent.Core.Level,
@@ -169,7 +169,7 @@ func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
 	}
 
 	// インベントリのコアは空（エージェントのコアはエージェント内に保持される）
-	saveData.Inventory.CoreInstances = []persistence.CoreInstanceSave{}
+	saveData.Inventory.CoreInstances = []savedata.CoreInstanceSave{}
 
 	// コアとモジュールはエージェント合成で消費されるため、インベントリには追加しない
 	// （エージェントに含まれているコアとモジュールは参照として保持される）
@@ -183,12 +183,12 @@ func (i *NewGameInitializer) InitializeNewGame() *persistence.SaveData {
 // CreateNewGameWithExtraItems は追加アイテム付きで新規ゲームを初期化します。
 // デバッグや特殊条件での開始用
 // ID化最適化に対応：フルオブジェクトではなくID参照を保存
-func (i *NewGameInitializer) CreateNewGameWithExtraItems() *persistence.SaveData {
+func (i *NewGameInitializer) CreateNewGameWithExtraItems() *savedata.SaveData {
 	saveData := i.InitializeNewGame()
 
 	// 追加のコアを作成してインベントリにID化して追加
 	extraCore := i.CreateInitialCore()
-	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, persistence.CoreInstanceSave{
+	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
 		ID:         extraCore.ID,
 		CoreTypeID: extraCore.Type.ID,
 		Level:      extraCore.Level,

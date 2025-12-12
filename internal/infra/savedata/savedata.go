@@ -1,7 +1,7 @@
-// Package persistence はセーブデータの永続化を担当します。
+// Package savedata はセーブデータの永続化を担当します。
 // 原子的書き込みパターンとバックアップによるセーブデータの整合性を保証します。
 // Requirements: 17.1-17.8, 19.1-19.3
-package persistence
+package savedata
 
 import (
 	"encoding/json"

@@ -1,5 +1,5 @@
-// Package persistence は実績データの永続化アダプターをテストします。
-package persistence
+// Package savedata は実績データの永続化アダプターをテストします。
+package savedata
 
 import (
 	"testing"

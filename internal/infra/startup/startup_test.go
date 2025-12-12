@@ -5,13 +5,13 @@ package startup
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 )
 
 // createTestExternalData はテスト用の外部データを作成します。
-func createTestExternalData() *loader.ExternalData {
-	return &loader.ExternalData{
-		CoreTypes: []loader.CoreTypeData{
+func createTestExternalData() *masterdata.ExternalData {
+	return &masterdata.ExternalData{
+		CoreTypes: []masterdata.CoreTypeData{
 			{
 				ID:             "all_rounder",
 				Name:           "オールラウンダー",
@@ -21,7 +21,7 @@ func createTestExternalData() *loader.ExternalData {
 				MinDropLevel:   1,
 			},
 		},
-		ModuleDefinitions: []loader.ModuleDefinitionData{
+		ModuleDefinitions: []masterdata.ModuleDefinitionData{
 			{
 				ID:            "physical_strike_lv1",
 				Name:          "物理打撃Lv1",
@@ -63,7 +63,7 @@ func createTestExternalData() *loader.ExternalData {
 				Description:   "一時的に攻撃力を上昇させる",
 			},
 		},
-		EnemyTypes: []loader.EnemyTypeData{
+		EnemyTypes: []masterdata.EnemyTypeData{
 			{
 				ID:              "slime",
 				Name:            "スライム",

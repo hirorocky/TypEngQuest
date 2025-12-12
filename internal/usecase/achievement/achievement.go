@@ -300,14 +300,14 @@ func (m *AchievementManager) LoadFromUnlockedIDs(unlockedIDs []string) {
 
 // ToSaveData は現在の状態をセーブデータ形式に変換します（後方互換性用）。
 // 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
-// Deprecated: GetUnlockedIDs + persistence.AchievementStateToSaveData を使用してください。
+// Deprecated: GetUnlockedIDs + savedata.AchievementStateToSaveData を使用してください。
 func (m *AchievementManager) ToSaveData() interface{} {
 	return m.GetUnlockedIDs()
 }
 
 // LoadFromSaveData はセーブデータから状態を復元します（後方互換性用）。
 // 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
-// Deprecated: persistence.SaveDataToAchievementState + LoadFromUnlockedIDs を使用してください。
+// Deprecated: savedata.SaveDataToAchievementState + LoadFromUnlockedIDs を使用してください。
 func (m *AchievementManager) LoadFromSaveData(unlockedIDs []string) {
 	m.LoadFromUnlockedIDs(unlockedIDs)
 }

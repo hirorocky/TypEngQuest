@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/usecase/inventory"
 
 	"github.com/google/uuid"
@@ -158,10 +158,10 @@ func (s *TempStorage) HasItems() bool {
 // Requirements: 12.1-12.18
 type RewardCalculator struct {
 	// coreTypes はコア特性定義リストです。
-	coreTypes []loader.CoreTypeData
+	coreTypes []masterdata.CoreTypeData
 
 	// moduleTypes はモジュール定義リストです。
-	moduleTypes []loader.ModuleDefinitionData
+	moduleTypes []masterdata.ModuleDefinitionData
 
 	// passiveSkills はパッシブスキル定義マップです。
 	passiveSkills map[string]domain.PassiveSkill
@@ -178,8 +178,8 @@ type RewardCalculator struct {
 
 // NewRewardCalculator は新しいRewardCalculatorを作成します。
 func NewRewardCalculator(
-	coreTypes []loader.CoreTypeData,
-	moduleTypes []loader.ModuleDefinitionData,
+	coreTypes []masterdata.CoreTypeData,
+	moduleTypes []masterdata.ModuleDefinitionData,
 	passiveSkills map[string]domain.PassiveSkill,
 ) *RewardCalculator {
 	return &RewardCalculator{
@@ -306,8 +306,8 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 
 // GetEligibleCoreTypes は指定レベルでドロップ可能なコア特性を返します。
 // Requirement 12.8, 12.9: 特性別ドロップ最低敵レベル制限
-func (c *RewardCalculator) GetEligibleCoreTypes(enemyLevel int) []loader.CoreTypeData {
-	eligible := make([]loader.CoreTypeData, 0)
+func (c *RewardCalculator) GetEligibleCoreTypes(enemyLevel int) []masterdata.CoreTypeData {
+	eligible := make([]masterdata.CoreTypeData, 0)
 	for _, coreType := range c.coreTypes {
 		if coreType.MinDropLevel <= enemyLevel {
 			eligible = append(eligible, coreType)
@@ -353,8 +353,8 @@ func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domai
 // GetEligibleModuleTypes は指定レベルでドロップ可能なモジュールを返します。
 // Requirement 12.13, 12.14: カテゴリ×レベル別ドロップ最低敵レベル制限
 // Requirement 12.15, 12.16: 高レベルモジュールほど高レベルの敵からのみドロップ
-func (c *RewardCalculator) GetEligibleModuleTypes(enemyLevel int) []loader.ModuleDefinitionData {
-	eligible := make([]loader.ModuleDefinitionData, 0)
+func (c *RewardCalculator) GetEligibleModuleTypes(enemyLevel int) []masterdata.ModuleDefinitionData {
+	eligible := make([]masterdata.ModuleDefinitionData, 0)
 	for _, moduleType := range c.moduleTypes {
 		if moduleType.MinDropLevel <= enemyLevel {
 			eligible = append(eligible, moduleType)

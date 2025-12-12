@@ -3,8 +3,8 @@
 package app
 
 import (
-	"hirorocky/type-battle/internal/infra/loader"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/infra/savedata"
 	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 )
 
@@ -70,12 +70,12 @@ func NewSettings() *Settings {
 
 // ToSaveData はGameStateをセーブデータに変換します。
 // usecase/game_stateパッケージの関数に委譲します。
-func ToSaveData(gs *GameState) *persistence.SaveData {
+func ToSaveData(gs *GameState) *savedata.SaveData {
 	return gs.ToSaveData()
 }
 
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
 // usecase/game_stateパッケージの関数に委譲します。
-func GameStateFromSaveData(data *persistence.SaveData, externalData ...*loader.ExternalData) *GameState {
+func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.ExternalData) *GameState {
 	return gamestate.GameStateFromSaveData(data, externalData...)
 }

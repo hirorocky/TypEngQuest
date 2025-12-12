@@ -1,5 +1,5 @@
-// Package persistence はセーブデータの永続化を担当します。
-package persistence
+// Package savedata はセーブデータの永続化を担当します。
+package savedata
 
 import (
 	"os"

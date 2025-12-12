@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
@@ -92,7 +92,7 @@ func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 // TestCoreDrop_Judgment はコアドロップ判定が正しく動作することをテストします。
 // Requirement 12.5: コアドロップ判定処理
 func TestCoreDrop_Judgment(t *testing.T) {
-	coreTypes := []loader.CoreTypeData{
+	coreTypes := []masterdata.CoreTypeData{
 		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
 			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
 	}
@@ -111,7 +111,7 @@ func TestCoreDrop_Judgment(t *testing.T) {
 // TestCoreDrop_LevelInRange はコアレベルが敵レベル±範囲内であることをテストします。
 // Requirement 12.6: コアレベル決定（敵レベル ± 範囲内ランダム）
 func TestCoreDrop_LevelInRange(t *testing.T) {
-	coreTypes := []loader.CoreTypeData{
+	coreTypes := []masterdata.CoreTypeData{
 		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
 			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
 	}
@@ -143,7 +143,7 @@ func TestCoreDrop_LevelInRange(t *testing.T) {
 // TestCoreDrop_MinDropLevel は特性別ドロップ最低敵レベル制限をテストします。
 // Requirement 12.8, 12.9: 特性別ドロップ最低敵レベル制限
 func TestCoreDrop_MinDropLevel(t *testing.T) {
-	coreTypes := []loader.CoreTypeData{
+	coreTypes := []masterdata.CoreTypeData{
 		{ID: "common_core", Name: "一般コア", MinDropLevel: 1, AllowedTags: []string{"test"},
 			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
 		{ID: "rare_core", Name: "レアコア", MinDropLevel: 10, AllowedTags: []string{"test"},
@@ -174,7 +174,7 @@ func TestCoreDrop_MinDropLevel(t *testing.T) {
 // Requirement 12.10: 初期コア特性のドロップ最低敵レベル設定
 func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 	// cores.jsonから読み込まれる初期設定を再現
-	coreTypes := []loader.CoreTypeData{
+	coreTypes := []masterdata.CoreTypeData{
 		{ID: "attack_balance", Name: "攻撃バランス", MinDropLevel: 1},
 		{ID: "all_rounder", Name: "オールラウンダー", MinDropLevel: 1},
 		{ID: "healer", Name: "ヒーラー", MinDropLevel: 3},
@@ -206,7 +206,7 @@ func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 // TestModuleDrop_Judgment はモジュールドロップ判定が正しく動作することをテストします。
 // Requirement 12.11: モジュールドロップ判定処理
 func TestModuleDrop_Judgment(t *testing.T) {
-	moduleTypes := []loader.ModuleDefinitionData{
+	moduleTypes := []masterdata.ModuleDefinitionData{
 		{ID: "test_module", Name: "テストモジュール", Category: "physical_attack",
 			Level: 1, Tags: []string{"physical_low"}, MinDropLevel: 1},
 	}
@@ -225,7 +225,7 @@ func TestModuleDrop_Judgment(t *testing.T) {
 // TestModuleDrop_MinDropLevel はカテゴリ×レベル別ドロップ最低敵レベル制限をテストします。
 // Requirement 12.13, 12.14: カテゴリ×レベル別ドロップ最低敵レベル制限
 func TestModuleDrop_MinDropLevel(t *testing.T) {
-	moduleTypes := []loader.ModuleDefinitionData{
+	moduleTypes := []masterdata.ModuleDefinitionData{
 		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: "physical_attack",
 			Level: 1, Tags: []string{"physical_low"}, MinDropLevel: 1},
 		{ID: "physical_lv2", Name: "物理攻撃Lv2", Category: "physical_attack",
@@ -258,7 +258,7 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 // Requirement 12.15, 12.16: 高レベルモジュールの段階的ドロップ
 func TestModuleDrop_HighLevelProgression(t *testing.T) {
 	// modules.jsonから読み込まれる設定を再現
-	moduleTypes := []loader.ModuleDefinitionData{
+	moduleTypes := []masterdata.ModuleDefinitionData{
 		{ID: "physical_lv1", Name: "物理打撃Lv1", MinDropLevel: 1},
 		{ID: "physical_lv2", Name: "物理打撃Lv2", MinDropLevel: 10},
 		{ID: "physical_lv3", Name: "物理打撃Lv3", MinDropLevel: 20},

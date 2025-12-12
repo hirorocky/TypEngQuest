@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/loader"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/infra/savedata"
 )
 
 // テスト用のログバッファとハンドラーを作成するヘルパー関数
@@ -32,9 +32,9 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 	defer cleanup()
 
 	// 正常なセーブデータを作成
-	saveData := persistence.NewSaveData()
-	saveData.Inventory = &persistence.InventorySaveData{
-		CoreInstances: []persistence.CoreInstanceSave{
+	saveData := savedata.NewSaveData()
+	saveData.Inventory = &savedata.InventorySaveData{
+		CoreInstances: []savedata.CoreInstanceSave{
 			{
 				ID:         "test_core_001",
 				CoreTypeID: "all_rounder",
@@ -63,14 +63,14 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	defer cleanup()
 
 	// エージェントを含むセーブデータを作成
-	saveData := persistence.NewSaveData()
-	saveData.Inventory = &persistence.InventorySaveData{
-		CoreInstances: []persistence.CoreInstanceSave{},
+	saveData := savedata.NewSaveData()
+	saveData.Inventory = &savedata.InventorySaveData{
+		CoreInstances: []savedata.CoreInstanceSave{},
 		ModuleCounts:  map[string]int{"mod_slash": 4},
-		AgentInstances: []persistence.AgentInstanceSave{
+		AgentInstances: []savedata.AgentInstanceSave{
 			{
 				ID: "test_agent_001",
-				Core: persistence.CoreInstanceSave{
+				Core: savedata.CoreInstanceSave{
 					ID:         "agent_core_001",
 					CoreTypeID: "all_rounder",
 					Level:      1,
@@ -79,7 +79,7 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 			},
 		},
 	}
-	saveData.Player = &persistence.PlayerSaveData{
+	saveData.Player = &savedata.PlayerSaveData{
 		EquippedAgentIDs: [3]string{"test_agent_001", "", ""},
 	}
 
@@ -206,7 +206,7 @@ func TestLoggedAddCoreError(t *testing.T) {
 
 // TestLoaderCoreTypeData はローダーのCoreTypeDataが正しく動作することを確認します。
 func TestLoaderCoreTypeData(t *testing.T) {
-	coreTypeData := loader.CoreTypeData{
+	coreTypeData := masterdata.CoreTypeData{
 		ID:             "all_rounder",
 		Name:           "オールラウンダー",
 		AllowedTags:    []string{"physical_low", "magic_low"},

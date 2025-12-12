@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"hirorocky/type-battle/internal/infra/loader"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/infra/terminal"
 	"hirorocky/type-battle/internal/tui/screens"
@@ -47,7 +47,7 @@ type RootModel struct {
 	styles *styles.GameStyles
 
 	// saveDataIO はセーブデータの読み書きを担当します
-	saveDataIO *persistence.SaveDataIO
+	saveDataIO *savedata.SaveDataIO
 
 	// statusMessage はステータスメッセージ（セーブ/ロード結果など）です
 	statusMessage string
@@ -86,16 +86,16 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	// セーブディレクトリを決定
 	homeDir, _ := os.UserHomeDir()
 	saveDir := filepath.Join(homeDir, ".BlitzTypingOperator")
-	saveDataIO := persistence.NewSaveDataIO(saveDir)
+	saveDataIO := savedata.NewSaveDataIO(saveDir)
 
 	// 外部データをロード
-	var dataLoader *loader.DataLoader
+	var dataLoader *masterdata.DataLoader
 	if dataDir != "" {
 		// 外部ディレクトリから読み込み
-		dataLoader = loader.NewDataLoader(dataDir)
+		dataLoader = masterdata.NewDataLoader(dataDir)
 	} else {
 		// 埋め込みFSから読み込み
-		dataLoader = loader.NewEmbeddedDataLoader(embeddedFS, "data")
+		dataLoader = masterdata.NewEmbeddedDataLoader(embeddedFS, "data")
 	}
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 

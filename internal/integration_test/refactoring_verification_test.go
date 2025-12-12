@@ -11,7 +11,7 @@ import (
 	gamestate "hirorocky/type-battle/internal/app/game_state"
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/usecase/battle"
@@ -30,17 +30,17 @@ import (
 // 要件12.2: 既存セーブデータが正常に読み込めることを確認
 func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 	tempDir := t.TempDir()
-	io := persistence.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir)
 	externalData := createTestExternalData()
 
 	// リファクタリング前の形式でセーブデータを作成（手動構築）
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 
 	// プレイヤー情報（装備エージェントIDのみ）
 	saveData.Player.EquippedAgentIDs = [3]string{"agent_1", "agent_2", ""}
 
 	// インベントリ情報（ID化された構造）
-	saveData.Inventory.CoreInstances = []persistence.CoreInstanceSave{
+	saveData.Inventory.CoreInstances = []savedata.CoreInstanceSave{
 		{ID: "core_1", CoreTypeID: "all_rounder", Level: 5},
 		{ID: "core_2", CoreTypeID: "all_rounder", Level: 3},
 	}
@@ -50,10 +50,10 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 		"heal_lv1":            1,
 		"attack_buff_lv1":     1,
 	}
-	saveData.Inventory.AgentInstances = []persistence.AgentInstanceSave{
+	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
 		{
 			ID: "agent_1",
-			Core: persistence.CoreInstanceSave{
+			Core: savedata.CoreInstanceSave{
 				ID:         "core_1",
 				CoreTypeID: "all_rounder",
 				Level:      5,
@@ -142,7 +142,7 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 // 要件12.1, 12.2, 12.3: データ整合性の維持
 func TestRefactoring_GameStateRoundTrip(t *testing.T) {
 	tempDir := t.TempDir()
-	io := persistence.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir)
 	externalData := createTestExternalData()
 
 	// 新規ゲームを初期化
@@ -437,7 +437,7 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	saveData := initializer.InitializeNewGame()
 
 	// 2. セーブ/ロード
-	io := persistence.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir)
 	err := io.SaveGame(saveData)
 	if err != nil {
 		t.Fatalf("セーブに失敗: %v", err)

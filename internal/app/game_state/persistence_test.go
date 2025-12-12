@@ -4,7 +4,7 @@ package game_state
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/infra/persistence"
+	"hirorocky/type-battle/internal/infra/savedata"
 )
 
 // === ToSaveData のテスト ===
@@ -67,7 +67,7 @@ func TestGameState_ToSaveData_WithEncounteredEnemies(t *testing.T) {
 
 // TestGameStateFromSaveData は基本的なセーブデータからの復元を検証します。
 func TestGameStateFromSaveData(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Statistics.MaxLevelReached = 10
 
 	gs := GameStateFromSaveData(saveData)
@@ -82,7 +82,7 @@ func TestGameStateFromSaveData(t *testing.T) {
 
 // TestGameStateFromSaveData_RestoresPlayer はプレイヤー情報の復元を検証します。
 func TestGameStateFromSaveData_RestoresPlayer(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 
 	gs := GameStateFromSaveData(saveData)
 
@@ -93,7 +93,7 @@ func TestGameStateFromSaveData_RestoresPlayer(t *testing.T) {
 
 // TestGameStateFromSaveData_RestoresSettings は設定の復元を検証します。
 func TestGameStateFromSaveData_RestoresSettings(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Settings.KeyBindings = map[string]string{
 		"action1": "key1",
 	}
@@ -110,7 +110,7 @@ func TestGameStateFromSaveData_RestoresSettings(t *testing.T) {
 
 // TestGameStateFromSaveData_RestoresStatistics は統計の復元を検証します。
 func TestGameStateFromSaveData_RestoresStatistics(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Statistics.TotalBattles = 100
 	saveData.Statistics.Victories = 80
 	saveData.Statistics.Defeats = 20
@@ -134,7 +134,7 @@ func TestGameStateFromSaveData_RestoresStatistics(t *testing.T) {
 
 // TestGameStateFromSaveData_RestoresEncounteredEnemies はエンカウント敵リストの復元を検証します。
 func TestGameStateFromSaveData_RestoresEncounteredEnemies(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Statistics.EncounteredEnemies = []string{"enemy_001", "enemy_002"}
 
 	gs := GameStateFromSaveData(saveData)
@@ -181,7 +181,7 @@ func TestGameState_RoundTrip(t *testing.T) {
 
 // TestGameStateFromSaveData_BackwardCompatibility_NilInventory はInventoryがnilの場合の処理を検証します。
 func TestGameStateFromSaveData_BackwardCompatibility_NilInventory(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Inventory = nil
 
 	gs := GameStateFromSaveData(saveData)
@@ -192,7 +192,7 @@ func TestGameStateFromSaveData_BackwardCompatibility_NilInventory(t *testing.T) 
 
 // TestGameStateFromSaveData_BackwardCompatibility_NilPlayer はPlayerがnilの場合の処理を検証します。
 func TestGameStateFromSaveData_BackwardCompatibility_NilPlayer(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Player = nil
 
 	gs := GameStateFromSaveData(saveData)
@@ -206,7 +206,7 @@ func TestGameStateFromSaveData_BackwardCompatibility_NilPlayer(t *testing.T) {
 
 // TestGameStateFromSaveData_BackwardCompatibility_NilStatistics はStatisticsがnilの場合の処理を検証します。
 func TestGameStateFromSaveData_BackwardCompatibility_NilStatistics(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Statistics = nil
 
 	gs := GameStateFromSaveData(saveData)
@@ -220,7 +220,7 @@ func TestGameStateFromSaveData_BackwardCompatibility_NilStatistics(t *testing.T)
 
 // TestGameStateFromSaveData_BackwardCompatibility_NilSettings はSettingsがnilの場合の処理を検証します。
 func TestGameStateFromSaveData_BackwardCompatibility_NilSettings(t *testing.T) {
-	saveData := persistence.NewSaveData()
+	saveData := savedata.NewSaveData()
 	saveData.Settings = nil
 
 	gs := GameStateFromSaveData(saveData)
