@@ -201,3 +201,43 @@
   - すべての既存テストがパスすることを確認（28パッケージ全てパス）
   - ビルド成功
   - _Requirements: 17.2, 17.3_
+
+## Phase 9: app層重複コード解消（追加フェーズ）
+
+- [x] 9. app層とusecase/game_state層の重複コード解消
+- [x] 9.1 app/game_state.goの重複解消
+  - app/game_state.goのGameState構造体定義を削除
+  - usecase/game_state.GameStateへの型エイリアスに変更
+  - セーブ/ロード変換関数はusecase/game_stateに移動、app層は委譲のみ
+  - インポートパスを更新
+  - _Requirements: 14.1_
+
+- [x] 9.2 (P) app/inventory_manager.goの削除
+  - app/inventory_manager.goを削除
+  - usecase/game_state.InventoryManagerへの型エイリアスを使用
+  - 関連するインポートパスを更新
+  - _Requirements: 14.2_
+
+- [x] 9.3 (P) app/statistics_manager.goの削除
+  - app/statistics_manager.goを削除
+  - usecase/game_state.StatisticsManagerへの型エイリアスを使用
+  - 関連するインポートパスを更新
+  - _Requirements: 14.3_
+
+- [x] 9.4 (P) app/settings.goの削除
+  - app/settings.goを削除
+  - usecase/game_state.Settingsへの型エイリアスを使用
+  - 関連するインポートパスを更新
+  - _Requirements: 14.4_
+
+- [x] 9.5 インポートパスの統一と検証
+  - app層の全ファイルでusecase/game_stateへのインポートパスを確認
+  - tui/screens層でのインポートパスを確認
+  - ビルドとテストで動作確認（全パスOK）
+  - _Requirements: 14.5, 14.6, 17.1, 17.4_
+
+- [ ] 9.6 (オプション) ヘルパー・アダプターの整理
+  - app/helpers.goの関数をtui/presenterへの呼び出しに置き換え可能か検討
+  - app/adapters.goの削除可能性を検討
+  - 後方互換性を維持しつつ段階的に整理
+  - _Requirements: 5.4, 10.3_

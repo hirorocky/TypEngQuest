@@ -151,12 +151,7 @@ func TestLoggedAddCoreError(t *testing.T) {
 
 	// 満杯のインベントリを作成してエラーを発生させる
 	// 最大スロット数を1に設定
-	invManager := &InventoryManager{
-		cores:   nil,
-		modules: nil,
-	}
-
-	// 小さいインベントリを作成
+	invManager := NewInventoryManager()
 	invManager.SetMaxCoreSlots(1)
 	invManager.SetMaxModuleSlots(1)
 
