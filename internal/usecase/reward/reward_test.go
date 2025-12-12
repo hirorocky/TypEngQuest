@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/inventory"
 	"hirorocky/type-battle/internal/loader"
+	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
 // ==================== Task 8.1: 報酬計算と表示 ====================

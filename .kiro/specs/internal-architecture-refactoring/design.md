@@ -689,6 +689,30 @@ JSON ファイル
 3. `.kiro/steering/structure.md`を更新
 4. 最終ビルド・テスト実行
 
+### Phase 6: app層重複コード解消（追加フェーズ）
+
+ギャップ分析により、app層とusecase/game_state層の重複コードが残存していることが判明。本フェーズでこの問題を解消する。
+
+**残存する重複ファイル:**
+| app層ファイル | usecase/game_state対応ファイル | 対応方針 |
+|--------------|-------------------------------|---------|
+| `app/game_state.go` | `usecase/game_state/game_state.go` | app側の重複定義を削除、usecase参照に統一 |
+| `app/inventory_manager.go` | `usecase/game_state/inventory_manager.go` | app側を削除、usecase参照に統一 |
+| `app/statistics_manager.go` | `usecase/game_state/statistics_manager.go` | app側を削除、usecase参照に統一 |
+| `app/settings.go` | `usecase/game_state/settings.go` | app側を削除、usecase参照に統一 |
+| `app/helpers.go` | `tui/presenter/*.go` | 将来的に削除（後方互換性維持中） |
+| `app/adapters.go` | `tui/presenter/inventory_presenter.go` | 将来的に削除（後方互換性維持中） |
+
+**実施内容:**
+1. app層の重複構造体定義（GameState, InventoryManager等）を削除
+2. app層がusecase/game_stateの型をimportして使用するよう変更
+3. セーブ/ロード変換関数（ToSaveData, FromSaveData）はapp層に維持
+4. インポートパスを統一し、ビルド・テスト実行
+
+**維持する後方互換性:**
+- usecase/reward、usecase/enemyのloader依存は後方互換性のため維持（ドメイン型APIを追加済み）
+- GameState⇔SaveDataの変換はapp層に維持（usecase層からのinfra依存を避けるため）
+
 ### Rollback Triggers
 
 - テスト失敗時は該当ステップをロールバック
