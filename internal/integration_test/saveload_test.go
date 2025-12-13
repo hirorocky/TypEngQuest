@@ -1,5 +1,5 @@
 // Package integration_test は統合テストを提供します。
-// Requirements: 17.3, 17.4, 17.5, 19.2
+
 package integration_test
 
 import (
@@ -16,7 +16,7 @@ import (
 // ==================================================
 
 func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
-	// Requirement 17.3: セーブデータ書き込み→ロード→整合性確認
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
@@ -106,7 +106,7 @@ func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 }
 
 func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
-	// Requirement 19.2: 破損データ検出→バックアップ復元
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
@@ -152,7 +152,7 @@ func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
 }
 
 func TestSaveLoadFlow_BackupRotation(t *testing.T) {
-	// Requirement 17.7: バックアップローテーション
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
@@ -191,7 +191,7 @@ func TestSaveLoadFlow_BackupRotation(t *testing.T) {
 }
 
 func TestSaveLoadFlow_NewGameWhenNoSave(t *testing.T) {
-	// Requirement 17.5: セーブデータ不在時の新規ゲーム開始
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
@@ -229,7 +229,7 @@ func TestSaveLoadFlow_NewGameWhenNoSave(t *testing.T) {
 }
 
 func TestSaveLoadFlow_DataValidation(t *testing.T) {
-	// Requirement 17.6: データ検証
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
@@ -253,7 +253,7 @@ func TestSaveLoadFlow_DataValidation(t *testing.T) {
 }
 
 func TestSaveLoadFlow_ResetSaveData(t *testing.T) {
-	// Requirement 17.8: セーブをリセットして最初からやり直せる
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 

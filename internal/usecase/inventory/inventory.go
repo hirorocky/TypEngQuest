@@ -1,6 +1,6 @@
 // Package inventory はインベントリ管理機能を提供します。
 // コア、モジュール、エージェントの保管と管理を担当します。
-// Requirements: 5.1-5.8, 6.1-6.7, 7.12, 8.9, 8.10, 20.6
+
 package inventory
 
 import (
@@ -13,7 +13,7 @@ import (
 // ==================== コアインベントリ（Task 4.1） ====================
 
 // CoreInventory はコアのインベントリを管理する構造体です。
-// Requirements: 5.1, 5.2, 5.3, 5.7, 5.8
+
 type CoreInventory struct {
 	// cores はコアのマップ（ID → CoreModel）です。
 	cores map[string]*domain.CoreModel
@@ -32,7 +32,7 @@ func NewCoreInventory(maxSlots int) *CoreInventory {
 
 // Add はコアをインベントリに追加します。
 // 上限に達している場合はエラーを返します。
-// Requirement 5.2: コアの追加処理
+
 func (inv *CoreInventory) Add(core *domain.CoreModel) error {
 	if len(inv.cores) >= inv.maxSlots {
 		return fmt.Errorf("コアインベントリが満杯です（上限: %d）", inv.maxSlots)
@@ -42,7 +42,7 @@ func (inv *CoreInventory) Add(core *domain.CoreModel) error {
 }
 
 // Remove はコアをインベントリから削除します。
-// Requirement 5.7: 不要なコアを破棄する機能
+
 func (inv *CoreInventory) Remove(id string) *domain.CoreModel {
 	core, exists := inv.cores[id]
 	if !exists {
@@ -73,7 +73,7 @@ func (inv *CoreInventory) IsFull() bool {
 }
 
 // List は全てのコアをリストで返します。
-// Requirement 5.1, 5.2: コア一覧表示機能
+
 func (inv *CoreInventory) List() []*domain.CoreModel {
 	result := make([]*domain.CoreModel, 0, len(inv.cores))
 	for _, core := range inv.cores {
@@ -83,7 +83,7 @@ func (inv *CoreInventory) List() []*domain.CoreModel {
 }
 
 // FilterByType は指定されたコア特性でフィルタリングします。
-// Requirement 5.8: コアを特性でフィルタリング
+
 func (inv *CoreInventory) FilterByType(typeID string) []*domain.CoreModel {
 	result := make([]*domain.CoreModel, 0)
 	for _, core := range inv.cores {
@@ -95,7 +95,7 @@ func (inv *CoreInventory) FilterByType(typeID string) []*domain.CoreModel {
 }
 
 // FilterByLevelRange は指定されたレベル範囲でフィルタリングします。
-// Requirement 5.8: コアをレベルでフィルタリング
+
 func (inv *CoreInventory) FilterByLevelRange(minLevel, maxLevel int) []*domain.CoreModel {
 	result := make([]*domain.CoreModel, 0)
 	for _, core := range inv.cores {
@@ -107,7 +107,7 @@ func (inv *CoreInventory) FilterByLevelRange(minLevel, maxLevel int) []*domain.C
 }
 
 // SortByLevel はレベルでソートしたコアリストを返します。
-// Requirement 5.8: コアをレベルでソート
+
 // ascending: trueなら昇順、falseなら降順
 func (inv *CoreInventory) SortByLevel(ascending bool) []*domain.CoreModel {
 	result := inv.List()
@@ -121,7 +121,7 @@ func (inv *CoreInventory) SortByLevel(ascending bool) []*domain.CoreModel {
 }
 
 // SortByType は特性名でソートしたコアリストを返します。
-// Requirement 5.8: コアを特性でソート
+
 func (inv *CoreInventory) SortByType(ascending bool) []*domain.CoreModel {
 	result := inv.List()
 	sort.Slice(result, func(i, j int) bool {
@@ -136,7 +136,7 @@ func (inv *CoreInventory) SortByType(ascending bool) []*domain.CoreModel {
 // ==================== モジュールインベントリ（Task 4.2） ====================
 
 // ModuleInventory はモジュールのインベントリを管理する構造体です。
-// Requirements: 6.1, 6.2, 6.3, 6.5, 6.6, 6.7
+
 type ModuleInventory struct {
 	// modules はモジュールのマップ（ID → ModuleModel）です。
 	modules map[string]*domain.ModuleModel
@@ -155,7 +155,7 @@ func NewModuleInventory(maxSlots int) *ModuleInventory {
 
 // Add はモジュールをインベントリに追加します。
 // 上限に達している場合はエラーを返します。
-// Requirement 6.2: モジュールの追加処理
+
 func (inv *ModuleInventory) Add(module *domain.ModuleModel) error {
 	if len(inv.modules) >= inv.maxSlots {
 		return fmt.Errorf("モジュールインベントリが満杯です（上限: %d）", inv.maxSlots)
@@ -165,7 +165,7 @@ func (inv *ModuleInventory) Add(module *domain.ModuleModel) error {
 }
 
 // Remove はモジュールをインベントリから削除します。
-// Requirement 6.6: 不要なモジュールを破棄する機能
+
 func (inv *ModuleInventory) Remove(id string) *domain.ModuleModel {
 	module, exists := inv.modules[id]
 	if !exists {
@@ -196,7 +196,7 @@ func (inv *ModuleInventory) IsFull() bool {
 }
 
 // List は全てのモジュールをリストで返します。
-// Requirement 6.1, 6.2: モジュール一覧表示機能
+
 func (inv *ModuleInventory) List() []*domain.ModuleModel {
 	result := make([]*domain.ModuleModel, 0, len(inv.modules))
 	for _, module := range inv.modules {
@@ -206,7 +206,7 @@ func (inv *ModuleInventory) List() []*domain.ModuleModel {
 }
 
 // FilterByCategory は指定されたカテゴリでフィルタリングします。
-// Requirement 6.7: モジュールをカテゴリでフィルタリング
+
 func (inv *ModuleInventory) FilterByCategory(category domain.ModuleCategory) []*domain.ModuleModel {
 	result := make([]*domain.ModuleModel, 0)
 	for _, module := range inv.modules {
@@ -218,7 +218,7 @@ func (inv *ModuleInventory) FilterByCategory(category domain.ModuleCategory) []*
 }
 
 // FilterByLevel は指定されたレベルでフィルタリングします。
-// Requirement 6.7: モジュールをレベルでフィルタリング
+
 func (inv *ModuleInventory) FilterByLevel(level int) []*domain.ModuleModel {
 	result := make([]*domain.ModuleModel, 0)
 	for _, module := range inv.modules {
@@ -241,7 +241,7 @@ func (inv *ModuleInventory) FilterByTag(tag string) []*domain.ModuleModel {
 }
 
 // FilterCompatibleWithCore はコアに装備可能なモジュールのみをフィルタリングします。
-// Requirement 5.11, 5.12: コアとモジュールの互換性チェック
+
 func (inv *ModuleInventory) FilterCompatibleWithCore(core *domain.CoreModel) []*domain.ModuleModel {
 	result := make([]*domain.ModuleModel, 0)
 	for _, module := range inv.modules {
@@ -253,7 +253,7 @@ func (inv *ModuleInventory) FilterCompatibleWithCore(core *domain.CoreModel) []*
 }
 
 // SortByLevel はレベルでソートしたモジュールリストを返します。
-// Requirement 6.7: モジュールをレベルでソート
+
 func (inv *ModuleInventory) SortByLevel(ascending bool) []*domain.ModuleModel {
 	result := inv.List()
 	sort.Slice(result, func(i, j int) bool {
@@ -266,7 +266,7 @@ func (inv *ModuleInventory) SortByLevel(ascending bool) []*domain.ModuleModel {
 }
 
 // SortByCategory はカテゴリでソートしたモジュールリストを返します。
-// Requirement 6.7: モジュールをカテゴリでソート
+
 func (inv *ModuleInventory) SortByCategory(ascending bool) []*domain.ModuleModel {
 	result := inv.List()
 	sort.Slice(result, func(i, j int) bool {
@@ -282,18 +282,18 @@ func (inv *ModuleInventory) SortByCategory(ascending bool) []*domain.ModuleModel
 
 // AgentInventory はエージェントのインベントリを管理する構造体です。
 // 装備状態はAgentManagerで一元管理されます。
-// Requirements: 7.12, 8.9, 8.10, 20.6
+
 type AgentInventory struct {
 	// agents はエージェントのマップ（ID → AgentModel）です。
 	agents map[string]*domain.AgentModel
 
 	// maxSlots はエージェントの最大保持数です。
-	// Requirement 20.6: 最低20体
+
 	maxSlots int
 }
 
 // NewAgentInventory は新しいAgentInventoryを作成します。
-// Requirement 20.6: 最低20体の保有上限
+
 func NewAgentInventory(maxSlots int) *AgentInventory {
 	return &AgentInventory{
 		agents:   make(map[string]*domain.AgentModel),
@@ -314,7 +314,7 @@ func NewAgentInventoryWithDefault(maxSlots int) *AgentInventory {
 
 // Add はエージェントをインベントリに追加します。
 // 上限に達している場合はエラーを返します。
-// Requirement 7.12: エージェント保有数上限チェック
+
 func (inv *AgentInventory) Add(agent *domain.AgentModel) error {
 	if len(inv.agents) >= inv.maxSlots {
 		return fmt.Errorf("エージェントインベントリが満杯です（上限: %d）", inv.maxSlots)
@@ -325,7 +325,7 @@ func (inv *AgentInventory) Add(agent *domain.AgentModel) error {
 
 // Remove はエージェントをインベントリから削除します。
 // 装備状態はAgentManagerで管理されているため、装備解除は別途行う必要があります。
-// Requirement 8.9: 所持エージェントを破棄する機能
+
 func (inv *AgentInventory) Remove(id string) *domain.AgentModel {
 	agent, exists := inv.agents[id]
 	if !exists {

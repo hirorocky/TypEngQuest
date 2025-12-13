@@ -1,6 +1,6 @@
 // Package errorhandler はエラー処理とログ機能を担当します。
 // 入力検証、エラーハンドリング、デバッグモード、ログ機能を提供します。
-// Requirements: 19.3, 19.4, 19.6
+
 package errorhandler
 
 import (
@@ -30,7 +30,7 @@ const (
 )
 
 // GameError はゲーム固有のエラー型です。
-// Requirement 19.4: エラーメッセージ表示
+
 type GameError struct {
 	// Type はエラーの種類です。
 	Type ErrorType
@@ -93,7 +93,7 @@ func WrapError(err error, context string) *GameError {
 // ==================================================
 
 // ValidateLevel はレベル入力の検証を行います。
-// Requirement 19.4: 不正な入力値の検証
+
 func ValidateLevel(level int, maxLevelReached int) error {
 	if level <= 0 {
 		return NewGameError(ErrInvalidInput, "レベルは1以上である必要があります")
@@ -108,7 +108,7 @@ func ValidateLevel(level int, maxLevelReached int) error {
 }
 
 // ValidateAgentSlot はエージェントスロット番号の検証を行います。
-// Requirement 19.4: 不正な入力値の検証
+
 func ValidateAgentSlot(slot int) error {
 	// 最大3スロット (0, 1, 2)
 	if slot < 0 || slot > 2 {
@@ -119,7 +119,7 @@ func ValidateAgentSlot(slot int) error {
 }
 
 // ValidatePositiveInt は正の整数の検証を行います。
-// Requirement 19.4: 不正な入力値の検証
+
 func ValidatePositiveInt(value int, fieldName string) error {
 	if value <= 0 {
 		return NewGameError(ErrInvalidInput,
@@ -129,7 +129,7 @@ func ValidatePositiveInt(value int, fieldName string) error {
 }
 
 // ValidateNonNegativeInt は非負の整数の検証を行います。
-// Requirement 19.4: 不正な入力値の検証
+
 func ValidateNonNegativeInt(value int, fieldName string) error {
 	if value < 0 {
 		return NewGameError(ErrInvalidInput,
@@ -139,7 +139,7 @@ func ValidateNonNegativeInt(value int, fieldName string) error {
 }
 
 // ValidateString は非空文字列の検証を行います。
-// Requirement 19.4: 不正な入力値の検証
+
 func ValidateString(value string, fieldName string) error {
 	if strings.TrimSpace(value) == "" {
 		return NewGameError(ErrInvalidInput,
@@ -153,7 +153,7 @@ func ValidateString(value string, fieldName string) error {
 // ==================================================
 
 // RecoverToError はパニックからエラーを回復します。
-// Requirement 19.4: ゲームクラッシュ防止
+
 func RecoverToError(r interface{}) error {
 	if r == nil {
 		return nil
@@ -178,7 +178,7 @@ var (
 )
 
 // SetDebugMode はデバッグモードを設定します。
-// Requirement 19.6: デバッグモード切り替え
+
 func SetDebugMode(enabled bool) {
 	debugModeMu.Lock()
 	defer debugModeMu.Unlock()
@@ -206,7 +206,7 @@ const (
 )
 
 // Logger はログ機能を提供する構造体です。
-// Requirement 19.6: エラー詳細のログファイル記録
+
 type Logger struct {
 	filePath string
 	file     *os.File
@@ -280,7 +280,7 @@ func (l *Logger) Debug(message string) {
 }
 
 // LogException は例外（エラー）をログに記録します。
-// Requirement 19.3: 予期しない例外のキャッチと通知
+
 func (l *Logger) LogException(err error, context string) {
 	message := fmt.Sprintf("例外発生 [%s]: %v", context, err)
 	l.Error(message)

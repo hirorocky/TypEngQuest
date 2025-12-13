@@ -1,5 +1,5 @@
 // Package startup は初回起動時の初期化処理を担当します。
-// Requirements: 3.8, 17.5
+
 package startup
 
 import (
@@ -79,7 +79,7 @@ func createTestExternalData() *masterdata.ExternalData {
 // ==================================================
 
 func TestNewGameInitializer_CreateInitialCore(t *testing.T) {
-	// Requirement 3.8: 初期コアの提供（レベル1、オールラウンダー）
+
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	core := initializer.CreateInitialCore()
@@ -99,7 +99,7 @@ func TestNewGameInitializer_CreateInitialCore(t *testing.T) {
 }
 
 func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
-	// Requirement 3.8: 初期モジュールの提供（各カテゴリLv1を4個）
+
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	modules := initializer.CreateInitialModules()
@@ -125,7 +125,7 @@ func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
 }
 
 func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
-	// Requirement 3.8: 初期エージェント自動合成と装備
+
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	agent := initializer.CreateInitialAgent()
@@ -150,7 +150,7 @@ func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
 }
 
 func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
-	// Requirement 17.5: セーブデータ不在時の新規ゲーム開始
+
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()

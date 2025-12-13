@@ -368,8 +368,7 @@ func (s *BattleScreen) renderResultArea() string {
 }
 
 // renderTypingArea はタイピングエリアを描画します。
-// Requirement 9.6: タイピングチャレンジテキスト表示と入力進捗
-// Requirement 9.15: 制限時間のリアルタイム表示
+
 // UI改善: 残り時間をプログレスバー形式で表示
 func (s *BattleScreen) renderTypingArea() string {
 	var builder strings.Builder

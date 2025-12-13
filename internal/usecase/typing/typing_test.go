@@ -1,6 +1,6 @@
 // Package typing はタイピングシステムを提供します。
 // タイピングチャレンジの生成と評価を担当します。
-// Requirements: 9.7-9.10, 10.6-10.8, 16.1-16.13
+
 package typing
 
 import (
@@ -11,7 +11,7 @@ import (
 // ==================== タイピングチャレンジ生成テスト（Task 6.1） ====================
 
 // TestGenerateChallenge_Easy は弱いモジュール用テキスト生成をテストします。
-// Requirement 16.6: 弱いモジュールは短いテキスト（3〜6文字）
+
 func TestGenerateChallenge_Easy(t *testing.T) {
 	dict := &Dictionary{
 		Easy:   []string{"cat", "dog", "hello"},
@@ -32,7 +32,7 @@ func TestGenerateChallenge_Easy(t *testing.T) {
 }
 
 // TestGenerateChallenge_Medium は中程度のモジュール用テキスト生成をテストします。
-// Requirement 16.7: 中程度のモジュールは中程度のテキスト（7〜11文字）
+
 func TestGenerateChallenge_Medium(t *testing.T) {
 	dict := &Dictionary{
 		Easy:   []string{"cat", "dog"},
@@ -53,7 +53,7 @@ func TestGenerateChallenge_Medium(t *testing.T) {
 }
 
 // TestGenerateChallenge_Hard は強力なモジュール用テキスト生成をテストします。
-// Requirement 16.8: 強力なモジュールは長いテキスト（12〜20文字）
+
 func TestGenerateChallenge_Hard(t *testing.T) {
 	dict := &Dictionary{
 		Easy:   []string{"cat"},
@@ -74,7 +74,7 @@ func TestGenerateChallenge_Hard(t *testing.T) {
 }
 
 // TestGenerateChallenge_NoDuplication は連続同一テキスト回避をテストします。
-// Requirement 16.9: 同じチャレンジテキストが連続しない
+
 func TestGenerateChallenge_NoDuplication(t *testing.T) {
 	dict := &Dictionary{
 		Easy:   []string{"cat", "dog", "run", "jump"},
@@ -107,7 +107,7 @@ func TestGenerateChallenge_NoDuplication(t *testing.T) {
 }
 
 // TestGenerateChallenge_TimeLimit はモジュール別制限時間設定をテストします。
-// Requirement 16.10: 各モジュールにタイピング制限時間を設定
+
 func TestGenerateChallenge_TimeLimit(t *testing.T) {
 	dict := &Dictionary{
 		Easy:   []string{"cat", "dog"},
@@ -127,7 +127,7 @@ func TestGenerateChallenge_TimeLimit(t *testing.T) {
 // ==================== タイピング評価エンジンテスト（Task 6.2） ====================
 
 // TestEvaluator_StartChallenge はチャレンジ開始時のタイムスタンプ記録をテストします。
-// Requirement 9.7: チャレンジ開始時の処理
+
 func TestEvaluator_StartChallenge(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -148,7 +148,7 @@ func TestEvaluator_StartChallenge(t *testing.T) {
 }
 
 // TestEvaluator_ProcessCorrectInput は正しい入力の処理をテストします。
-// Requirement 9.8: 正しい文字入力の処理
+
 func TestEvaluator_ProcessCorrectInput(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -170,7 +170,7 @@ func TestEvaluator_ProcessCorrectInput(t *testing.T) {
 }
 
 // TestEvaluator_ProcessIncorrectInput は誤った入力の処理をテストします。
-// Requirement 9.9: 誤った文字入力の処理
+
 func TestEvaluator_ProcessIncorrectInput(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -195,7 +195,7 @@ func TestEvaluator_ProcessIncorrectInput(t *testing.T) {
 }
 
 // TestEvaluator_CalculateWPM はWPM計算をテストします。
-// Requirement 10.6: WPM計算（正しい文字数 / 完了時間(秒) × 60 / 5）
+
 func TestEvaluator_CalculateWPM(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -222,7 +222,7 @@ func TestEvaluator_CalculateWPM(t *testing.T) {
 }
 
 // TestEvaluator_CalculateAccuracy は正確性計算をテストします。
-// Requirement 10.7: 正確性計算（正しい入力数 / 総入力数）
+
 func TestEvaluator_CalculateAccuracy(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -245,7 +245,7 @@ func TestEvaluator_CalculateAccuracy(t *testing.T) {
 }
 
 // TestEvaluator_CalculateSpeedFactor は速度係数計算をテストします。
-// Requirement 10.8: 速度係数計算（基準時間 / 実際時間、上限2.0）
+
 func TestEvaluator_CalculateSpeedFactor(t *testing.T) {
 	evaluator := NewEvaluator()
 
@@ -270,7 +270,7 @@ func TestEvaluator_CalculateSpeedFactor(t *testing.T) {
 }
 
 // TestEvaluator_SpeedFactorCap は速度係数の上限をテストします。
-// Requirement 10.8: 速度係数の上限2.0
+
 func TestEvaluator_SpeedFactorCap(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -292,7 +292,7 @@ func TestEvaluator_SpeedFactorCap(t *testing.T) {
 }
 
 // TestEvaluator_CheckTimeout は制限時間超過の検出をテストします。
-// Requirement 16.11: タイピング制限時間超過の検出
+
 func TestEvaluator_CheckTimeout(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{
@@ -363,7 +363,7 @@ func TestEvaluator_GetProgress(t *testing.T) {
 }
 
 // TestEvaluator_GetRemainingTime は残り時間の取得をテストします。
-// Requirement 16.12: タイピング中に残り時間をリアルタイムで表示
+
 func TestEvaluator_GetRemainingTime(t *testing.T) {
 	evaluator := NewEvaluator()
 	challenge := &Challenge{

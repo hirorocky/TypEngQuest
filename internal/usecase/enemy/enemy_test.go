@@ -1,5 +1,5 @@
 // Package enemy は敵生成システムのテストを提供します。
-// Requirements: 13.2, 13.4-13.8, 20.2-20.4, 20.8
+
 package enemy
 
 import (
@@ -12,7 +12,7 @@ import (
 // ==================== Task 9.1: 敵ステータス計算 ====================
 
 // TestEnemyStats_HPCalculation はレベルに応じたHP計算をテストします。
-// Requirement 13.2: レベルに応じたHP計算
+
 func TestEnemyStats_HPCalculation(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -50,7 +50,7 @@ func TestEnemyStats_HPCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackPowerCalculation はレベルに応じた攻撃力計算をテストします。
-// Requirement 20.2: レベルに応じた攻撃力計算
+
 func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -83,7 +83,7 @@ func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackIntervalCalculation はレベルに応じた攻撃間隔計算をテストします。
-// Requirement 20.3, 20.4: 高レベルほど短い攻撃間隔
+
 func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -117,7 +117,7 @@ func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackIntervalMinimum は攻撃間隔の最低値をテストします。
-// Requirement 20.4: 最低攻撃間隔の保証
+
 func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "fast_enemy", Name: "高速敵", BaseHP: 50, BaseAttackPower: 5,
@@ -141,7 +141,7 @@ func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
 // ==================== Task 9.2: 敵バリエーションとレベル上限 ====================
 
 // TestEnemyVariation_RandomSelection は敵タイプからのランダム選択をテストします。
-// Requirement 13.4, 13.5: 敵タイプのランダム選択
+
 func TestEnemyVariation_RandomSelection(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -170,7 +170,7 @@ func TestEnemyVariation_RandomSelection(t *testing.T) {
 }
 
 // TestEnemyVariation_SameLevelMultipleTypes は同レベルでの複数バリエーション対応をテストします。
-// Requirement 13.5: 同レベルでも複数の敵バリエーションからランダム選択
+
 func TestEnemyVariation_SameLevelMultipleTypes(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -207,7 +207,7 @@ func TestEnemyVariation_SameLevelMultipleTypes(t *testing.T) {
 }
 
 // TestEnemyLevel_Maximum はレベル上限をテストします。
-// Requirement 13.7, 20.8: レベル上限（100）の設定
+
 func TestEnemyLevel_Maximum(t *testing.T) {
 	if MaxEnemyLevel != 100 {
 		t.Errorf("レベル上限が100であるべき: got %d", MaxEnemyLevel)
@@ -230,7 +230,7 @@ func TestEnemyLevel_Maximum(t *testing.T) {
 }
 
 // TestEnemyLevel_MaxLevelDefeat は最高レベル敵撃破時のゲームクリア判定をテストします。
-// Requirement 13.8: 最高レベル敵撃破時のゲームクリア演出
+
 func TestEnemyLevel_MaxLevelDefeat(t *testing.T) {
 	generator := NewEnemyGenerator(nil)
 
@@ -246,7 +246,7 @@ func TestEnemyLevel_MaxLevelDefeat(t *testing.T) {
 }
 
 // TestEnemyLevel_ValidRange は有効なレベル範囲をテストします。
-// Requirement 13.6: 高レベル敵ほど高いステータス
+
 func TestEnemyLevel_ValidRange(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
@@ -271,7 +271,7 @@ func TestEnemyLevel_ValidRange(t *testing.T) {
 }
 
 // TestEnemyGeneration_StatsScaling はステータススケーリングをテストします。
-// Requirement 13.6, 20.2: 高レベルほど高ステータス
+
 func TestEnemyGeneration_StatsScaling(t *testing.T) {
 	enemyTypes := []masterdata.EnemyTypeData{
 		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,

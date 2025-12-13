@@ -136,7 +136,7 @@ func TestEffectTable_新規作成(t *testing.T) {
 }
 
 // TestEffectTable_行の追加 はAddRowで行を追加できることを確認します。
-// Requirement 4.5: バフ付与時の追加
+
 func TestEffectTable_行の追加(t *testing.T) {
 	table := NewEffectTable()
 
@@ -162,7 +162,7 @@ func TestEffectTable_行の追加(t *testing.T) {
 }
 
 // TestEffectTable_行の削除 はRemoveRowで行を削除できることを確認します。
-// Requirement 4.6: 効果時間経過で削除
+
 func TestEffectTable_行の削除(t *testing.T) {
 	table := NewEffectTable()
 
@@ -292,7 +292,6 @@ func TestEffectTable_最終ステータス計算_乗算のみ(t *testing.T) {
 }
 
 // TestEffectTable_最終ステータス計算_加算乗算順序 は加算→乗算の順序で計算されることを確認します。
-// Requirement: 最終ステータス計算（加算→乗算の順序で適用）
 func TestEffectTable_最終ステータス計算_加算乗算順序(t *testing.T) {
 	table := NewEffectTable()
 
@@ -435,7 +434,7 @@ func TestEffectTable_ソース種別でフィルタ(t *testing.T) {
 }
 
 // TestEffectTable_デバフの効果 はデバフがステータスを減少させることを確認します。
-// Requirements 11.28-11.30: バフ・デバフの相互作用
+
 func TestEffectTable_デバフの効果(t *testing.T) {
 	table := NewEffectTable()
 

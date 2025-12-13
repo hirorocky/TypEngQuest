@@ -1,6 +1,6 @@
 // Package agent はエージェント管理機能を提供します。
 // コア特性とモジュールの互換性検証、エージェント合成、装備管理を担当します。
-// Requirements: 5.9-5.12, 7.1-7.13, 8.1-8.8
+
 package agent
 
 import (
@@ -13,7 +13,7 @@ import (
 // ==================== コア特性とモジュールタグ互換性検証テスト（Task 5.1） ====================
 
 // TestValidateModuleCompatibility はコア特性とモジュールタグの互換性検証をテストします。
-// Requirement 5.9-5.12: タグシステムによる互換性チェック
+
 func TestValidateModuleCompatibility(t *testing.T) {
 	// 攻撃バランスコア（physical_low, magic_low を許可）
 	attackType := domain.CoreType{
@@ -49,7 +49,7 @@ func TestValidateModuleCompatibility(t *testing.T) {
 }
 
 // TestGetAllowedTags はコア特性の許可タグリスト取得をテストします。
-// Requirement 5.10: コア特性ごとに許可するモジュールタグのリスト
+
 func TestGetAllowedTags(t *testing.T) {
 	healerType := domain.CoreType{
 		ID:          "healer",
@@ -83,7 +83,7 @@ func TestGetAllowedTags(t *testing.T) {
 // ==================== エージェント合成機能テスト（Task 5.2） ====================
 
 // TestSynthesizeAgent はエージェント合成処理をテストします。
-// Requirement 7.1-7.8: エージェント合成機能
+
 func TestSynthesizeAgent(t *testing.T) {
 	// インベントリをセットアップ
 	coreInv := inventory.NewCoreInventory(10)
@@ -143,7 +143,7 @@ func TestSynthesizeAgent(t *testing.T) {
 }
 
 // TestSynthesizeAgent_IncompatibleModule は互換性のないモジュールでの合成拒否をテストします。
-// Requirement 7.10: モジュールタグがコアの許可タグに含まれない場合、選択を拒否
+
 func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
@@ -174,7 +174,7 @@ func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 }
 
 // TestSynthesizeAgent_NotEnoughModules はモジュールが4個未満での合成拒否をテストします。
-// Requirement 7.11: コアまたはモジュールが不足している場合、合成を拒否
+
 func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
@@ -201,7 +201,7 @@ func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 }
 
 // TestGetSynthesisPreview は合成プレビューをテストします。
-// Requirement 7.13: 合成プレビューで最終的なステータスを表示
+
 func TestGetSynthesisPreview(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(10)
 	moduleInv := inventory.NewModuleInventory(20)
@@ -249,7 +249,7 @@ func TestGetSynthesisPreview(t *testing.T) {
 // ==================== エージェント装備機能テスト（Task 5.3） ====================
 
 // TestEquipAgent はエージェント装備処理をテストします。
-// Requirement 8.1-8.5: エージェント装備機能
+
 func TestEquipAgent(t *testing.T) {
 	manager := NewAgentManager(nil, nil)
 
@@ -289,7 +289,7 @@ func TestEquipAgent(t *testing.T) {
 }
 
 // TestEquipAgent_MaxSlots は3スロット制限をテストします。
-// Requirement 8.2: 3つの装備スロット
+
 func TestEquipAgent_MaxSlots(t *testing.T) {
 	manager := NewAgentManager(nil, nil)
 
@@ -337,7 +337,7 @@ func TestEquipAgent_MaxSlots(t *testing.T) {
 }
 
 // TestUnequipAgent はエージェント装備解除処理をテストします。
-// Requirement 8.7: 装備解除オプション
+
 func TestUnequipAgent(t *testing.T) {
 	manager := NewAgentManager(nil, nil)
 
@@ -373,7 +373,7 @@ func TestUnequipAgent(t *testing.T) {
 }
 
 // TestEquipAgent_RecalculateHP は装備変更時のHP再計算をテストします。
-// Requirement 8.6: 装備変更時のプレイヤー最大HP再計算
+
 func TestEquipAgent_RecalculateHP(t *testing.T) {
 	manager := NewAgentManager(nil, nil)
 

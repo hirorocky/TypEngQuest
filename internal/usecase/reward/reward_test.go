@@ -1,5 +1,5 @@
 // Package reward はドロップ・報酬システムのテストを提供します。
-// Requirements: 12.1-12.18
+
 package reward
 
 import (
@@ -14,7 +14,7 @@ import (
 // ==================== Task 8.1: 報酬計算と表示 ====================
 
 // TestBattleReward_Victory_ShowsRewardScreen は勝利時に報酬画面を表示することをテストします。
-// Requirement 12.1: 勝利時の報酬画面表示
+
 func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -39,7 +39,7 @@ func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 }
 
 // TestBattleReward_Victory_ShowsStatistics は勝利時にバトル統計を表示することをテストします。
-// Requirement 12.2: バトル統計（WPM、正確性、クリアタイム）表示
+
 func TestBattleReward_Victory_ShowsStatistics(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -64,7 +64,7 @@ func TestBattleReward_Victory_ShowsStatistics(t *testing.T) {
 }
 
 // TestBattleReward_Defeat_NoRewardScreen は敗北時に報酬画面を表示しないことをテストします。
-// Requirement 12.4: 敗北時の報酬なし直接遷移
+
 func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -90,7 +90,7 @@ func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 // ==================== Task 8.2: コアドロップシステム ====================
 
 // TestCoreDrop_Judgment はコアドロップ判定が正しく動作することをテストします。
-// Requirement 12.5: コアドロップ判定処理
+
 func TestCoreDrop_Judgment(t *testing.T) {
 	coreTypes := []masterdata.CoreTypeData{
 		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
@@ -109,7 +109,7 @@ func TestCoreDrop_Judgment(t *testing.T) {
 }
 
 // TestCoreDrop_LevelInRange はコアレベルが敵レベル±範囲内であることをテストします。
-// Requirement 12.6: コアレベル決定（敵レベル ± 範囲内ランダム）
+
 func TestCoreDrop_LevelInRange(t *testing.T) {
 	coreTypes := []masterdata.CoreTypeData{
 		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
@@ -141,7 +141,7 @@ func TestCoreDrop_LevelInRange(t *testing.T) {
 }
 
 // TestCoreDrop_MinDropLevel は特性別ドロップ最低敵レベル制限をテストします。
-// Requirement 12.8, 12.9: 特性別ドロップ最低敵レベル制限
+
 func TestCoreDrop_MinDropLevel(t *testing.T) {
 	coreTypes := []masterdata.CoreTypeData{
 		{ID: "common_core", Name: "一般コア", MinDropLevel: 1, AllowedTags: []string{"test"},
@@ -171,7 +171,7 @@ func TestCoreDrop_MinDropLevel(t *testing.T) {
 }
 
 // TestCoreDrop_InitialCoreTypes は初期コア特性のドロップ最低敵レベルをテストします。
-// Requirement 12.10: 初期コア特性のドロップ最低敵レベル設定
+
 func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 	// cores.jsonから読み込まれる初期設定を再現
 	coreTypes := []masterdata.CoreTypeData{
@@ -204,7 +204,7 @@ func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 // ==================== Task 8.3: モジュールドロップシステム ====================
 
 // TestModuleDrop_Judgment はモジュールドロップ判定が正しく動作することをテストします。
-// Requirement 12.11: モジュールドロップ判定処理
+
 func TestModuleDrop_Judgment(t *testing.T) {
 	moduleTypes := []masterdata.ModuleDefinitionData{
 		{ID: "test_module", Name: "テストモジュール", Category: "physical_attack",
@@ -223,7 +223,7 @@ func TestModuleDrop_Judgment(t *testing.T) {
 }
 
 // TestModuleDrop_MinDropLevel はカテゴリ×レベル別ドロップ最低敵レベル制限をテストします。
-// Requirement 12.13, 12.14: カテゴリ×レベル別ドロップ最低敵レベル制限
+
 func TestModuleDrop_MinDropLevel(t *testing.T) {
 	moduleTypes := []masterdata.ModuleDefinitionData{
 		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: "physical_attack",
@@ -255,7 +255,7 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 }
 
 // TestModuleDrop_HighLevelProgression は高レベルモジュールの段階的ドロップ設定をテストします。
-// Requirement 12.15, 12.16: 高レベルモジュールの段階的ドロップ
+
 func TestModuleDrop_HighLevelProgression(t *testing.T) {
 	// modules.jsonから読み込まれる設定を再現
 	moduleTypes := []masterdata.ModuleDefinitionData{
@@ -290,7 +290,7 @@ func TestModuleDrop_HighLevelProgression(t *testing.T) {
 // ==================== Task 8.4: インベントリ満杯時の処理 ====================
 
 // TestInventoryFull_Warning はインベントリ満杯時に警告を表示することをテストします。
-// Requirement 12.17: 満杯警告表示
+
 func TestInventoryFull_Warning(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(2)
 	moduleInv := inventory.NewModuleInventory(2)
@@ -315,7 +315,7 @@ func TestInventoryFull_Warning(t *testing.T) {
 }
 
 // TestInventoryFull_TempStorage は一時保管機能をテストします。
-// Requirement 12.18: 一時保管と後日受け取り機能
+
 func TestInventoryFull_TempStorage(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -345,7 +345,7 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 }
 
 // TestInventoryFull_PromptDiscard は不要アイテム破棄促進をテストします。
-// Requirement 12.17: 不要アイテム破棄促進
+
 func TestInventoryFull_PromptDiscard(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 

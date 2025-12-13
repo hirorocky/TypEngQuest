@@ -1,7 +1,6 @@
 // Package balance はゲームバランスパラメータを管理します。
 // HP係数、敵ステータススケーリング、ドロップ確率などのゲーム調整値を集約管理します。
-// Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7
-//
+
 // シーン定義とシーン遷移ルールはapp/scene.goで管理されます。
 package balance
 
@@ -12,30 +11,30 @@ package balance
 // Config はゲームバランスの設定を保持する構造体です。
 type Config struct {
 	// HPCoefficient はプレイヤーHP計算の係数です。
-	// Requirement 20.1: HP係数の調整
+
 	HPCoefficient float64
 
 	// EnemyAttackPowerScale は敵攻撃力のレベルスケーリング係数です。
-	// Requirement 20.2: 敵攻撃力のスケーリング
+
 	EnemyAttackPowerScale float64
 
 	// EnemyAttackIntervalScale は敵攻撃間隔のレベルスケーリング係数です。
-	// Requirement 20.3: 敵攻撃間隔のスケーリング
+
 	EnemyAttackIntervalScale float64
 
 	// MinAttackIntervalMS は敵攻撃間隔の最小値（ミリ秒）です。
-	// Requirement 20.4: 高レベルでも最小間隔は保証
+
 	MinAttackIntervalMS int
 
 	// CoreDropRate はコアのドロップ確率です。
-	// Requirement 20.5: ドロップ確率の調整
+
 	CoreDropRate float64
 
 	// ModuleDropRate はモジュールのドロップ確率です。
 	ModuleDropRate float64
 
 	// MaxLevel は敵の最大レベルです。
-	// Requirement 20.8: レベル上限100
+
 	MaxLevel int
 
 	// MaxEquippedAgents は装備可能なエージェント数です。
@@ -45,7 +44,7 @@ type Config struct {
 	ModulesPerAgent int
 
 	// TextLengthByDifficulty は難易度ごとのテキスト長さ範囲[min, max]です。
-	// Requirement 20.7: テキスト長さのバランス
+
 	TextLengthByDifficulty map[int][2]int
 
 	// TimeLimitByDifficulty は難易度ごとの制限時間（ミリ秒）です。
@@ -115,7 +114,7 @@ func WithModuleDropRate(rate float64) ConfigOption {
 // ==================================================
 
 // CalculateEnemyAttackPower は敵の攻撃力を計算します。
-// Requirement 20.2: レベルに応じた攻撃力計算
+
 func (c *Config) CalculateEnemyAttackPower(baseAttackPower int, level int) int {
 	// 基礎攻撃力 × (スケーリング係数 ^ (レベル - 1))
 	scale := 1.0
@@ -126,7 +125,7 @@ func (c *Config) CalculateEnemyAttackPower(baseAttackPower int, level int) int {
 }
 
 // CalculateEnemyAttackInterval は敵の攻撃間隔を計算します。
-// Requirement 20.3, 20.4: レベルに応じた攻撃間隔計算（高レベルほど短い、最小値保証）
+
 func (c *Config) CalculateEnemyAttackInterval(baseIntervalMS int, level int) int {
 	// 基礎間隔 × (スケーリング係数 ^ (レベル - 1))
 	scale := 1.0
@@ -143,7 +142,7 @@ func (c *Config) CalculateEnemyAttackInterval(baseIntervalMS int, level int) int
 }
 
 // GetTextLengthRange は指定難易度のテキスト長さ範囲を返します。
-// Requirement 20.7: テキスト長さのバランス
+
 func (c *Config) GetTextLengthRange(difficulty int) (min, max int) {
 	if range_, exists := c.TextLengthByDifficulty[difficulty]; exists {
 		return range_[0], range_[1]

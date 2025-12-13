@@ -1,7 +1,7 @@
 // Package masterdata はマスタデータのロード処理を提供します。
 // コア特性、モジュール定義、敵タイプ定義、タイピング辞書などを
 // JSONファイルから読み込みます。
-// Requirements: 5.19, 6.18, 11.14, 16.3, 16.4, 21.6, 21.7
+
 package masterdata
 
 import (
@@ -91,7 +91,7 @@ type coresFileData struct {
 }
 
 // LoadCoreTypes はcores.jsonからコア特性定義を読み込みます。
-// Requirement 5.19: コア特性を外部データファイルで定義
+
 func (l *DataLoader) LoadCoreTypes() ([]CoreTypeData, error) {
 	data, err := l.readFile("cores.json")
 	if err != nil {
@@ -151,7 +151,7 @@ type modulesFileData struct {
 }
 
 // LoadModuleDefinitions はmodules.jsonからモジュール定義を読み込みます。
-// Requirement 6.18: モジュール定義を外部データファイルで管理
+
 func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
 	data, err := l.readFile("modules.json")
 	if err != nil {
@@ -218,7 +218,7 @@ type enemiesFileData struct {
 }
 
 // LoadEnemyTypes はenemies.jsonから敵タイプ定義を読み込みます。
-// Requirement 11.14: 敵タイプを外部データファイルで定義
+
 func (l *DataLoader) LoadEnemyTypes() ([]EnemyTypeData, error) {
 	data, err := l.readFile("enemies.json")
 	if err != nil {
@@ -254,7 +254,7 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 // ==================== タイピング辞書 ====================
 
 // TypingDictionary はwords.jsonから読み込むタイピング辞書データの構造体です。
-// Requirements 16.3, 16.4: 辞書を外部ファイルから読み込む
+
 type TypingDictionary struct {
 	Easy   []string `json:"easy"`
 	Medium []string `json:"medium"`
@@ -267,7 +267,7 @@ type wordsFileData struct {
 }
 
 // LoadTypingDictionary はwords.jsonからタイピング辞書を読み込みます。
-// Requirement 16.3: チャレンジテキストの辞書を外部ファイルから読み込む
+
 func (l *DataLoader) LoadTypingDictionary() (*TypingDictionary, error) {
 	data, err := l.readFile("words.json")
 	if err != nil {
@@ -285,7 +285,7 @@ func (l *DataLoader) LoadTypingDictionary() (*TypingDictionary, error) {
 // ==================== 全データ一括ロード ====================
 
 // LoadAllExternalData は全ての外部データファイルを一括でロードします。
-// Requirement 21.6, 21.7: コア、モジュール、敵のデータを外部ファイルで管理
+
 func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 	coreTypes, err := l.LoadCoreTypes()
 	if err != nil {

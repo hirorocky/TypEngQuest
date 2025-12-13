@@ -1,6 +1,6 @@
 // Package startup は初回起動時の初期化処理を担当します。
 // 新規ゲーム開始時の初期コア、モジュール、エージェントの提供を行います。
-// Requirements: 3.8, 17.5
+
 package startup
 
 import (
@@ -44,7 +44,7 @@ func generateUUID() string {
 }
 
 // CreateInitialCore は初期コアを作成します。
-// Requirement 3.8: 初期コアの提供（レベル1、オールラウンダー）
+
 func (i *NewGameInitializer) CreateInitialCore() *domain.CoreModel {
 	// マスタデータから"all_rounder"コア特性を検索
 	var coreType domain.CoreType
@@ -94,7 +94,7 @@ func (i *NewGameInitializer) CreateInitialCore() *domain.CoreModel {
 }
 
 // CreateInitialModules は初期モジュールを作成します。
-// Requirement 3.8: 初期モジュールの提供（各カテゴリLv1を4個）
+
 func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
 	modules := make([]*domain.ModuleModel, 0, len(initialModuleIDs))
 
@@ -129,7 +129,7 @@ func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
 }
 
 // CreateInitialAgent は初期エージェントを作成します。
-// Requirement 3.8: 初期エージェント自動合成と装備
+
 func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
 	core := i.CreateInitialCore()
 	modules := i.CreateInitialModules()
@@ -142,7 +142,7 @@ func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
 }
 
 // InitializeNewGame は新規ゲームを初期化してセーブデータを作成します。
-// Requirement 17.5: セーブデータ不在時の新規ゲーム開始
+
 // ID化最適化に対応：フルオブジェクトではなくID参照を保存
 func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	// 基本のセーブデータを作成

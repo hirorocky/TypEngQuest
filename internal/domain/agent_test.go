@@ -57,7 +57,7 @@ func TestAgentModel_フィールドの確認(t *testing.T) {
 }
 
 // TestAgentModel_レベル等価制約 はエージェントのレベルがコアのレベルと一致することを確認します。
-// Requirement 7.9: エージェントレベル = コアレベル
+
 func TestAgentModel_レベル等価制約(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -163,7 +163,7 @@ func TestNewAgent_モジュール数確認(t *testing.T) {
 }
 
 // TestAgentModel_基礎ステータス算出 は基礎ステータスがコアから正しく導出されることを確認します。
-// Requirement 8.3: エージェントレベル = コアレベル、ステータス表示
+
 func TestAgentModel_基礎ステータス算出(t *testing.T) {
 	tests := []struct {
 		name        string

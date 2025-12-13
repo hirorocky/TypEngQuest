@@ -12,7 +12,7 @@ import (
 // Screen は画面の共通インターフェースです。
 // tea.Modelを埋め込み、SetSizeとGetTitleメソッドを追加しています。
 // 新規画面はこのインターフェースを実装することで、一貫性のある画面操作を保証します。
-// Requirements: 9.1, 9.2, 9.3
+
 type Screen interface {
 	tea.Model
 
@@ -25,7 +25,7 @@ type Screen interface {
 
 // BaseScreen は共通の画面機能を提供する基底構造体です。
 // 各画面はこの構造体を埋め込むことで、SetSize/GetTitle/GetSizeの共通実装を継承できます。
-// Requirements: 9.3
+
 type BaseScreen struct {
 	width  int
 	height int

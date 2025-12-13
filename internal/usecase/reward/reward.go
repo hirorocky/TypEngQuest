@@ -1,6 +1,6 @@
 // Package reward はドロップ・報酬システムを提供します。
 // バトル勝利時の報酬計算、コア/モジュールのドロップ判定を担当します。
-// Requirements: 12.1-12.18
+
 package reward
 
 import (
@@ -27,12 +27,12 @@ const (
 	DefaultModuleDropCount = 2
 
 	// CoreLevelRange はコアレベルの敵レベルからの変動範囲です。
-	// Requirement 12.6: コアレベル = 敵レベル ± この値
+
 	CoreLevelRange = 2
 )
 
 // BattleStatistics はバトル統計を表す構造体です。
-// Requirement 12.2: バトル統計（WPM、正確性、クリアタイム）
+
 type BattleStatistics struct {
 	// TotalWPM はWPMの合計値です。
 	TotalWPM float64
@@ -73,25 +73,25 @@ func (s *BattleStatistics) GetAverageAccuracy() float64 {
 }
 
 // RewardResult は報酬計算結果を表す構造体です。
-// Requirement 12.1: 勝利時の報酬画面表示
+
 type RewardResult struct {
 	// IsVictory は勝利かどうかです。
 	IsVictory bool
 
 	// ShowRewardScreen は報酬画面を表示すべきかどうかです。
-	// Requirement 12.4: 敗北時は報酬画面を表示しない
+
 	ShowRewardScreen bool
 
 	// Stats はバトル統計です。
-	// Requirement 12.2: バトル統計表示
+
 	Stats *BattleStatistics
 
 	// DroppedCores はドロップしたコアのリストです。
-	// Requirement 12.7: ドロップ情報表示
+
 	DroppedCores []*domain.CoreModel
 
 	// DroppedModules はドロップしたモジュールのリストです。
-	// Requirement 12.12: ドロップ情報表示
+
 	DroppedModules []*domain.ModuleModel
 
 	// EnemyLevel は撃破した敵のレベルです。
@@ -99,7 +99,7 @@ type RewardResult struct {
 }
 
 // InventoryWarning はインベントリ警告を表す構造体です。
-// Requirement 12.17: 満杯警告表示
+
 type InventoryWarning struct {
 	// CoreInventoryFull はコアインベントリが満杯かどうかです。
 	CoreInventoryFull bool
@@ -111,12 +111,12 @@ type InventoryWarning struct {
 	WarningMessage string
 
 	// SuggestDiscard は破棄を促すかどうかです。
-	// Requirement 12.17: 不要アイテム破棄促進
+
 	SuggestDiscard bool
 }
 
 // TempStorage は一時保管を表す構造体です。
-// Requirement 12.18: 一時保管と後日受け取り機能
+
 type TempStorage struct {
 	// Cores は一時保管中のコアリストです。
 	Cores []*domain.CoreModel
@@ -155,7 +155,7 @@ func (s *TempStorage) HasItems() bool {
 }
 
 // RewardCalculator は報酬計算を担当する構造体です。
-// Requirements: 12.1-12.18
+
 type RewardCalculator struct {
 	// coreTypes はコア特性定義リストです。
 	coreTypes []masterdata.CoreTypeData
@@ -210,9 +210,7 @@ func (c *RewardCalculator) GetCoreLevelRange() int {
 // ==================== Task 8.1: 報酬計算と表示 ====================
 
 // CreateRewardResult は報酬結果を作成します。
-// Requirement 12.1: 勝利時の報酬画面表示
-// Requirement 12.2: バトル統計表示
-// Requirement 12.4: 敗北時の報酬なし直接遷移
+
 func (c *RewardCalculator) CreateRewardResult(isVictory bool, stats *BattleStatistics, enemyLevel int) *RewardResult {
 	result := &RewardResult{
 		IsVictory:      isVictory,
@@ -222,13 +220,11 @@ func (c *RewardCalculator) CreateRewardResult(isVictory bool, stats *BattleStati
 		DroppedModules: make([]*domain.ModuleModel, 0),
 	}
 
-	// Requirement 12.4: 敗北時は報酬なし
 	if !isVictory {
 		result.ShowRewardScreen = false
 		return result
 	}
 
-	// Requirement 12.1: 勝利時は報酬画面を表示
 	result.ShowRewardScreen = true
 
 	return result
@@ -258,9 +254,7 @@ func (c *RewardCalculator) CalculateRewards(isVictory bool, stats *BattleStatist
 // ==================== Task 8.2: コアドロップシステム ====================
 
 // RollCoreDrop はコアドロップ判定を実行します。
-// Requirement 12.5: ドロップ判定処理
-// Requirement 12.6: コアレベル決定（敵レベル ± 範囲内ランダム）
-// Requirement 12.8, 12.9: 特性別ドロップ最低敵レベル制限
+
 func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 	// ドロップ判定
 	if c.rng.Float64() > c.coreDropRate {
@@ -268,7 +262,7 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 	}
 
 	// ドロップ可能なコア特性を取得
-	// Requirement 12.9: 敵レベルがドロップ最低レベル未満のコア特性を除外
+
 	eligibleTypes := c.GetEligibleCoreTypes(enemyLevel)
 	if len(eligibleTypes) == 0 {
 		return nil
@@ -277,7 +271,6 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 	// ランダムにコア特性を選択
 	selectedType := eligibleTypes[c.rng.Intn(len(eligibleTypes))]
 
-	// Requirement 12.6: コアレベルを敵レベル±範囲内でランダムに決定
 	minLevel := enemyLevel - CoreLevelRange
 	if minLevel < 1 {
 		minLevel = 1
@@ -293,7 +286,6 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 		}
 	}
 
-	// Requirement 12.7: コアをインスタンス化
 	coreType := selectedType.ToDomain()
 	return domain.NewCore(
 		uuid.New().String(),
@@ -305,7 +297,7 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 }
 
 // GetEligibleCoreTypes は指定レベルでドロップ可能なコア特性を返します。
-// Requirement 12.8, 12.9: 特性別ドロップ最低敵レベル制限
+
 func (c *RewardCalculator) GetEligibleCoreTypes(enemyLevel int) []masterdata.CoreTypeData {
 	eligible := make([]masterdata.CoreTypeData, 0)
 	for _, coreType := range c.coreTypes {
@@ -319,14 +311,12 @@ func (c *RewardCalculator) GetEligibleCoreTypes(enemyLevel int) []masterdata.Cor
 // ==================== Task 8.3: モジュールドロップシステム ====================
 
 // RollModuleDrop はモジュールドロップ判定を実行します。
-// Requirement 12.11: ドロップ判定処理
-// Requirement 12.13, 12.14: カテゴリ×レベル別ドロップ最低敵レベル制限
-// Requirement 12.15, 12.16: 高レベルモジュールの段階的ドロップ設定
+
 func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domain.ModuleModel {
 	dropped := make([]*domain.ModuleModel, 0)
 
 	// ドロップ可能なモジュールを取得
-	// Requirement 12.14: 敵レベルがドロップ最低レベル未満のモジュールを除外
+
 	eligibleTypes := c.GetEligibleModuleTypes(enemyLevel)
 	if len(eligibleTypes) == 0 {
 		return dropped
@@ -341,7 +331,6 @@ func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domai
 		// ランダムにモジュールを選択
 		selectedType := eligibleTypes[c.rng.Intn(len(eligibleTypes))]
 
-		// Requirement 12.12: モジュールをインスタンス化
 		// モジュールはマスタデータIDを使用（インスタンス固有データがないためUUID不要）
 		module := selectedType.ToDomain()
 		dropped = append(dropped, module)
@@ -351,8 +340,7 @@ func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domai
 }
 
 // GetEligibleModuleTypes は指定レベルでドロップ可能なモジュールを返します。
-// Requirement 12.13, 12.14: カテゴリ×レベル別ドロップ最低敵レベル制限
-// Requirement 12.15, 12.16: 高レベルモジュールほど高レベルの敵からのみドロップ
+
 func (c *RewardCalculator) GetEligibleModuleTypes(enemyLevel int) []masterdata.ModuleDefinitionData {
 	eligible := make([]masterdata.ModuleDefinitionData, 0)
 	for _, moduleType := range c.moduleTypes {
@@ -366,7 +354,7 @@ func (c *RewardCalculator) GetEligibleModuleTypes(enemyLevel int) []masterdata.M
 // ==================== Task 8.4: インベントリ満杯時の処理 ====================
 
 // CheckInventoryFull はインベントリの満杯状態をチェックします。
-// Requirement 12.17: 満杯警告表示
+
 func (c *RewardCalculator) CheckInventoryFull(
 	coreInv *inventory.CoreInventory,
 	moduleInv *inventory.ModuleInventory,
@@ -385,7 +373,7 @@ func (c *RewardCalculator) CheckInventoryFull(
 }
 
 // CreateTempStorage は一時保管を作成します。
-// Requirement 12.18: 一時保管と後日受け取り機能
+
 func (c *RewardCalculator) CreateTempStorage() *TempStorage {
 	return &TempStorage{
 		Cores:   make([]*domain.CoreModel, 0),
@@ -395,8 +383,7 @@ func (c *RewardCalculator) CreateTempStorage() *TempStorage {
 
 // AddRewardsToInventory はドロップしたアイテムをインベントリに追加します。
 // インベントリが満杯の場合は一時保管に追加します。
-// Requirement 12.7, 12.12: ドロップ情報表示とインベントリ追加
-// Requirement 12.17, 12.18: 満杯時の処理
+
 func (c *RewardCalculator) AddRewardsToInventory(
 	result *RewardResult,
 	coreInv *inventory.CoreInventory,

@@ -35,7 +35,7 @@ func TestNewBattleScreen(t *testing.T) {
 }
 
 // TestBattleScreenEnemyInfo は敵情報表示をテストします。
-// Requirement 9.2: 敵の名前、HP、レベルを表示
+
 func TestBattleScreenEnemyInfo(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -56,7 +56,7 @@ func TestBattleScreenEnemyInfo(t *testing.T) {
 }
 
 // TestBattleScreenPlayerInfo はプレイヤー情報表示をテストします。
-// Requirement 9.3: プレイヤーのHP、バフ・デバフを表示
+
 func TestBattleScreenPlayerInfo(t *testing.T) {
 	player := createTestPlayer()
 	player.HP = 50
@@ -86,8 +86,7 @@ func TestBattleScreenPlayerInfo(t *testing.T) {
 }
 
 // TestBattleScreenModuleList はモジュール一覧表示をテストします。
-// Requirement 9.4: 装備中の全エージェントのモジュールを一覧表示
-// Requirement 18.10: エージェントごとにモジュールをグループ化して表示
+
 func TestBattleScreenModuleList(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -108,8 +107,7 @@ func TestBattleScreenModuleList(t *testing.T) {
 }
 
 // TestBattleScreenCooldownDisplay はクールダウン表示をテストします。
-// Requirement 9.5: モジュールのクールダウン状態を表示
-// Requirement 18.9: プログレスバー、残り秒数表示
+
 func TestBattleScreenCooldownDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -134,7 +132,7 @@ func TestBattleScreenCooldownDisplay(t *testing.T) {
 }
 
 // TestBattleScreenTypingChallenge はタイピングチャレンジ表示をテストします。
-// Requirement 9.6: タイピングチャレンジテキスト表示と入力進捗
+
 func TestBattleScreenTypingChallenge(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -155,7 +153,7 @@ func TestBattleScreenTypingChallenge(t *testing.T) {
 }
 
 // TestBattleScreenTimeLimit は制限時間表示をテストします。
-// Requirement 9.15: 制限時間のリアルタイム表示
+
 func TestBattleScreenTimeLimit(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -494,7 +492,7 @@ func createTestAgents() []*domain.AgentModel {
 // ==================== Task 6.1-6.6: バトル画面UI改善のテスト ====================
 
 // TestBattleScreen3AreaLayout はバトル画面の3エリアレイアウトをテストします。
-// Requirement 3.1: 上から敵情報エリア、エージェントエリア、プレイヤー情報エリア
+
 func TestBattleScreen3AreaLayout(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -523,7 +521,7 @@ func TestBattleScreen3AreaLayout(t *testing.T) {
 }
 
 // TestBattleScreenAgentModuleDisplay はエージェントごとのモジュール表示をテストします。
-// Requirement 3.2: 装備中のエージェントのモジュール一覧とクールダウン状態を表示
+
 func TestBattleScreenAgentModuleDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -542,7 +540,7 @@ func TestBattleScreenAgentModuleDisplay(t *testing.T) {
 }
 
 // TestBattleScreenHPBarDisplay はHPバー表示をテストします。
-// Requirement 3.3: HPバーの表示
+
 func TestBattleScreenHPBarDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -561,7 +559,7 @@ func TestBattleScreenHPBarDisplay(t *testing.T) {
 }
 
 // TestBattleScreenEnemyAttackTimerDisplay は敵攻撃タイマー表示をテストします。
-// Requirement 3.5: 次の敵攻撃までの時間をプログレスバーで視覚化
+
 func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -580,7 +578,7 @@ func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
 }
 
 // TestBattleScreenTypingColorDisplay はタイピングの色分け表示をテストします。
-// Requirement 3.8: 入力済み・現在位置・未入力の色分け
+
 func TestBattleScreenTypingColorDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()
@@ -606,7 +604,7 @@ func TestBattleScreenTypingColorDisplay(t *testing.T) {
 }
 
 // TestBattleScreenWinDisplay は勝利時のWIN表示をテストします。
-// Requirement 3.9: 勝利時はWINを大きく表示
+
 func TestBattleScreenWinDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	enemy.HP = 0 // 敵HP0で勝利
@@ -634,7 +632,7 @@ func TestBattleScreenWinDisplay(t *testing.T) {
 }
 
 // TestBattleScreenLoseDisplay は敗北時のLOSE表示をテストします。
-// Requirement 3.9: 敗北時はLOSEを大きく表示
+
 func TestBattleScreenLoseDisplay(t *testing.T) {
 	enemy := createTestEnemy()
 	player := createTestPlayer()

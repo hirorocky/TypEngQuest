@@ -46,7 +46,6 @@ func (c ModuleCategory) String() string {
 }
 
 // Icon はモジュールカテゴリのアイコンを返します。
-// 要件 7.3: カテゴリごとにアイコン文字を返す
 func (c ModuleCategory) Icon() string {
 	switch c {
 	case PhysicalAttack:
@@ -77,7 +76,6 @@ func GetLevelSuffix(level int) string {
 
 // ModuleModel はゲーム内のモジュール（スキル）エンティティを表す構造体です。
 // モジュールはエージェント合成時にコアに装備され、バトル中に使用可能なスキルになります。
-// Requirements 6.3, 6.4, 6.8-6.16に基づいて設計されています。
 type ModuleModel struct {
 	// ID はモジュールインスタンスの一意識別子です。
 	ID string
@@ -85,31 +83,23 @@ type ModuleModel struct {
 	// Name はモジュールの表示名です（日本語）。
 	Name string
 
-	// Category はモジュールのカテゴリです。
-	// 物理攻撃、魔法攻撃、回復、バフ、デバフのいずれかです。
-	// Requirement 6.8: 各モジュールにカテゴリタグを付与
+	// Category はモジュールのカテゴリです（物理攻撃、魔法攻撃、回復、バフ、デバフ）。
 	Category ModuleCategory
 
 	// Level はモジュールのレベルです。
-	// Requirement 6.9: 各モジュールにレベルタグを付与（Lv1, Lv2, Lv3など）
-	// Requirement 6.10: モジュールの種類ごとにレベルを固定
 	Level int
 
 	// Tags はモジュールのタグリストです。
 	// コア特性との互換性チェックに使用されます。
-	// 例: ["physical_low"], ["magic_mid", "fire"]
 	Tags []string
 
 	// BaseEffect はモジュールの基礎効果値です。
-	// Requirement 6.11: 同じ種類のモジュールは全て同じ効果を持つ
 	BaseEffect float64
 
 	// StatRef は効果計算時に参照するステータスです（STR, MAG, SPD, LUK）。
-	// Requirement 6.4: 各モジュールの参照するエージェントステータスを表示
 	StatRef string
 
 	// Description はモジュールの効果説明です。
-	// Requirement 6.4: 各モジュールの効果説明を表示
 	Description string
 }
 
@@ -144,7 +134,6 @@ func (m *ModuleModel) HasTag(tag string) bool {
 
 // IsCompatibleWithCore はこのモジュールが指定されたコアに装備可能かを判定します。
 // モジュールのタグのうち1つでもコアの許可タグに含まれていれば互換性ありとみなします。
-// Requirements 5.11, 5.12に基づく互換性チェック
 func (m *ModuleModel) IsCompatibleWithCore(core *CoreModel) bool {
 	for _, tag := range m.Tags {
 		if core.IsTagAllowed(tag) {

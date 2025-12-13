@@ -14,7 +14,7 @@ import (
 // ==================== Task 10.7: 設定画面 ====================
 
 // SettingsScreen は設定画面を表します。
-// Requirements: 21.1-21.5
+
 type SettingsScreen struct {
 	settings      *SettingsData
 	selectedIndex int
@@ -133,7 +133,7 @@ func (s *SettingsScreen) startEditing() {
 }
 
 // applyKeybindChange はキーバインドの変更を適用します。
-// Requirement 21.3: 設定変更の即座適用
+
 func (s *SettingsScreen) applyKeybindChange(newKey string) {
 	if s.editKey != "" {
 		s.settings.Keybinds[s.editKey] = newKey
@@ -188,7 +188,7 @@ func (s *SettingsScreen) View() string {
 }
 
 // renderKeybindSettings はキーバインド設定をレンダリングします。
-// Requirement 21.2: キーバインド設定表示と変更
+
 func (s *SettingsScreen) renderKeybindSettings() string {
 	var builder strings.Builder
 

@@ -1,5 +1,5 @@
 // Package errorhandler はエラー処理とログ機能を担当します。
-// Requirements: 19.3, 19.4, 19.6
+
 package errorhandler
 
 import (
@@ -15,7 +15,7 @@ import (
 // ==================================================
 
 func TestValidateLevel_InvalidInputs(t *testing.T) {
-	// Requirement 19.4: 不正な入力値の検証
+
 	tests := []struct {
 		name        string
 		level       int
@@ -44,7 +44,7 @@ func TestValidateLevel_InvalidInputs(t *testing.T) {
 }
 
 func TestValidateAgentSlot_InvalidInputs(t *testing.T) {
-	// Requirement 19.4: 不正な入力値の検証
+
 	tests := []struct {
 		name        string
 		slot        int
@@ -72,7 +72,7 @@ func TestValidateAgentSlot_InvalidInputs(t *testing.T) {
 }
 
 func TestValidatePositiveInt(t *testing.T) {
-	// Requirement 19.4: 不正な入力値の検証
+
 	tests := []struct {
 		name        string
 		value       int
@@ -99,7 +99,7 @@ func TestValidatePositiveInt(t *testing.T) {
 }
 
 func TestValidateNonNegativeInt(t *testing.T) {
-	// Requirement 19.4: 不正な入力値の検証
+
 	tests := []struct {
 		name        string
 		value       int
@@ -125,7 +125,7 @@ func TestValidateNonNegativeInt(t *testing.T) {
 }
 
 func TestValidateString(t *testing.T) {
-	// Requirement 19.4: 不正な入力値の検証
+
 	tests := []struct {
 		name        string
 		value       string
@@ -151,7 +151,7 @@ func TestValidateString(t *testing.T) {
 }
 
 func TestGameError_Message(t *testing.T) {
-	// Requirement 19.4: エラーメッセージ表示
+
 	err := NewGameError(ErrInvalidInput, "レベルは1以上である必要があります")
 	if err.Error() == "" {
 		t.Error("エラーメッセージが返されるべきです")
@@ -162,7 +162,7 @@ func TestGameError_Message(t *testing.T) {
 }
 
 func TestRecoverFromPanic(t *testing.T) {
-	// Requirement 19.4: ゲームクラッシュ防止
+
 	var recovered error
 
 	func() {
@@ -184,7 +184,7 @@ func TestRecoverFromPanic(t *testing.T) {
 // ==================================================
 
 func TestDebugMode_Toggle(t *testing.T) {
-	// Requirement 19.6: デバッグモード切り替え
+
 	SetDebugMode(true)
 	if !IsDebugMode() {
 		t.Error("デバッグモードがtrueであるべきです")
@@ -197,7 +197,7 @@ func TestDebugMode_Toggle(t *testing.T) {
 }
 
 func TestLogger_WriteToFile(t *testing.T) {
-	// Requirement 19.6: エラー詳細のログファイル記録
+
 	tempDir := t.TempDir()
 	logPath := filepath.Join(tempDir, "debug.log")
 
@@ -229,7 +229,7 @@ func TestLogger_WriteToFile(t *testing.T) {
 }
 
 func TestLogException(t *testing.T) {
-	// Requirement 19.3: 予期しない例外のキャッチと通知
+
 	tempDir := t.TempDir()
 	logPath := filepath.Join(tempDir, "debug.log")
 
@@ -255,7 +255,7 @@ func TestLogException(t *testing.T) {
 }
 
 func TestLogger_DebugModeOnly(t *testing.T) {
-	// Requirement 19.6: デバッグモード時のみ詳細ログ
+
 	tempDir := t.TempDir()
 	logPath := filepath.Join(tempDir, "debug.log")
 

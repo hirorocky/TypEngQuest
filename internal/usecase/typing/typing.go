@@ -1,6 +1,6 @@
 // Package typing はタイピングシステムを提供します。
 // タイピングチャレンジの生成と評価を担当します。
-// Requirements: 9.7-9.10, 10.6-10.8, 16.1-16.13
+
 package typing
 
 import (
@@ -13,26 +13,26 @@ type Difficulty int
 
 const (
 	// DifficultyEasy は弱いモジュール用（3-6文字）
-	// Requirement 16.6
+
 	DifficultyEasy Difficulty = 1
 
 	// DifficultyMedium は中程度のモジュール用（7-11文字）
-	// Requirement 16.7
+
 	DifficultyMedium Difficulty = 2
 
 	// DifficultyHard は強力なモジュール用（12-20文字）
-	// Requirement 16.8
+
 	DifficultyHard Difficulty = 3
 )
 
 // SpeedFactorMax は速度係数の上限です。
-// Requirement 10.8: 速度係数の上限2.0
+
 const SpeedFactorMax = 2.0
 
 // ==================== チャレンジ生成（Task 6.1） ====================
 
 // Dictionary はタイピング辞書を表す構造体です。
-// Requirements 16.1, 16.2: 英数字のチャレンジテキスト、デフォルト単語セット
+
 type Dictionary struct {
 	Easy   []string
 	Medium []string
@@ -45,7 +45,7 @@ type Challenge struct {
 	Text string
 
 	// TimeLimit は制限時間です。
-	// Requirement 16.10: 各モジュールにタイピング制限時間を設定
+
 	TimeLimit time.Duration
 
 	// Difficulty は難易度です。
@@ -53,7 +53,7 @@ type Challenge struct {
 }
 
 // ChallengeGenerator はタイピングチャレンジを生成する構造体です。
-// Requirements 16.5-16.9
+
 type ChallengeGenerator struct {
 	dictionary *Dictionary
 	lastText   string
@@ -70,7 +70,7 @@ func NewChallengeGenerator(dict *Dictionary) *ChallengeGenerator {
 }
 
 // Generate はチャレンジを生成します。
-// Requirements 16.5-16.9: 難易度に応じたテキスト生成、連続重複回避
+
 func (g *ChallengeGenerator) Generate(difficulty Difficulty, timeLimit time.Duration) *Challenge {
 	var candidates []string
 
@@ -92,7 +92,6 @@ func (g *ChallengeGenerator) Generate(difficulty Difficulty, timeLimit time.Dura
 		return nil
 	}
 
-	// Requirement 16.9: 連続同一テキスト回避
 	text := g.selectWithoutDuplication(candidates)
 	g.lastText = text
 
@@ -128,7 +127,7 @@ func (g *ChallengeGenerator) getAllCandidates(difficulty Difficulty) []string {
 }
 
 // selectWithoutDuplication は前回と異なるテキストを選択します。
-// Requirement 16.9: 同じチャレンジテキストが連続しない
+
 func (g *ChallengeGenerator) selectWithoutDuplication(candidates []string) string {
 	if len(candidates) == 1 {
 		return candidates[0]
@@ -154,7 +153,7 @@ func (g *ChallengeGenerator) selectWithoutDuplication(candidates []string) strin
 }
 
 // GetDifficultyForModuleLevel はモジュールレベルに応じた難易度を返します。
-// Requirement 16.5, 16.13: モジュールの難易度に応じた制限時間
+
 func GetDifficultyForModuleLevel(level int) Difficulty {
 	switch level {
 	case 1:
@@ -167,7 +166,7 @@ func GetDifficultyForModuleLevel(level int) Difficulty {
 }
 
 // GetDefaultTimeLimit はモジュール難易度に応じたデフォルト制限時間を返します。
-// Requirement 16.13: 制限時間をモジュールの難易度に応じて設定
+
 func GetDefaultTimeLimit(difficulty Difficulty) time.Duration {
 	switch difficulty {
 	case DifficultyEasy:
@@ -189,7 +188,7 @@ type ChallengeState struct {
 	Challenge *Challenge
 
 	// StartTime はチャレンジ開始時刻です。
-	// Requirement 9.7: チャレンジ開始時のタイムスタンプ記録
+
 	StartTime time.Time
 
 	// CurrentIndex は現在の入力位置です。
@@ -211,15 +210,15 @@ type TypingResult struct {
 	Completed bool
 
 	// WPM はWords Per Minuteです。
-	// Requirement 10.6: WPM計算
+
 	WPM float64
 
 	// Accuracy は正確性（0.0〜1.0）です。
-	// Requirement 10.7: 正確性計算
+
 	Accuracy float64
 
 	// SpeedFactor は速度係数（上限2.0）です。
-	// Requirement 10.8: 速度係数計算
+
 	SpeedFactor float64
 
 	// AccuracyFactor は正確性係数です。
@@ -233,7 +232,7 @@ type TypingResult struct {
 }
 
 // Evaluator はタイピング評価を担当する構造体です。
-// Requirements 9.7-9.10, 10.6-10.8
+
 type Evaluator struct{}
 
 // NewEvaluator は新しいEvaluatorを作成します。
@@ -242,7 +241,7 @@ func NewEvaluator() *Evaluator {
 }
 
 // StartChallenge はチャレンジを開始します。
-// Requirement 9.7: チャレンジ開始時のタイムスタンプ記録
+
 func (e *Evaluator) StartChallenge(challenge *Challenge) *ChallengeState {
 	return &ChallengeState{
 		Challenge:       challenge,
@@ -255,7 +254,7 @@ func (e *Evaluator) StartChallenge(challenge *Challenge) *ChallengeState {
 }
 
 // ProcessInput は入力を処理します。
-// Requirements 9.8, 9.9: 正誤判定、入力進捗の更新
+
 func (e *Evaluator) ProcessInput(state *ChallengeState, input rune) *ChallengeState {
 	if state.CurrentIndex >= len(state.Challenge.Text) {
 		return state // 既に完了
@@ -265,11 +264,11 @@ func (e *Evaluator) ProcessInput(state *ChallengeState, input rune) *ChallengeSt
 	state.TotalInputCount++
 
 	if input == expectedChar {
-		// Requirement 9.8: 正しい文字入力 - 進捗を更新
+
 		state.CorrectCount++
 		state.CurrentIndex++
 	} else {
-		// Requirement 9.9: 誤った文字入力 - 誤字として記録
+
 		state.Mistakes = append(state.Mistakes, state.CurrentIndex)
 	}
 
@@ -277,23 +276,20 @@ func (e *Evaluator) ProcessInput(state *ChallengeState, input rune) *ChallengeSt
 }
 
 // CompleteChallenge はチャレンジを完了し、結果を計算します。
-// Requirements 10.6-10.8: WPM、正確性、速度係数の計算
+
 func (e *Evaluator) CompleteChallenge(state *ChallengeState) *TypingResult {
 	completionTime := time.Since(state.StartTime)
 
-	// Requirement 10.6: WPM = (正しい文字数 / 完了時間(秒) × 60) / 5
 	wpm := 0.0
 	if completionTime.Seconds() > 0 {
 		wpm = (float64(state.CorrectCount) / completionTime.Seconds() * 60) / 5
 	}
 
-	// Requirement 10.7: 正確性 = 正しい入力数 / 総入力数
 	accuracy := 1.0
 	if state.TotalInputCount > 0 {
 		accuracy = float64(state.CorrectCount) / float64(state.TotalInputCount)
 	}
 
-	// Requirement 10.8: 速度係数 = 基準時間 / 実際時間（上限2.0）
 	speedFactor := 1.0
 	if completionTime.Seconds() > 0 {
 		speedFactor = state.Challenge.TimeLimit.Seconds() / completionTime.Seconds()
@@ -314,7 +310,7 @@ func (e *Evaluator) CompleteChallenge(state *ChallengeState) *TypingResult {
 }
 
 // IsTimeout は制限時間を超過したかを判定します。
-// Requirement 16.11: 制限時間超過の検出
+
 func (e *Evaluator) IsTimeout(state *ChallengeState) bool {
 	elapsed := time.Since(state.StartTime)
 	return elapsed >= state.Challenge.TimeLimit
@@ -334,7 +330,7 @@ func (e *Evaluator) GetProgress(state *ChallengeState) float64 {
 }
 
 // GetRemainingTime は残り時間を返します。
-// Requirement 16.12: タイピング中に残り時間をリアルタイムで表示
+
 func (e *Evaluator) GetRemainingTime(state *ChallengeState) time.Duration {
 	elapsed := time.Since(state.StartTime)
 	remaining := state.Challenge.TimeLimit - elapsed
@@ -345,7 +341,7 @@ func (e *Evaluator) GetRemainingTime(state *ChallengeState) time.Duration {
 }
 
 // GetTimeoutResult はタイムアウト時の結果を返します。
-// Requirement 16.11: タイムアウト時のキャンセル処理
+
 func (e *Evaluator) GetTimeoutResult(state *ChallengeState) *TypingResult {
 	return &TypingResult{
 		Completed:      false,

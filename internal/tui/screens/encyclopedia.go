@@ -28,7 +28,7 @@ const (
 )
 
 // EncyclopediaScreen は図鑑画面を表します。
-// Requirements: 14.1-14.11
+
 type EncyclopediaScreen struct {
 	data            *EncyclopediaData
 	currentCategory EncyclopediaCategory

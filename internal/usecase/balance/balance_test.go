@@ -1,5 +1,5 @@
 // Package balance はゲームバランスパラメータを管理します。
-// Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7
+
 package balance
 
 import (
@@ -11,7 +11,7 @@ import (
 // ==================================================
 
 func TestHPCoefficient(t *testing.T) {
-	// Requirement 20.1: HP係数が適切な範囲であること
+
 	config := DefaultConfig()
 
 	// HP係数は正の値であること
@@ -26,7 +26,7 @@ func TestHPCoefficient(t *testing.T) {
 }
 
 func TestEnemyAttackPowerScaling(t *testing.T) {
-	// Requirement 20.2: 敵攻撃力のレベルスケーリング
+
 	config := DefaultConfig()
 
 	// スケーリング係数は正の値
@@ -45,7 +45,7 @@ func TestEnemyAttackPowerScaling(t *testing.T) {
 }
 
 func TestEnemyAttackIntervalScaling(t *testing.T) {
-	// Requirement 20.3, 20.4: 敵攻撃間隔のレベルスケーリング（高レベルほど短い）
+
 	config := DefaultConfig()
 
 	// レベル1とレベル10での攻撃間隔計算
@@ -64,7 +64,7 @@ func TestEnemyAttackIntervalScaling(t *testing.T) {
 }
 
 func TestDropRates(t *testing.T) {
-	// Requirement 20.5: ドロップ確率の調整
+
 	config := DefaultConfig()
 
 	// コアドロップ率は0〜1の範囲
@@ -84,7 +84,7 @@ func TestDropRates(t *testing.T) {
 }
 
 func TestTypingChallengeTextLength(t *testing.T) {
-	// Requirement 20.7: チャレンジテキスト長さのバランス
+
 	config := DefaultConfig()
 
 	// 難易度ごとのテキスト長さ範囲
@@ -139,7 +139,7 @@ func TestTypingChallengeTimeLimit(t *testing.T) {
 }
 
 func TestMaxLevel(t *testing.T) {
-	// Requirement 20.8: レベル上限
+
 	config := DefaultConfig()
 
 	if config.MaxLevel != 100 {

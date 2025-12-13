@@ -26,7 +26,7 @@ func setupTestLogger() (*bytes.Buffer, func()) {
 }
 
 // TestGameStateFromSaveDataLogsAddCoreError は AddCore のエラーがログ出力されることをテストします。
-// Requirements: 2.1, 2.2
+
 func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 	// slogのログ出力をキャプチャ
 	buf, cleanup := setupTestLogger()
@@ -57,7 +57,7 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 }
 
 // TestGameStateFromSaveDataLogsAgentErrors は AddAgent および EquipAgent のエラーがログ出力されることをテストします。
-// Requirements: 2.3, 2.4
+
 func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	// slogのログ出力をキャプチャ
 	buf, cleanup := setupTestLogger()
@@ -98,7 +98,7 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 }
 
 // TestInventoryManagerLogsErrors は InventoryManager のエラーがログ出力されることをテストします。
-// Requirements: 2.1, 2.2
+
 func TestInventoryManagerLogsErrors(t *testing.T) {
 	// slogのログ出力をキャプチャ
 	buf, cleanup := setupTestLogger()
@@ -145,7 +145,7 @@ func TestSlogLoggingFunctionality(t *testing.T) {
 
 // TestLoggedAddCoreError は AddCore エラー時に適切なログが出力されることをテストします。
 // このテストでは実際にエラーを発生させてログ出力を検証します。
-// Requirements: 2.1, 2.2
+
 func TestLoggedAddCoreError(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()

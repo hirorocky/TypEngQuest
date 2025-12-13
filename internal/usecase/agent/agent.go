@@ -1,6 +1,6 @@
 // Package agent はエージェント管理機能を提供します。
 // コア特性とモジュールの互換性検証、エージェント合成、装備管理を担当します。
-// Requirements: 5.9-5.12, 7.1-7.13, 8.1-8.8
+
 package agent
 
 import (
@@ -13,11 +13,11 @@ import (
 )
 
 // MaxEquipmentSlots はエージェント装備スロットの最大数です。
-// Requirement 8.2: 3つの装備スロット
+
 const MaxEquipmentSlots = 3
 
 // SynthesisPreview はエージェント合成プレビュー情報を表す構造体です。
-// Requirement 7.13: 合成プレビューで最終的なステータスと能力を表示
+
 type SynthesisPreview struct {
 	// CoreName はコアの名前です。
 	CoreName string
@@ -42,7 +42,7 @@ type SynthesisPreview struct {
 }
 
 // AgentManager はエージェント管理を担当する構造体です。
-// Requirements: 5.9-5.12, 7.1-7.13, 8.1-8.8
+
 type AgentManager struct {
 	// coreInventory はコアインベントリです。
 	coreInventory *inventory.CoreInventory
@@ -54,7 +54,7 @@ type AgentManager struct {
 	agentInventory *inventory.AgentInventory
 
 	// equippedAgents は装備中のエージェント（スロット番号 → エージェント）です。
-	// Requirement 8.2: 3つの装備スロット
+
 	equippedAgents [MaxEquipmentSlots]*domain.AgentModel
 }
 
@@ -97,19 +97,19 @@ func (m *AgentManager) InitializeWithDefaults() {
 // ==================== コア特性とモジュールタグ互換性検証（Task 5.1） ====================
 
 // GetAllowedTags はコア特性の許可タグリストを取得します。
-// Requirement 5.10: コア特性ごとに許可するモジュールタグのリストを持つ
+
 func (m *AgentManager) GetAllowedTags(core *domain.CoreModel) []string {
 	return core.AllowedTags
 }
 
 // ValidateModuleCompatibility はモジュールがコアに装備可能かを判定します。
-// Requirement 5.11, 5.12: コアの許可タグとモジュールタグの照合
+
 func (m *AgentManager) ValidateModuleCompatibility(core *domain.CoreModel, module *domain.ModuleModel) bool {
 	return module.IsCompatibleWithCore(core)
 }
 
 // FilterCompatibleModules はコアに装備可能なモジュールのみをフィルタリングします。
-// Requirement 7.4: 選択コアの許可タグに基づくモジュールフィルタリング
+
 func (m *AgentManager) FilterCompatibleModules(core *domain.CoreModel) []*domain.ModuleModel {
 	if m.moduleInventory == nil {
 		return nil
@@ -120,10 +120,9 @@ func (m *AgentManager) FilterCompatibleModules(core *domain.CoreModel) []*domain
 // ==================== エージェント合成機能（Task 5.2） ====================
 
 // SynthesizeAgent はコアとモジュールからエージェントを合成します。
-// Requirement 7.1-7.8: エージェント合成機能
-// Requirement 7.10, 7.11: バリデーション
+
 func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*domain.AgentModel, error) {
-	// Requirement 7.11: モジュールが4個必要
+
 	if len(moduleIDs) != domain.ModuleSlotCount {
 		return nil, fmt.Errorf("モジュールが4個必要です（現在: %d個）", len(moduleIDs))
 	}
@@ -142,7 +141,6 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 			return nil, fmt.Errorf("モジュールが見つかりません: %s", moduleID)
 		}
 
-		// Requirement 7.10: モジュールタグがコアの許可タグに含まれない場合、選択を拒否
 		if !m.ValidateModuleCompatibility(core, module) {
 			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name, core.Name)
 		}
@@ -150,7 +148,6 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 		modules = append(modules, module)
 	}
 
-	// Requirement 7.12: エージェント保有数上限チェック
 	if m.agentInventory.IsFull() {
 		return nil, fmt.Errorf("エージェントインベントリが満杯です")
 	}
@@ -159,7 +156,6 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 	agentID := uuid.New().String()
 	agent := domain.NewAgent(agentID, core, modules)
 
-	// Requirement 7.8: 素材を消費
 	m.coreInventory.Remove(coreID)
 	for _, moduleID := range moduleIDs {
 		m.moduleInventory.Remove(moduleID)
@@ -174,7 +170,7 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 }
 
 // GetSynthesisPreview は合成プレビュー情報を取得します。
-// Requirement 7.13: 合成プレビューで最終的なステータスと能力を確定前に表示
+
 func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*SynthesisPreview, error) {
 	if len(moduleIDs) != domain.ModuleSlotCount {
 		return nil, fmt.Errorf("モジュールが4個必要です（現在: %d個）", len(moduleIDs))
@@ -211,8 +207,7 @@ func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*
 // ==================== エージェント装備機能（Task 5.3） ====================
 
 // EquipAgent はエージェントを指定スロットに装備します。
-// Requirement 8.4, 8.5: 装備処理
-// Requirement 8.6: 装備変更時のプレイヤー最大HP再計算
+
 func (m *AgentManager) EquipAgent(slot int, agentID string, player *domain.PlayerModel) error {
 	// スロット番号チェック
 	if slot < 0 || slot >= MaxEquipmentSlots {
@@ -235,14 +230,13 @@ func (m *AgentManager) EquipAgent(slot int, agentID string, player *domain.Playe
 	// 装備
 	m.equippedAgents[slot] = agent
 
-	// Requirement 8.6: プレイヤーHPを再計算
 	m.recalculatePlayerHP(player)
 
 	return nil
 }
 
 // UnequipAgent はエージェントを装備解除します。
-// Requirement 8.7: 装備解除オプション
+
 func (m *AgentManager) UnequipAgent(slot int, player *domain.PlayerModel) error {
 	if slot < 0 || slot >= MaxEquipmentSlots {
 		return fmt.Errorf("無効なスロット番号です: %d", slot)
@@ -250,14 +244,13 @@ func (m *AgentManager) UnequipAgent(slot int, player *domain.PlayerModel) error 
 
 	m.equippedAgents[slot] = nil
 
-	// Requirement 8.6: プレイヤーHPを再計算
 	m.recalculatePlayerHP(player)
 
 	return nil
 }
 
 // GetEquippedAgents は装備中のエージェントリストを返します。
-// Requirement 8.3: 装備スロットに現在装備中のエージェント情報を表示
+
 func (m *AgentManager) GetEquippedAgents() []*domain.AgentModel {
 	result := make([]*domain.AgentModel, 0, MaxEquipmentSlots)
 	for _, agent := range m.equippedAgents {
@@ -298,20 +291,20 @@ func (m *AgentManager) GetEquippedCount() int {
 }
 
 // HasEquippedAgent はエージェントが1体以上装備されているかを返します。
-// Requirement 3.8: 1体もエージェントを装備していない場合、バトル開始を拒否
+
 func (m *AgentManager) HasEquippedAgent() bool {
 	return m.GetEquippedCount() > 0
 }
 
 // recalculatePlayerHP は装備エージェントに基づいてプレイヤーHPを再計算します。
-// Requirement 4.2, 8.6: 装備変更時にMaxHPを再計算
+
 func (m *AgentManager) recalculatePlayerHP(player *domain.PlayerModel) {
 	agents := m.GetEquippedAgents()
 	player.RecalculateHP(agents)
 }
 
 // GetAgentDetails はエージェントの詳細情報を取得します。
-// Requirement 8.8: 装備中エージェントの詳細情報を表示
+
 func (m *AgentManager) GetAgentDetails(agentID string) *domain.AgentModel {
 	return m.agentInventory.Get(agentID)
 }

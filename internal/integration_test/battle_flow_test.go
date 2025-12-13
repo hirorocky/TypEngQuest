@@ -1,5 +1,5 @@
 // Package integration_test は統合テストを提供します。
-// Requirements: 9.1, 9.16, 9.17, 10.2, 10.3
+
 package integration_test
 
 import (
@@ -55,7 +55,7 @@ func createTestEnemyTypes() []domain.EnemyType {
 }
 
 func TestBattleFlow_Initialize(t *testing.T) {
-	// Requirement 9.1: バトル初期化
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -81,7 +81,7 @@ func TestBattleFlow_Initialize(t *testing.T) {
 }
 
 func TestBattleFlow_EnemyAttack(t *testing.T) {
-	// Requirement 11.4, 11.5: 敵攻撃→プレイヤーダメージ
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -103,7 +103,7 @@ func TestBattleFlow_EnemyAttack(t *testing.T) {
 }
 
 func TestBattleFlow_ModuleUse_Attack(t *testing.T) {
-	// Requirement 10.2: 攻撃モジュール使用→効果適用
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -136,7 +136,7 @@ func TestBattleFlow_ModuleUse_Attack(t *testing.T) {
 }
 
 func TestBattleFlow_ModuleUse_Heal(t *testing.T) {
-	// Requirement 10.3: 回復モジュール使用→効果適用
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -172,7 +172,7 @@ func TestBattleFlow_ModuleUse_Heal(t *testing.T) {
 }
 
 func TestBattleFlow_VictoryCondition(t *testing.T) {
-	// Requirement 9.17: 敵HP=0での勝利
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -193,7 +193,7 @@ func TestBattleFlow_VictoryCondition(t *testing.T) {
 }
 
 func TestBattleFlow_DefeatCondition(t *testing.T) {
-	// Requirement 9.16: プレイヤーHP=0での敗北
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -214,7 +214,7 @@ func TestBattleFlow_DefeatCondition(t *testing.T) {
 }
 
 func TestBattleFlow_PhaseTransition(t *testing.T) {
-	// Requirement 11.15, 11.16: HP50%以下でフェーズ変化
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -277,7 +277,7 @@ func TestBattleFlow_TypingChallenge(t *testing.T) {
 }
 
 func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
-	// Requirement 11.28-11.30: バフ・デバフの相互作用
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
@@ -304,7 +304,7 @@ func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
 }
 
 func TestBattleFlow_AccuracyPenalty(t *testing.T) {
-	// Requirement 10.9: 正確性50%未満で効果半減
+
 	engine := battle.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 

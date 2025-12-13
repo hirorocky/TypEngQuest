@@ -22,7 +22,7 @@ func TestNewEncyclopediaScreen(t *testing.T) {
 }
 
 // TestEncyclopediaCategories は3カテゴリ表示をテストします。
-// Requirement 14.1: 3つのカテゴリ（コア図鑑、モジュール図鑑、敵図鑑）を表示
+
 func TestEncyclopediaCategories(t *testing.T) {
 	data := createTestEncyclopediaData()
 	screen := NewEncyclopediaScreen(data)
@@ -46,7 +46,7 @@ func TestEncyclopediaCategories(t *testing.T) {
 }
 
 // TestEncyclopediaCoreEncyclopedia はコア図鑑をテストします。
-// Requirement 14.2, 14.3: コア図鑑（全特性一覧、獲得状況）
+
 func TestEncyclopediaCoreEncyclopedia(t *testing.T) {
 	data := createTestEncyclopediaData()
 	screen := NewEncyclopediaScreen(data)
@@ -68,7 +68,7 @@ func TestEncyclopediaCoreEncyclopedia(t *testing.T) {
 }
 
 // TestEncyclopediaModuleEncyclopedia はモジュール図鑑をテストします。
-// Requirement 14.5, 14.6: モジュール図鑑（全タイプ一覧、獲得状況）
+
 func TestEncyclopediaModuleEncyclopedia(t *testing.T) {
 	data := createTestEncyclopediaData()
 	screen := NewEncyclopediaScreen(data)
@@ -83,7 +83,7 @@ func TestEncyclopediaModuleEncyclopedia(t *testing.T) {
 }
 
 // TestEncyclopediaEnemyEncyclopedia は敵図鑑をテストします。
-// Requirement 14.8, 14.9: 敵図鑑（遭遇済み一覧、詳細情報）
+
 func TestEncyclopediaEnemyEncyclopedia(t *testing.T) {
 	data := createTestEncyclopediaData()
 	screen := NewEncyclopediaScreen(data)
@@ -104,7 +104,7 @@ func TestEncyclopediaEnemyEncyclopedia(t *testing.T) {
 }
 
 // TestEncyclopediaUnacquiredDisplay は未獲得表示をテストします。
-// Requirement 14.4, 14.7, 14.10: 未獲得をシルエットまたは「???」で表示
+
 func TestEncyclopediaUnacquiredDisplay(t *testing.T) {
 	data := createTestEncyclopediaData()
 	// 獲得済みリストを空にする
@@ -125,7 +125,7 @@ func TestEncyclopediaUnacquiredDisplay(t *testing.T) {
 }
 
 // TestEncyclopediaCompletionRate はコンプリート率をテストします。
-// Requirement 14.11: コンプリート率表示
+
 func TestEncyclopediaCompletionRate(t *testing.T) {
 	data := createTestEncyclopediaData()
 	screen := NewEncyclopediaScreen(data)

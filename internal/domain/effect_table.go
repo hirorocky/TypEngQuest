@@ -46,7 +46,7 @@ type StatModifiers struct {
 }
 
 // EffectRow は効果テーブルの1行を表す構造体です。
-// Requirements 4.5, 4.6, 10.1, 11.28-11.30に基づいて設計されています。
+
 type EffectRow struct {
 	// ID は効果の一意識別子です（例: "core_001", "buff_a3f2"）
 	ID string
@@ -58,7 +58,7 @@ type EffectRow struct {
 	Name string
 
 	// Duration は残り秒数です（nil = 永続、Core/Moduleは永続）
-	// Requirement 4.5: 効果時間の表示
+
 	Duration *float64
 
 	// Modifiers はステータス修正値です
@@ -98,7 +98,7 @@ func (t *EffectTable) RemoveRow(id string) {
 
 // UpdateDurations は時限効果の残り時間を更新します。
 // 毎ティック呼び出され、残り時間が0以下になった行は自動削除されます。
-// Requirement 4.6: 効果時間経過で削除
+
 func (t *EffectTable) UpdateDurations(deltaSeconds float64) {
 	for i := range t.Rows {
 		if t.Rows[i].Duration != nil {

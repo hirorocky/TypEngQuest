@@ -1,6 +1,6 @@
 // Package achievement は実績システムを担当します。
 // タイピング実績とバトル実績の管理、達成判定、通知処理を提供します。
-// Requirements: 15.4-15.11
+
 package achievement
 
 // ==================================================
@@ -72,7 +72,7 @@ var allAchievements = []AchievementDefinition{
 // ==================================================
 
 // AchievementNotification は実績達成通知を表す構造体です。
-// Requirement 15.9: 実績達成時の通知処理
+
 type AchievementNotification struct {
 	// AchievementID は達成した実績のIDです。
 	AchievementID string
@@ -89,7 +89,7 @@ type AchievementNotification struct {
 // ==================================================
 
 // AchievementManager は実績の管理を担当する構造体です。
-// Requirement 15.10, 15.11: 達成済み/未達成の区別、コンプリート率表示
+
 type AchievementManager struct {
 	// unlocked は解除済み実績IDのマップです。
 	unlocked map[string]bool
@@ -103,8 +103,7 @@ func NewAchievementManager() *AchievementManager {
 }
 
 // CheckTypingAchievements はタイピング成績を基に実績の解除をチェックします。
-// Requirements 15.4, 15.5: WPMマイルストーン、100%正確性実績
-// Requirement 15.9: 達成通知を返却
+
 func (m *AchievementManager) CheckTypingAchievements(wpm float64, accuracy float64) []AchievementNotification {
 	var notifications []AchievementNotification
 
@@ -141,8 +140,7 @@ func (m *AchievementManager) CheckTypingAchievements(wpm float64, accuracy float
 }
 
 // CheckBattleAchievements はバトル成績を基に実績の解除をチェックします。
-// Requirements 15.6, 15.7, 15.8: 敵撃破数、レベル、ノーダメージ実績
-// Requirement 15.9: 達成通知を返却
+
 func (m *AchievementManager) CheckBattleAchievements(totalDefeated int, maxLevel int, isNoDamage bool) []AchievementNotification {
 	var notifications []AchievementNotification
 
@@ -231,7 +229,7 @@ func (m *AchievementManager) tryUnlock(achievementID string) *AchievementNotific
 }
 
 // IsUnlocked は指定した実績が解除済みかを返します。
-// Requirement 15.10: 達成済み/未達成の区別
+
 func (m *AchievementManager) IsUnlocked(achievementID string) bool {
 	return m.unlocked[achievementID]
 }
@@ -242,7 +240,7 @@ func (m *AchievementManager) GetAllAchievements() []AchievementDefinition {
 }
 
 // GetCompletionRate は実績の達成率（0.0〜1.0）を返します。
-// Requirement 15.11: コンプリート率表示
+
 func (m *AchievementManager) GetCompletionRate() float64 {
 	total := len(allAchievements)
 	if total == 0 {
@@ -278,7 +276,6 @@ func (m *AchievementManager) GetTotalCount() int {
 // ==================================================
 
 // GetUnlockedIDs は解除済み実績IDのリストを返します。
-// persistenceへの依存を避けるため、ドメイン型（[]string）で返します。
 func (m *AchievementManager) GetUnlockedIDs() []string {
 	unlocked := make([]string, 0, len(m.unlocked))
 	for id, isUnlocked := range m.unlocked {
@@ -290,24 +287,9 @@ func (m *AchievementManager) GetUnlockedIDs() []string {
 }
 
 // LoadFromUnlockedIDs は解除済み実績IDリストから状態を復元します。
-// persistenceへの依存を避けるため、ドメイン型（[]string）を受け取ります。
 func (m *AchievementManager) LoadFromUnlockedIDs(unlockedIDs []string) {
 	m.unlocked = make(map[string]bool)
 	for _, id := range unlockedIDs {
 		m.unlocked[id] = true
 	}
-}
-
-// ToSaveData は現在の状態をセーブデータ形式に変換します（後方互換性用）。
-// 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
-// Deprecated: GetUnlockedIDs + savedata.AchievementStateToSaveData を使用してください。
-func (m *AchievementManager) ToSaveData() interface{} {
-	return m.GetUnlockedIDs()
-}
-
-// LoadFromSaveData はセーブデータから状態を復元します（後方互換性用）。
-// 注: この関数はinfra/persistence層で使用され、achievementパッケージ内では使用しません。
-// Deprecated: savedata.SaveDataToAchievementState + LoadFromUnlockedIDs を使用してください。
-func (m *AchievementManager) LoadFromSaveData(unlockedIDs []string) {
-	m.LoadFromUnlockedIDs(unlockedIDs)
 }

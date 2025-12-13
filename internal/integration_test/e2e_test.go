@@ -1,5 +1,5 @@
 // Package integration_test は統合テストを提供します。
-// Requirements: 1.1, 2.1, 3.7, 12.1, 17.5
+
 package integration_test
 
 import (
@@ -130,7 +130,7 @@ func createTestRewardCalculator() *reward.RewardCalculator {
 // ==================================================
 
 func TestE2E_NewGameFlow(t *testing.T) {
-	// Requirement 1.1, 17.5: 起動→新規ゲーム開始
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
@@ -169,7 +169,7 @@ func TestE2E_NewGameFlow(t *testing.T) {
 }
 
 func TestE2E_BattleVictoryFlow(t *testing.T) {
-	// Requirement 2.1, 3.7, 12.1: ホーム→バトル選択→バトル→勝利→報酬
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
@@ -460,7 +460,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 }
 
 func TestE2E_SaveQuitRestartLoad(t *testing.T) {
-	// Requirement 17.5: セーブ→終了→再起動→ロード→状態確認
+
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())

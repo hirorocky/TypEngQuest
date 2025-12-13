@@ -1,5 +1,5 @@
 // Package achievement は実績システムを担当します。
-// Requirements: 15.4-15.9
+
 package achievement
 
 import (
@@ -11,7 +11,7 @@ import (
 // ==================================================
 
 func TestTypingAchievements_WPMMilestones(t *testing.T) {
-	// Requirements 15.4: WPMマイルストーン達成判定（50, 80, 100, 120 WPM達成）
+
 	manager := NewAchievementManager()
 
 	tests := []struct {
@@ -46,7 +46,7 @@ func TestTypingAchievements_WPMMilestones(t *testing.T) {
 }
 
 func TestTypingAchievements_PerfectAccuracy(t *testing.T) {
-	// Requirements 15.5: 100%正確性クリア実績
+
 	manager := NewAchievementManager()
 
 	// 99%正確性では解除されない
@@ -67,7 +67,7 @@ func TestTypingAchievements_PerfectAccuracy(t *testing.T) {
 }
 
 func TestAchievementNotification(t *testing.T) {
-	// Requirements 15.9: 実績達成時の通知処理
+
 	manager := NewAchievementManager()
 
 	notifications := manager.CheckTypingAchievements(120, 100)
@@ -92,7 +92,7 @@ func TestAchievementNotification(t *testing.T) {
 // ==================================================
 
 func TestBattleAchievements_EnemyDefeatedMilestones(t *testing.T) {
-	// Requirements 15.6: 敵撃破数マイルストーン達成判定（10, 50, 100, 500体）
+
 	manager := NewAchievementManager()
 
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestBattleAchievements_EnemyDefeatedMilestones(t *testing.T) {
 }
 
 func TestBattleAchievements_LevelMilestones(t *testing.T) {
-	// Requirements 15.7: レベルマイルストーン達成判定（レベル10, 25, 50, 100到達）
+
 	manager := NewAchievementManager()
 
 	tests := []struct {
@@ -156,7 +156,7 @@ func TestBattleAchievements_LevelMilestones(t *testing.T) {
 }
 
 func TestBattleAchievements_NoDamageClear(t *testing.T) {
-	// Requirements 15.8: ノーダメージクリア実績
+
 	manager := NewAchievementManager()
 
 	// ダメージを受けた場合は解除されない

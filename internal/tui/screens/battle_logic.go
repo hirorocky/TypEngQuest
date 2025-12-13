@@ -74,7 +74,7 @@ func (s *BattleScreen) IsShowingResult() bool {
 // ==================== ゲームロジック: 敵攻撃処理 ====================
 
 // processEnemyAttack は敵の行動を処理します。
-// Requirement 11.8: 事前決定された行動を実行し、次回行動を再決定
+
 func (s *BattleScreen) processEnemyAttack() {
 	if s.battleEngine == nil || s.battleState == nil {
 		// フォールバック: 従来の攻撃処理
@@ -162,7 +162,7 @@ func (s *BattleScreen) StartCooldown(slotIndex int, duration float64) {
 // ==================== ゲームロジック: タイピング ====================
 
 // StartTypingChallenge はタイピングチャレンジを開始します。
-// Requirement 9.6: タイピングチャレンジテキスト表示
+
 func (s *BattleScreen) StartTypingChallenge(text string, timeLimit time.Duration) {
 	s.isTyping = true
 	s.typingText = text
@@ -294,7 +294,7 @@ func (s *BattleScreen) CancelTyping() {
 // ==================== ゲームロジック: 行動表示 ====================
 
 // getActionDisplay は次回行動の表示情報を返します。
-// Requirement 11.8: 行動タイプに応じたアイコン・色を返す
+
 func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgloss.Color) {
 	if s.battleState == nil {
 		return "?", "不明", styles.ColorSubtle

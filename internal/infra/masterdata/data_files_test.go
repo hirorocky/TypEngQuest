@@ -20,7 +20,7 @@ func TestCoresJSONExists(t *testing.T) {
 	}
 
 	// 最低4種類のコア特性が存在すること
-	// Requirement 5.14-5.17: 攻撃バランス、パラディン、オールラウンダー、ヒーラー
+
 	if len(coreTypes) < 4 {
 		t.Errorf("コア特性の数が足りません: got %d, want >= 4", len(coreTypes))
 	}
@@ -60,7 +60,7 @@ func TestModulesJSONExists(t *testing.T) {
 	}
 
 	// 各カテゴリにLv1〜Lv3が存在すること
-	// Requirement 6.17: 各カテゴリにLv1〜Lv3程度のモジュールを用意
+
 	categoryLevelCount := make(map[string]map[int]bool)
 	categories := []string{"physical_attack", "magic_attack", "heal", "buff", "debuff"}
 	for _, cat := range categories {
@@ -104,7 +104,7 @@ func TestEnemiesJSONExists(t *testing.T) {
 		}
 
 		// ASCIIアートが設定されていること
-		// Requirement 13.3: 各敵に固有の外観（ASCIIアート）を設定
+
 		if et.ASCIIArt == "" {
 			t.Errorf("敵タイプにASCIIアートがありません: %s", et.ID)
 		}
@@ -121,7 +121,7 @@ func TestWordsJSONExists(t *testing.T) {
 	}
 
 	// 各難易度に単語が存在すること
-	// Requirement 16.1, 16.2: デフォルトの単語セット（英単語、プログラミング用語）
+
 	if len(dictionary.Easy) == 0 {
 		t.Error("Easy単語が空です")
 	}
@@ -133,9 +133,7 @@ func TestWordsJSONExists(t *testing.T) {
 	}
 
 	// 単語の長さの検証
-	// Requirement 16.6: 弱いモジュールは短いテキスト（3-6文字）
-	// Requirement 16.7: 中程度は中程度のテキスト（7-11文字）
-	// Requirement 16.8: 強力は長いテキスト（12-20文字）
+
 	for _, word := range dictionary.Easy {
 		if len(word) > 6 {
 			t.Errorf("Easy単語が長すぎます: %s (len=%d)", word, len(word))

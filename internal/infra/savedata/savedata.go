@@ -1,6 +1,6 @@
 // Package savedata はセーブデータの永続化を担当します。
 // 原子的書き込みパターンとバックアップによるセーブデータの整合性を保証します。
-// Requirements: 17.1-17.8, 19.1-19.3
+
 package savedata
 
 import (
@@ -23,11 +23,11 @@ const SaveFileName = "save.json"
 const TempSaveFileName = "save.json.tmp"
 
 // MaxBackupCount はバックアップの最大世代数です。
-// Requirement 17.7: 直近3世代保持
+
 const MaxBackupCount = 3
 
 // SaveData はゲームのセーブデータを表す構造体です。
-// Requirements 17.4: バージョン、タイムスタンプ、プレイヤー、インベントリ、統計、実績、設定
+
 type SaveData struct {
 	// Version はセーブデータのバージョンです。
 	// スキーマ変更時のマイグレーションに使用します。
@@ -41,19 +41,19 @@ type SaveData struct {
 	Player *PlayerSaveData `json:"player"`
 
 	// Inventory は所持アイテム（コア、モジュール、エージェント）です。
-	// Requirement 17.4: 所持コア・モジュール・エージェントを保存
+
 	Inventory *InventorySaveData `json:"inventory"`
 
 	// Statistics は統計データです。
-	// Requirement 17.4: 統計データを保存
+
 	Statistics *StatisticsSaveData `json:"statistics"`
 
 	// Achievements は実績データです。
-	// Requirement 17.4: 実績データを保存
+
 	Achievements *AchievementsSaveData `json:"achievements"`
 
 	// Settings はゲーム設定です。
-	// Requirement 17.4: 設定を保存
+
 	Settings *SettingsSaveData `json:"settings"`
 }
 
@@ -61,7 +61,7 @@ type SaveData struct {
 type PlayerSaveData struct {
 	// EquippedAgentIDs は装備中のエージェントIDリストです（スロット番号順）。
 	// 空きスロットは空文字列で表現されます。
-	// Requirement 17.4: 装備エージェントを保存
+
 	EquippedAgentIDs [3]string `json:"equipped_agent_ids"`
 }
 
@@ -116,7 +116,7 @@ type InventorySaveData struct {
 	MaxModuleSlots int `json:"max_module_slots"`
 
 	// MaxAgentSlots はエージェントの最大所持数です。
-	// Requirement 20.6: エージェントの保有上限（最低20体）
+
 	MaxAgentSlots int `json:"max_agent_slots"`
 }
 
@@ -132,7 +132,7 @@ type StatisticsSaveData struct {
 	Defeats int `json:"defeats"`
 
 	// MaxLevelReached は到達最高レベルです。
-	// Requirement 17.4: 到達最高レベルを保存
+
 	MaxLevelReached int `json:"max_level_reached"`
 
 	// HighestWPM は最高WPMです。
@@ -180,7 +180,7 @@ func NewSaveData() *SaveData {
 			AgentInstances: make([]AgentInstanceSave, 0),
 			MaxCoreSlots:   100,
 			MaxModuleSlots: 200,
-			MaxAgentSlots:  20, // Requirement 20.6
+			MaxAgentSlots:  20,
 		},
 		Statistics: &StatisticsSaveData{
 			TotalBattles:         0,
@@ -216,8 +216,7 @@ func NewSaveDataIO(saveDir string) *SaveDataIO {
 }
 
 // SaveGame はセーブデータをファイルに保存します。
-// Requirement 17.3: 原子的書き込み処理（一時ファイル→検証→リネーム）
-// Requirement 17.1, 17.2: 自動セーブ機能、バトル終了時に自動保存
+
 func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	// タイムスタンプを更新
 	data.Timestamp = time.Now()
@@ -264,9 +263,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 }
 
 // LoadGame はセーブデータをファイルから読み込みます。
-// Requirement 17.5: 起動時にセーブデータを自動読み込み
-// Requirement 17.6: ロード時のバージョンチェックとデータ検証
-// Requirement 19.2: 破損時のバックアップ復元試行
+
 func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 	savePath := filepath.Join(io.saveDir, SaveFileName)
 
@@ -326,7 +323,7 @@ func (io *SaveDataIO) LoadFromBackup(backupIndex int) (*SaveData, error) {
 }
 
 // RotateBackups はバックアップファイルをローテーションします。
-// Requirement 17.7: バックアップローテーション（直近3世代保持）
+
 // save.json → save.json.bak1 → save.json.bak2 → save.json.bak3 (削除)
 func (io *SaveDataIO) RotateBackups() error {
 	// 古いバックアップを削除（存在しない場合は無視）
@@ -356,7 +353,7 @@ func (io *SaveDataIO) RotateBackups() error {
 }
 
 // ResetSaveData はセーブデータをリセットします。
-// Requirement 17.8: セーブをリセットして最初からやり直せる
+
 func (io *SaveDataIO) ResetSaveData() error {
 	// メインセーブファイルを削除
 	savePath := filepath.Join(io.saveDir, SaveFileName)
@@ -372,7 +369,7 @@ func (io *SaveDataIO) ResetSaveData() error {
 }
 
 // ValidateSaveData はセーブデータのバリデーションを行います。
-// Requirement 19.4: 不正な入力値を検証
+
 func ValidateSaveData(data *SaveData) error {
 	if data.Version == "" {
 		return fmt.Errorf("セーブデータのバージョンが空です")

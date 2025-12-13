@@ -1,6 +1,6 @@
 // Package inventory はインベントリ管理機能を提供します。
 // コア、モジュール、エージェントの保管と管理を担当します。
-// Requirements: 5.1-5.8, 6.1-6.7, 7.12, 8.9, 8.10, 20.6
+
 package inventory
 
 import (
@@ -12,7 +12,7 @@ import (
 // ==================== コアインベントリテスト（Task 4.1） ====================
 
 // TestCoreInventory_Add はコアの追加処理をテストします。
-// Requirement 5.2: コアの追加処理
+
 func TestCoreInventory_Add(t *testing.T) {
 	inv := NewCoreInventory(10)
 	coreType := domain.CoreType{
@@ -35,7 +35,7 @@ func TestCoreInventory_Add(t *testing.T) {
 }
 
 // TestCoreInventory_AddOverCapacity はインベントリ上限チェックをテストします。
-// Requirement 5.8（暗黙）: インベントリ上限チェック
+
 func TestCoreInventory_AddOverCapacity(t *testing.T) {
 	inv := NewCoreInventory(1)
 	coreType := domain.CoreType{
@@ -61,7 +61,7 @@ func TestCoreInventory_AddOverCapacity(t *testing.T) {
 }
 
 // TestCoreInventory_Remove はコアの削除処理をテストします。
-// Requirement 5.7: 不要なコアを破棄する機能
+
 func TestCoreInventory_Remove(t *testing.T) {
 	inv := NewCoreInventory(10)
 	coreType := domain.CoreType{
@@ -85,7 +85,7 @@ func TestCoreInventory_Remove(t *testing.T) {
 }
 
 // TestCoreInventory_List はコア一覧表示機能をテストします。
-// Requirement 5.1, 5.2: コア一覧機能
+
 func TestCoreInventory_List(t *testing.T) {
 	inv := NewCoreInventory(10)
 	coreType := domain.CoreType{
@@ -109,7 +109,7 @@ func TestCoreInventory_List(t *testing.T) {
 }
 
 // TestCoreInventory_FilterByType は特性によるフィルタリングをテストします。
-// Requirement 5.8: コアを特性でフィルタリング
+
 func TestCoreInventory_FilterByType(t *testing.T) {
 	inv := NewCoreInventory(10)
 	attackType := domain.CoreType{
@@ -139,7 +139,7 @@ func TestCoreInventory_FilterByType(t *testing.T) {
 }
 
 // TestCoreInventory_FilterByLevel はレベルによるフィルタリングをテストします。
-// Requirement 5.8: コアをレベルでフィルタリング
+
 func TestCoreInventory_FilterByLevel(t *testing.T) {
 	inv := NewCoreInventory(10)
 	coreType := domain.CoreType{
@@ -161,7 +161,7 @@ func TestCoreInventory_FilterByLevel(t *testing.T) {
 }
 
 // TestCoreInventory_SortByLevel はレベルによるソートをテストします。
-// Requirement 5.8: コアをレベルでソート
+
 func TestCoreInventory_SortByLevel(t *testing.T) {
 	inv := NewCoreInventory(10)
 	coreType := domain.CoreType{
@@ -190,7 +190,7 @@ func TestCoreInventory_SortByLevel(t *testing.T) {
 // ==================== モジュールインベントリテスト（Task 4.2） ====================
 
 // TestModuleInventory_Add はモジュールの追加処理をテストします。
-// Requirement 6.2: モジュールの追加処理
+
 func TestModuleInventory_Add(t *testing.T) {
 	inv := NewModuleInventory(20)
 	module := domain.NewModule(
@@ -222,7 +222,7 @@ func TestModuleInventory_AddOverCapacity(t *testing.T) {
 }
 
 // TestModuleInventory_Remove はモジュールの削除処理をテストします。
-// Requirement 6.6: 不要なモジュールを破棄する機能
+
 func TestModuleInventory_Remove(t *testing.T) {
 	inv := NewModuleInventory(20)
 	module := domain.NewModule("module_001", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "説明")
@@ -239,7 +239,7 @@ func TestModuleInventory_Remove(t *testing.T) {
 }
 
 // TestModuleInventory_FilterByCategory はカテゴリによるフィルタリングをテストします。
-// Requirement 6.7: モジュールをカテゴリでフィルタリング
+
 func TestModuleInventory_FilterByCategory(t *testing.T) {
 	inv := NewModuleInventory(20)
 	inv.Add(domain.NewModule("m1", "物理打撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
@@ -256,7 +256,7 @@ func TestModuleInventory_FilterByCategory(t *testing.T) {
 }
 
 // TestModuleInventory_FilterByLevel はレベルによるフィルタリングをテストします。
-// Requirement 6.7: モジュールをレベルでフィルタリング
+
 func TestModuleInventory_FilterByLevel(t *testing.T) {
 	inv := NewModuleInventory(20)
 	inv.Add(domain.NewModule("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
@@ -273,7 +273,7 @@ func TestModuleInventory_FilterByLevel(t *testing.T) {
 }
 
 // TestModuleInventory_SortByLevel はレベルによるソートをテストします。
-// Requirement 6.7: モジュールをレベルでソート
+
 func TestModuleInventory_SortByLevel(t *testing.T) {
 	inv := NewModuleInventory(20)
 	inv.Add(domain.NewModule("m1", "Lv3", domain.PhysicalAttack, 3, []string{"physical_high"}, 35.0, "STR", ""))
@@ -290,7 +290,7 @@ func TestModuleInventory_SortByLevel(t *testing.T) {
 
 // TestAgentInventory_Add はエージェントの追加処理をテストします。
 func TestAgentInventory_Add(t *testing.T) {
-	inv := NewAgentInventory(20) // Requirement 20.6: 最低20体
+	inv := NewAgentInventory(20)
 	coreType := domain.CoreType{
 		ID:          "all_rounder",
 		Name:        "オールラウンダー",
@@ -319,7 +319,7 @@ func TestAgentInventory_Add(t *testing.T) {
 }
 
 // TestAgentInventory_AddOverCapacity はエージェント保有上限チェックをテストします。
-// Requirement 20.6: エージェントの保有上限
+
 func TestAgentInventory_AddOverCapacity(t *testing.T) {
 	inv := NewAgentInventory(1) // テスト用に上限1
 	coreType := domain.CoreType{

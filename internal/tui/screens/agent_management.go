@@ -52,7 +52,7 @@ type SynthesisState struct {
 }
 
 // AgentManagementScreen はエージェント管理画面を表します。
-// Requirements: 5.1, 5.2, 5.5, 6.1, 6.2, 7.1, 7.2, 8.1, 8.2
+
 // UI-Improvement Requirements: 2.5, 2.6, 2.7, 2.8, 2.9
 type AgentManagementScreen struct {
 	inventory      InventoryProvider

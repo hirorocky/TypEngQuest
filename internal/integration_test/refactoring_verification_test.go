@@ -1,5 +1,5 @@
 // Package integration_test は統合テストを提供します。
-// Requirements: 12.1, 12.2, 12.3
+
 // リファクタリング完了検証テスト - タスク12.1
 package integration_test
 
@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/app"
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/savedata"
@@ -411,8 +410,15 @@ func TestRefactoring_RewardConversion(t *testing.T) {
 		TotalHealAmount:  20,
 	}
 
-	// app層の変換関数を使用
-	rewardStats := app.ConvertBattleStatsToRewardStats(battleStats)
+	// バトル統計から報酬統計を構築
+	rewardStats := &reward.BattleStatistics{
+		TotalWPM:         battleStats.TotalWPM,
+		TotalAccuracy:    battleStats.TotalAccuracy,
+		TotalTypingCount: battleStats.TotalTypingCount,
+		TotalDamageDealt: battleStats.TotalDamageDealt,
+		TotalDamageTaken: battleStats.TotalDamageTaken,
+		TotalHealAmount:  battleStats.TotalHealAmount,
+	}
 
 	// 変換結果の検証
 	if rewardStats == nil {
@@ -505,8 +511,15 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		t.Error("勝利であるべき")
 	}
 
-	// 8. 報酬統計の変換（app層の関数を使用）
-	rewardStats := app.ConvertBattleStatsToRewardStats(result.Stats)
+	// 8. 報酬統計の構築
+	rewardStats := &reward.BattleStatistics{
+		TotalWPM:         result.Stats.TotalWPM,
+		TotalAccuracy:    result.Stats.TotalAccuracy,
+		TotalTypingCount: result.Stats.TotalTypingCount,
+		TotalDamageDealt: result.Stats.TotalDamageDealt,
+		TotalDamageTaken: result.Stats.TotalDamageTaken,
+		TotalHealAmount:  result.Stats.TotalHealAmount,
+	}
 	if rewardStats == nil {
 		t.Fatal("報酬統計の変換に失敗")
 	}

@@ -55,7 +55,7 @@ func (s *ModuleSlot) IsReady() bool {
 // ==================== BattleScreen構造体 ====================
 
 // BattleScreen はバトル画面を表します。
-// Requirements: 9.2-9.6, 9.11-9.15, 18.9, 18.10
+
 // UI-Improvement Requirements: 3.1, 3.2, 3.9
 type BattleScreen struct {
 	// 戦闘参加者
@@ -153,11 +153,10 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
-	// Requirement 11.8: 初回行動を決定
 	screen.battleState.NextAction = screen.battleEngine.DetermineNextAction(screen.battleState)
 
 	// モジュールスロットを初期化
-	// Requirement 18.10: エージェントごとにモジュールをグループ化
+
 	for agentIdx, agent := range agents {
 		for modIdx, module := range agent.Modules {
 			screen.moduleSlots = append(screen.moduleSlots, ModuleSlot{

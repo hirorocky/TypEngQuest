@@ -1,6 +1,6 @@
 // Package battle はバトルエンジンを提供します。
 // バトル初期化、敵攻撃、モジュール効果、勝敗判定を担当します。
-// Requirements: 9.1, 9.16, 9.17, 10.1-10.10, 11.1-11.27, 13.1
+
 package battle
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // AccuracyPenaltyThreshold は効果半減の正確性閾値です。
-// Requirement 10.9: 正確性50%未満で効果半減
+
 // config.AccuracyPenaltyThresholdを参照するためのエイリアス
 const AccuracyPenaltyThreshold = config.AccuracyPenaltyThreshold
 
@@ -24,20 +24,29 @@ const AccuracyPenaltyThreshold = config.AccuracyPenaltyThreshold
 // ステータス値を適切なダメージ/回復量に変換するための係数
 const EffectScaleFactor = 0.1
 
+// calculateDamage はダメージを計算します（最低1ダメージ保証）。
+func calculateDamage(baseDamage int, damageReduction float64) int {
+	damage := int(float64(baseDamage) * (1.0 - damageReduction))
+	if damage < 1 {
+		damage = 1
+	}
+	return damage
+}
+
 // 敵自己バフタイプ
 type EnemyBuffType int
 
 const (
 	// EnemyBuffAttackUp は攻撃力UP
-	// Requirement 11.18
+
 	EnemyBuffAttackUp EnemyBuffType = iota
 
 	// EnemyBuffPhysicalDamageDown は物理ダメージ軽減
-	// Requirement 11.19
+
 	EnemyBuffPhysicalDamageDown
 
 	// EnemyBuffMagicDamageDown は魔法ダメージ軽減
-	// Requirement 11.20
+
 	EnemyBuffMagicDamageDown
 )
 
@@ -46,24 +55,24 @@ type PlayerDebuffType int
 
 const (
 	// PlayerDebuffTypingTimeDown はタイピング制限時間短縮
-	// Requirement 11.22
+
 	PlayerDebuffTypingTimeDown PlayerDebuffType = iota
 
 	// PlayerDebuffTextShuffle はテキストシャッフル
-	// Requirement 11.23
+
 	PlayerDebuffTextShuffle
 
 	// PlayerDebuffDifficultyUp は難易度上昇
-	// Requirement 11.24
+
 	PlayerDebuffDifficultyUp
 
 	// PlayerDebuffCooldownExtend はクールダウン延長
-	// Requirement 11.25
+
 	PlayerDebuffCooldownExtend
 )
 
 // EnemyActionType は敵の行動タイプを表します。
-// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+
 type EnemyActionType int
 
 const (
@@ -78,7 +87,7 @@ const (
 )
 
 // NextEnemyAction は敵の次回行動を表します。
-// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+
 type NextEnemyAction struct {
 	// ActionType は行動タイプ（攻撃/自己バフ/デバフ）
 	ActionType EnemyActionType
@@ -162,7 +171,7 @@ type BattleState struct {
 	NextAttackTime time.Time
 
 	// NextAction は敵の次回行動です。
-	// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+
 	NextAction NextEnemyAction
 }
 
@@ -176,7 +185,7 @@ type BattleResult struct {
 }
 
 // BattleEngine はバトルロジックを担当する構造体です。
-// Requirements: 9.1, 9.16, 9.17, 10.1-10.10, 11.1-11.27, 13.1
+
 type BattleEngine struct {
 	// enemyTypes は敵タイプの定義リストです。
 	enemyTypes []domain.EnemyType
@@ -196,9 +205,7 @@ func NewBattleEngine(enemyTypes []domain.EnemyType) *BattleEngine {
 // ==================== バトル初期化（Task 7.1） ====================
 
 // InitializeBattle はバトルを初期化します。
-// Requirement 9.1: 指定レベルの敵を生成しバトル開始
-// Requirement 4.3: バトル開始時にプレイヤーのHPを最大値まで全回復
-// Requirement 13.1: 指定レベルの敵を生成
+
 func (e *BattleEngine) InitializeBattle(level int, agents []*domain.AgentModel) (*BattleState, error) {
 	if len(agents) == 0 {
 		return nil, fmt.Errorf("エージェントが装備されていません")
@@ -227,30 +234,29 @@ func (e *BattleEngine) InitializeBattle(level int, agents []*domain.AgentModel) 
 		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
-	// Requirement 11.8: 初回行動を決定
 	state.NextAction = e.DetermineNextAction(state)
 
 	return state, nil
 }
 
 // generateEnemy は指定レベルの敵を生成します。
-// Requirement 13.1, 13.2: レベルに応じた敵生成
+
 func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 	if len(e.enemyTypes) == 0 {
 		return nil
 	}
 
 	// ランダムに敵タイプを選択
-	// Requirement 13.5: 同じレベルでも複数の敵バリエーションからランダム選択
+
 	enemyType := e.enemyTypes[e.rng.Intn(len(e.enemyTypes))]
 
 	// レベルに応じてステータスを計算
-	// Requirement 13.2: レベルに応じたHP、攻撃力、攻撃間隔を計算
+
 	hp := enemyType.BaseHP * level
 	attackPower := enemyType.BaseAttackPower + (level * 2)
 
 	// 高レベルほど短い攻撃間隔（ただし最低500ms）
-	// Requirement 13.6, 20.4: 高レベル敵ほど短い攻撃間隔
+
 	intervalReduction := time.Duration(level*50) * time.Millisecond
 	attackInterval := enemyType.BaseAttackInterval - intervalReduction
 	if attackInterval < config.MinEnemyAttackInterval {
@@ -271,22 +277,18 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 // ==================== 敵攻撃システム（Task 7.2） ====================
 
 // ProcessEnemyAttack は敵の攻撃を処理します。
-// Requirement 11.4: 攻撃ダメージ計算（攻撃力 - 防御バフ）
-// Requirement 11.5: プレイヤーHP減少処理
+
 func (e *BattleEngine) ProcessEnemyAttack(state *BattleState) int {
 	// 敵の攻撃力を取得
 	attackPower := state.Enemy.AttackPower
 
 	// プレイヤーの防御効果を計算
-	// Requirement 11.28: 防御バフ適用時のダメージ減算
+
 	finalStats := state.Player.EffectTable.Calculate(domain.Stats{})
 	damageReduction := finalStats.DamageReduction
 
 	// ダメージ計算（軽減率を適用）
-	damage := int(float64(attackPower) * (1.0 - damageReduction))
-	if damage < 1 {
-		damage = 1 // 最低1ダメージ
-	}
+	damage := calculateDamage(attackPower, damageReduction)
 
 	// プレイヤーにダメージを与える
 	state.Player.TakeDamage(damage)
@@ -299,13 +301,13 @@ func (e *BattleEngine) ProcessEnemyAttack(state *BattleState) int {
 }
 
 // IsAttackReady は敵の攻撃準備が完了しているかを返します。
-// Requirement 11.2: 敵の種類に応じた間隔で攻撃を自動実行
+
 func (e *BattleEngine) IsAttackReady(state *BattleState) bool {
 	return time.Now().After(state.NextAttackTime)
 }
 
 // GetTimeUntilNextAttack は次の攻撃までの残り時間を返します。
-// Requirement 11.7: 敵の次回攻撃までの残り時間をリアルタイムで表示
+
 func (e *BattleEngine) GetTimeUntilNextAttack(state *BattleState) time.Duration {
 	remaining := time.Until(state.NextAttackTime)
 	if remaining < 0 {
@@ -315,27 +317,20 @@ func (e *BattleEngine) GetTimeUntilNextAttack(state *BattleState) time.Duration 
 }
 
 // GetExpectedDamage は次の攻撃の予測ダメージを返します。
-// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
 func (e *BattleEngine) GetExpectedDamage(state *BattleState) int {
 	attackPower := state.Enemy.AttackPower
 	finalStats := state.Player.EffectTable.Calculate(domain.Stats{})
-	damageReduction := finalStats.DamageReduction
-
-	damage := int(float64(attackPower) * (1.0 - damageReduction))
-	if damage < 1 {
-		damage = 1
-	}
-	return damage
+	return calculateDamage(attackPower, finalStats.DamageReduction)
 }
 
 // GetAttackType は敵の攻撃タイプを返します。
-// Requirement 11.8: 次回攻撃の属性表示
+
 func (e *BattleEngine) GetAttackType(state *BattleState) string {
 	return state.Enemy.Type.AttackType
 }
 
 // DetermineNextAction は敵の次回行動を決定します。
-// Requirement 11.8: 次回攻撃の属性と予測ダメージ表示
+
 func (e *BattleEngine) DetermineNextAction(state *BattleState) NextEnemyAction {
 	// 強化フェーズでない場合は攻撃のみ
 	if !state.Enemy.IsEnhanced() {
@@ -373,7 +368,7 @@ func (e *BattleEngine) DetermineNextAction(state *BattleState) NextEnemyAction {
 }
 
 // ExecuteNextAction は事前決定された次回行動を実行します。
-// Requirement 11.8, 11.16-11.27: 行動予告に基づいた行動実行
+
 func (e *BattleEngine) ExecuteNextAction(state *BattleState) (damage int, message string) {
 	action := state.NextAction
 
@@ -398,7 +393,7 @@ func (e *BattleEngine) ExecuteNextAction(state *BattleState) (damage int, messag
 }
 
 // GetEnemyBuffName は敵自己バフの名前を返します。
-// Requirement 11.8: 行動予告表示用
+
 func GetEnemyBuffName(buffType EnemyBuffType) string {
 	switch buffType {
 	case EnemyBuffAttackUp:
@@ -413,7 +408,7 @@ func GetEnemyBuffName(buffType EnemyBuffType) string {
 }
 
 // GetPlayerDebuffName はプレイヤーデバフの名前を返します。
-// Requirement 11.8: 行動予告表示用
+
 func GetPlayerDebuffName(debuffType PlayerDebuffType) string {
 	switch debuffType {
 	case PlayerDebuffTypingTimeDown:
@@ -432,17 +427,13 @@ func GetPlayerDebuffName(debuffType PlayerDebuffType) string {
 // ==================== 敵フェーズ変化と特殊行動（Task 7.3） ====================
 
 // CheckPhaseTransition はフェーズ変化をチェックし、必要に応じて移行します。
-// Requirement 11.15: HP50%以下で強化フェーズに移行
+
 func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
-	if state.Enemy.CheckAndTransitionPhase() {
-		// Requirement 11.16: 強化フェーズ移行時に特殊攻撃解禁
-		return true
-	}
-	return false
+	return state.Enemy.CheckAndTransitionPhase()
 }
 
 // ApplyEnemySelfBuff は敵に自己バフを付与します。
-// Requirement 11.18-11.21: 自己バフ行動
+
 func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuffType) {
 	duration := config.BuffDuration
 
@@ -451,20 +442,19 @@ func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuff
 
 	switch buffType {
 	case EnemyBuffAttackUp:
-		// Requirement 11.18: 攻撃力UP
+
 		name = "攻撃力UP"
 		modifiers.STR_Mult = 1.3 // 30%攻撃力上昇
 	case EnemyBuffPhysicalDamageDown:
-		// Requirement 11.19: 物理ダメージ軽減
+
 		name = "物理防御UP"
 		modifiers.DamageReduction = 0.3 // 30%軽減
 	case EnemyBuffMagicDamageDown:
-		// Requirement 11.20: 魔法ダメージ軽減
+
 		name = "魔法防御UP"
 		modifiers.DamageReduction = 0.3 // 30%軽減
 	}
 
-	// Requirement 11.21: バフアイコンと効果時間を表示
 	state.Enemy.EffectTable.AddRow(domain.EffectRow{
 		ID:         uuid.New().String(),
 		SourceType: domain.SourceBuff,
@@ -475,7 +465,7 @@ func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuff
 }
 
 // ApplyPlayerDebuff はプレイヤーにデバフを付与します。
-// Requirement 11.22-11.27: プレイヤーへのデバフ
+
 func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDebuffType) {
 	duration := config.DebuffDuration
 
@@ -484,24 +474,23 @@ func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDe
 
 	switch debuffType {
 	case PlayerDebuffTypingTimeDown:
-		// Requirement 11.22: タイピング制限時間短縮
+
 		name = "タイピング時間短縮"
 		modifiers.TypingTimeExt = -2.0 // 2秒短縮
 	case PlayerDebuffTextShuffle:
-		// Requirement 11.23: テキストシャッフル（特殊フラグとして扱う）
+
 		name = "テキストシャッフル"
 		// 実際のシャッフル処理はUI側で行う
 	case PlayerDebuffDifficultyUp:
-		// Requirement 11.24: 難易度上昇
+
 		name = "難易度上昇"
 		// 実際の難易度変更はチャレンジ生成時に行う
 	case PlayerDebuffCooldownExtend:
-		// Requirement 11.25: クールダウン延長
+
 		name = "クールダウン延長"
 		modifiers.CDReduction = -0.3 // 30%延長（マイナス値 = 延長）
 	}
 
-	// Requirement 11.26: デバフアイコンと残り時間を表示
 	state.Player.EffectTable.AddRow(domain.EffectRow{
 		ID:         uuid.New().String(),
 		SourceType: domain.SourceDebuff,
@@ -512,40 +501,10 @@ func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDe
 }
 
 // UpdateEffects はバフ・デバフの時間を更新します。
-// Requirement 11.27: デバフの効果時間終了で解除
+
 func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	state.Player.EffectTable.UpdateDurations(deltaSeconds)
 	state.Enemy.EffectTable.UpdateDurations(deltaSeconds)
-}
-
-// SelectEnemySpecialAction は敵の特殊行動を選択して実行します。
-// 強化フェーズ時のみ発動し、確率で自己バフまたはプレイヤーデバフを選択。
-// Requirement 11.16-11.27: 強化フェーズでの特殊行動
-func (e *BattleEngine) SelectEnemySpecialAction(state *BattleState) (actionTaken bool, message string) {
-	// 強化フェーズ以外では特殊行動しない
-	if state.Enemy == nil || !state.Enemy.IsEnhanced() {
-		return false, ""
-	}
-
-	// 30%の確率で特殊行動を発動
-	if e.rng.Float64() > 0.3 {
-		return false, ""
-	}
-
-	// 50%で自己バフ、50%でプレイヤーデバフ
-	if e.rng.Float64() < 0.5 {
-		// 自己バフを選択（3種類からランダム）
-		buffTypes := []EnemyBuffType{EnemyBuffAttackUp, EnemyBuffPhysicalDamageDown, EnemyBuffMagicDamageDown}
-		buff := buffTypes[e.rng.Intn(len(buffTypes))]
-		e.ApplyEnemySelfBuff(state, buff)
-		return true, getEnemyBuffMessage(buff)
-	}
-
-	// プレイヤーデバフを選択（4種類からランダム）
-	debuffTypes := []PlayerDebuffType{PlayerDebuffTypingTimeDown, PlayerDebuffTextShuffle, PlayerDebuffDifficultyUp, PlayerDebuffCooldownExtend}
-	debuff := debuffTypes[e.rng.Intn(len(debuffTypes))]
-	e.ApplyPlayerDebuff(state, debuff)
-	return true, getPlayerDebuffMessage(debuff)
 }
 
 // getEnemyBuffMessage は敵自己バフのメッセージを返します。
@@ -581,14 +540,13 @@ func getPlayerDebuffMessage(debuffType PlayerDebuffType) string {
 // ==================== モジュール効果計算（Task 7.4） ====================
 
 // CalculateModuleEffect はモジュール効果を計算します。
-// Requirement 10.2, 10.3: ダメージ/回復量 = 基礎効果 × ステータス × 速度係数 × 正確性係数
-// Requirement 10.9: 正確性50%未満で効果半減
+
 func (e *BattleEngine) CalculateModuleEffect(
 	agent *domain.AgentModel,
 	module *domain.ModuleModel,
 	typingResult *typing.TypingResult,
 ) int {
-	// Requirement 10.1: 参照ステータスの取得
+
 	var statValue int
 	switch module.StatRef {
 	case "STR":
@@ -609,7 +567,6 @@ func (e *BattleEngine) CalculateModuleEffect(
 	// 速度係数と正確性係数を適用
 	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
 
-	// Requirement 10.9: 正確性50%未満で効果半減
 	if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
 		effect *= 0.5
 	}
@@ -618,7 +575,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 }
 
 // ApplyModuleEffect はモジュール効果を適用します。
-// Requirement 10.2-10.5: 攻撃、回復、バフ、デバフの効果適用
+
 func (e *BattleEngine) ApplyModuleEffect(
 	state *BattleState,
 	agent *domain.AgentModel,
@@ -629,30 +586,26 @@ func (e *BattleEngine) ApplyModuleEffect(
 
 	switch module.Category {
 	case domain.PhysicalAttack, domain.MagicAttack:
-		// Requirement 10.2: 攻撃系モジュール - 敵にダメージ
-		// 敵のダメージ軽減を考慮
+		// 攻撃系モジュール - 敵にダメージ（敵のダメージ軽減を考慮）
 		enemyStats := state.Enemy.EffectTable.Calculate(domain.Stats{})
-		damage := int(float64(effectAmount) * (1.0 - enemyStats.DamageReduction))
-		if damage < 1 {
-			damage = 1
-		}
+		damage := calculateDamage(effectAmount, enemyStats.DamageReduction)
 		state.Enemy.TakeDamage(damage)
 		state.Stats.TotalDamageDealt += damage
 		return damage
 
 	case domain.Heal:
-		// Requirement 10.3: 回復系モジュール - プレイヤーHP回復
+		// 回復系モジュール - プレイヤーHP回復
 		state.Player.Heal(effectAmount)
 		state.Stats.TotalHealAmount += effectAmount
 		return effectAmount
 
 	case domain.Buff:
-		// Requirement 10.4: バフ系モジュール - プレイヤーにバフ
+
 		e.applyPlayerBuff(state, module, effectAmount)
 		return effectAmount
 
 	case domain.Debuff:
-		// Requirement 10.5: デバフ系モジュール - 敵にデバフ
+
 		e.applyEnemyDebuff(state, module, effectAmount)
 		return effectAmount
 	}
@@ -713,8 +666,7 @@ func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.Modul
 // ==================== バトル勝敗判定（Task 7.5） ====================
 
 // CheckBattleEnd はバトル終了を判定します。
-// Requirement 9.16: プレイヤーHP=0での敗北
-// Requirement 9.17: 敵HP=0での勝利
+
 func (e *BattleEngine) CheckBattleEnd(state *BattleState) (bool, *BattleResult) {
 	if !state.Player.IsAlive() {
 		// プレイヤー敗北
@@ -743,7 +695,7 @@ func (e *BattleEngine) RecordTypingResult(state *BattleState, result *typing.Typ
 }
 
 // ShouldUpdateMaxLevel は最高レベルを更新すべきかを判定します。
-// Requirement 3.9: バトル勝利時に到達最高レベルを更新
+
 func (e *BattleEngine) ShouldUpdateMaxLevel(battleLevel, currentMaxLevel int) bool {
 	return battleLevel > currentMaxLevel
 }

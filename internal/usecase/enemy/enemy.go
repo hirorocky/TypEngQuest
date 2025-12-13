@@ -1,6 +1,6 @@
 // Package enemy は敵生成システムを提供します。
 // レベルに応じた敵の生成、ステータス計算を担当します。
-// Requirements: 13.2, 13.4-13.8, 20.2-20.4, 20.8
+
 package enemy
 
 import (
@@ -18,28 +18,28 @@ import (
 // 敵生成関連の定数
 const (
 	// MaxEnemyLevel は敵の最大レベルです。
-	// Requirement 13.7, 20.8: レベル上限（100）
+
 	MaxEnemyLevel = 100
 
 	// MinEnemyLevel は敵の最小レベルです。
 	MinEnemyLevel = 1
 
 	// MinAttackInterval は敵の最低攻撃間隔です。
-	// Requirement 20.4: 高レベルでも最低攻撃間隔を保証
+
 	// config.MinEnemyAttackIntervalを参照
 	MinAttackInterval = config.MinEnemyAttackInterval
 
 	// AttackPowerPerLevel はレベルあたりの攻撃力上昇値です。
-	// Requirement 20.2: レベルに応じた攻撃力計算
+
 	AttackPowerPerLevel = 2
 
 	// AttackIntervalReductionPerLevel はレベルあたりの攻撃間隔短縮（ミリ秒）です。
-	// Requirement 20.3, 20.4: 高レベルほど短い攻撃間隔
+
 	AttackIntervalReductionPerLevel = 50
 )
 
 // EnemyGenerator は敵生成を担当する構造体です。
-// Requirements: 13.2, 13.4-13.8, 20.2-20.4, 20.8
+
 type EnemyGenerator struct {
 	// enemyTypes は敵タイプ定義リストです。
 	enemyTypes []masterdata.EnemyTypeData
@@ -57,10 +57,7 @@ func NewEnemyGenerator(enemyTypes []masterdata.EnemyTypeData) *EnemyGenerator {
 }
 
 // Generate は指定レベルの敵を生成します。
-// Requirement 13.2: レベルに応じたHP、攻撃力、攻撃間隔を計算
-// Requirement 13.4, 13.5: 敵タイプからのランダム選択
-// Requirement 13.6: 高レベル敵ほど高いステータス
-// Requirement 13.7: レベル上限の設定
+
 func (g *EnemyGenerator) Generate(level int) *domain.EnemyModel {
 	// レベルをクランプ
 	level = g.clampLevel(level)
@@ -70,10 +67,8 @@ func (g *EnemyGenerator) Generate(level int) *domain.EnemyModel {
 		return g.generateDefaultEnemy(level)
 	}
 
-	// Requirement 13.5: 敵タイプからランダムに選択
 	selectedType := g.enemyTypes[g.rng.Intn(len(g.enemyTypes))]
 
-	// Requirement 13.2: レベルに応じたステータス計算
 	hp := g.calculateHP(selectedType.BaseHP, level)
 	attackPower := g.calculateAttackPower(selectedType.BaseAttackPower, level)
 	attackInterval := g.calculateAttackInterval(selectedType.BaseAttackInterval, level)
@@ -119,19 +114,19 @@ func (g *EnemyGenerator) generateDefaultEnemy(level int) *domain.EnemyModel {
 // ==================== Task 9.1: 敵ステータス計算 ====================
 
 // calculateHP はレベルに応じたHPを計算します。
-// Requirement 13.2: HP = BaseHP * level
+
 func (g *EnemyGenerator) calculateHP(baseHP int, level int) int {
 	return baseHP * level
 }
 
 // calculateAttackPower はレベルに応じた攻撃力を計算します。
-// Requirement 20.2: 攻撃力 = BaseAttackPower + (level * AttackPowerPerLevel)
+
 func (g *EnemyGenerator) calculateAttackPower(baseAttackPower int, level int) int {
 	return baseAttackPower + (level * AttackPowerPerLevel)
 }
 
 // calculateAttackInterval はレベルに応じた攻撃間隔を計算します。
-// Requirement 20.3, 20.4: 高レベルほど短い間隔、最低値を保証
+
 func (g *EnemyGenerator) calculateAttackInterval(baseInterval time.Duration, level int) time.Duration {
 	// レベルに応じて攻撃間隔を短縮
 	reduction := time.Duration(level*AttackIntervalReductionPerLevel) * time.Millisecond
@@ -148,7 +143,7 @@ func (g *EnemyGenerator) calculateAttackInterval(baseInterval time.Duration, lev
 // ==================== Task 9.2: 敵バリエーションとレベル上限 ====================
 
 // clampLevel はレベルを有効範囲内にクランプします。
-// Requirement 13.7: レベル上限（100）
+
 func (g *EnemyGenerator) clampLevel(level int) int {
 	if level < MinEnemyLevel {
 		return MinEnemyLevel
@@ -160,7 +155,7 @@ func (g *EnemyGenerator) clampLevel(level int) int {
 }
 
 // IsMaxLevelBattle は最高レベルのバトルかどうかを判定します。
-// Requirement 13.8, 20.8: 最高レベル敵撃破時のゲームクリア
+
 func (g *EnemyGenerator) IsMaxLevelBattle(level int) bool {
 	return level >= MaxEnemyLevel
 }
@@ -176,7 +171,7 @@ func (g *EnemyGenerator) GetMinLevel() int {
 }
 
 // GetEnemyTypeCount は敵タイプの数を返します。
-// Requirement 13.4: 複数種類の敵キャラクター
+
 func (g *EnemyGenerator) GetEnemyTypeCount() int {
 	return len(g.enemyTypes)
 }

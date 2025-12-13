@@ -1,6 +1,6 @@
 // Package battle はバトルエンジンを提供します。
 // バトル初期化、敵攻撃、モジュール効果、勝敗判定を担当します。
-// Requirements: 9.1, 9.16, 9.17, 10.1-10.10, 11.1-11.27, 13.1
+
 package battle
 
 import (
@@ -14,7 +14,7 @@ import (
 // ==================== バトル初期化テスト（Task 7.1） ====================
 
 // TestInitializeBattle はバトル初期化処理をテストします。
-// Requirement 9.1: 指定レベルの敵を生成しバトル画面に遷移
+
 func TestInitializeBattle(t *testing.T) {
 	// エージェントを準備
 	coreType := domain.CoreType{
@@ -65,7 +65,7 @@ func TestInitializeBattle(t *testing.T) {
 	}
 
 	// プレイヤーHPが設定されていることを確認
-	// Requirement 4.3: バトル開始時にプレイヤーのHPを最大値まで全回復
+
 	if state.Player == nil {
 		t.Fatal("プレイヤーがnil")
 	}
@@ -75,7 +75,7 @@ func TestInitializeBattle(t *testing.T) {
 }
 
 // TestInitializeBattle_EnemyGeneration は指定レベルに基づく敵生成をテストします。
-// Requirement 13.1: 指定レベルの敵を生成
+
 func TestInitializeBattle_EnemyGeneration(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -118,7 +118,7 @@ func TestInitializeBattle_EnemyGeneration(t *testing.T) {
 // ==================== 敵攻撃システムテスト（Task 7.2） ====================
 
 // TestEnemyAttack は敵の攻撃処理をテストします。
-// Requirement 11.4: 攻撃ダメージ計算（攻撃力 - 防御バフ）
+
 func TestEnemyAttack(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -154,7 +154,6 @@ func TestEnemyAttack(t *testing.T) {
 	initialHP := state.Player.HP
 	damage := engine.ProcessEnemyAttack(state)
 
-	// Requirement 11.5: プレイヤーHP減少処理
 	if state.Player.HP >= initialHP {
 		t.Error("プレイヤーHPが減少していない")
 	}
@@ -164,7 +163,7 @@ func TestEnemyAttack(t *testing.T) {
 }
 
 // TestEnemyAttack_WithDefenseBuff は防御バフ適用時のダメージ計算をテストします。
-// Requirement 11.28: 防御バフ適用時のダメージ減算
+
 func TestEnemyAttack_WithDefenseBuff(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -223,7 +222,7 @@ func TestEnemyAttack_WithDefenseBuff(t *testing.T) {
 // ==================== 敵フェーズ変化テスト（Task 7.3） ====================
 
 // TestEnemyPhaseTransition はHP50%以下での強化フェーズ移行をテストします。
-// Requirement 11.15: HP50%以下で強化フェーズに移行
+
 func TestEnemyPhaseTransition(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -275,7 +274,7 @@ func TestEnemyPhaseTransition(t *testing.T) {
 }
 
 // TestEnemySelfBuff は敵の自己バフ行動をテストします。
-// Requirement 11.18-11.21: 自己バフ行動
+
 func TestEnemySelfBuff(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -319,7 +318,7 @@ func TestEnemySelfBuff(t *testing.T) {
 }
 
 // TestPlayerDebuff はプレイヤーへのデバフ付与をテストします。
-// Requirement 11.22-11.27: プレイヤーへのデバフ
+
 func TestPlayerDebuff(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -365,7 +364,7 @@ func TestPlayerDebuff(t *testing.T) {
 // ==================== モジュール効果計算テスト（Task 7.4） ====================
 
 // TestCalculateAttackDamage は攻撃ダメージ計算をテストします。
-// Requirement 10.2: ダメージ計算（基礎効果 × ステータス × 速度係数 × 正確性係数）
+
 func TestCalculateAttackDamage(t *testing.T) {
 	engine := NewBattleEngine(nil)
 
@@ -406,7 +405,7 @@ func TestCalculateAttackDamage(t *testing.T) {
 }
 
 // TestCalculateHealAmount は回復量計算をテストします。
-// Requirement 10.3: 回復量計算
+
 func TestCalculateHealAmount(t *testing.T) {
 	engine := NewBattleEngine(nil)
 
@@ -441,7 +440,7 @@ func TestCalculateHealAmount(t *testing.T) {
 }
 
 // TestAccuracyPenalty は正確性50%未満での効果半減をテストします。
-// Requirement 10.9: 正確性50%未満の場合、効果量を半減
+
 func TestAccuracyPenalty(t *testing.T) {
 	engine := NewBattleEngine(nil)
 
@@ -488,7 +487,7 @@ func TestAccuracyPenalty(t *testing.T) {
 // ==================== バトル勝敗判定テスト（Task 7.5） ====================
 
 // TestCheckVictory は敵HP=0での勝利判定をテストします。
-// Requirement 9.17: 敵HP=0での勝利
+
 func TestCheckVictory(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -534,7 +533,7 @@ func TestCheckVictory(t *testing.T) {
 }
 
 // TestCheckDefeat はプレイヤーHP=0での敗北判定をテストします。
-// Requirement 9.16: プレイヤーHP=0での敗北
+
 func TestCheckDefeat(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -580,7 +579,7 @@ func TestCheckDefeat(t *testing.T) {
 }
 
 // TestBattleStatistics はバトル統計記録をテストします。
-// Requirement 9.17（関連）: バトル統計記録
+
 func TestBattleStatistics(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{

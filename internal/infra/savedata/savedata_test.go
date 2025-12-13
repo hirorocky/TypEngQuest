@@ -70,7 +70,7 @@ func TestSaveAndLoadGame(t *testing.T) {
 }
 
 // TestAtomicWrite は原子的書き込み（一時ファイル→リネーム）をテストします。
-// Requirement 17.3: 原子的書き込み処理
+
 func TestAtomicWrite(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
@@ -96,7 +96,7 @@ func TestAtomicWrite(t *testing.T) {
 }
 
 // TestBackupRotation はバックアップローテーション（直近3世代）をテストします。
-// Requirement 17.7: バックアップローテーション
+
 func TestBackupRotation(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
@@ -127,7 +127,7 @@ func TestBackupRotation(t *testing.T) {
 }
 
 // TestLoadFromBackup は破損時のバックアップ復元をテストします。
-// Requirement 19.2: 破損時のバックアップ復元試行
+
 func TestLoadFromBackup(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
@@ -166,7 +166,7 @@ func TestLoadFromBackup(t *testing.T) {
 }
 
 // TestVersionCheck はセーブデータのバージョンチェックをテストします。
-// Requirement 17.5: ロード時のバージョンチェック
+
 func TestVersionCheck(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
@@ -288,7 +288,7 @@ func TestSaveDataWithAgents(t *testing.T) {
 }
 
 // TestSaveDataTimestamp はタイムスタンプが更新されることをテストします。
-// Requirement 17.2: バトル終了時に自動保存
+
 func TestSaveDataTimestamp(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
@@ -322,7 +322,7 @@ func TestSaveDataTimestamp(t *testing.T) {
 }
 
 // TestResetSaveData はセーブデータのリセットをテストします。
-// Requirement 17.8: セーブをリセットして最初からやり直せる
+
 func TestResetSaveData(t *testing.T) {
 	tmpDir := t.TempDir()
 	io := NewSaveDataIO(tmpDir)
