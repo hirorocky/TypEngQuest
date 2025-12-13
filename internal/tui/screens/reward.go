@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"hirorocky/type-battle/internal/tui/styles"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -17,14 +17,14 @@ import (
 // RewardScreen は報酬画面を表します。
 
 type RewardScreen struct {
-	result *reward.RewardResult
+	result *rewarding.RewardResult
 	styles *styles.GameStyles
 	width  int
 	height int
 }
 
 // NewRewardScreen は新しいRewardScreenを作成します。
-func NewRewardScreen(result *reward.RewardResult) *RewardScreen {
+func NewRewardScreen(result *rewarding.RewardResult) *RewardScreen {
 	return &RewardScreen{
 		result: result,
 		styles: styles.NewGameStyles(),

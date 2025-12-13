@@ -5,7 +5,7 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/tui/screens"
-	gamestate "hirorocky/type-battle/internal/usecase/game_state"
+	gamestate "hirorocky/type-battle/internal/usecase/session"
 )
 
 // InventoryProvider は画面に必要なインベントリ操作を提供するインターフェースです。

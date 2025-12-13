@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // TestInventoryProviderAdapter はInventoryProviderAdapterの基本動作をテストします。
 func TestInventoryProviderAdapter(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	adapter := NewInventoryProviderAdapter(
 		gs.Inventory(),
@@ -42,7 +42,7 @@ func TestInventoryProviderAdapter(t *testing.T) {
 
 // TestInventoryProviderAdapter_WithData はデータがある場合のテストです。
 func TestInventoryProviderAdapter_WithData(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	adapter := NewInventoryProviderAdapter(
 		gs.Inventory(),
@@ -64,7 +64,7 @@ func TestInventoryProviderAdapter_WithData(t *testing.T) {
 
 // TestInventoryProviderAdapter_AddAgent はエージェント追加をテストします。
 func TestInventoryProviderAdapter_AddAgent(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	adapter := NewInventoryProviderAdapter(
 		gs.Inventory(),

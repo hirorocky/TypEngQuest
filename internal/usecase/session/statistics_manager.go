@@ -1,4 +1,4 @@
-package game_state
+package session
 
 // StatisticsManager はゲームの統計情報を管理する構造体です。
 // タイピング統計とバトル統計を一元管理します。

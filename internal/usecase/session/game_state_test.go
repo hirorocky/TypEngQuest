@@ -1,5 +1,5 @@
 // Package game_state はゲーム全体の状態管理を提供するユースケースです。
-package game_state
+package session
 
 import (
 	"testing"

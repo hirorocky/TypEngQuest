@@ -1,13 +1,13 @@
 // Package game_state はゲーム全体の状態管理を提供するユースケースです。
 // プレイヤー情報、インベントリ、統計、実績、設定などを一元管理します。
-package game_state
+package session
 
 import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/usecase/achievement"
-	"hirorocky/type-battle/internal/usecase/agent"
-	"hirorocky/type-battle/internal/usecase/enemy"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/synthesize"
+	"hirorocky/type-battle/internal/usecase/spawning"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 )
 
 // GameState はゲーム全体の状態を保持する構造体です。
@@ -26,7 +26,7 @@ type GameState struct {
 	inventory *InventoryManager
 
 	// agentManager はエージェント管理を担当します。
-	agentManager *agent.AgentManager
+	agentManager *synthesize.AgentManager
 
 	// statistics は統計情報を管理します。
 	statistics *StatisticsManager
@@ -38,13 +38,13 @@ type GameState struct {
 	settings *Settings
 
 	// rewardCalculator は報酬計算を担当します。
-	rewardCalculator *reward.RewardCalculator
+	rewardCalculator *rewarding.RewardCalculator
 
 	// tempStorage は一時保管を担当します（インベントリ満杯時用）。
-	tempStorage *reward.TempStorage
+	tempStorage *rewarding.TempStorage
 
 	// enemyGenerator は敵生成を担当します。
-	enemyGenerator *enemy.EnemyGenerator
+	enemyGenerator *spawning.EnemyGenerator
 
 	// encounteredEnemies はエンカウントした敵のIDリストです（敵図鑑用）。
 	encounteredEnemies []string
@@ -58,7 +58,7 @@ func NewGameState() *GameState {
 	invManager.InitializeWithDefaults()
 
 	// エージェントマネージャーを作成（エージェント・装備管理を一元化）
-	agentMgr := agent.NewAgentManager(
+	agentMgr := synthesize.NewAgentManager(
 		invManager.Cores(),
 		invManager.Modules(),
 	)
@@ -73,10 +73,10 @@ func NewGameState() *GameState {
 	passiveSkills := GetDefaultPassiveSkills()
 
 	// RewardCalculatorを作成
-	rewardCalc := reward.NewRewardCalculator(coreTypes, moduleDropInfos, passiveSkills)
+	rewardCalc := rewarding.NewRewardCalculator(coreTypes, moduleDropInfos, passiveSkills)
 
 	// EnemyGeneratorを作成（デフォルト敵タイプを使用）
-	enemyGen := enemy.NewEnemyGenerator(nil)
+	enemyGen := spawning.NewEnemyGenerator(nil)
 
 	return &GameState{
 		MaxLevelReached:  0,
@@ -87,7 +87,7 @@ func NewGameState() *GameState {
 		achievements:     achievementMgr,
 		settings:         NewSettings(),
 		rewardCalculator: rewardCalc,
-		tempStorage:      &reward.TempStorage{},
+		tempStorage:      &rewarding.TempStorage{},
 		enemyGenerator:   enemyGen,
 	}
 }
@@ -103,7 +103,7 @@ func (g *GameState) Inventory() *InventoryManager {
 }
 
 // AgentManager はエージェントマネージャーを返します。
-func (g *GameState) AgentManager() *agent.AgentManager {
+func (g *GameState) AgentManager() *synthesize.AgentManager {
 	return g.agentManager
 }
 
@@ -123,21 +123,21 @@ func (g *GameState) Settings() *Settings {
 }
 
 // EnemyGenerator は敵生成器を返します。
-func (g *GameState) EnemyGenerator() *enemy.EnemyGenerator {
+func (g *GameState) EnemyGenerator() *spawning.EnemyGenerator {
 	return g.enemyGenerator
 }
 
 // UpdateEnemyGenerator は敵生成器を敵タイプで更新します。
 func (g *GameState) UpdateEnemyGenerator(enemyTypes []domain.EnemyType) {
 	if len(enemyTypes) > 0 {
-		g.enemyGenerator = enemy.NewEnemyGenerator(enemyTypes)
+		g.enemyGenerator = spawning.NewEnemyGenerator(enemyTypes)
 	}
 }
 
 // UpdateRewardCalculator は報酬計算器を更新します。
-func (g *GameState) UpdateRewardCalculator(coreTypes []domain.CoreType, moduleTypes []reward.ModuleDropInfo, passiveSkills map[string]domain.PassiveSkill) {
+func (g *GameState) UpdateRewardCalculator(coreTypes []domain.CoreType, moduleTypes []rewarding.ModuleDropInfo, passiveSkills map[string]domain.PassiveSkill) {
 	if len(coreTypes) > 0 || len(moduleTypes) > 0 {
-		g.rewardCalculator = reward.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
+		g.rewardCalculator = rewarding.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 	}
 }
 
@@ -234,18 +234,18 @@ func (g *GameState) PreparePlayerForBattle() {
 }
 
 // RewardCalculator は報酬計算を返します。
-func (g *GameState) RewardCalculator() *reward.RewardCalculator {
+func (g *GameState) RewardCalculator() *rewarding.RewardCalculator {
 	return g.rewardCalculator
 }
 
 // TempStorage は一時保管を返します。
-func (g *GameState) TempStorage() *reward.TempStorage {
+func (g *GameState) TempStorage() *rewarding.TempStorage {
 	return g.tempStorage
 }
 
 // AddRewardsToInventory は報酬をインベントリに追加します。
-func (g *GameState) AddRewardsToInventory(result *reward.RewardResult) *reward.InventoryWarning {
-	return reward.AddRewardsToInventory(
+func (g *GameState) AddRewardsToInventory(result *rewarding.RewardResult) *rewarding.InventoryWarning {
+	return rewarding.AddRewardsToInventory(
 		result,
 		g.inventory.Cores(),
 		g.inventory.Modules(),

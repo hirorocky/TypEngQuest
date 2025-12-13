@@ -5,7 +5,7 @@ package app
 import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 )
 
 // ConvertEnemyTypes はmasterdata.EnemyTypeDataのスライスをdomain.EnemyTypeのスライスに変換します。
@@ -27,10 +27,10 @@ func ConvertCoreTypes(types []masterdata.CoreTypeData) []domain.CoreType {
 }
 
 // ConvertModuleTypes はmasterdata.ModuleDefinitionDataのスライスをreward.ModuleDropInfoのスライスに変換します。
-func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []reward.ModuleDropInfo {
-	result := make([]reward.ModuleDropInfo, len(types))
+func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.ModuleDropInfo {
+	result := make([]rewarding.ModuleDropInfo, len(types))
 	for i, t := range types {
-		result[i] = reward.ModuleDropInfo{
+		result[i] = rewarding.ModuleDropInfo{
 			ID:           t.ID,
 			Name:         t.Name,
 			Category:     convertCategory(t.Category),
@@ -67,7 +67,7 @@ func convertCategory(cat string) domain.ModuleCategory {
 func ConvertExternalDataToDomain(ext *masterdata.ExternalData) (
 	[]domain.EnemyType,
 	[]domain.CoreType,
-	[]reward.ModuleDropInfo,
+	[]rewarding.ModuleDropInfo,
 ) {
 	if ext == nil {
 		return nil, nil, nil

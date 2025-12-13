@@ -2,11 +2,11 @@ package presenter
 
 import (
 	"hirorocky/type-battle/internal/tui/screens"
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // CreateSettingsData はGameStateから設定データを生成します。
-func CreateSettingsData(gs *game_state.GameState) *screens.SettingsData {
+func CreateSettingsData(gs *session.GameState) *screens.SettingsData {
 	settings := gs.Settings()
 	return &screens.SettingsData{
 		Keybinds:    settings.Keybinds(),

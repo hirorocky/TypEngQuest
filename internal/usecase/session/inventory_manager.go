@@ -1,10 +1,9 @@
-package game_state
+package session
 
 import (
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
 // InventoryManager はゲーム全体のインベントリを統合管理する構造体です。
@@ -12,27 +11,27 @@ import (
 // エージェントの管理はAgentManagerが一元的に行います。
 type InventoryManager struct {
 	// cores はコアインベントリです。
-	cores *inventory.CoreInventory
+	cores *domain.CoreInventory
 
 	// modules はモジュールインベントリです。
-	modules *inventory.ModuleInventory
+	modules *domain.ModuleInventory
 }
 
 // NewInventoryManager は新しいInventoryManagerを作成します。
 func NewInventoryManager() *InventoryManager {
 	return &InventoryManager{
-		cores:   inventory.NewCoreInventory(100),
-		modules: inventory.NewModuleInventory(200),
+		cores:   domain.NewCoreInventory(100),
+		modules: domain.NewModuleInventory(200),
 	}
 }
 
 // Cores はコアインベントリを返します。
-func (m *InventoryManager) Cores() *inventory.CoreInventory {
+func (m *InventoryManager) Cores() *domain.CoreInventory {
 	return m.cores
 }
 
 // Modules はモジュールインベントリを返します。
-func (m *InventoryManager) Modules() *inventory.ModuleInventory {
+func (m *InventoryManager) Modules() *domain.ModuleInventory {
 	return m.modules
 }
 
@@ -70,12 +69,12 @@ func (m *InventoryManager) RemoveModule(id string) error {
 
 // SetMaxCoreSlots はコアの最大スロット数を設定します。
 func (m *InventoryManager) SetMaxCoreSlots(slots int) {
-	m.cores = inventory.NewCoreInventory(slots)
+	m.cores = domain.NewCoreInventory(slots)
 }
 
 // SetMaxModuleSlots はモジュールの最大スロット数を設定します。
 func (m *InventoryManager) SetMaxModuleSlots(slots int) {
-	m.modules = inventory.NewModuleInventory(slots)
+	m.modules = domain.NewModuleInventory(slots)
 }
 
 // InitializeWithDefaults は初期データでインベントリを初期化します。

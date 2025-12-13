@@ -1,6 +1,6 @@
 // Package enemy は敵生成システムのテストを提供します。
 
-package enemy
+package spawning
 
 import (
 	"testing"

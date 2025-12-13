@@ -4,11 +4,11 @@ package presenter
 
 import (
 	"hirorocky/type-battle/internal/tui/screens"
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // CreateStatsData はGameStateから統計データを生成します。
-func CreateStatsData(gs *game_state.GameState) *screens.StatsData {
+func CreateStatsData(gs *session.GameState) *screens.StatsData {
 	stats := gs.Statistics()
 	achievements := gs.Achievements()
 

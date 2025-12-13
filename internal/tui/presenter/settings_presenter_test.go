@@ -3,12 +3,12 @@ package presenter
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // TestCreateSettingsData は設定データ作成をテストします。
 func TestCreateSettingsData(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	data := CreateSettingsData(gs)
 
@@ -30,11 +30,11 @@ func TestCreateSettingsData(t *testing.T) {
 
 // TestCreateSettingsData_ModifiedSettings は変更後の設定データ作成をテストします。
 func TestCreateSettingsData_ModifiedSettings(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	// 設定を変更
 	gs.Settings().SetSoundVolume(50)
-	gs.Settings().SetDifficulty(game_state.DifficultyHard)
+	gs.Settings().SetDifficulty(session.DifficultyHard)
 	gs.Settings().SetKeybind("custom_action", "x")
 
 	data := CreateSettingsData(gs)

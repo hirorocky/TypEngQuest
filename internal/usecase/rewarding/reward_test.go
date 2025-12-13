@@ -1,13 +1,12 @@
 // Package reward はドロップ・報酬システムのテストを提供します。
 
-package reward
+package rewarding
 
 import (
 	"testing"
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
 // TestBattleReward_Victory_ShowsRewardScreen は勝利時に報酬画面を表示することをテストします。
@@ -321,8 +320,8 @@ func TestModuleDrop_HighLevelProgression(t *testing.T) {
 
 // TestInventoryFull_Warning はインベントリ満杯時に警告を表示することをテストします。
 func TestInventoryFull_Warning(t *testing.T) {
-	coreInv := inventory.NewCoreInventory(2)
-	moduleInv := inventory.NewModuleInventory(2)
+	coreInv := domain.NewCoreInventory(2)
+	moduleInv := domain.NewModuleInventory(2)
 
 	// インベントリを満杯にする
 	core1 := domain.NewCore("core1", "コア1", 1, domain.CoreType{}, domain.PassiveSkill{})
@@ -376,13 +375,13 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 func TestInventoryFull_PromptDiscard(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
-	coreInv := inventory.NewCoreInventory(2)
+	coreInv := domain.NewCoreInventory(2)
 	core1 := domain.NewCore("core1", "コア1", 1, domain.CoreType{}, domain.PassiveSkill{})
 	core2 := domain.NewCore("core2", "コア2", 1, domain.CoreType{}, domain.PassiveSkill{})
 	coreInv.Add(core1)
 	coreInv.Add(core2)
 
-	moduleInv := inventory.NewModuleInventory(10)
+	moduleInv := domain.NewModuleInventory(10)
 
 	warning := calculator.CheckInventoryFull(coreInv, moduleInv)
 

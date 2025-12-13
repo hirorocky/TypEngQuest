@@ -3,7 +3,7 @@ package presenter
 import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/screens"
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // CreateDefaultEncyclopediaData は図鑑のデフォルトデータを作成します。
@@ -66,7 +66,7 @@ func CreateDefaultEncyclopediaData() *screens.EncyclopediaData {
 }
 
 // CreateEncyclopediaData はGameStateから図鑑データを生成します。
-func CreateEncyclopediaData(gs *game_state.GameState) *screens.EncyclopediaData {
+func CreateEncyclopediaData(gs *session.GameState) *screens.EncyclopediaData {
 	// 基本データを取得
 	baseData := CreateDefaultEncyclopediaData()
 

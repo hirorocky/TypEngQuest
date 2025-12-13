@@ -1,6 +1,6 @@
 // Package game_state はゲーム全体の状態管理を提供するユースケースです。
 // このファイルはセーブ/ロードの変換ロジックを担当します。
-package game_state
+package session
 
 import (
 	"fmt"
@@ -9,15 +9,15 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/usecase/achievement"
-	"hirorocky/type-battle/internal/usecase/agent"
-	"hirorocky/type-battle/internal/usecase/enemy"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/synthesize"
+	"hirorocky/type-battle/internal/usecase/spawning"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 )
 
 // DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
 type DomainDataSources struct {
 	CoreTypes     []domain.CoreType
-	ModuleTypes   []reward.ModuleDropInfo
+	ModuleTypes   []rewarding.ModuleDropInfo
 	EnemyTypes    []domain.EnemyType
 	PassiveSkills map[string]domain.PassiveSkill
 }
@@ -71,8 +71,8 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 	saveData.Inventory.MaxModuleSlots = g.inventory.Modules().MaxSlots()
 
 	// 装備中のエージェントIDをスロット番号順に取得
-	var equippedIDs [agent.MaxEquipmentSlots]string
-	for slot := 0; slot < agent.MaxEquipmentSlots; slot++ {
+	var equippedIDs [synthesize.MaxEquipmentSlots]string
+	for slot := 0; slot < synthesize.MaxEquipmentSlots; slot++ {
 		if equippedAgent := g.agentManager.GetEquippedAgentAt(slot); equippedAgent != nil {
 			equippedIDs[slot] = equippedAgent.ID
 		}
@@ -106,7 +106,7 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) *GameState {
 	// マスタデータを取得（ドメイン型）
 	var coreTypes []domain.CoreType
-	var moduleTypes []reward.ModuleDropInfo
+	var moduleTypes []rewarding.ModuleDropInfo
 	var passiveSkills map[string]domain.PassiveSkill
 	var enemyTypes []domain.EnemyType
 
@@ -178,7 +178,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	}
 
 	// エージェントマネージャーを作成
-	agentMgr := agent.NewAgentManager(
+	agentMgr := synthesize.NewAgentManager(
 		invManager.Cores(),
 		invManager.Modules(),
 	)
@@ -265,10 +265,10 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	}
 
 	// RewardCalculatorを作成
-	rewardCalc := reward.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
+	rewardCalc := rewarding.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 
 	// EnemyGeneratorを作成
-	enemyGen := enemy.NewEnemyGenerator(enemyTypes)
+	enemyGen := spawning.NewEnemyGenerator(enemyTypes)
 
 	// 最高到達レベルとエンカウント敵リストを取得
 	maxLevelReached := 0
@@ -287,7 +287,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		achievements:       achievementMgr,
 		settings:           settings,
 		rewardCalculator:   rewardCalc,
-		tempStorage:        &reward.TempStorage{},
+		tempStorage:        &rewarding.TempStorage{},
 		enemyGenerator:     enemyGen,
 		encounteredEnemies: encounteredEnemies,
 	}

@@ -1,6 +1,6 @@
 // Package enemy は敵生成システムを提供します。
 // レベルに応じた敵の生成、ステータス計算を担当します。
-package enemy
+package spawning
 
 import (
 	"fmt"

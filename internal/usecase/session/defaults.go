@@ -1,8 +1,8 @@
-package game_state
+package session
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 )
 
 // GetDefaultCoreTypes はデフォルトのコア特性をドメイン型で返します。
@@ -44,8 +44,8 @@ func GetDefaultCoreTypes() []domain.CoreType {
 }
 
 // GetDefaultModuleDropInfos はデフォルトのモジュール定義をドメイン型で返します。
-func GetDefaultModuleDropInfos() []reward.ModuleDropInfo {
-	return []reward.ModuleDropInfo{
+func GetDefaultModuleDropInfos() []rewarding.ModuleDropInfo {
+	return []rewarding.ModuleDropInfo{
 		{ID: "mod_slash", Name: "斬撃", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃", MinDropLevel: 1},
 		{ID: "mod_thrust", Name: "突き", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃", MinDropLevel: 1},
 		{ID: "mod_fireball", Name: "火球", Category: domain.MagicAttack, Level: 1, Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃", MinDropLevel: 1},
@@ -132,7 +132,7 @@ func GetDefaultPassiveSkill(coreTypeID string) domain.PassiveSkill {
 
 // GetDefaultModuleDropInfo はIDからデフォルトのモジュール定義を検索します。
 // 見つからない場合はnilを返します。
-func GetDefaultModuleDropInfo(moduleID string) *reward.ModuleDropInfo {
+func GetDefaultModuleDropInfo(moduleID string) *rewarding.ModuleDropInfo {
 	moduleDefs := GetDefaultModuleDropInfos()
 	for i := range moduleDefs {
 		if moduleDefs[i].ID == moduleID {
@@ -181,7 +181,7 @@ func FindPassiveSkill(passiveSkills map[string]domain.PassiveSkill, coreTypeID s
 }
 
 // FindModuleDropInfo はモジュール定義リストから指定IDのモジュール定義を検索します。
-func FindModuleDropInfo(moduleDefs []reward.ModuleDropInfo, moduleID string) *reward.ModuleDropInfo {
+func FindModuleDropInfo(moduleDefs []rewarding.ModuleDropInfo, moduleID string) *rewarding.ModuleDropInfo {
 	for i := range moduleDefs {
 		if moduleDefs[i].ID == moduleID {
 			return &moduleDefs[i]

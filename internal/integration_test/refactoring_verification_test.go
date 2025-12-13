@@ -13,9 +13,9 @@ import (
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/tui/screens"
-	"hirorocky/type-battle/internal/usecase/battle"
-	gamestate "hirorocky/type-battle/internal/usecase/game_state"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/combat"
+	"hirorocky/type-battle/internal/usecase/rewarding"
+	gamestate "hirorocky/type-battle/internal/usecase/session"
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
@@ -32,9 +32,9 @@ func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate
 	}
 
 	// ModuleTypes の変換
-	moduleTypes := make([]reward.ModuleDropInfo, len(ext.ModuleDefinitions))
+	moduleTypes := make([]rewarding.ModuleDropInfo, len(ext.ModuleDefinitions))
 	for i, md := range ext.ModuleDefinitions {
-		moduleTypes[i] = reward.ModuleDropInfo{
+		moduleTypes[i] = rewarding.ModuleDropInfo{
 			ID:           md.ID,
 			Name:         md.Name,
 			Category:     categoryStringToModule(md.Category),
@@ -282,7 +282,7 @@ func TestRefactoring_BattleFlowUnchanged(t *testing.T) {
 			AttackType:         "physical",
 		},
 	}
-	engine := battle.NewBattleEngine(enemyTypes)
+	engine := combat.NewBattleEngine(enemyTypes)
 	agents := createTestAgents()
 
 	// バトル初期化
@@ -462,7 +462,7 @@ func TestRefactoring_TypeRenaming(t *testing.T) {
 // 要件10.4: 報酬アダプターの実装
 func TestRefactoring_RewardConversion(t *testing.T) {
 	// バトル統計を作成
-	battleStats := &battle.BattleStatistics{
+	battleStats := &combat.BattleStatistics{
 		TotalWPM:         250.0,
 		TotalAccuracy:    2.85, // 0.95 × 3
 		TotalTypingCount: 3,
@@ -472,7 +472,7 @@ func TestRefactoring_RewardConversion(t *testing.T) {
 	}
 
 	// バトル統計から報酬統計を構築
-	rewardStats := &reward.BattleStatistics{
+	rewardStats := &rewarding.BattleStatistics{
 		TotalWPM:         battleStats.TotalWPM,
 		TotalAccuracy:    battleStats.TotalAccuracy,
 		TotalTypingCount: battleStats.TotalTypingCount,
@@ -540,7 +540,7 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 			AttackType:         "physical",
 		},
 	}
-	engine := battle.NewBattleEngine(enemyTypes)
+	engine := combat.NewBattleEngine(enemyTypes)
 	agent := initializer.CreateInitialAgent()
 	agents := []*domain.AgentModel{agent}
 
@@ -573,7 +573,7 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	}
 
 	// 8. 報酬統計の構築
-	rewardStats := &reward.BattleStatistics{
+	rewardStats := &rewarding.BattleStatistics{
 		TotalWPM:         result.Stats.TotalWPM,
 		TotalAccuracy:    result.Stats.TotalAccuracy,
 		TotalTypingCount: result.Stats.TotalTypingCount,
@@ -609,5 +609,5 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	}
 }
 
-// reward.BattleStatisticsが正しくインポートされていることを確認するダミー関数
-var _ = reward.BattleStatistics{}
+// rewarding.BattleStatisticsが正しくインポートされていることを確認するダミー関数
+var _ = rewarding.BattleStatistics{}

@@ -10,7 +10,7 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
-	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/combat"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -31,7 +31,7 @@ type BattleTickMsg struct{}
 type BattleResultMsg struct {
 	Victory bool
 	Level   int
-	Stats   *battle.BattleStatistics // バトル統計
+	Stats   *combat.BattleStatistics // バトル統計
 	EnemyID string                   // 敵図鑑更新用
 }
 
@@ -85,8 +85,8 @@ type BattleScreen struct {
 	typingState        *typing.ChallengeState
 
 	// バトルエンジン
-	battleEngine *battle.BattleEngine
-	battleState  *battle.BattleState
+	battleEngine *combat.BattleEngine
+	battleState  *combat.BattleState
 
 	// 敵攻撃
 	nextEnemyAttack time.Time
@@ -130,7 +130,7 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		isTyping:           false,
 		challengeGenerator: typing.NewChallengeGenerator(dictionary),
 		evaluator:          typing.NewEvaluator(),
-		battleEngine:       battle.NewBattleEngine(enemyTypes),
+		battleEngine:       combat.NewBattleEngine(enemyTypes),
 		styles:             gs,
 		winLoseRenderer:    ascii.NewWinLoseRenderer(gs),
 		width:              140,
@@ -142,12 +142,12 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 	}
 
 	// バトル状態を初期化
-	screen.battleState = &battle.BattleState{
+	screen.battleState = &combat.BattleState{
 		Enemy:          enemy,
 		Player:         player,
 		EquippedAgents: agents,
 		Level:          enemy.Level,
-		Stats: &battle.BattleStatistics{
+		Stats: &combat.BattleStatistics{
 			StartTime: time.Now(),
 		},
 		NextAttackTime: time.Now().Add(enemy.AttackInterval),

@@ -1,7 +1,7 @@
 // Package battle はバトルエンジンを提供します。
 // バトル初期化、敵攻撃、モジュール効果、勝敗判定を担当します。
 
-package battle
+package combat
 
 import (
 	"fmt"

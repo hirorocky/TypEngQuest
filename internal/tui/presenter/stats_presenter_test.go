@@ -5,12 +5,12 @@ package presenter
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // TestCreateStatsData は統計データ作成をテストします。
 func TestCreateStatsData(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	// タイピング結果を記録
 	gs.RecordTypingResult(60, 95.0, 100, 95, 5)
@@ -40,7 +40,7 @@ func TestCreateStatsData(t *testing.T) {
 
 // TestCreateStatsData_Empty は空の状態での統計データ作成をテストします。
 func TestCreateStatsData_Empty(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	data := CreateStatsData(gs)
 

@@ -1,13 +1,12 @@
 // Package agent はエージェント管理機能を提供します。
 // コア特性とモジュールの互換性検証、エージェント合成、装備管理を担当します。
 
-package agent
+package synthesize
 
 import (
 	"fmt"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/inventory"
 
 	"github.com/google/uuid"
 )
@@ -45,13 +44,13 @@ type SynthesisPreview struct {
 
 type AgentManager struct {
 	// coreInventory はコアインベントリです。
-	coreInventory *inventory.CoreInventory
+	coreInventory *domain.CoreInventory
 
 	// moduleInventory はモジュールインベントリです。
-	moduleInventory *inventory.ModuleInventory
+	moduleInventory *domain.ModuleInventory
 
 	// agentInventory はエージェントインベントリです。
-	agentInventory *inventory.AgentInventory
+	agentInventory *domain.AgentInventory
 
 	// equippedAgents は装備中のエージェント（スロット番号 → エージェント）です。
 
@@ -61,13 +60,13 @@ type AgentManager struct {
 // NewAgentManager は新しいAgentManagerを作成します。
 // AgentInventoryは内部で作成・管理されます（最大20体）。
 func NewAgentManager(
-	coreInv *inventory.CoreInventory,
-	moduleInv *inventory.ModuleInventory,
+	coreInv *domain.CoreInventory,
+	moduleInv *domain.ModuleInventory,
 ) *AgentManager {
 	return &AgentManager{
 		coreInventory:   coreInv,
 		moduleInventory: moduleInv,
-		agentInventory:  inventory.NewAgentInventoryWithDefault(20),
+		agentInventory:  domain.NewAgentInventoryWithDefault(20),
 		equippedAgents:  [MaxEquipmentSlots]*domain.AgentModel{},
 	}
 }

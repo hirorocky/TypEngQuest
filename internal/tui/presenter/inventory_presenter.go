@@ -2,22 +2,22 @@ package presenter
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/agent"
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
+	"hirorocky/type-battle/internal/usecase/synthesize"
 )
 
 // InventoryProviderAdapter はInventoryManagerとAgentManagerをInventoryProviderインターフェースに適合させます。
 // コア・モジュールの管理はInventoryManager、エージェント・装備の管理はAgentManagerが担当します。
 type InventoryProviderAdapter struct {
-	inv      *game_state.InventoryManager
-	agentMgr *agent.AgentManager
+	inv      *session.InventoryManager
+	agentMgr *synthesize.AgentManager
 	player   *domain.PlayerModel
 }
 
 // NewInventoryProviderAdapter は新しいInventoryProviderAdapterを作成します。
 func NewInventoryProviderAdapter(
-	inv *game_state.InventoryManager,
-	agentMgr *agent.AgentManager,
+	inv *session.InventoryManager,
+	agentMgr *synthesize.AgentManager,
 	player *domain.PlayerModel,
 ) *InventoryProviderAdapter {
 	return &InventoryProviderAdapter{

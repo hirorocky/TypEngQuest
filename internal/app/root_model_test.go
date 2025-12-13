@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/infra/masterdata"
-	gamestate "hirorocky/type-battle/internal/usecase/game_state"
+	gamestate "hirorocky/type-battle/internal/usecase/session"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

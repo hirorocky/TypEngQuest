@@ -51,13 +51,24 @@ config       ← 横断的関心事（全層から参照可能）
 **目的**: VO、エンティティ。UIやインフラに依存しない純粋なドメイン層
 **例**: `core.go`（コア特性）、`module.go`（モジュールスキル）、`agent.go`（エージェント）、`enemy.go`（敵）
 
-**サブパッケージ**: `/internal/domain/service/` - ドメインサービス
-- `stats_service.go`: ステータス計算（CoreType×Level→Stats）
+**サブパッケージ**:
+- `/internal/domain/service/` - ドメインサービス
+  - `stats_service.go`: ステータス計算（CoreType×Level→Stats）
+
+**ドメイン直下のファイル**:
+- `inventory.go`: コア、モジュール、エージェントのインベントリ
 
 ### usecase層 - ユースケース
 **場所**: `/internal/usecase/`
 **目的**: ドメインオブジェクト + ドメインサービスを組み合わせたアプリケーション固有の処理フロー
-**サブパッケージ**: `battle`, `typing`, `agent`, `enemy`, `inventory`, `reward`, `achievement`, `balance`, `game_state`
+**サブパッケージ**（動詞形でユースケースを表現）:
+- `combat`: バトル実行（旧battle）
+- `typing`: タイピング評価
+- `synthesize`: エージェント合成・装備管理（旧agent）
+- `spawning`: 敵生成（旧enemy）
+- `rewarding`: 報酬計算・ドロップ（旧reward）
+- `achievement`: 実績解除
+- `session`: セッション管理（旧game_state、統計・設定含む）
 
 ### infra層 - インフラストラクチャ
 **場所**: `/internal/infra/`
@@ -82,7 +93,9 @@ config       ← 横断的関心事（全層から参照可能）
 ### config - 横断的関心事
 **場所**: `/internal/config/`
 **目的**: マジックナンバーを一元管理。バトル設定、効果持続時間、インベントリ設定等
-**例**: `constants.go`（`BattleTickInterval`, `DefaultModuleCooldown`, `MaxAgentEquipSlots` など）
+**含まれるファイル**:
+- `constants.go`: 定数（`BattleTickInterval`, `DefaultModuleCooldown`, `MaxAgentEquipSlots` など）
+- `balance.go`: ゲームバランス設定（旧usecase/balance）
 
 ### integration_test - 統合テスト
 **場所**: `/internal/integration_test/`
@@ -148,4 +161,4 @@ import (
 
 ---
 _パターンを記述。新規ファイルがパターンに従えばsteeringの更新は不要_
-_updated_at: 2025-12-13_
+_updated_at: 2025-12-14_

@@ -10,8 +10,8 @@ import (
 	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
-	"hirorocky/type-battle/internal/usecase/battle"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/combat"
+	"hirorocky/type-battle/internal/usecase/rewarding"
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
@@ -86,7 +86,7 @@ func createTestExternalData() *masterdata.ExternalData {
 }
 
 // createTestRewardCalculator はテスト用のRewardCalculatorを作成します。
-func createTestRewardCalculator() *reward.RewardCalculator {
+func createTestRewardCalculator() *rewarding.RewardCalculator {
 	coreTypes := []domain.CoreType{
 		{
 			ID:   "all_rounder",
@@ -100,7 +100,7 @@ func createTestRewardCalculator() *reward.RewardCalculator {
 		},
 	}
 
-	moduleTypes := []reward.ModuleDropInfo{
+	moduleTypes := []rewarding.ModuleDropInfo{
 		{
 			ID:           "physical_attack_1",
 			Name:         "物理打撃Lv1",
@@ -122,7 +122,7 @@ func createTestRewardCalculator() *reward.RewardCalculator {
 		},
 	}
 
-	return reward.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
+	return rewarding.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 }
 
 // ==================================================
@@ -198,7 +198,7 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 			AttackType:         "physical",
 		},
 	}
-	engine := battle.NewBattleEngine(enemyTypes)
+	engine := combat.NewBattleEngine(enemyTypes)
 	battleState, err := engine.InitializeBattle(battleLevel, agents)
 	if err != nil {
 		t.Fatalf("バトル初期化に失敗: %v", err)
@@ -233,7 +233,7 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 	// 報酬計算
 	rewardCalc := createTestRewardCalculator()
 	// バトル統計を作成
-	battleStats := &reward.BattleStatistics{
+	battleStats := &rewarding.BattleStatistics{
 		TotalWPM:         result.Stats.TotalWPM,
 		TotalAccuracy:    result.Stats.TotalAccuracy,
 		TotalTypingCount: result.Stats.TotalTypingCount,
@@ -401,7 +401,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 			AttackType:         "physical",
 		},
 	}
-	engine := battle.NewBattleEngine(enemyTypes)
+	engine := combat.NewBattleEngine(enemyTypes)
 
 	typingResult := &typing.TypingResult{
 		Completed:      true,
@@ -528,7 +528,7 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 			AttackType:         "magic",
 		},
 	}
-	engine := battle.NewBattleEngine(enemyTypes)
+	engine := combat.NewBattleEngine(enemyTypes)
 
 	// 強い敵とバトル
 	battleState, _ := engine.InitializeBattle(10, agents)

@@ -8,7 +8,7 @@ import (
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/styles"
-	"hirorocky/type-battle/internal/usecase/battle"
+	"hirorocky/type-battle/internal/usecase/combat"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -97,16 +97,16 @@ func (s *BattleScreen) processEnemyAttack() {
 	// メッセージを表示
 	action := s.battleState.NextAction
 	switch action.ActionType {
-	case battle.EnemyActionAttack:
+	case combat.EnemyActionAttack:
 		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, msg)
 		// UI改善: フローティングダメージとHPアニメーション
 		if damage > 0 {
 			s.floatingDamageManager.AddDamage(damage, "player")
 			s.playerHPBar.SetTarget(s.player.HP)
 		}
-	case battle.EnemyActionSelfBuff:
+	case combat.EnemyActionSelfBuff:
 		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, msg)
-	case battle.EnemyActionDebuff:
+	case combat.EnemyActionDebuff:
 		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, msg)
 	default:
 		s.message = msg
@@ -303,21 +303,21 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 	action := s.battleState.NextAction
 
 	switch action.ActionType {
-	case battle.EnemyActionAttack:
+	case combat.EnemyActionAttack:
 		// 攻撃予告（赤色）
 		if action.AttackType == "physical" {
 			return "⚔", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
 		}
 		return "✦", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
 
-	case battle.EnemyActionSelfBuff:
+	case combat.EnemyActionSelfBuff:
 		// 自己バフ予告（黄色）
-		name := battle.GetEnemyBuffName(action.BuffType)
+		name := combat.GetEnemyBuffName(action.BuffType)
 		return "▲", name, styles.ColorWarning
 
-	case battle.EnemyActionDebuff:
+	case combat.EnemyActionDebuff:
 		// プレイヤーデバフ予告（青色）
-		name := battle.GetPlayerDebuffName(action.DebuffType)
+		name := combat.GetPlayerDebuffName(action.DebuffType)
 		return "▼", name, styles.ColorInfo
 	}
 

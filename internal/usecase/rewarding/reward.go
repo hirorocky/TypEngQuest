@@ -1,6 +1,6 @@
 // Package reward はドロップ・報酬システムを提供します。
 // バトル勝利時の報酬計算、コア/モジュールのドロップ判定を担当します。
-package reward
+package rewarding
 
 import (
 	"log/slog"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/usecase/inventory"
 
 	"github.com/google/uuid"
 )
@@ -371,8 +370,8 @@ func (c *RewardCalculator) GetEligibleModuleTypes(enemyLevel int) []ModuleDropIn
 
 // CheckInventoryFull はインベントリの満杯状態をチェックします。
 func (c *RewardCalculator) CheckInventoryFull(
-	coreInv *inventory.CoreInventory,
-	moduleInv *inventory.ModuleInventory,
+	coreInv *domain.CoreInventory,
+	moduleInv *domain.ModuleInventory,
 ) *InventoryWarning {
 	warning := &InventoryWarning{
 		CoreInventoryFull:   coreInv.IsFull(),
@@ -399,8 +398,8 @@ func (c *RewardCalculator) CreateTempStorage() *TempStorage {
 // インベントリが満杯の場合は一時保管に追加します。
 func AddRewardsToInventory(
 	result *RewardResult,
-	coreInv *inventory.CoreInventory,
-	moduleInv *inventory.ModuleInventory,
+	coreInv *domain.CoreInventory,
+	moduleInv *domain.ModuleInventory,
 	tempStorage *TempStorage,
 ) *InventoryWarning {
 	warning := &InventoryWarning{}

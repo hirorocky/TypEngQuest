@@ -3,12 +3,12 @@ package presenter
 import (
 	"testing"
 
-	"hirorocky/type-battle/internal/usecase/game_state"
+	"hirorocky/type-battle/internal/usecase/session"
 )
 
 // TestCreateEncyclopediaData は図鑑データ作成をテストします。
 func TestCreateEncyclopediaData(t *testing.T) {
-	gs := game_state.NewGameState()
+	gs := session.NewGameState()
 
 	data := CreateEncyclopediaData(gs)
 

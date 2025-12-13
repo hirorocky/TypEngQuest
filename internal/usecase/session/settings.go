@@ -1,4 +1,4 @@
-package game_state
+package session
 
 // Settings はゲームの設定を管理する構造体です。
 type Settings struct {

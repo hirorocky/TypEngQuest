@@ -15,8 +15,8 @@ import (
 	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/tui/styles"
-	gamestate "hirorocky/type-battle/internal/usecase/game_state"
-	"hirorocky/type-battle/internal/usecase/reward"
+	"hirorocky/type-battle/internal/usecase/rewarding"
+	gamestate "hirorocky/type-battle/internal/usecase/session"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -255,7 +255,7 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 		m.gameState.CheckBattleAchievementsWithNoDamage(noDamage)
 
 		// バトル統計を変換
-		rewardStats := &reward.BattleStatistics{
+		rewardStats := &rewarding.BattleStatistics{
 			TotalWPM:         result.Stats.TotalWPM,
 			TotalAccuracy:    result.Stats.TotalAccuracy,
 			TotalTypingCount: result.Stats.TotalTypingCount,

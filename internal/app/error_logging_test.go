@@ -10,7 +10,7 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
-	gamestate "hirorocky/type-battle/internal/usecase/game_state"
+	gamestate "hirorocky/type-battle/internal/usecase/session"
 )
 
 // テスト用のログバッファとハンドラーを作成するヘルパー関数

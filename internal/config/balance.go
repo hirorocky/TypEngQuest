@@ -1,15 +1,13 @@
-// Package balance はゲームバランスパラメータを管理します。
-// HP係数、敵ステータススケーリング、ドロップ確率などのゲーム調整値を集約管理します。
+// Package config はアプリケーション設定を管理します。
 
-// シーン定義とシーン遷移ルールはapp/scene.goで管理されます。
-package balance
+package config
 
 // ==================================================
 // ゲームバランス設定
 // ==================================================
 
-// Config はゲームバランスの設定を保持する構造体です。
-type Config struct {
+// BalanceConfig はゲームバランスの設定を保持する構造体です。
+type BalanceConfig struct {
 	// HPCoefficient はプレイヤーHP計算の係数です。
 
 	HPCoefficient float64
@@ -51,9 +49,9 @@ type Config struct {
 	TimeLimitByDifficulty map[int]int
 }
 
-// DefaultConfig はデフォルトのゲームバランス設定を返します。
-func DefaultConfig() *Config {
-	return &Config{
+// DefaultBalanceConfig はデフォルトのゲームバランス設定を返します。
+func DefaultBalanceConfig() *BalanceConfig {
+	return &BalanceConfig{
 		HPCoefficient:            20.0, // 適度なHP
 		EnemyAttackPowerScale:    1.1,  // レベルごとに10%増加
 		EnemyAttackIntervalScale: 0.95, // レベルごとに5%短縮
@@ -76,12 +74,12 @@ func DefaultConfig() *Config {
 	}
 }
 
-// ConfigOption は設定のカスタマイズオプションです。
-type ConfigOption func(*Config)
+// BalanceConfigOption は設定のカスタマイズオプションです。
+type BalanceConfigOption func(*BalanceConfig)
 
-// NewConfig はカスタム設定を持つConfigを作成します。
-func NewConfig(opts ...ConfigOption) *Config {
-	config := DefaultConfig()
+// NewBalanceConfig はカスタム設定を持つBalanceConfigを作成します。
+func NewBalanceConfig(opts ...BalanceConfigOption) *BalanceConfig {
+	config := DefaultBalanceConfig()
 	for _, opt := range opts {
 		opt(config)
 	}
@@ -89,22 +87,22 @@ func NewConfig(opts ...ConfigOption) *Config {
 }
 
 // WithHPCoefficient はHP係数を設定するオプションです。
-func WithHPCoefficient(coeff float64) ConfigOption {
-	return func(c *Config) {
+func WithHPCoefficient(coeff float64) BalanceConfigOption {
+	return func(c *BalanceConfig) {
 		c.HPCoefficient = coeff
 	}
 }
 
 // WithCoreDropRate はコアドロップ率を設定するオプションです。
-func WithCoreDropRate(rate float64) ConfigOption {
-	return func(c *Config) {
+func WithCoreDropRate(rate float64) BalanceConfigOption {
+	return func(c *BalanceConfig) {
 		c.CoreDropRate = rate
 	}
 }
 
 // WithModuleDropRate はモジュールドロップ率を設定するオプションです。
-func WithModuleDropRate(rate float64) ConfigOption {
-	return func(c *Config) {
+func WithModuleDropRate(rate float64) BalanceConfigOption {
+	return func(c *BalanceConfig) {
 		c.ModuleDropRate = rate
 	}
 }
@@ -115,7 +113,7 @@ func WithModuleDropRate(rate float64) ConfigOption {
 
 // CalculateEnemyAttackPower は敵の攻撃力を計算します。
 
-func (c *Config) CalculateEnemyAttackPower(baseAttackPower int, level int) int {
+func (c *BalanceConfig) CalculateEnemyAttackPower(baseAttackPower int, level int) int {
 	// 基礎攻撃力 × (スケーリング係数 ^ (レベル - 1))
 	scale := 1.0
 	for i := 1; i < level; i++ {
@@ -126,7 +124,7 @@ func (c *Config) CalculateEnemyAttackPower(baseAttackPower int, level int) int {
 
 // CalculateEnemyAttackInterval は敵の攻撃間隔を計算します。
 
-func (c *Config) CalculateEnemyAttackInterval(baseIntervalMS int, level int) int {
+func (c *BalanceConfig) CalculateEnemyAttackInterval(baseIntervalMS int, level int) int {
 	// 基礎間隔 × (スケーリング係数 ^ (レベル - 1))
 	scale := 1.0
 	for i := 1; i < level; i++ {
@@ -143,7 +141,7 @@ func (c *Config) CalculateEnemyAttackInterval(baseIntervalMS int, level int) int
 
 // GetTextLengthRange は指定難易度のテキスト長さ範囲を返します。
 
-func (c *Config) GetTextLengthRange(difficulty int) (min, max int) {
+func (c *BalanceConfig) GetTextLengthRange(difficulty int) (min, max int) {
 	if range_, exists := c.TextLengthByDifficulty[difficulty]; exists {
 		return range_[0], range_[1]
 	}
@@ -152,7 +150,7 @@ func (c *Config) GetTextLengthRange(difficulty int) (min, max int) {
 }
 
 // GetTimeLimit は指定難易度の制限時間を返します（ミリ秒）。
-func (c *Config) GetTimeLimit(difficulty int) int {
+func (c *BalanceConfig) GetTimeLimit(difficulty int) int {
 	if limit, exists := c.TimeLimitByDifficulty[difficulty]; exists {
 		return limit
 	}

@@ -1,18 +1,16 @@
-// Package balance はゲームバランスパラメータを管理します。
-
-package balance
+package config
 
 import (
 	"testing"
 )
 
 // ==================================================
-// Task 16.2: ゲームバランスパラメータ調整
+// ゲームバランスパラメータのテスト
 // ==================================================
 
 func TestHPCoefficient(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// HP係数は正の値であること
 	if config.HPCoefficient <= 0 {
@@ -27,7 +25,7 @@ func TestHPCoefficient(t *testing.T) {
 
 func TestEnemyAttackPowerScaling(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// スケーリング係数は正の値
 	if config.EnemyAttackPowerScale <= 0 {
@@ -46,7 +44,7 @@ func TestEnemyAttackPowerScaling(t *testing.T) {
 
 func TestEnemyAttackIntervalScaling(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// レベル1とレベル10での攻撃間隔計算
 	level1Interval := config.CalculateEnemyAttackInterval(3000, 1)
@@ -65,7 +63,7 @@ func TestEnemyAttackIntervalScaling(t *testing.T) {
 
 func TestDropRates(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// コアドロップ率は0〜1の範囲
 	if config.CoreDropRate < 0 || config.CoreDropRate > 1 {
@@ -85,7 +83,7 @@ func TestDropRates(t *testing.T) {
 
 func TestTypingChallengeTextLength(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// 難易度ごとのテキスト長さ範囲
 	tests := []struct {
@@ -114,7 +112,7 @@ func TestTypingChallengeTextLength(t *testing.T) {
 
 func TestTypingChallengeTimeLimit(t *testing.T) {
 	// 制限時間の設定
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	// 難易度ごとの制限時間（ミリ秒）
 	tests := []struct {
@@ -140,7 +138,7 @@ func TestTypingChallengeTimeLimit(t *testing.T) {
 
 func TestMaxLevel(t *testing.T) {
 
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	if config.MaxLevel != 100 {
 		t.Errorf("最大レベルは100であるべきです: got %d", config.MaxLevel)
@@ -149,7 +147,7 @@ func TestMaxLevel(t *testing.T) {
 
 func TestMaxEquippedAgents(t *testing.T) {
 	// 最大装備エージェント数
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	if config.MaxEquippedAgents != 3 {
 		t.Errorf("最大装備エージェント数は3であるべきです: got %d", config.MaxEquippedAgents)
@@ -158,16 +156,16 @@ func TestMaxEquippedAgents(t *testing.T) {
 
 func TestModulesPerAgent(t *testing.T) {
 	// エージェントあたりのモジュール数
-	config := DefaultConfig()
+	config := DefaultBalanceConfig()
 
 	if config.ModulesPerAgent != 4 {
 		t.Errorf("エージェントあたりのモジュール数は4であるべきです: got %d", config.ModulesPerAgent)
 	}
 }
 
-func TestConfigCustomization(t *testing.T) {
+func TestBalanceConfigCustomization(t *testing.T) {
 	// 設定のカスタマイズが可能であること
-	config := NewConfig(
+	config := NewBalanceConfig(
 		WithHPCoefficient(50.0),
 		WithCoreDropRate(0.6),
 		WithModuleDropRate(0.8),
@@ -183,6 +181,3 @@ func TestConfigCustomization(t *testing.T) {
 		t.Errorf("カスタムモジュールドロップ率: expected 0.8, got %f", config.ModuleDropRate)
 	}
 }
-
-// シーン定義とシーン遷移ルールはapp層で管理されます。
-// 関連テストはinternal/app/scene_router_test.goを参照してください。
