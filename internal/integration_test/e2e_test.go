@@ -87,7 +87,7 @@ func createTestExternalData() *masterdata.ExternalData {
 
 // createTestRewardCalculator はテスト用のRewardCalculatorを作成します。
 func createTestRewardCalculator() *reward.RewardCalculator {
-	coreTypes := []masterdata.CoreTypeData{
+	coreTypes := []domain.CoreType{
 		{
 			ID:   "all_rounder",
 			Name: "オールラウンダー",
@@ -100,17 +100,17 @@ func createTestRewardCalculator() *reward.RewardCalculator {
 		},
 	}
 
-	moduleTypes := []masterdata.ModuleDefinitionData{
+	moduleTypes := []reward.ModuleDropInfo{
 		{
-			ID:            "physical_attack_1",
-			Name:          "物理打撃Lv1",
-			Category:      "physical_attack",
-			Level:         1,
-			Tags:          []string{"physical_low"},
-			BaseEffect:    10.0,
-			StatReference: "STR",
-			Description:   "物理ダメージを与える",
-			MinDropLevel:  1,
+			ID:           "physical_attack_1",
+			Name:         "物理打撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Level:        1,
+			Tags:         []string{"physical_low"},
+			BaseEffect:   10.0,
+			StatRef:      "STR",
+			Description:  "物理ダメージを与える",
+			MinDropLevel: 1,
 		},
 	}
 

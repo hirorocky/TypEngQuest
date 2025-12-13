@@ -6,17 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/domain"
 )
 
-// ==================== Task 9.1: 敵ステータス計算 ====================
-
 // TestEnemyStats_HPCalculation はレベルに応じたHP計算をテストします。
-
 func TestEnemyStats_HPCalculation(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -50,11 +53,16 @@ func TestEnemyStats_HPCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackPowerCalculation はレベルに応じた攻撃力計算をテストします。
-
 func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -83,19 +91,18 @@ func TestEnemyStats_AttackPowerCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackIntervalCalculation はレベルに応じた攻撃間隔計算をテストします。
-
 func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
-
-	// BaseAttackIntervalを設定
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
-	}
-	generator = NewEnemyGenerator(enemyTypes)
 
 	// レベル1
 	enemy1 := generator.Generate(1)
@@ -117,14 +124,16 @@ func TestEnemyStats_AttackIntervalCalculation(t *testing.T) {
 }
 
 // TestEnemyStats_AttackIntervalMinimum は攻撃間隔の最低値をテストします。
-
 func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "fast_enemy", Name: "高速敵", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "fast_enemy",
+			Name:               "高速敵",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -138,21 +147,33 @@ func TestEnemyStats_AttackIntervalMinimum(t *testing.T) {
 	}
 }
 
-// ==================== Task 9.2: 敵バリエーションとレベル上限 ====================
-
 // TestEnemyVariation_RandomSelection は敵タイプからのランダム選択をテストします。
-
 func TestEnemyVariation_RandomSelection(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-		{ID: "goblin", Name: "ゴブリン", BaseHP: 80, BaseAttackPower: 8,
-			BaseAttackIntervalMS: 2500, AttackType: "physical"},
-		{ID: "skeleton", Name: "スケルトン", BaseHP: 70, BaseAttackPower: 10,
-			BaseAttackIntervalMS: 2800, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
+		{
+			ID:                 "goblin",
+			Name:               "ゴブリン",
+			BaseHP:             80,
+			BaseAttackPower:    8,
+			BaseAttackInterval: 2500 * time.Millisecond,
+			AttackType:         "physical",
+		},
+		{
+			ID:                 "skeleton",
+			Name:               "スケルトン",
+			BaseHP:             70,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 2800 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -170,16 +191,24 @@ func TestEnemyVariation_RandomSelection(t *testing.T) {
 }
 
 // TestEnemyVariation_SameLevelMultipleTypes は同レベルでの複数バリエーション対応をテストします。
-
 func TestEnemyVariation_SameLevelMultipleTypes(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-		{ID: "goblin", Name: "ゴブリン", BaseHP: 80, BaseAttackPower: 8,
-			BaseAttackIntervalMS: 2500, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
+		{
+			ID:                 "goblin",
+			Name:               "ゴブリン",
+			BaseHP:             80,
+			BaseAttackPower:    8,
+			BaseAttackInterval: 2500 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -207,18 +236,20 @@ func TestEnemyVariation_SameLevelMultipleTypes(t *testing.T) {
 }
 
 // TestEnemyLevel_Maximum はレベル上限をテストします。
-
 func TestEnemyLevel_Maximum(t *testing.T) {
 	if MaxEnemyLevel != 100 {
 		t.Errorf("レベル上限が100であるべき: got %d", MaxEnemyLevel)
 	}
 
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -230,7 +261,6 @@ func TestEnemyLevel_Maximum(t *testing.T) {
 }
 
 // TestEnemyLevel_MaxLevelDefeat は最高レベル敵撃破時のゲームクリア判定をテストします。
-
 func TestEnemyLevel_MaxLevelDefeat(t *testing.T) {
 	generator := NewEnemyGenerator(nil)
 
@@ -246,14 +276,16 @@ func TestEnemyLevel_MaxLevelDefeat(t *testing.T) {
 }
 
 // TestEnemyLevel_ValidRange は有効なレベル範囲をテストします。
-
 func TestEnemyLevel_ValidRange(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -271,14 +303,16 @@ func TestEnemyLevel_ValidRange(t *testing.T) {
 }
 
 // TestEnemyGeneration_StatsScaling はステータススケーリングをテストします。
-
 func TestEnemyGeneration_StatsScaling(t *testing.T) {
-	enemyTypes := []masterdata.EnemyTypeData{
-		{ID: "slime", Name: "スライム", BaseHP: 50, BaseAttackPower: 5,
-			BaseAttackIntervalMS: 3000, AttackType: "physical"},
-	}
-	for i := range enemyTypes {
-		enemyTypes[i].BaseAttackInterval = time.Duration(enemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3000 * time.Millisecond,
+			AttackType:         "physical",
+		},
 	}
 	generator := NewEnemyGenerator(enemyTypes)
 
@@ -298,5 +332,52 @@ func TestEnemyGeneration_StatsScaling(t *testing.T) {
 
 		previousHP = enemy.MaxHP
 		previousAttack = enemy.AttackPower
+	}
+}
+
+// TestEnemyGenerator_GenerateWithType は特定タイプで敵を生成するテストです。
+func TestEnemyGenerator_GenerateWithType(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "dragon",
+			Name:               "ドラゴン",
+			BaseHP:             500,
+			BaseAttackPower:    50,
+			BaseAttackInterval: 5 * time.Second,
+			AttackType:         "magic",
+		},
+	}
+
+	gen := NewEnemyGenerator(enemyTypes)
+	gen.SetSeed(42) // 再現可能な結果のために固定シード
+
+	enemy := gen.GenerateWithType(10, "dragon")
+	if enemy == nil {
+		t.Fatal("GenerateWithType returned nil")
+	}
+
+	// ドラゴンタイプの名前が含まれていること
+	if enemy.Type.ID != "dragon" {
+		t.Errorf("Expected dragon type, got %s", enemy.Type.ID)
+	}
+
+	// HP = BaseHP * level = 500 * 10 = 5000
+	if enemy.HP != 5000 {
+		t.Errorf("Expected HP 5000, got %d", enemy.HP)
+	}
+}
+
+// TestEnemyGenerator_GetEnemyTypes は敵タイプ取得をテストします。
+func TestEnemyGenerator_GetEnemyTypes(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{ID: "type1", Name: "タイプ1"},
+		{ID: "type2", Name: "タイプ2"},
+	}
+
+	gen := NewEnemyGenerator(enemyTypes)
+
+	types := gen.GetEnemyTypes()
+	if len(types) != 2 {
+		t.Errorf("Expected 2 enemy types, got %d", len(types))
 	}
 }

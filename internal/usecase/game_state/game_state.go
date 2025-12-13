@@ -4,7 +4,6 @@ package game_state
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"
@@ -34,9 +33,6 @@ type GameState struct {
 
 	// achievements は実績管理を担当します。
 	achievements *achievement.AchievementManager
-
-	// externalData は外部データファイルから読み込んだデータです。
-	externalData *masterdata.ExternalData
 
 	// settings はゲーム設定です。
 	settings *Settings
@@ -72,12 +68,12 @@ func NewGameState() *GameState {
 	achievementMgr := achievement.NewAchievementManager()
 
 	// 報酬計算用のデータを準備
-	coreTypeData := GetDefaultCoreTypeData()
-	moduleDefData := GetDefaultModuleDefinitionData()
+	coreTypes := GetDefaultCoreTypes()
+	moduleDropInfos := GetDefaultModuleDropInfos()
 	passiveSkills := GetDefaultPassiveSkills()
 
 	// RewardCalculatorを作成
-	rewardCalc := reward.NewRewardCalculator(coreTypeData, moduleDefData, passiveSkills)
+	rewardCalc := reward.NewRewardCalculator(coreTypes, moduleDropInfos, passiveSkills)
 
 	// EnemyGeneratorを作成（デフォルト敵タイプを使用）
 	enemyGen := enemy.NewEnemyGenerator(nil)
@@ -89,7 +85,6 @@ func NewGameState() *GameState {
 		agentManager:     agentMgr,
 		statistics:       NewStatisticsManager(),
 		achievements:     achievementMgr,
-		externalData:     nil,
 		settings:         NewSettings(),
 		rewardCalculator: rewardCalc,
 		tempStorage:      &reward.TempStorage{},
@@ -122,16 +117,6 @@ func (g *GameState) Achievements() *achievement.AchievementManager {
 	return g.achievements
 }
 
-// ExternalData は外部データを返します。
-func (g *GameState) ExternalData() *masterdata.ExternalData {
-	return g.externalData
-}
-
-// SetExternalData は外部データを設定します。
-func (g *GameState) SetExternalData(data *masterdata.ExternalData) {
-	g.externalData = data
-}
-
 // Settings は設定を返します。
 func (g *GameState) Settings() *Settings {
 	return g.settings
@@ -142,10 +127,17 @@ func (g *GameState) EnemyGenerator() *enemy.EnemyGenerator {
 	return g.enemyGenerator
 }
 
-// UpdateEnemyGenerator は外部データで敵生成器を更新します。
-func (g *GameState) UpdateEnemyGenerator(enemyTypes []masterdata.EnemyTypeData) {
+// UpdateEnemyGenerator は敵生成器を敵タイプで更新します。
+func (g *GameState) UpdateEnemyGenerator(enemyTypes []domain.EnemyType) {
 	if len(enemyTypes) > 0 {
 		g.enemyGenerator = enemy.NewEnemyGenerator(enemyTypes)
+	}
+}
+
+// UpdateRewardCalculator は報酬計算器を更新します。
+func (g *GameState) UpdateRewardCalculator(coreTypes []domain.CoreType, moduleTypes []reward.ModuleDropInfo, passiveSkills map[string]domain.PassiveSkill) {
+	if len(coreTypes) > 0 || len(moduleTypes) > 0 {
+		g.rewardCalculator = reward.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 	}
 }
 
@@ -253,7 +245,7 @@ func (g *GameState) TempStorage() *reward.TempStorage {
 
 // AddRewardsToInventory は報酬をインベントリに追加します。
 func (g *GameState) AddRewardsToInventory(result *reward.RewardResult) *reward.InventoryWarning {
-	return g.rewardCalculator.AddRewardsToInventory(
+	return reward.AddRewardsToInventory(
 		result,
 		g.inventory.Cores(),
 		g.inventory.Modules(),

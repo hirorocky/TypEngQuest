@@ -47,7 +47,7 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 
 	// GameStateをセーブデータから作成
 	// 正常なケースではエラーは発生しないが、ログ機能自体が動作していることを確認
-	_ = gamestate.GameStateFromSaveData(saveData)
+	_ = gamestate.GameStateFromSaveData(saveData, nil)
 
 	// ログ出力の検証（正常ケースではエラーログは出力されない）
 	logOutput := buf.String()
@@ -85,7 +85,7 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	}
 
 	// GameStateをセーブデータから作成
-	gs := gamestate.GameStateFromSaveData(saveData)
+	gs := gamestate.GameStateFromSaveData(saveData, nil)
 
 	// ログ出力の検証（ログ機能自体が動作していることを確認）
 	logOutput := buf.String()

@@ -7,13 +7,20 @@ import (
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/usecase/achievement"
 	"hirorocky/type-battle/internal/usecase/agent"
 	"hirorocky/type-battle/internal/usecase/enemy"
 	"hirorocky/type-battle/internal/usecase/reward"
 )
+
+// DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
+type DomainDataSources struct {
+	CoreTypes     []domain.CoreType
+	ModuleTypes   []reward.ModuleDropInfo
+	EnemyTypes    []domain.EnemyType
+	PassiveSkills map[string]domain.PassiveSkill
+}
 
 // ToSaveData はGameStateをセーブデータに変換します。
 // ID化最適化により、フルオブジェクトではなくID参照を保存します。
@@ -95,22 +102,29 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
 // ID化最適化されたセーブデータからオブジェクトを再構築します。
-// externalDataが提供されている場合はそれを使用し、なければデフォルト値を使用します。
-func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.ExternalData) *GameState {
-	// マスタデータを取得
-	var coreTypeData []masterdata.CoreTypeData
-	var moduleDefData []masterdata.ModuleDefinitionData
+// sourcesが提供されている場合はそれを使用し、なければデフォルト値を使用します。
+func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) *GameState {
+	// マスタデータを取得（ドメイン型）
+	var coreTypes []domain.CoreType
+	var moduleTypes []reward.ModuleDropInfo
 	var passiveSkills map[string]domain.PassiveSkill
+	var enemyTypes []domain.EnemyType
 
-	if len(externalData) > 0 && externalData[0] != nil {
-		// 外部データが提供されている場合はそれを使用
-		coreTypeData = externalData[0].CoreTypes
-		moduleDefData = externalData[0].ModuleDefinitions
-		passiveSkills = GetDefaultPassiveSkills() // パッシブスキルは現状デフォルトを使用
-	} else {
-		// 外部データがない場合はデフォルト値を使用
-		coreTypeData = GetDefaultCoreTypeData()
-		moduleDefData = GetDefaultModuleDefinitionData()
+	if sources != nil {
+		coreTypes = sources.CoreTypes
+		moduleTypes = sources.ModuleTypes
+		passiveSkills = sources.PassiveSkills
+		enemyTypes = sources.EnemyTypes
+	}
+
+	// データが空の場合はデフォルト値を使用
+	if len(coreTypes) == 0 {
+		coreTypes = GetDefaultCoreTypes()
+	}
+	if len(moduleTypes) == 0 {
+		moduleTypes = GetDefaultModuleDropInfos()
+	}
+	if passiveSkills == nil {
 		passiveSkills = GetDefaultPassiveSkills()
 	}
 
@@ -123,8 +137,8 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 	// セーブデータからコアを再構築
 	if data.Inventory != nil {
 		for _, coreSave := range data.Inventory.CoreInstances {
-			// コア特性を検索
-			coreType := FindCoreType(coreTypeData, coreSave.CoreTypeID)
+			// コア特性を検索（ドメイン型）
+			coreType := FindCoreType(coreTypes, coreSave.CoreTypeID)
 			passiveSkill := FindPassiveSkill(passiveSkills, coreSave.CoreTypeID)
 
 			// コアを再構築（ステータスは自動計算される）
@@ -132,7 +146,7 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 				coreSave.ID,
 				coreType.Name+" Lv."+fmt.Sprintf("%d", coreSave.Level),
 				coreSave.Level,
-				coreType.ToDomain(),
+				coreType,
 				passiveSkill,
 			)
 			coreMap[coreSave.ID] = core
@@ -147,10 +161,10 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 
 		// モジュールを再構築
 		for moduleID, count := range data.Inventory.ModuleCounts {
-			moduleDef := FindModuleDefinition(moduleDefData, moduleID)
-			if moduleDef != nil {
+			moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
+			if moduleDropInfo != nil {
 				for i := 0; i < count; i++ {
-					module := moduleDef.ToDomain()
+					module := moduleDropInfo.ToDomain()
 					if err := invManager.AddModule(module); err != nil {
 						slog.Error("モジュール追加に失敗",
 							slog.String("module_id", module.ID),
@@ -173,22 +187,22 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 	if data.Inventory != nil {
 		for _, agentSave := range data.Inventory.AgentInstances {
 			// エージェント内のコア情報からコアを再構築
-			coreType := FindCoreType(coreTypeData, agentSave.Core.CoreTypeID)
+			coreType := FindCoreType(coreTypes, agentSave.Core.CoreTypeID)
 			passiveSkill := FindPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
 			core := domain.NewCore(
 				agentSave.Core.ID,
 				coreType.Name+" Lv."+fmt.Sprintf("%d", agentSave.Core.Level),
 				agentSave.Core.Level,
-				coreType.ToDomain(),
+				coreType,
 				passiveSkill,
 			)
 
 			// モジュールを再構築
 			modules := make([]*domain.ModuleModel, 0, len(agentSave.ModuleIDs))
 			for _, moduleID := range agentSave.ModuleIDs {
-				moduleDef := FindModuleDefinition(moduleDefData, moduleID)
-				if moduleDef != nil {
-					modules = append(modules, moduleDef.ToDomain())
+				moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
+				if moduleDropInfo != nil {
+					modules = append(modules, moduleDropInfo.ToDomain())
 				}
 			}
 
@@ -251,10 +265,10 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 	}
 
 	// RewardCalculatorを作成
-	rewardCalc := reward.NewRewardCalculator(coreTypeData, moduleDefData, passiveSkills)
+	rewardCalc := reward.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 
 	// EnemyGeneratorを作成
-	enemyGen := enemy.NewEnemyGenerator(nil)
+	enemyGen := enemy.NewEnemyGenerator(enemyTypes)
 
 	// 最高到達レベルとエンカウント敵リストを取得
 	maxLevelReached := 0
@@ -271,7 +285,6 @@ func GameStateFromSaveData(data *savedata.SaveData, externalData ...*masterdata.
 		agentManager:       agentMgr,
 		statistics:         statsMgr,
 		achievements:       achievementMgr,
-		externalData:       nil,
 		settings:           settings,
 		rewardCalculator:   rewardCalc,
 		tempStorage:        &reward.TempStorage{},

@@ -37,6 +37,7 @@
 - **設定定数の一元管理**: マジックナンバーを`config`パッケージに集約
 - **ファクトリパターン**: 画面生成を`ScreenFactory`に委譲
 - **ルーターパターン**: シーン遷移を`SceneRouter`に委譲
+- **型変換のapp層集約**: infra→domain型変換はapp層で実施し、usecase層のinfra依存を排除
 
 ---
-_updated_at: 2025-12-10_
+_updated_at: 2025-12-13_

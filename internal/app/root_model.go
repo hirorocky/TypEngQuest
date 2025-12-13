@@ -102,6 +102,18 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	}
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 
+	// masterdata → domain型への変換（app層で変換を行う）
+	var domainSources *gamestate.DomainDataSources
+	if loadErr == nil && externalData != nil {
+		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
+		domainSources = &gamestate.DomainDataSources{
+			CoreTypes:     coreTypes,
+			ModuleTypes:   moduleTypes,
+			EnemyTypes:    enemyTypes,
+			PassiveSkills: gamestate.GetDefaultPassiveSkills(),
+		}
+	}
+
 	// セーブデータをロードまたは新規作成
 	var gs *gamestate.GameState
 	var statusMessage string
@@ -109,28 +121,27 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	if saveDataIO.Exists() {
 		saveData, err := saveDataIO.LoadGame()
 		if err == nil {
-			gs = gamestate.GameStateFromSaveData(saveData, externalData)
+			gs = gamestate.GameStateFromSaveData(saveData, domainSources)
 			statusMessage = "セーブデータをロードしました"
 		} else {
 			// セーブデータの読み込みに失敗した場合、新規ゲームを初期化
 			initializer := startup.NewNewGameInitializer(externalData)
 			saveData := initializer.InitializeNewGame()
-			gs = gamestate.GameStateFromSaveData(saveData, externalData)
+			gs = gamestate.GameStateFromSaveData(saveData, domainSources)
 			statusMessage = "セーブデータの読み込みに失敗しました。新規ゲームを開始します"
 		}
 	} else {
 		// セーブデータが存在しない場合、新規ゲームを初期化（マスタデータ参照）
 		initializer := startup.NewNewGameInitializer(externalData)
 		saveData := initializer.InitializeNewGame()
-		gs = gamestate.GameStateFromSaveData(saveData, externalData)
+		gs = gamestate.GameStateFromSaveData(saveData, domainSources)
 		statusMessage = "新規ゲームを開始します"
 	}
 
-	// 外部データを設定
-	if loadErr == nil && externalData != nil {
-		gs.SetExternalData(externalData)
-		// EnemyGeneratorを外部データで再初期化
-		gs.UpdateEnemyGenerator(externalData.EnemyTypes)
+	// 外部データで敵生成器と報酬計算器を更新（ドメイン型を使用）
+	if domainSources != nil {
+		gs.UpdateEnemyGenerator(domainSources.EnemyTypes)
+		gs.UpdateRewardCalculator(domainSources.CoreTypes, domainSources.ModuleTypes, domainSources.PassiveSkills)
 	}
 
 	// インベントリプロバイダーアダプターを作成（複数画面で共有）
@@ -253,7 +264,7 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 			TotalHealAmount:  result.Stats.TotalHealAmount,
 		}
 
-		// 報酬を計算
+		// 報酬を計算（ドメイン型API）
 		rewardResult := m.gameState.RewardCalculator().CalculateRewards(
 			true,
 			rewardStats,

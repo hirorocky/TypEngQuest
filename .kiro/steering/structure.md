@@ -44,8 +44,7 @@ config       ← 横断的関心事（全層から参照可能）
 - `screen_factory.go`: 画面インスタンスの生成
 - `screen_map.go`: シーンと画面のマッピング
 - `message_handlers.go`: Bubbleteaメッセージハンドリング
-
-**サブパッケージ**: `/internal/app/game_state/` - GameState構造体、永続化
+- `masterdata_converter.go`: masterdata→domain型変換ヘルパー
 
 ### domain層 - ドメインモデル
 **場所**: `/internal/domain/`
@@ -54,8 +53,6 @@ config       ← 横断的関心事（全層から参照可能）
 
 **サブパッケージ**: `/internal/domain/service/` - ドメインサービス
 - `stats_service.go`: ステータス計算（CoreType×Level→Stats）
-- `hp_service.go`: MaxHP計算（[]Agent→int）
-- `effect_service.go`: エフェクト計算・更新
 
 ### usecase層 - ユースケース
 **場所**: `/internal/usecase/`
@@ -135,24 +132,8 @@ import (
 
 ## 改善タスク
 
-### masterdata型のdomain層への移動
 
-usecase層がinfra層（masterdata）に依存している問題を解消する。
 
-**対象パッケージと依存:**
-| パッケージ | 依存しているmasterdata型 |
-|-----------|-------------------------|
-| enemy | `masterdata.EnemyTypeData` |
-| reward | `masterdata.CoreTypeData`, `masterdata.ModuleDefinitionData` |
-| game_state | `masterdata.ExternalData` |
-
-**実施手順:**
-1. `masterdata.EnemyTypeData` → `domain.EnemyType`に統合（既存の`domain.EnemyType`を拡張）
-2. `masterdata.CoreTypeData` → `domain.CoreType`に統合
-3. `masterdata.ModuleDefinitionData` → `domain.ModuleType`として新設
-4. `masterdata.ExternalData` → masterdataはdomain型を返すよう変更
-5. enemy, reward, game_stateパッケージをdomain型のみ使用するよう修正
-6. 旧API（`EnemyGenerator`, `RewardCalculator`）を削除し、ドメイン型API（`DomainEnemyGenerator`, `DomainRewardCalculator`）に統一
 
 ## ドメイン別仕様
 

@@ -9,6 +9,7 @@ import (
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/tui/screens"
@@ -17,6 +18,66 @@ import (
 	"hirorocky/type-battle/internal/usecase/reward"
 	"hirorocky/type-battle/internal/usecase/typing"
 )
+
+// convertExternalDataToDomainSources は masterdata.ExternalData を gamestate.DomainDataSources に変換します。
+func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate.DomainDataSources {
+	if ext == nil {
+		return nil
+	}
+
+	// CoreTypes の変換
+	coreTypes := make([]domain.CoreType, len(ext.CoreTypes))
+	for i, ct := range ext.CoreTypes {
+		coreTypes[i] = ct.ToDomain()
+	}
+
+	// ModuleTypes の変換
+	moduleTypes := make([]reward.ModuleDropInfo, len(ext.ModuleDefinitions))
+	for i, md := range ext.ModuleDefinitions {
+		moduleTypes[i] = reward.ModuleDropInfo{
+			ID:           md.ID,
+			Name:         md.Name,
+			Category:     categoryStringToModule(md.Category),
+			Level:        md.Level,
+			Tags:         md.Tags,
+			BaseEffect:   md.BaseEffect,
+			StatRef:      md.StatReference,
+			Description:  md.Description,
+			MinDropLevel: md.MinDropLevel,
+		}
+	}
+
+	// EnemyTypes の変換
+	enemyTypes := make([]domain.EnemyType, len(ext.EnemyTypes))
+	for i, et := range ext.EnemyTypes {
+		enemyTypes[i] = et.ToDomain()
+	}
+
+	return &gamestate.DomainDataSources{
+		CoreTypes:     coreTypes,
+		ModuleTypes:   moduleTypes,
+		EnemyTypes:    enemyTypes,
+		PassiveSkills: nil,
+	}
+}
+
+// categoryStringToModule はカテゴリ文字列を domain.ModuleCategory に変換します。
+func categoryStringToModule(category string) domain.ModuleCategory {
+	switch category {
+	case "physical_attack":
+		return domain.PhysicalAttack
+	case "magic_attack":
+		return domain.MagicAttack
+	case "heal":
+		return domain.Heal
+	case "buff":
+		return domain.Buff
+	case "debuff":
+		return domain.Debuff
+	default:
+		return domain.PhysicalAttack
+	}
+}
 
 // ==================================================
 // Task 12.1: リファクタリング完了の検証
@@ -128,7 +189,7 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 	}
 
 	// GameStateへの変換を検証（リファクタリング後のgame_stateパッケージ使用）
-	gs := gamestate.GameStateFromSaveData(loadedData, externalData)
+	gs := gamestate.GameStateFromSaveData(loadedData, convertExternalDataToDomainSources(externalData))
 	if gs == nil {
 		t.Fatal("GameState should not be nil")
 	}
@@ -167,7 +228,7 @@ func TestRefactoring_GameStateRoundTrip(t *testing.T) {
 	}
 
 	// GameStateに変換
-	gs := gamestate.GameStateFromSaveData(loadedSaveData, externalData)
+	gs := gamestate.GameStateFromSaveData(loadedSaveData, convertExternalDataToDomainSources(externalData))
 
 	// ToSaveDataで再変換
 	reconvertedSaveData := gs.ToSaveData()
@@ -189,7 +250,7 @@ func TestRefactoring_DataConversionIntegration(t *testing.T) {
 	saveData := initializer.InitializeNewGame()
 
 	// GameStateを作成
-	gs := gamestate.GameStateFromSaveData(saveData, externalData)
+	gs := gamestate.GameStateFromSaveData(saveData, convertExternalDataToDomainSources(externalData))
 
 	// PersistenceAdapter: SaveDataへの変換
 	convertedSaveData := gs.ToSaveData()
@@ -455,7 +516,7 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	}
 
 	// 3. GameState変換
-	gs := gamestate.GameStateFromSaveData(loadedData, externalData)
+	gs := gamestate.GameStateFromSaveData(loadedData, convertExternalDataToDomainSources(externalData))
 	if gs == nil {
 		t.Fatal("GameState変換に失敗")
 	}

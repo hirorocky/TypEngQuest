@@ -7,14 +7,10 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/usecase/inventory"
 )
 
-// ==================== Task 8.1: 報酬計算と表示 ====================
-
 // TestBattleReward_Victory_ShowsRewardScreen は勝利時に報酬画面を表示することをテストします。
-
 func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -39,7 +35,6 @@ func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 }
 
 // TestBattleReward_Victory_ShowsStatistics は勝利時にバトル統計を表示することをテストします。
-
 func TestBattleReward_Victory_ShowsStatistics(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -64,7 +59,6 @@ func TestBattleReward_Victory_ShowsStatistics(t *testing.T) {
 }
 
 // TestBattleReward_Defeat_NoRewardScreen は敗北時に報酬画面を表示しないことをテストします。
-
 func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -87,14 +81,16 @@ func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 	}
 }
 
-// ==================== Task 8.2: コアドロップシステム ====================
-
 // TestCoreDrop_Judgment はコアドロップ判定が正しく動作することをテストします。
-
 func TestCoreDrop_Judgment(t *testing.T) {
-	coreTypes := []masterdata.CoreTypeData{
-		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
-			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "test_core",
+			Name:         "テストコア",
+			MinDropLevel: 1,
+			AllowedTags:  []string{"test"},
+			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		},
 	}
 	calculator := NewRewardCalculator(coreTypes, nil, nil)
 
@@ -109,11 +105,15 @@ func TestCoreDrop_Judgment(t *testing.T) {
 }
 
 // TestCoreDrop_LevelInRange はコアレベルが敵レベル±範囲内であることをテストします。
-
 func TestCoreDrop_LevelInRange(t *testing.T) {
-	coreTypes := []masterdata.CoreTypeData{
-		{ID: "test_core", Name: "テストコア", MinDropLevel: 1, AllowedTags: []string{"test"},
-			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "test_core",
+			Name:         "テストコア",
+			MinDropLevel: 1,
+			AllowedTags:  []string{"test"},
+			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		},
 	}
 	calculator := NewRewardCalculator(coreTypes, nil, nil)
 	calculator.SetCoreDropRate(1.0)
@@ -141,15 +141,29 @@ func TestCoreDrop_LevelInRange(t *testing.T) {
 }
 
 // TestCoreDrop_MinDropLevel は特性別ドロップ最低敵レベル制限をテストします。
-
 func TestCoreDrop_MinDropLevel(t *testing.T) {
-	coreTypes := []masterdata.CoreTypeData{
-		{ID: "common_core", Name: "一般コア", MinDropLevel: 1, AllowedTags: []string{"test"},
-			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
-		{ID: "rare_core", Name: "レアコア", MinDropLevel: 10, AllowedTags: []string{"test"},
-			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
-		{ID: "epic_core", Name: "エピックコア", MinDropLevel: 20, AllowedTags: []string{"test"},
-			StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "common_core",
+			Name:         "一般コア",
+			MinDropLevel: 1,
+			AllowedTags:  []string{"test"},
+			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		},
+		{
+			ID:           "rare_core",
+			Name:         "レアコア",
+			MinDropLevel: 10,
+			AllowedTags:  []string{"test"},
+			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		},
+		{
+			ID:           "epic_core",
+			Name:         "エピックコア",
+			MinDropLevel: 20,
+			AllowedTags:  []string{"test"},
+			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		},
 	}
 	calculator := NewRewardCalculator(coreTypes, nil, nil)
 	calculator.SetCoreDropRate(1.0)
@@ -171,10 +185,9 @@ func TestCoreDrop_MinDropLevel(t *testing.T) {
 }
 
 // TestCoreDrop_InitialCoreTypes は初期コア特性のドロップ最低敵レベルをテストします。
-
 func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 	// cores.jsonから読み込まれる初期設定を再現
-	coreTypes := []masterdata.CoreTypeData{
+	coreTypes := []domain.CoreType{
 		{ID: "attack_balance", Name: "攻撃バランス", MinDropLevel: 1},
 		{ID: "all_rounder", Name: "オールラウンダー", MinDropLevel: 1},
 		{ID: "healer", Name: "ヒーラー", MinDropLevel: 3},
@@ -201,14 +214,17 @@ func TestCoreDrop_InitialCoreTypes(t *testing.T) {
 	}
 }
 
-// ==================== Task 8.3: モジュールドロップシステム ====================
-
 // TestModuleDrop_Judgment はモジュールドロップ判定が正しく動作することをテストします。
-
 func TestModuleDrop_Judgment(t *testing.T) {
-	moduleTypes := []masterdata.ModuleDefinitionData{
-		{ID: "test_module", Name: "テストモジュール", Category: "physical_attack",
-			Level: 1, Tags: []string{"physical_low"}, MinDropLevel: 1},
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "test_module",
+			Name:         "テストモジュール",
+			Category:     domain.PhysicalAttack,
+			Level:        1,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
 	}
 	calculator := NewRewardCalculator(nil, moduleTypes, nil)
 
@@ -223,15 +239,32 @@ func TestModuleDrop_Judgment(t *testing.T) {
 }
 
 // TestModuleDrop_MinDropLevel はカテゴリ×レベル別ドロップ最低敵レベル制限をテストします。
-
 func TestModuleDrop_MinDropLevel(t *testing.T) {
-	moduleTypes := []masterdata.ModuleDefinitionData{
-		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: "physical_attack",
-			Level: 1, Tags: []string{"physical_low"}, MinDropLevel: 1},
-		{ID: "physical_lv2", Name: "物理攻撃Lv2", Category: "physical_attack",
-			Level: 2, Tags: []string{"physical_mid"}, MinDropLevel: 10},
-		{ID: "physical_lv3", Name: "物理攻撃Lv3", Category: "physical_attack",
-			Level: 3, Tags: []string{"physical_high"}, MinDropLevel: 20},
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Level:        1,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
+		{
+			ID:           "physical_lv2",
+			Name:         "物理攻撃Lv2",
+			Category:     domain.PhysicalAttack,
+			Level:        2,
+			Tags:         []string{"physical_mid"},
+			MinDropLevel: 10,
+		},
+		{
+			ID:           "physical_lv3",
+			Name:         "物理攻撃Lv3",
+			Category:     domain.PhysicalAttack,
+			Level:        3,
+			Tags:         []string{"physical_high"},
+			MinDropLevel: 20,
+		},
 	}
 	calculator := NewRewardCalculator(nil, moduleTypes, nil)
 
@@ -255,10 +288,9 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 }
 
 // TestModuleDrop_HighLevelProgression は高レベルモジュールの段階的ドロップ設定をテストします。
-
 func TestModuleDrop_HighLevelProgression(t *testing.T) {
 	// modules.jsonから読み込まれる設定を再現
-	moduleTypes := []masterdata.ModuleDefinitionData{
+	moduleTypes := []ModuleDropInfo{
 		{ID: "physical_lv1", Name: "物理打撃Lv1", MinDropLevel: 1},
 		{ID: "physical_lv2", Name: "物理打撃Lv2", MinDropLevel: 10},
 		{ID: "physical_lv3", Name: "物理打撃Lv3", MinDropLevel: 20},
@@ -287,10 +319,7 @@ func TestModuleDrop_HighLevelProgression(t *testing.T) {
 	}
 }
 
-// ==================== Task 8.4: インベントリ満杯時の処理 ====================
-
 // TestInventoryFull_Warning はインベントリ満杯時に警告を表示することをテストします。
-
 func TestInventoryFull_Warning(t *testing.T) {
 	coreInv := inventory.NewCoreInventory(2)
 	moduleInv := inventory.NewModuleInventory(2)
@@ -315,7 +344,6 @@ func TestInventoryFull_Warning(t *testing.T) {
 }
 
 // TestInventoryFull_TempStorage は一時保管機能をテストします。
-
 func TestInventoryFull_TempStorage(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 
@@ -345,7 +373,6 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 }
 
 // TestInventoryFull_PromptDiscard は不要アイテム破棄促進をテストします。
-
 func TestInventoryFull_PromptDiscard(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
 

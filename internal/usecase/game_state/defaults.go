@@ -2,12 +2,12 @@ package game_state
 
 import (
 	"hirorocky/type-battle/internal/domain"
-	"hirorocky/type-battle/internal/infra/masterdata"
+	"hirorocky/type-battle/internal/usecase/reward"
 )
 
-// GetDefaultCoreTypeData はデフォルトのコア特性データを返します。
-func GetDefaultCoreTypeData() []masterdata.CoreTypeData {
-	return []masterdata.CoreTypeData{
+// GetDefaultCoreTypes はデフォルトのコア特性をドメイン型で返します。
+func GetDefaultCoreTypes() []domain.CoreType {
+	return []domain.CoreType{
 		{
 			ID:             "all_rounder",
 			Name:           "オールラウンダー",
@@ -43,20 +43,20 @@ func GetDefaultCoreTypeData() []masterdata.CoreTypeData {
 	}
 }
 
-// GetDefaultModuleDefinitionData はデフォルトのモジュール定義データを返します。
-func GetDefaultModuleDefinitionData() []masterdata.ModuleDefinitionData {
-	return []masterdata.ModuleDefinitionData{
-		{ID: "mod_slash", Name: "斬撃", Category: "physical_attack", Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatReference: "STR", Description: "基本的な物理攻撃", MinDropLevel: 1},
-		{ID: "mod_thrust", Name: "突き", Category: "physical_attack", Level: 1, Tags: []string{"physical_low"}, BaseEffect: 8.0, StatReference: "STR", Description: "素早い物理攻撃", MinDropLevel: 1},
-		{ID: "mod_fireball", Name: "火球", Category: "magic_attack", Level: 1, Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatReference: "MAG", Description: "火属性の魔法攻撃", MinDropLevel: 1},
-		{ID: "mod_ice", Name: "氷結", Category: "magic_attack", Level: 1, Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatReference: "MAG", Description: "氷属性の魔法攻撃", MinDropLevel: 1},
-		{ID: "mod_heal", Name: "ヒール", Category: "heal", Level: 1, Tags: []string{"heal_low"}, BaseEffect: 15.0, StatReference: "MAG", Description: "基本的な回復魔法", MinDropLevel: 1},
-		{ID: "mod_attack_up", Name: "攻撃力アップ", Category: "buff", Level: 1, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatReference: "LUK", Description: "攻撃力を上昇させる", MinDropLevel: 1},
-		{ID: "mod_defense_up", Name: "防御アップ", Category: "buff", Level: 1, Tags: []string{"buff_low"}, BaseEffect: 4.0, StatReference: "LUK", Description: "防御力を上昇させる", MinDropLevel: 1},
+// GetDefaultModuleDropInfos はデフォルトのモジュール定義をドメイン型で返します。
+func GetDefaultModuleDropInfos() []reward.ModuleDropInfo {
+	return []reward.ModuleDropInfo{
+		{ID: "mod_slash", Name: "斬撃", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃", MinDropLevel: 1},
+		{ID: "mod_thrust", Name: "突き", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃", MinDropLevel: 1},
+		{ID: "mod_fireball", Name: "火球", Category: domain.MagicAttack, Level: 1, Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃", MinDropLevel: 1},
+		{ID: "mod_ice", Name: "氷結", Category: domain.MagicAttack, Level: 1, Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatRef: "MAG", Description: "氷属性の魔法攻撃", MinDropLevel: 1},
+		{ID: "mod_heal", Name: "ヒール", Category: domain.Heal, Level: 1, Tags: []string{"heal_low"}, BaseEffect: 15.0, StatRef: "MAG", Description: "基本的な回復魔法", MinDropLevel: 1},
+		{ID: "mod_attack_up", Name: "攻撃力アップ", Category: domain.Buff, Level: 1, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "LUK", Description: "攻撃力を上昇させる", MinDropLevel: 1},
+		{ID: "mod_defense_up", Name: "防御アップ", Category: domain.Buff, Level: 1, Tags: []string{"buff_low"}, BaseEffect: 4.0, StatRef: "LUK", Description: "防御力を上昇させる", MinDropLevel: 1},
 		// レベル2モジュール
-		{ID: "mod_heavy_slash", Name: "強斬撃", Category: "physical_attack", Level: 2, Tags: []string{"physical_mid"}, BaseEffect: 20.0, StatReference: "STR", Description: "強力な物理攻撃", MinDropLevel: 5},
-		{ID: "mod_blizzard", Name: "ブリザード", Category: "magic_attack", Level: 2, Tags: []string{"magic_mid", "ice"}, BaseEffect: 22.0, StatReference: "MAG", Description: "氷属性の範囲魔法", MinDropLevel: 5},
-		{ID: "mod_cure", Name: "キュア", Category: "heal", Level: 2, Tags: []string{"heal_mid"}, BaseEffect: 30.0, StatReference: "MAG", Description: "中級回復魔法", MinDropLevel: 5},
+		{ID: "mod_heavy_slash", Name: "強斬撃", Category: domain.PhysicalAttack, Level: 2, Tags: []string{"physical_mid"}, BaseEffect: 20.0, StatRef: "STR", Description: "強力な物理攻撃", MinDropLevel: 5},
+		{ID: "mod_blizzard", Name: "ブリザード", Category: domain.MagicAttack, Level: 2, Tags: []string{"magic_mid", "ice"}, BaseEffect: 22.0, StatRef: "MAG", Description: "氷属性の範囲魔法", MinDropLevel: 5},
+		{ID: "mod_cure", Name: "キュア", Category: domain.Heal, Level: 2, Tags: []string{"heal_mid"}, BaseEffect: 30.0, StatRef: "MAG", Description: "中級回復魔法", MinDropLevel: 5},
 	}
 }
 
@@ -88,8 +88,8 @@ func GetDefaultPassiveSkills() map[string]domain.PassiveSkill {
 
 // GetDefaultCoreType はIDからデフォルトのコア特性を検索します。
 // 見つからない場合はデフォルトのオールラウンダーを返します。
-func GetDefaultCoreType(coreTypeID string) masterdata.CoreTypeData {
-	coreTypes := GetDefaultCoreTypeData()
+func GetDefaultCoreType(coreTypeID string) domain.CoreType {
+	coreTypes := GetDefaultCoreTypes()
 	for _, ct := range coreTypes {
 		if ct.ID == coreTypeID {
 			return ct
@@ -99,7 +99,7 @@ func GetDefaultCoreType(coreTypeID string) masterdata.CoreTypeData {
 	if len(coreTypes) > 0 {
 		return coreTypes[0]
 	}
-	return masterdata.CoreTypeData{
+	return domain.CoreType{
 		ID:             "all_rounder",
 		Name:           "オールラウンダー",
 		AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
@@ -130,10 +130,10 @@ func GetDefaultPassiveSkill(coreTypeID string) domain.PassiveSkill {
 	}
 }
 
-// GetDefaultModuleDefinition はIDからデフォルトのモジュール定義を検索します。
+// GetDefaultModuleDropInfo はIDからデフォルトのモジュール定義を検索します。
 // 見つからない場合はnilを返します。
-func GetDefaultModuleDefinition(moduleID string) *masterdata.ModuleDefinitionData {
-	moduleDefs := GetDefaultModuleDefinitionData()
+func GetDefaultModuleDropInfo(moduleID string) *reward.ModuleDropInfo {
+	moduleDefs := GetDefaultModuleDropInfos()
 	for i := range moduleDefs {
 		if moduleDefs[i].ID == moduleID {
 			return &moduleDefs[i]
@@ -143,7 +143,7 @@ func GetDefaultModuleDefinition(moduleID string) *masterdata.ModuleDefinitionDat
 }
 
 // FindCoreType はコア特性リストから指定IDのコア特性を検索します。
-func FindCoreType(coreTypes []masterdata.CoreTypeData, coreTypeID string) masterdata.CoreTypeData {
+func FindCoreType(coreTypes []domain.CoreType, coreTypeID string) domain.CoreType {
 	for _, ct := range coreTypes {
 		if ct.ID == coreTypeID {
 			return ct
@@ -152,7 +152,7 @@ func FindCoreType(coreTypes []masterdata.CoreTypeData, coreTypeID string) master
 	if len(coreTypes) > 0 {
 		return coreTypes[0]
 	}
-	return masterdata.CoreTypeData{
+	return domain.CoreType{
 		ID:             "all_rounder",
 		Name:           "オールラウンダー",
 		AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
@@ -180,8 +180,8 @@ func FindPassiveSkill(passiveSkills map[string]domain.PassiveSkill, coreTypeID s
 	}
 }
 
-// FindModuleDefinition はモジュール定義リストから指定IDのモジュール定義を検索します。
-func FindModuleDefinition(moduleDefs []masterdata.ModuleDefinitionData, moduleID string) *masterdata.ModuleDefinitionData {
+// FindModuleDropInfo はモジュール定義リストから指定IDのモジュール定義を検索します。
+func FindModuleDropInfo(moduleDefs []reward.ModuleDropInfo, moduleID string) *reward.ModuleDropInfo {
 	for i := range moduleDefs {
 		if moduleDefs[i].ID == moduleID {
 			return &moduleDefs[i]
