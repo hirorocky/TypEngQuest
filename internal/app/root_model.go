@@ -295,11 +295,10 @@ func (m *RootModel) performAutoSave() {
 			slog.Any("error", err),
 		)
 		m.statusMessage = "オートセーブに失敗しました"
-		m.homeScreen.SetStatusMessage(m.statusMessage)
 	} else {
 		m.statusMessage = "オートセーブしました"
-		m.homeScreen.SetStatusMessage(m.statusMessage)
 	}
+	m.homeScreen.SetStatusMessage(m.statusMessage)
 }
 
 // startBattle はバトルを開始します。

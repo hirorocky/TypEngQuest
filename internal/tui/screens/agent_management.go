@@ -71,6 +71,9 @@ type AgentManagementScreen struct {
 	pendingDeleteIdx int // 削除待ちのエージェントインデックス
 	// 装備タブ用: 選択中のスロットインデックス (0-2)
 	selectedEquipSlot int
+	// エラー/ステータスメッセージ
+	errorMessage  string
+	statusMessage string
 }
 
 // NewAgentManagementScreen は新しいAgentManagementScreenを作成します。
@@ -193,17 +196,28 @@ func (s *AgentManagementScreen) handleEquipKeyMsg(msg tea.KeyMsg) (tea.Model, te
 					slog.String("agent_id", agent.ID),
 					slog.Any("error", err),
 				)
+				s.errorMessage = fmt.Sprintf("装備に失敗しました: %v", err)
+				s.statusMessage = ""
+			} else {
+				s.statusMessage = fmt.Sprintf("'%s'をスロット%dに装備しました", agent.GetCoreTypeName(), s.selectedEquipSlot+1)
+				s.errorMessage = ""
 			}
 			s.updateCurrentList()
 		}
 	case "backspace":
 		// 選択中のスロットからエージェントを取り外し
 		if s.equipSlots[s.selectedEquipSlot] != nil {
+			agentName := s.equipSlots[s.selectedEquipSlot].GetCoreTypeName()
 			if err := s.inventory.UnequipAgent(s.selectedEquipSlot); err != nil {
 				slog.Error("エージェント装備解除に失敗",
 					slog.Int("slot", s.selectedEquipSlot),
 					slog.Any("error", err),
 				)
+				s.errorMessage = fmt.Sprintf("装備解除に失敗しました: %v", err)
+				s.statusMessage = ""
+			} else {
+				s.statusMessage = fmt.Sprintf("'%s'をスロット%dから取り外しました", agentName, s.selectedEquipSlot+1)
+				s.errorMessage = ""
 			}
 			s.updateCurrentList()
 		}
@@ -502,7 +516,13 @@ func (s *AgentManagementScreen) executeSynthesis() {
 			slog.String("agent_id", agent.ID),
 			slog.Any("error", err),
 		)
+		s.errorMessage = fmt.Sprintf("エージェントの合成に失敗しました: %v", err)
+		return // 素材を消費しないように処理を中断
 	}
+
+	// エラーメッセージをクリアしてステータスメッセージを設定
+	s.errorMessage = ""
+	s.statusMessage = "エージェントを合成しました"
 
 	// 使用した素材を削除
 	if err := s.inventory.RemoveCore(s.synthesisState.selectedCore.ID); err != nil {
@@ -569,6 +589,23 @@ func (s *AgentManagementScreen) View() string {
 	// メインコンテンツ
 	builder.WriteString(s.renderMainContent())
 	builder.WriteString("\n\n")
+
+	// ステータス/エラーメッセージ
+	if s.errorMessage != "" {
+		errorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")). // 赤色
+			Align(lipgloss.Center).
+			Width(s.width)
+		builder.WriteString(errorStyle.Render(s.errorMessage))
+		builder.WriteString("\n")
+	} else if s.statusMessage != "" {
+		statusStyle := lipgloss.NewStyle().
+			Foreground(styles.ColorSecondary).
+			Align(lipgloss.Center).
+			Width(s.width)
+		builder.WriteString(statusStyle.Render(s.statusMessage))
+		builder.WriteString("\n")
+	}
 
 	// ヒント
 	hintStyle := lipgloss.NewStyle().
