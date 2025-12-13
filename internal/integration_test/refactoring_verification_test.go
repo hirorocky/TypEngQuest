@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/app"
-	gamestate "hirorocky/type-battle/internal/app/game_state"
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/usecase/battle"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 	"hirorocky/type-battle/internal/usecase/reward"
 	"hirorocky/type-battle/internal/usecase/typing"
 )

@@ -12,8 +12,10 @@ import (
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
 	"hirorocky/type-battle/internal/infra/terminal"
+	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/tui/styles"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -38,7 +40,7 @@ type RootModel struct {
 	currentScene Scene
 
 	// gameState はゲーム全体の共有状態を保持します
-	gameState *GameState
+	gameState *gamestate.GameState
 
 	// terminalState は現在のターミナルサイズと検証状態を保持します
 	terminalState *terminal.TerminalState
@@ -100,52 +102,52 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 
 	// セーブデータをロードまたは新規作成
-	var gameState *GameState
+	var gs *gamestate.GameState
 	var statusMessage string
 
 	if saveDataIO.Exists() {
 		saveData, err := saveDataIO.LoadGame()
 		if err == nil {
-			gameState = GameStateFromSaveData(saveData, externalData)
+			gs = gamestate.GameStateFromSaveData(saveData, externalData)
 			statusMessage = "セーブデータをロードしました"
 		} else {
 			// セーブデータの読み込みに失敗した場合、新規ゲームを初期化
 			initializer := startup.NewNewGameInitializer(externalData)
 			saveData := initializer.InitializeNewGame()
-			gameState = GameStateFromSaveData(saveData, externalData)
+			gs = gamestate.GameStateFromSaveData(saveData, externalData)
 			statusMessage = "セーブデータの読み込みに失敗しました。新規ゲームを開始します"
 		}
 	} else {
 		// セーブデータが存在しない場合、新規ゲームを初期化（マスタデータ参照）
 		initializer := startup.NewNewGameInitializer(externalData)
 		saveData := initializer.InitializeNewGame()
-		gameState = GameStateFromSaveData(saveData, externalData)
+		gs = gamestate.GameStateFromSaveData(saveData, externalData)
 		statusMessage = "新規ゲームを開始します"
 	}
 
 	// 外部データを設定
 	if loadErr == nil && externalData != nil {
-		gameState.SetExternalData(externalData)
+		gs.SetExternalData(externalData)
 		// EnemyGeneratorを外部データで再初期化
-		gameState.UpdateEnemyGenerator(externalData.EnemyTypes)
+		gs.UpdateEnemyGenerator(externalData.EnemyTypes)
 	}
 
 	// インベントリプロバイダーアダプターを作成（複数画面で共有）
-	invAdapter := NewInventoryProviderAdapter(
-		gameState.Inventory(),
-		gameState.AgentManager(),
-		gameState.Player(),
+	invAdapter := presenter.NewInventoryProviderAdapter(
+		gs.Inventory(),
+		gs.AgentManager(),
+		gs.Player(),
 	)
 
 	// ScreenFactoryを作成
-	screenFactory := NewScreenFactory(gameState)
+	screenFactory := NewScreenFactory(gs)
 
 	// ホーム画面を初期化
-	homeScreen := screenFactory.CreateHomeScreen(gameState.MaxLevelReached, invAdapter)
+	homeScreen := screenFactory.CreateHomeScreen(gs.MaxLevelReached, invAdapter)
 	homeScreen.SetStatusMessage(statusMessage)
 
 	// バトル選択画面を初期化
-	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gameState.MaxLevelReached, invAdapter)
+	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gs.MaxLevelReached, invAdapter)
 
 	// エージェント管理画面を初期化
 	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invAdapter)
@@ -162,7 +164,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	model := &RootModel{
 		ready:                   false,
 		currentScene:            SceneHome,
-		gameState:               gameState,
+		gameState:               gs,
 		styles:                  styles.NewGameStyles(),
 		saveDataIO:              saveDataIO,
 		statusMessage:           statusMessage,
@@ -349,8 +351,8 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 }
 
 // createInventoryAdapter はインベントリプロバイダーアダプターを作成します。
-func (m *RootModel) createInventoryAdapter() *inventoryProviderAdapter {
-	return NewInventoryProviderAdapter(
+func (m *RootModel) createInventoryAdapter() *presenter.InventoryProviderAdapter {
+	return presenter.NewInventoryProviderAdapter(
 		m.gameState.Inventory(),
 		m.gameState.AgentManager(),
 		m.gameState.Player(),
@@ -383,7 +385,7 @@ func (m *RootModel) renderCurrentScene() string {
 }
 
 // GameState はゲーム全体の状態への参照を返します。
-func (m *RootModel) GameState() *GameState {
+func (m *RootModel) GameState() *gamestate.GameState {
 	return m.gameState
 }
 

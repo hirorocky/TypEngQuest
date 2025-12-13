@@ -10,6 +10,7 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 )
 
 // テスト用のログバッファとハンドラーを作成するヘルパー関数
@@ -46,7 +47,7 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 
 	// GameStateをセーブデータから作成
 	// 正常なケースではエラーは発生しないが、ログ機能自体が動作していることを確認
-	_ = GameStateFromSaveData(saveData)
+	_ = gamestate.GameStateFromSaveData(saveData)
 
 	// ログ出力の検証（正常ケースではエラーログは出力されない）
 	logOutput := buf.String()
@@ -84,7 +85,7 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	}
 
 	// GameStateをセーブデータから作成
-	gs := GameStateFromSaveData(saveData)
+	gs := gamestate.GameStateFromSaveData(saveData)
 
 	// ログ出力の検証（ログ機能自体が動作していることを確認）
 	logOutput := buf.String()
@@ -104,7 +105,7 @@ func TestInventoryManagerLogsErrors(t *testing.T) {
 	defer cleanup()
 
 	// InventoryManagerを初期化（ログ付きでデフォルトデータを追加）
-	invManager := NewInventoryManager()
+	invManager := gamestate.NewInventoryManager()
 	invManager.InitializeWithDefaults()
 
 	// ログ出力の検証
@@ -151,7 +152,7 @@ func TestLoggedAddCoreError(t *testing.T) {
 
 	// 満杯のインベントリを作成してエラーを発生させる
 	// 最大スロット数を1に設定
-	invManager := NewInventoryManager()
+	invManager := gamestate.NewInventoryManager()
 	invManager.SetMaxCoreSlots(1)
 	invManager.SetMaxModuleSlots(1)
 

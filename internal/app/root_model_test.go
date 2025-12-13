@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"hirorocky/type-battle/internal/infra/masterdata"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -61,7 +62,7 @@ func TestSceneType_String(t *testing.T) {
 
 // TestNewGameState は新しいGameStateが正しく初期化されることを検証します
 func TestNewGameState(t *testing.T) {
-	gs := NewGameState()
+	gs := gamestate.NewGameState()
 	if gs == nil {
 		t.Fatal("NewGameState() returned nil")
 	}
@@ -69,7 +70,7 @@ func TestNewGameState(t *testing.T) {
 
 // TestGameState_HasMaxLevelReached はGameStateが到達最高レベルを保持することを検証します
 func TestGameState_HasMaxLevelReached(t *testing.T) {
-	gs := NewGameState()
+	gs := gamestate.NewGameState()
 	// 初期値は0または1であるべき
 	if gs.MaxLevelReached < 0 {
 		t.Errorf("MaxLevelReached should not be negative, got %d", gs.MaxLevelReached)

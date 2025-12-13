@@ -4,6 +4,7 @@ package app
 import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/screens"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 )
 
 // InventoryProvider は画面に必要なインベントリ操作を提供するインターフェースです。
@@ -22,11 +23,11 @@ type InventoryProvider interface {
 // ScreenFactory は画面インスタンスを生成します。
 // GameStateから必要なデータを取得して各画面を初期化します。
 type ScreenFactory struct {
-	gameState *GameState
+	gameState *gamestate.GameState
 }
 
 // NewScreenFactory は新しいScreenFactoryを作成します。
-func NewScreenFactory(gs *GameState) *ScreenFactory {
+func NewScreenFactory(gs *gamestate.GameState) *ScreenFactory {
 	return &ScreenFactory{
 		gameState: gs,
 	}

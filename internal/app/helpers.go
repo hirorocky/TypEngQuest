@@ -6,18 +6,19 @@ import (
 	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/tui/screens"
 	"hirorocky/type-battle/internal/usecase/battle"
+	gamestate "hirorocky/type-battle/internal/usecase/game_state"
 	"hirorocky/type-battle/internal/usecase/reward"
 )
 
 // CreateStatsDataFromGameState はGameStateから統計データを生成します。
 // tui/presenter.CreateStatsData に委譲します。
-func CreateStatsDataFromGameState(gs *GameState) *screens.StatsData {
+func CreateStatsDataFromGameState(gs *gamestate.GameState) *screens.StatsData {
 	return presenter.CreateStatsData(gs)
 }
 
 // CreateSettingsDataFromGameState はGameStateから設定データを生成します。
 // tui/presenter.CreateSettingsData に委譲します。
-func CreateSettingsDataFromGameState(gs *GameState) *screens.SettingsData {
+func CreateSettingsDataFromGameState(gs *gamestate.GameState) *screens.SettingsData {
 	return presenter.CreateSettingsData(gs)
 }
 
@@ -29,7 +30,7 @@ func CreateDefaultEncyclopediaData() *screens.EncyclopediaData {
 
 // CreateEncyclopediaDataFromGameState はGameStateから図鑑データを生成します。
 // tui/presenter.CreateEncyclopediaData に委譲します。
-func CreateEncyclopediaDataFromGameState(gs *GameState) *screens.EncyclopediaData {
+func CreateEncyclopediaDataFromGameState(gs *gamestate.GameState) *screens.EncyclopediaData {
 	return presenter.CreateEncyclopediaData(gs)
 }
 
