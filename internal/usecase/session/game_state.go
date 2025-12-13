@@ -5,9 +5,9 @@ package session
 import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/usecase/achievement"
-	"hirorocky/type-battle/internal/usecase/synthesize"
-	"hirorocky/type-battle/internal/usecase/spawning"
 	"hirorocky/type-battle/internal/usecase/rewarding"
+	"hirorocky/type-battle/internal/usecase/spawning"
+	"hirorocky/type-battle/internal/usecase/synthesize"
 )
 
 // GameState はゲーム全体の状態を保持する構造体です。

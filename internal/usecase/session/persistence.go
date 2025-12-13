@@ -9,9 +9,9 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/usecase/achievement"
-	"hirorocky/type-battle/internal/usecase/synthesize"
-	"hirorocky/type-battle/internal/usecase/spawning"
 	"hirorocky/type-battle/internal/usecase/rewarding"
+	"hirorocky/type-battle/internal/usecase/spawning"
+	"hirorocky/type-battle/internal/usecase/synthesize"
 )
 
 // DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
