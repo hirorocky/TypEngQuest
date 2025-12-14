@@ -58,7 +58,7 @@
   - ChainEffectOverheal: オーバーヒール（効果中の超過回復を一時HPに）
   - _Requirements: 3.4_
 
-- [ ] 1.5.4 (P) タイピングカテゴリのチェイン効果タイプを追加する
+- [x] 1.5.4 (P) タイピングカテゴリのチェイン効果タイプを追加する
   - ChainEffectTimeExtend: タイムエクステンド（効果中のタイピング制限時間+X秒）
   - ChainEffectAutoCorrect: オートコレクト（効果中ミスX回まで無視）
   - _Requirements: 3.4_

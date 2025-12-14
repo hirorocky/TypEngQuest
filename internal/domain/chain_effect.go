@@ -65,6 +65,16 @@ const (
 	// ChainEffectOverheal はオーバーヒールを表します。
 	// 効果中の超過回復を一時HPに変換します。
 	ChainEffectOverheal ChainEffectType = "overheal"
+
+	// === タイピングカテゴリ ===
+
+	// ChainEffectTimeExtend はタイムエクステンドを表します。
+	// 効果中のタイピング制限時間を延長します。
+	ChainEffectTimeExtend ChainEffectType = "time_extend"
+
+	// ChainEffectAutoCorrect はオートコレクトを表します。
+	// 効果中に一定回数のミスを無視します。
+	ChainEffectAutoCorrect ChainEffectType = "auto_correct"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -99,6 +109,11 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return fmt.Sprintf("効果中の回復量+%.0f%%", value)
 	case ChainEffectOverheal:
 		return "効果中の超過回復を一時HPに"
+	// タイピングカテゴリ
+	case ChainEffectTimeExtend:
+		return fmt.Sprintf("効果中のタイピング制限時間+%.0f秒", value)
+	case ChainEffectAutoCorrect:
+		return fmt.Sprintf("効果中ミス%.0f回まで無視", value)
 	default:
 		return "チェイン効果"
 	}
