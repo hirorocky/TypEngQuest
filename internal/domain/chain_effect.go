@@ -55,6 +55,16 @@ const (
 	// ChainEffectRegen はリジェネを表します。
 	// 効果中毎秒HPを回復します。
 	ChainEffectRegen ChainEffectType = "regen"
+
+	// === 回復強化カテゴリ ===
+
+	// ChainEffectHealAmp はヒールアンプを表します。
+	// 効果中の回復量を増加させます。
+	ChainEffectHealAmp ChainEffectType = "heal_amp"
+
+	// ChainEffectOverheal はオーバーヒールを表します。
+	// 効果中の超過回復を一時HPに変換します。
+	ChainEffectOverheal ChainEffectType = "overheal"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -84,6 +94,11 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return fmt.Sprintf("効果中被ダメージの%.0f%%反射", value)
 	case ChainEffectRegen:
 		return fmt.Sprintf("効果中毎秒HP%.0f%%回復", value)
+	// 回復強化カテゴリ
+	case ChainEffectHealAmp:
+		return fmt.Sprintf("効果中の回復量+%.0f%%", value)
+	case ChainEffectOverheal:
+		return "効果中の超過回復を一時HPに"
 	default:
 		return "チェイン効果"
 	}

@@ -53,7 +53,7 @@
   - ChainEffectRegen: リジェネ（効果中毎秒HP X%回復）
   - _Requirements: 3.4_
 
-- [ ] 1.5.3 (P) 回復強化カテゴリのチェイン効果タイプを追加する
+- [x] 1.5.3 (P) 回復強化カテゴリのチェイン効果タイプを追加する
   - ChainEffectHealAmp: ヒールアンプ（効果中の回復量+X%）
   - ChainEffectOverheal: オーバーヒール（効果中の超過回復を一時HPに）
   - _Requirements: 3.4_
