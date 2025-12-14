@@ -424,3 +424,172 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 		t.Errorf("Category: got %v, want %v", domainModule.Category, domain.PhysicalAttack)
 	}
 }
+
+// TestLoadPassiveSkills はパッシブスキル定義のロードをテストします。
+func TestLoadPassiveSkills(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "ps_buff_extender",
+				"name": "バフエクステンダー",
+				"description": "バフ効果時間+50%",
+				"trigger_type": "permanent",
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			},
+			{
+				"id": "ps_perfect_rhythm",
+				"name": "パーフェクトリズム",
+				"description": "正確性100%でスキル効果1.5倍",
+				"trigger_type": "conditional",
+				"trigger_condition": {
+					"type": "accuracy_equals",
+					"value": 100
+				},
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			},
+			{
+				"id": "ps_last_stand",
+				"name": "ラストスタンド",
+				"description": "HP25%以下で30%の確率で被ダメージ1",
+				"trigger_type": "probability",
+				"trigger_condition": {
+					"type": "hp_below_percent",
+					"value": 25
+				},
+				"effect_type": "special",
+				"effect_value": 1,
+				"probability": 0.3
+			},
+			{
+				"id": "ps_combo_master",
+				"name": "コンボマスター",
+				"description": "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
+				"trigger_type": "stack",
+				"trigger_condition": {
+					"type": "no_miss_streak"
+				},
+				"effect_type": "modifier",
+				"effect_value": 0.1,
+				"max_stacks": 5,
+				"stack_increment": 0.1
+			},
+			{
+				"id": "ps_first_strike",
+				"name": "ファーストストライク",
+				"description": "戦闘開始時、最初のスキルが即発動",
+				"trigger_type": "reactive",
+				"trigger_condition": {
+					"type": "on_battle_start"
+				},
+				"effect_type": "special",
+				"uses_per_battle": 1
+			}
+		]
+	}`
+
+	passiveSkillsPath := filepath.Join(tmpDir, "passive_skills.json")
+	if err := os.WriteFile(passiveSkillsPath, []byte(passiveSkillsJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	passiveSkills, err := loader.LoadPassiveSkills()
+	if err != nil {
+		t.Fatalf("パッシブスキルのロードに失敗: %v", err)
+	}
+
+	if len(passiveSkills) != 5 {
+		t.Errorf("パッシブスキル数: got %d, want 5", len(passiveSkills))
+	}
+
+	// バフエクステンダー（永続効果）の検証
+	if passiveSkills[0].ID != "ps_buff_extender" {
+		t.Errorf("ID: got %s, want ps_buff_extender", passiveSkills[0].ID)
+	}
+	if passiveSkills[0].TriggerType != "permanent" {
+		t.Errorf("TriggerType: got %s, want permanent", passiveSkills[0].TriggerType)
+	}
+	if passiveSkills[0].EffectValue != 1.5 {
+		t.Errorf("EffectValue: got %f, want 1.5", passiveSkills[0].EffectValue)
+	}
+
+	// パーフェクトリズム（条件付き）の検証
+	if passiveSkills[1].TriggerCondition == nil {
+		t.Error("TriggerCondition should not be nil")
+	} else {
+		if passiveSkills[1].TriggerCondition.Type != "accuracy_equals" {
+			t.Errorf("TriggerCondition.Type: got %s, want accuracy_equals", passiveSkills[1].TriggerCondition.Type)
+		}
+	}
+
+	// ラストスタンド（確率トリガー）の検証
+	if passiveSkills[2].Probability != 0.3 {
+		t.Errorf("Probability: got %f, want 0.3", passiveSkills[2].Probability)
+	}
+
+	// コンボマスター（スタック型）の検証
+	if passiveSkills[3].MaxStacks != 5 {
+		t.Errorf("MaxStacks: got %d, want 5", passiveSkills[3].MaxStacks)
+	}
+	if passiveSkills[3].StackIncrement != 0.1 {
+		t.Errorf("StackIncrement: got %f, want 0.1", passiveSkills[3].StackIncrement)
+	}
+
+	// ファーストストライク（反応型）の検証
+	if passiveSkills[4].UsesPerBattle != 1 {
+		t.Errorf("UsesPerBattle: got %d, want 1", passiveSkills[4].UsesPerBattle)
+	}
+}
+
+// TestConvertToDomainPassiveSkillDefinition はパッシブスキルデータからドメインモデルへの変換をテストします。
+func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "ps_perfect_rhythm",
+				"name": "パーフェクトリズム",
+				"description": "正確性100%でスキル効果1.5倍",
+				"trigger_type": "conditional",
+				"trigger_condition": {
+					"type": "accuracy_equals",
+					"value": 100
+				},
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "passive_skills.json"), []byte(passiveSkillsJSON), 0644)
+
+	loader := NewDataLoader(tmpDir)
+	passiveSkills, err := loader.LoadPassiveSkills()
+	if err != nil {
+		t.Fatalf("パッシブスキルのロードに失敗: %v", err)
+	}
+
+	// ドメインモデルに変換
+	domainPassiveSkill := passiveSkills[0].ToDomain()
+
+	if domainPassiveSkill.ID != "ps_perfect_rhythm" {
+		t.Errorf("ID: got %s, want ps_perfect_rhythm", domainPassiveSkill.ID)
+	}
+	if domainPassiveSkill.TriggerType != domain.PassiveTriggerConditional {
+		t.Errorf("TriggerType: got %s, want %s", domainPassiveSkill.TriggerType, domain.PassiveTriggerConditional)
+	}
+	if domainPassiveSkill.TriggerCondition == nil {
+		t.Error("TriggerCondition should not be nil")
+	} else {
+		if domainPassiveSkill.TriggerCondition.Type != domain.TriggerConditionAccuracyEquals {
+			t.Errorf("TriggerCondition.Type: got %s, want %s", domainPassiveSkill.TriggerCondition.Type, domain.TriggerConditionAccuracyEquals)
+		}
+	}
+	if domainPassiveSkill.EffectType != domain.PassiveEffectMultiplier {
+		t.Errorf("EffectType: got %s, want %s", domainPassiveSkill.EffectType, domain.PassiveEffectMultiplier)
+	}
+}

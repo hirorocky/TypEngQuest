@@ -251,6 +251,146 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 	}
 }
 
+// ==================== パッシブスキル定義 ====================
+
+// PassiveSkillData はpassive_skills.jsonから読み込むパッシブスキルデータの構造体です。
+type PassiveSkillData struct {
+	ID               string                `json:"id"`
+	Name             string                `json:"name"`
+	Description      string                `json:"description"`
+	TriggerType      string                `json:"trigger_type"`
+	TriggerCondition *TriggerConditionData `json:"trigger_condition"`
+	EffectType       string                `json:"effect_type"`
+	EffectValue      float64               `json:"effect_value"`
+	Probability      float64               `json:"probability"`
+	MaxStacks        int                   `json:"max_stacks"`
+	StackIncrement   float64               `json:"stack_increment"`
+	UsesPerBattle    int                   `json:"uses_per_battle"`
+}
+
+// TriggerConditionData はトリガー条件のJSONデータ構造体です。
+type TriggerConditionData struct {
+	Type  string  `json:"type"`
+	Value float64 `json:"value"`
+}
+
+// passiveSkillsFileData はpassive_skills.jsonのルート構造です。
+type passiveSkillsFileData struct {
+	PassiveSkills []PassiveSkillData `json:"passive_skills"`
+}
+
+// LoadPassiveSkills はpassive_skills.jsonからパッシブスキル定義を読み込みます。
+func (l *DataLoader) LoadPassiveSkills() ([]PassiveSkillData, error) {
+	data, err := l.readFile("passive_skills.json")
+	if err != nil {
+		return nil, fmt.Errorf("passive_skills.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData passiveSkillsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("passive_skills.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.PassiveSkills, nil
+}
+
+// ToDomain はPassiveSkillDataをドメインモデルのPassiveSkillDefinitionに変換します。
+func (p *PassiveSkillData) ToDomain() domain.PassiveSkillDefinition {
+	def := domain.PassiveSkillDefinition{
+		ID:             p.ID,
+		Name:           p.Name,
+		Description:    p.Description,
+		TriggerType:    convertTriggerType(p.TriggerType),
+		EffectType:     convertEffectType(p.EffectType),
+		EffectValue:    p.EffectValue,
+		Probability:    p.Probability,
+		MaxStacks:      p.MaxStacks,
+		StackIncrement: p.StackIncrement,
+		UsesPerBattle:  p.UsesPerBattle,
+	}
+
+	if p.TriggerCondition != nil {
+		def.TriggerCondition = &domain.TriggerCondition{
+			Type:  convertTriggerConditionType(p.TriggerCondition.Type),
+			Value: p.TriggerCondition.Value,
+		}
+	}
+
+	return def
+}
+
+// convertTriggerType は文字列をPassiveTriggerTypeに変換します。
+func convertTriggerType(s string) domain.PassiveTriggerType {
+	switch s {
+	case "permanent":
+		return domain.PassiveTriggerPermanent
+	case "conditional":
+		return domain.PassiveTriggerConditional
+	case "probability":
+		return domain.PassiveTriggerProbability
+	case "stack":
+		return domain.PassiveTriggerStack
+	case "reactive":
+		return domain.PassiveTriggerReactive
+	default:
+		return domain.PassiveTriggerPermanent
+	}
+}
+
+// convertEffectType は文字列をPassiveEffectTypeに変換します。
+func convertEffectType(s string) domain.PassiveEffectType {
+	switch s {
+	case "modifier":
+		return domain.PassiveEffectModifier
+	case "multiplier":
+		return domain.PassiveEffectMultiplier
+	case "special":
+		return domain.PassiveEffectSpecial
+	default:
+		return domain.PassiveEffectModifier
+	}
+}
+
+// convertTriggerConditionType は文字列をTriggerConditionTypeに変換します。
+func convertTriggerConditionType(s string) domain.TriggerConditionType {
+	switch s {
+	case "accuracy_equals":
+		return domain.TriggerConditionAccuracyEquals
+	case "wpm_above":
+		return domain.TriggerConditionWPMAbove
+	case "hp_below_percent":
+		return domain.TriggerConditionHPBelowPercent
+	case "enemy_hp_below_percent":
+		return domain.TriggerConditionEnemyHPBelowPercent
+	case "enemy_has_debuff":
+		return domain.TriggerConditionEnemyHasDebuff
+	case "on_skill_use":
+		return domain.TriggerConditionOnSkillUse
+	case "on_damage_received":
+		return domain.TriggerConditionOnDamageReceived
+	case "on_heal":
+		return domain.TriggerConditionOnHeal
+	case "on_buff_debuff_use":
+		return domain.TriggerConditionOnBuffDebuffUse
+	case "on_physical_attack":
+		return domain.TriggerConditionOnPhysicalAttack
+	case "on_typing_miss":
+		return domain.TriggerConditionOnTypingMiss
+	case "on_timeout":
+		return domain.TriggerConditionOnTimeout
+	case "on_debuff_received":
+		return domain.TriggerConditionOnDebuffReceived
+	case "on_battle_start":
+		return domain.TriggerConditionOnBattleStart
+	case "no_miss_streak":
+		return domain.TriggerConditionNoMissStreak
+	case "same_attack_count":
+		return domain.TriggerConditionSameAttackCount
+	default:
+		return domain.TriggerConditionAccuracyEquals
+	}
+}
+
 // ==================== タイピング辞書 ====================
 
 // TypingDictionary はwords.jsonから読み込むタイピング辞書データの構造体です。
