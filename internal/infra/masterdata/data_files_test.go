@@ -202,6 +202,38 @@ func TestCoreTypeStatWeightsAreValid(t *testing.T) {
 	}
 }
 
+// TestCorePassiveSkillIDsExist はコアのpassive_skill_idがpassive_skills.jsonに存在することを検証します。
+func TestCorePassiveSkillIDsExist(t *testing.T) {
+	loader := createTestLoader()
+
+	coreTypes, err := loader.LoadCoreTypes()
+	if err != nil {
+		t.Fatalf("cores.jsonの読み込みに失敗: %v", err)
+	}
+
+	passiveSkills, err := loader.LoadPassiveSkills()
+	if err != nil {
+		t.Fatalf("passive_skills.jsonの読み込みに失敗: %v", err)
+	}
+
+	// パッシブスキルIDのマップを作成
+	passiveSkillIDs := make(map[string]bool)
+	for _, ps := range passiveSkills {
+		passiveSkillIDs[ps.ID] = true
+	}
+
+	// 各コアのpassive_skill_idがパッシブスキルに存在するか検証
+	for _, ct := range coreTypes {
+		if ct.PassiveSkillID == "" {
+			t.Errorf("コア %s にpassive_skill_idが設定されていません", ct.ID)
+			continue
+		}
+		if !passiveSkillIDs[ct.PassiveSkillID] {
+			t.Errorf("コア %s のpassive_skill_id %s がpassive_skills.jsonに存在しません", ct.ID, ct.PassiveSkillID)
+		}
+	}
+}
+
 // TestModuleTagsMatchCoreAllowedTags はモジュールのタグがコアの許可タグと適合することを検証します。
 // 注: Requirement 5.18により、初期段階では高レベルモジュールを装備可能な特化コアは用意されていません。
 // Lv1モジュール（_low タグ）のみが初期コアで使用可能であることを検証します。
