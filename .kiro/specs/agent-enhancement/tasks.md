@@ -193,8 +193,8 @@
   - 負の値やエッジケースのバリデーションテスト
   - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 5. チェイン効果マネージャーの実装
-- [ ] 5.1 ChainEffectManagerを実装する
+- [x] 5. チェイン効果マネージャーの実装
+- [x] 5.1 ChainEffectManagerを実装する
   - PendingChainEffect構造体（AgentIndex, Effect, SourceModule）を定義
   - TriggeredChainEffect構造体（Effect, EffectValue, Message）を定義
   - RegisterChainEffect: モジュール使用時にチェイン効果を待機状態として登録
@@ -203,7 +203,7 @@
   - GetPendingEffects: 待機中チェイン効果の取得
   - _Requirements: 3.5, 3.6, 3.7, 7.1, 7.2, 7.3, 7.5_
 
-- [ ] 5.2 チェイン効果の発動ロジックを実装する
+- [x] 5.2 チェイン効果の発動ロジックを実装する
   - ダメージボーナス効果: 攻撃ダメージに追加ダメージを適用
   - 回復ボーナス効果: 回復量に追加回復を適用
   - バフ延長効果: EffectTableのバフ効果時間を延長
@@ -211,7 +211,7 @@
   - BattleStateとの連携による効果適用
   - _Requirements: 3.4, 7.3_
 
-- [ ] 5.3 ChainEffectManagerのユニットテストを作成する
+- [x] 5.3 ChainEffectManagerのユニットテストを作成する
   - チェイン効果登録→発動→削除のライフサイクルテスト
   - 他エージェントモジュール使用による発動条件テスト
   - リキャスト終了時の効果破棄テスト
