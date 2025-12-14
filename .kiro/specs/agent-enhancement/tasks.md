@@ -72,7 +72,7 @@
   - ChainEffectDebuffDuration: デバフデュレーション（効果中のデバフスキル効果時間+X秒）
   - _Requirements: 3.4_
 
-- [ ] 1.5.7 (P) 特殊カテゴリのチェイン効果タイプを追加する
+- [x] 1.5.7 (P) 特殊カテゴリのチェイン効果タイプを追加する
   - ChainEffectDoubleCast: ダブルキャスト（効果中X%でスキル2回発動）
   - _Requirements: 3.4_
 

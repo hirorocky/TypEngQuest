@@ -91,6 +91,12 @@ const (
 	// ChainEffectDebuffDuration はデバフデュレーションを表します。
 	// 効果中のデバフスキル効果時間を延長します。
 	ChainEffectDebuffDuration ChainEffectType = "debuff_duration"
+
+	// === 特殊カテゴリ ===
+
+	// ChainEffectDoubleCast はダブルキャストを表します。
+	// 効果中に一定確率でスキルを2回発動します。
+	ChainEffectDoubleCast ChainEffectType = "double_cast"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -138,6 +144,9 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return fmt.Sprintf("効果中のバフスキル効果時間+%.0f秒", value)
 	case ChainEffectDebuffDuration:
 		return fmt.Sprintf("効果中のデバフスキル効果時間+%.0f秒", value)
+	// 特殊カテゴリ
+	case ChainEffectDoubleCast:
+		return fmt.Sprintf("効果中%.0f%%でスキル2回発動", value)
 	default:
 		return "チェイン効果"
 	}
