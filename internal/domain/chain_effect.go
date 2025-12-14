@@ -7,6 +7,32 @@ import "fmt"
 // モジュール使用後のリキャスト期間中に発動する追加効果の種類を定義します。
 type ChainEffectType string
 
+// ChainEffectCategory はチェイン効果のカテゴリを表す型です。
+type ChainEffectCategory string
+
+const (
+	// ChainEffectCategoryAttack は攻撃強化カテゴリを表します。
+	ChainEffectCategoryAttack ChainEffectCategory = "attack"
+
+	// ChainEffectCategoryDefense は防御強化カテゴリを表します。
+	ChainEffectCategoryDefense ChainEffectCategory = "defense"
+
+	// ChainEffectCategoryHeal は回復強化カテゴリを表します。
+	ChainEffectCategoryHeal ChainEffectCategory = "heal"
+
+	// ChainEffectCategoryTyping はタイピングカテゴリを表します。
+	ChainEffectCategoryTyping ChainEffectCategory = "typing"
+
+	// ChainEffectCategoryRecast はリキャストカテゴリを表します。
+	ChainEffectCategoryRecast ChainEffectCategory = "recast"
+
+	// ChainEffectCategoryEffectExtend は効果延長カテゴリを表します。
+	ChainEffectCategoryEffectExtend ChainEffectCategory = "effect_extend"
+
+	// ChainEffectCategorySpecial は特殊カテゴリを表します。
+	ChainEffectCategorySpecial ChainEffectCategory = "special"
+)
+
 const (
 	// ChainEffectDamageBonus は追加ダメージ効果を表します。
 	// 次の攻撃のダメージにボーナスを付与します。
@@ -181,4 +207,33 @@ func (c ChainEffect) Equals(other ChainEffect) bool {
 	return c.Type == other.Type &&
 		c.Value == other.Value &&
 		c.Description == other.Description
+}
+
+// Category はチェイン効果タイプのカテゴリを返します。
+func (t ChainEffectType) Category() ChainEffectCategory {
+	switch t {
+	// 攻撃強化カテゴリ
+	case ChainEffectDamageBonus, ChainEffectDamageAmp, ChainEffectArmorPierce, ChainEffectLifeSteal:
+		return ChainEffectCategoryAttack
+	// 防御強化カテゴリ
+	case ChainEffectDamageCut, ChainEffectEvasion, ChainEffectReflect, ChainEffectRegen:
+		return ChainEffectCategoryDefense
+	// 回復強化カテゴリ
+	case ChainEffectHealBonus, ChainEffectHealAmp, ChainEffectOverheal:
+		return ChainEffectCategoryHeal
+	// タイピングカテゴリ
+	case ChainEffectTimeExtend, ChainEffectAutoCorrect:
+		return ChainEffectCategoryTyping
+	// リキャストカテゴリ
+	case ChainEffectCooldownReduce:
+		return ChainEffectCategoryRecast
+	// 効果延長カテゴリ
+	case ChainEffectBuffExtend, ChainEffectDebuffExtend, ChainEffectBuffDuration, ChainEffectDebuffDuration:
+		return ChainEffectCategoryEffectExtend
+	// 特殊カテゴリ
+	case ChainEffectDoubleCast:
+		return ChainEffectCategorySpecial
+	default:
+		return ChainEffectCategorySpecial
+	}
 }

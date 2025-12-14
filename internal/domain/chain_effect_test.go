@@ -672,3 +672,209 @@ func TestNewChainEffect_特殊カテゴリ(t *testing.T) {
 		})
 	}
 }
+
+// TestChainEffectType_カテゴリ判定_攻撃強化 は攻撃強化カテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_攻撃強化(t *testing.T) {
+	attackTypes := []ChainEffectType{
+		ChainEffectDamageAmp,
+		ChainEffectArmorPierce,
+		ChainEffectLifeSteal,
+	}
+
+	for _, effectType := range attackTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryAttack {
+				t.Errorf("%s はattackカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_防御強化 は防御強化カテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_防御強化(t *testing.T) {
+	defenseTypes := []ChainEffectType{
+		ChainEffectDamageCut,
+		ChainEffectEvasion,
+		ChainEffectReflect,
+		ChainEffectRegen,
+	}
+
+	for _, effectType := range defenseTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryDefense {
+				t.Errorf("%s はdefenseカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_回復強化 は回復強化カテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_回復強化(t *testing.T) {
+	healTypes := []ChainEffectType{
+		ChainEffectHealAmp,
+		ChainEffectOverheal,
+	}
+
+	for _, effectType := range healTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryHeal {
+				t.Errorf("%s はhealカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_タイピング はタイピングカテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_タイピング(t *testing.T) {
+	typingTypes := []ChainEffectType{
+		ChainEffectTimeExtend,
+		ChainEffectAutoCorrect,
+	}
+
+	for _, effectType := range typingTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryTyping {
+				t.Errorf("%s はtypingカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_リキャスト はリキャストカテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_リキャスト(t *testing.T) {
+	recastTypes := []ChainEffectType{
+		ChainEffectCooldownReduce,
+	}
+
+	for _, effectType := range recastTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryRecast {
+				t.Errorf("%s はrecastカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_効果延長 は効果延長カテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_効果延長(t *testing.T) {
+	effectExtendTypes := []ChainEffectType{
+		ChainEffectBuffDuration,
+		ChainEffectDebuffDuration,
+	}
+
+	for _, effectType := range effectExtendTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategoryEffectExtend {
+				t.Errorf("%s はeffect_extendカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_特殊 は特殊カテゴリの判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_特殊(t *testing.T) {
+	specialTypes := []ChainEffectType{
+		ChainEffectDoubleCast,
+	}
+
+	for _, effectType := range specialTypes {
+		t.Run(string(effectType), func(t *testing.T) {
+			if effectType.Category() != ChainEffectCategorySpecial {
+				t.Errorf("%s はspecialカテゴリであるべきです", effectType)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_カテゴリ判定_レガシー はレガシー効果タイプのカテゴリ判定が正しいことを確認します。
+func TestChainEffectType_カテゴリ判定_レガシー(t *testing.T) {
+	// 元々あった4種類のチェイン効果はそれぞれ適切なカテゴリに分類される
+	tests := []struct {
+		effectType ChainEffectType
+		category   ChainEffectCategory
+	}{
+		{ChainEffectDamageBonus, ChainEffectCategoryAttack},
+		{ChainEffectHealBonus, ChainEffectCategoryHeal},
+		{ChainEffectBuffExtend, ChainEffectCategoryEffectExtend},
+		{ChainEffectDebuffExtend, ChainEffectCategoryEffectExtend},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			if tt.effectType.Category() != tt.category {
+				t.Errorf("%s は%sカテゴリであるべきです", tt.effectType, tt.category)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_全19種類のDescription確認 は全チェイン効果タイプのGenerateDescriptionが正しく動作することを確認します。
+func TestChainEffectType_全19種類のDescription確認(t *testing.T) {
+	tests := []struct {
+		effectType ChainEffectType
+		value      float64
+		expected   string
+	}{
+		// レガシー（タスク1.1で実装済み）
+		{ChainEffectDamageBonus, 25.0, "次の攻撃のダメージ+25%"},
+		{ChainEffectHealBonus, 20.0, "次の回復量+20%"},
+		{ChainEffectBuffExtend, 5.0, "バフ効果時間+5秒"},
+		{ChainEffectDebuffExtend, 3.0, "デバフ効果時間+3秒"},
+		// 攻撃強化カテゴリ
+		{ChainEffectDamageAmp, 25.0, "効果中の攻撃ダメージ+25%"},
+		{ChainEffectArmorPierce, 0.0, "効果中の攻撃が防御バフ無視"},
+		{ChainEffectLifeSteal, 10.0, "効果中の攻撃ダメージの10%回復"},
+		// 防御強化カテゴリ
+		{ChainEffectDamageCut, 25.0, "効果中の被ダメージ-25%"},
+		{ChainEffectEvasion, 10.0, "効果中10%で攻撃回避"},
+		{ChainEffectReflect, 50.0, "効果中被ダメージの50%反射"},
+		{ChainEffectRegen, 1.0, "効果中毎秒HP1%回復"},
+		// 回復強化カテゴリ
+		{ChainEffectHealAmp, 25.0, "効果中の回復量+25%"},
+		{ChainEffectOverheal, 0.0, "効果中の超過回復を一時HPに"},
+		// タイピングカテゴリ
+		{ChainEffectTimeExtend, 3.0, "効果中のタイピング制限時間+3秒"},
+		{ChainEffectAutoCorrect, 2.0, "効果中ミス2回まで無視"},
+		// リキャストカテゴリ
+		{ChainEffectCooldownReduce, 20.0, "効果中発生した他エージェントのリキャスト時間20%短縮"},
+		// 効果延長カテゴリ
+		{ChainEffectBuffDuration, 5.0, "効果中のバフスキル効果時間+5秒"},
+		{ChainEffectDebuffDuration, 5.0, "効果中のデバフスキル効果時間+5秒"},
+		// 特殊カテゴリ
+		{ChainEffectDoubleCast, 10.0, "効果中10%でスキル2回発動"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			result := tt.effectType.GenerateDescription(tt.value)
+			if result != tt.expected {
+				t.Errorf("説明が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestChainEffectCategory_定数確認 はChainEffectCategory定数が正しく定義されていることを確認します。
+func TestChainEffectCategory_定数確認(t *testing.T) {
+	tests := []struct {
+		name     string
+		category ChainEffectCategory
+		expected string
+	}{
+		{"攻撃強化", ChainEffectCategoryAttack, "attack"},
+		{"防御強化", ChainEffectCategoryDefense, "defense"},
+		{"回復強化", ChainEffectCategoryHeal, "heal"},
+		{"タイピング", ChainEffectCategoryTyping, "typing"},
+		{"リキャスト", ChainEffectCategoryRecast, "recast"},
+		{"効果延長", ChainEffectCategoryEffectExtend, "effect_extend"},
+		{"特殊", ChainEffectCategorySpecial, "special"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if string(tt.category) != tt.expected {
+				t.Errorf("ChainEffectCategoryが期待値と異なります: got %s, want %s", tt.category, tt.expected)
+			}
+		})
+	}
+}

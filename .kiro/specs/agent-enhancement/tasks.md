@@ -39,7 +39,7 @@
   - 既存のModuleModel参照箇所を更新
   - _Requirements: 3.1, 5.1, 5.2, 5.5_
 
-- [ ] 1.5. 全19種類のチェイン効果タイプを実装する
+- [x] 1.5. 全19種類のチェイン効果タイプを実装する
 - [x] 1.5.1 (P) 攻撃強化カテゴリのチェイン効果タイプを追加する
   - ChainEffectDamageAmp: ダメージアンプ（効果中の攻撃ダメージ+X%）
   - ChainEffectArmorPierce: アーマーピアス（効果中の攻撃が防御バフ無視）
@@ -76,7 +76,7 @@
   - ChainEffectDoubleCast: ダブルキャスト（効果中X%でスキル2回発動）
   - _Requirements: 3.4_
 
-- [ ] 1.5.8 ChainEffect値オブジェクトに全19種類のGenerateDescription対応を追加する
+- [x] 1.5.8 ChainEffect値オブジェクトに全19種類のGenerateDescription対応を追加する
   - 各チェイン効果タイプに対応する説明テンプレートを追加
   - カテゴリ（attack, defense, heal, typing, recast, effect_extend, special）の判定メソッドを追加
   - 全チェイン効果タイプのユニットテストを追加
