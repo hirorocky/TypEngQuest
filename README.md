@@ -82,6 +82,29 @@ go build -o BlitzTypingOperator ./cmd/BlitzTypingOperator
 | `Esc` | 戻る / キャンセル |
 | `Ctrl+C` | ゲーム終了 |
 
+## 開発
+
+### 開発環境のセットアップ
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/hirorocky/BlitzTypingOperator.git
+cd BlitzTypingOperator
+
+# 依存関係のインストール
+go mod download
+
+# ビルド
+go build -o BlitzTypingOperator ./cmd/BlitzTypingOperator
+
+# テストの実行
+go test ./...
+```
+
+### コントリビューション
+
+プルリクエストやイシューの報告は大歓迎です！
+
 ## ライセンス
 
 MIT License
