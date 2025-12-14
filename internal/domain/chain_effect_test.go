@@ -474,3 +474,68 @@ func TestNewChainEffect_タイピングカテゴリ(t *testing.T) {
 		})
 	}
 }
+
+// TestChainEffectType_リキャストカテゴリ定数の確認 はリキャストカテゴリのChainEffectType定数が正しく定義されていることを確認します。
+func TestChainEffectType_リキャストカテゴリ定数の確認(t *testing.T) {
+	tests := []struct {
+		name       string
+		effectType ChainEffectType
+		expected   string
+	}{
+		{"クールダウンリデュース", ChainEffectCooldownReduce, "cooldown_reduce"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if string(tt.effectType) != tt.expected {
+				t.Errorf("ChainEffectTypeが期待値と異なります: got %s, want %s", tt.effectType, tt.expected)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_リキャストカテゴリDescription はリキャストカテゴリのチェイン効果種別ごとの説明テンプレートが正しいことを確認します。
+func TestChainEffectType_リキャストカテゴリDescription(t *testing.T) {
+	tests := []struct {
+		effectType ChainEffectType
+		value      float64
+		expected   string
+	}{
+		{ChainEffectCooldownReduce, 20.0, "効果中発生した他エージェントのリキャスト時間20%短縮"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			result := tt.effectType.GenerateDescription(tt.value)
+			if result != tt.expected {
+				t.Errorf("説明が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestNewChainEffect_リキャストカテゴリ はリキャストカテゴリのNewChainEffect関数でチェイン効果が正しく作成されることを確認します。
+func TestNewChainEffect_リキャストカテゴリ(t *testing.T) {
+	tests := []struct {
+		effectType   ChainEffectType
+		value        float64
+		expectedDesc string
+	}{
+		{ChainEffectCooldownReduce, 20.0, "効果中発生した他エージェントのリキャスト時間20%短縮"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			effect := NewChainEffect(tt.effectType, tt.value)
+			if effect.Type != tt.effectType {
+				t.Errorf("Typeが期待値と異なります: got %s, want %s", effect.Type, tt.effectType)
+			}
+			if effect.Value != tt.value {
+				t.Errorf("Valueが期待値と異なります: got %f, want %f", effect.Value, tt.value)
+			}
+			if effect.Description != tt.expectedDesc {
+				t.Errorf("Descriptionが期待値と異なります: got %s, want %s", effect.Description, tt.expectedDesc)
+			}
+		})
+	}
+}

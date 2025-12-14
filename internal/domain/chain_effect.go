@@ -75,6 +75,12 @@ const (
 	// ChainEffectAutoCorrect はオートコレクトを表します。
 	// 効果中に一定回数のミスを無視します。
 	ChainEffectAutoCorrect ChainEffectType = "auto_correct"
+
+	// === リキャストカテゴリ ===
+
+	// ChainEffectCooldownReduce はクールダウンリデュースを表します。
+	// 効果中に発生した他エージェントのリキャスト時間を短縮します。
+	ChainEffectCooldownReduce ChainEffectType = "cooldown_reduce"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -114,6 +120,9 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return fmt.Sprintf("効果中のタイピング制限時間+%.0f秒", value)
 	case ChainEffectAutoCorrect:
 		return fmt.Sprintf("効果中ミス%.0f回まで無視", value)
+	// リキャストカテゴリ
+	case ChainEffectCooldownReduce:
+		return fmt.Sprintf("効果中発生した他エージェントのリキャスト時間%.0f%%短縮", value)
 	default:
 		return "チェイン効果"
 	}

@@ -63,7 +63,7 @@
   - ChainEffectAutoCorrect: オートコレクト（効果中ミスX回まで無視）
   - _Requirements: 3.4_
 
-- [ ] 1.5.5 (P) リキャストカテゴリのチェイン効果タイプを追加する
+- [x] 1.5.5 (P) リキャストカテゴリのチェイン効果タイプを追加する
   - ChainEffectCooldownReduce: クールダウンリデュース（効果中発生した他エージェントのリキャスト時間X%短縮）
   - _Requirements: 3.4_
 
