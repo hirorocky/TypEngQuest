@@ -900,3 +900,252 @@ func TestRegisterPassiveSkills_EmptyPassiveSkill(t *testing.T) {
 		t.Errorf("空のパッシブスキルが登録された: %d件", len(coreEffects))
 	}
 }
+
+// TestPassiveSkillDamageReduction はパッシブスキルによるダメージ軽減をテストします。
+func TestPassiveSkillDamageReduction(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    100, // 明確なダメージ値
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// ダメージ軽減パッシブスキルを持つエージェント
+	coreType := domain.CoreType{
+		ID:             "tank",
+		Name:           "タンク",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_damage_reduction",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_damage_reduction",
+		Name:        "ダメージリダクション",
+		Description: "被ダメージ20%軽減",
+		BaseModifiers: domain.StatModifiers{
+			DamageReduction: 0.2, // 20%軽減
+		},
+		ScalePerLevel: 0.0, // スケーリングなし
+	}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	core.TypeID = "tank"
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// 敵の攻撃を処理
+	initialHP := state.Player.HP
+	damage := engine.ProcessEnemyAttack(state)
+
+	// ダメージが軽減されていることを確認
+	// 敵の攻撃力は BaseAttackPower + (level * 2) = 100 + 10 = 110
+	// 110に対して20%軽減 = 88ダメージ
+	expectedDamage := int(float64(state.Enemy.AttackPower) * 0.8)
+	if damage != expectedDamage {
+		t.Errorf("パッシブスキルによるダメージ軽減が適用されていない: 期待 %d, 実際 %d (敵攻撃力 %d)", expectedDamage, damage, state.Enemy.AttackPower)
+	}
+
+	// HPが正しく減少していることを確認
+	if state.Player.HP != initialHP-damage {
+		t.Errorf("HP減少量が不正: 初期HP %d, 現在HP %d, ダメージ %d", initialHP, state.Player.HP, damage)
+	}
+}
+
+// TestPassiveSkillSTRMultiplier はパッシブスキルによるSTR乗算をテストします。
+func TestPassiveSkillSTRMultiplier(t *testing.T) {
+	engine := NewBattleEngine(nil)
+
+	// STR乗算パッシブスキルを持つエージェント
+	coreType := domain.CoreType{
+		ID:             "attacker",
+		Name:           "アタッカー",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_power_boost",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_power_boost",
+		Name:        "パワーブースト",
+		Description: "攻撃力+20%",
+		BaseModifiers: domain.StatModifiers{
+			STR_Mult: 1.2, // 20%増加
+		},
+		ScalePerLevel: 0.0,
+	}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	core.TypeID = "attacker"
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "物理打撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+
+	// タイピング結果
+	typingResult := &typing.TypingResult{
+		Completed:      true,
+		SpeedFactor:    1.0,
+		AccuracyFactor: 1.0,
+	}
+
+	// パッシブスキルなしの場合のダメージ
+	damageWithoutPassive := engine.CalculateModuleEffect(agent, modules[0], typingResult)
+
+	// パッシブスキルありの場合のダメージ
+	damageWithPassive := engine.CalculateModuleEffectWithPassive(agent, modules[0], typingResult)
+
+	// 20%増加していることを確認
+	expectedDamageWithPassive := int(float64(damageWithoutPassive) * 1.2)
+	tolerance := 1 // 整数丸めの許容誤差
+	if damageWithPassive < expectedDamageWithPassive-tolerance || damageWithPassive > expectedDamageWithPassive+tolerance {
+		t.Errorf("パッシブスキルによるSTR乗算が適用されていない: 期待 %d, 実際 %d (元 %d)",
+			expectedDamageWithPassive, damageWithPassive, damageWithoutPassive)
+	}
+}
+
+// TestPassiveSkillEffectContinuesDuringRecast はリキャスト中もパッシブスキル効果が継続することをテストします。
+func TestPassiveSkillEffectContinuesDuringRecast(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    100,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// ダメージ軽減パッシブスキルを持つエージェント
+	coreType := domain.CoreType{
+		ID:             "tank",
+		Name:           "タンク",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_damage_reduction",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_damage_reduction",
+		Name:        "ダメージリダクション",
+		Description: "被ダメージ30%軽減",
+		BaseModifiers: domain.StatModifiers{
+			DamageReduction: 0.3, // 30%軽減
+		},
+		ScalePerLevel: 0.0,
+	}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	core.TypeID = "tank"
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// 1回目の攻撃
+	damage1 := engine.ProcessEnemyAttack(state)
+
+	// エフェクトの時間を経過させる（リキャスト中をシミュレート）
+	engine.UpdateEffects(state, 5.0) // 5秒経過
+
+	// 2回目の攻撃（リキャスト中でもパッシブスキルは有効）
+	state.NextAttackTime = time.Now().Add(-1 * time.Second) // 攻撃可能に
+	damage2 := engine.ProcessEnemyAttack(state)
+
+	// 両方とも同じダメージ（パッシブスキルが継続適用されている）
+	// 敵の攻撃力は BaseAttackPower + (level * 2) = 100 + 10 = 110
+	expectedDamage := int(float64(state.Enemy.AttackPower) * 0.7)
+	if damage1 != expectedDamage {
+		t.Errorf("1回目の攻撃でパッシブスキルが適用されていない: 期待 %d, 実際 %d", expectedDamage, damage1)
+	}
+	if damage2 != expectedDamage {
+		t.Errorf("2回目の攻撃（リキャスト中）でパッシブスキルが適用されていない: 期待 %d, 実際 %d", expectedDamage, damage2)
+	}
+}
+
+// TestGetPlayerStatsWithPassive はパッシブスキル適用後のステータス取得をテストします。
+func TestGetPlayerStatsWithPassive(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// 複数のパッシブ効果を持つエージェント
+	coreType := domain.CoreType{
+		ID:             "all_stats",
+		Name:           "オールステータス",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_all_stats",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_all_stats",
+		Name:        "オールステータスアップ",
+		Description: "全ステータス+10",
+		BaseModifiers: domain.StatModifiers{
+			STR_Add:         10,
+			MAG_Add:         10,
+			SPD_Add:         10,
+			LUK_Add:         10,
+			DamageReduction: 0.1,
+		},
+		ScalePerLevel: 0.0,
+	}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	core.TypeID = "all_stats"
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// ステータスを取得
+	finalStats := engine.GetPlayerFinalStats(state)
+
+	// パッシブスキルによる補正が適用されていることを確認
+	if finalStats.STR != 10 { // 基礎0 + 10
+		t.Errorf("STRにパッシブスキル効果が適用されていない: 期待 10, 実際 %d", finalStats.STR)
+	}
+	if finalStats.DamageReduction != 0.1 {
+		t.Errorf("DamageReductionにパッシブスキル効果が適用されていない: 期待 0.1, 実際 %.2f", finalStats.DamageReduction)
+	}
+}

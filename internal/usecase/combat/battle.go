@@ -737,3 +737,67 @@ func (e *BattleEngine) RegisterPassiveSkills(
 		})
 	}
 }
+
+// GetPlayerFinalStats はパッシブスキルを含む全ての効果を適用したプレイヤーステータスを返します。
+func (e *BattleEngine) GetPlayerFinalStats(state *BattleState) domain.FinalStats {
+	return state.Player.EffectTable.Calculate(domain.Stats{})
+}
+
+// CalculateModuleEffectWithPassive はパッシブスキル効果を適用したモジュール効果を計算します。
+// パッシブスキルによるステータス補正を考慮してダメージ/回復量を計算します。
+func (e *BattleEngine) CalculateModuleEffectWithPassive(
+	agent *domain.AgentModel,
+	module *domain.ModuleModel,
+	typingResult *typing.TypingResult,
+) int {
+	// パッシブスキルによるステータス補正を計算
+	passiveModifiers := agent.Core.PassiveSkill.CalculateModifiers(agent.Core.Level)
+
+	// 基礎ステータスにパッシブスキル効果を適用
+	var statValue int
+	switch module.StatRef {
+	case "STR":
+		// 加算と乗算を適用
+		base := agent.BaseStats.STR + passiveModifiers.STR_Add
+		mult := 1.0
+		if passiveModifiers.STR_Mult != 0 {
+			mult = passiveModifiers.STR_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "MAG":
+		base := agent.BaseStats.MAG + passiveModifiers.MAG_Add
+		mult := 1.0
+		if passiveModifiers.MAG_Mult != 0 {
+			mult = passiveModifiers.MAG_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "SPD":
+		base := agent.BaseStats.SPD + passiveModifiers.SPD_Add
+		mult := 1.0
+		if passiveModifiers.SPD_Mult != 0 {
+			mult = passiveModifiers.SPD_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "LUK":
+		base := agent.BaseStats.LUK + passiveModifiers.LUK_Add
+		mult := 1.0
+		if passiveModifiers.LUK_Mult != 0 {
+			mult = passiveModifiers.LUK_Mult
+		}
+		statValue = int(float64(base) * mult)
+	default:
+		statValue = agent.BaseStats.STR
+	}
+
+	// 基礎効果 × ステータス値 × スケール係数
+	baseEffect := module.BaseEffect * float64(statValue) * EffectScaleFactor
+
+	// 速度係数と正確性係数を適用
+	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
+
+	if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
+		effect *= 0.5
+	}
+
+	return int(effect)
+}
