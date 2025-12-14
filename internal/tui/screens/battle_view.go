@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 
 	"github.com/charmbracelet/lipgloss"
@@ -166,6 +167,7 @@ func (s *BattleScreen) renderEnemyArea() string {
 
 // renderAgentArea はエージェントエリア（3体横並びカード）をレンダリングします。
 // UI-Improvement Requirement 3.2: エージェント横並びカード表示
+// タスク 9: リキャスト状態、チェイン効果、パッシブスキル表示を追加
 func (s *BattleScreen) renderAgentArea() string {
 	// 画面幅に基づいてカード幅を計算（余白を最小限に）
 	// 外枠: border(2) + padding(4) = 6
@@ -193,7 +195,33 @@ func (s *BattleScreen) renderAgentArea() string {
 					Background(styles.ColorSelectedBg)
 			}
 			cardContent.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)))
-			cardContent.WriteString("\n\n")
+			cardContent.WriteString("\n")
+
+			// パッシブスキル表示（コア特性から）
+			if agent.Core != nil && agent.Core.PassiveSkill.ID != "" {
+				passiveNotification := components.NewPassiveSkillNotification(&agent.Core.PassiveSkill, agent.Level)
+				cardContent.WriteString(passiveNotification.RenderCompact())
+				cardContent.WriteString("\n")
+			}
+
+			// リキャスト状態表示
+			recastState := s.recastManager.GetRecastState(i)
+			if recastState != nil {
+				recastBar := components.NewRecastProgressBar()
+				recastBar.SetProgress(recastState.RemainingSeconds, recastState.TotalSeconds)
+				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorWarning).Render("⏳ "))
+				cardContent.WriteString(recastBar.RenderCompact(10))
+				cardContent.WriteString("\n")
+			}
+
+			// 待機中チェイン効果表示
+			pendingChain := s.chainEffectManager.GetPendingEffectForAgent(i)
+			if pendingChain != nil {
+				chainBadge := components.NewSkillEffectBadge(&pendingChain.Effect)
+				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorBuff).Render("🔗 "))
+				cardContent.WriteString(chainBadge.RenderWithValue())
+				cardContent.WriteString("\n")
+			}
 
 			// エージェントのモジュール一覧
 			agentModules := s.getModulesForAgent(i)
@@ -210,7 +238,8 @@ func (s *BattleScreen) renderAgentArea() string {
 						Bold(true).
 						Foreground(styles.ColorSelectedFg).
 						Background(styles.ColorSelectedBg)
-				} else if !slot.IsReady() {
+				} else if !slot.IsReady() || recastState != nil {
+					// クールダウン中またはリキャスト中は淡い色
 					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 				} else {
 					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSecondary)
@@ -221,12 +250,23 @@ func (s *BattleScreen) renderAgentArea() string {
 					prefix = "> "
 				}
 
+				// チェイン効果バッジ
+				chainBadgeStr := ""
+				if slot.Module.HasChainEffect() {
+					chainBadge := components.NewSkillEffectBadge(slot.Module.ChainEffect)
+					chainBadgeStr = chainBadge.Render() + " "
+				}
+
 				if !slot.IsReady() {
 					cdBar := s.styles.RenderCooldownBarWithTime(slot.CooldownRemaining, slot.CooldownTotal, 8)
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s ", prefix, icon, slot.Module.Name)))
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s ", prefix, icon, chainBadgeStr, slot.Module.Name)))
 					cardContent.WriteString(cdBar)
+				} else if recastState != nil {
+					// リキャスト中のモジュールは使用不可表示
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name)))
+					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render(" [WAIT]"))
 				} else {
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s", prefix, icon, slot.Module.Name)))
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name)))
 					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Render(" [READY]"))
 				}
 				cardContent.WriteString("\n")
@@ -247,7 +287,7 @@ func (s *BattleScreen) renderAgentArea() string {
 			BorderForeground(borderColor).
 			Padding(0, 1).
 			Width(cardWidth).
-			Height(10)
+			Height(12) // 高さを増やしてパッシブスキル・リキャスト表示用のスペースを確保
 
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
