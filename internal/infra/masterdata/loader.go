@@ -434,6 +434,41 @@ func (s *SkillEffectData) ToDomainCategory() domain.ChainEffectCategory {
 	return convertChainEffectCategory(s.Category)
 }
 
+// ToSkillEffectDefinition はSkillEffectDataをSkillEffectDefinitionに変換します。
+// rewardingパッケージのChainEffectPoolで使用されます。
+func (s *SkillEffectData) ToSkillEffectDefinition() SkillEffectDefinitionData {
+	return SkillEffectDefinitionData{
+		ID:         s.ID,
+		Name:       s.Name,
+		Category:   s.Category,
+		EffectType: convertChainEffectType(s.EffectType),
+		MinValue:   s.MinValue,
+		MaxValue:   s.MaxValue,
+	}
+}
+
+// SkillEffectDefinitionData はチェイン効果定義のデータ構造体です。
+// rewardingパッケージのSkillEffectDefinitionと同等の構造を持ちます。
+type SkillEffectDefinitionData struct {
+	// ID はチェイン効果の一意識別子です。
+	ID string
+
+	// Name は表示名です。
+	Name string
+
+	// Category はカテゴリです（attack, defense, heal等）。
+	Category string
+
+	// EffectType はドメインモデルのChainEffectTypeです。
+	EffectType domain.ChainEffectType
+
+	// MinValue は効果値の最小値です。
+	MinValue float64
+
+	// MaxValue は効果値の最大値です。
+	MaxValue float64
+}
+
 // convertChainEffectType は文字列をChainEffectTypeに変換します。
 func convertChainEffectType(s string) domain.ChainEffectType {
 	switch s {

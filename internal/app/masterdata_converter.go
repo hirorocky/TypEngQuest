@@ -79,3 +79,19 @@ func ConvertExternalDataToDomain(ext *masterdata.ExternalData) (
 
 	return enemyTypes, coreTypes, moduleTypes
 }
+
+// ConvertSkillEffects はmasterdata.SkillEffectDataのスライスをrewarding.SkillEffectDefinitionのスライスに変換します。
+func ConvertSkillEffects(effects []masterdata.SkillEffectData) []rewarding.SkillEffectDefinition {
+	result := make([]rewarding.SkillEffectDefinition, len(effects))
+	for i, e := range effects {
+		result[i] = rewarding.SkillEffectDefinition{
+			ID:         e.ID,
+			Name:       e.Name,
+			Category:   e.Category,
+			EffectType: e.ToDomainEffectType(),
+			MinValue:   e.MinValue,
+			MaxValue:   e.MaxValue,
+		}
+	}
+	return result
+}
