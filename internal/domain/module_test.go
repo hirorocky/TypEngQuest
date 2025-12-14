@@ -309,3 +309,151 @@ func TestModuleCategory_Icon_Empty(t *testing.T) {
 		t.Errorf("空のカテゴリに対するIcon()が期待値と異なります: got %s, want •", result)
 	}
 }
+
+// ==================== ModuleModel TypeID/ChainEffect リファクタリングテスト ====================
+
+// TestModuleModel_TypeIDフィールドの確認 はModuleModelにTypeIDフィールドが存在することを確認します。
+func TestModuleModel_TypeIDフィールドの確認(t *testing.T) {
+	module := NewModuleWithTypeID(
+		"physical_attack_lv1",
+		"物理打撃",
+		PhysicalAttack,
+		1,
+		[]string{"physical_low"},
+		10.0,
+		"STR",
+		"物理攻撃で敵にダメージを与える",
+		nil,
+	)
+
+	if module.TypeID != "physical_attack_lv1" {
+		t.Errorf("TypeIDが期待値と異なります: got %s, want physical_attack_lv1", module.TypeID)
+	}
+	if module.ChainEffect != nil {
+		t.Errorf("ChainEffectはnilであるべきです: got %v", module.ChainEffect)
+	}
+}
+
+// TestModuleModel_ChainEffect付きの作成 はChainEffect付きのモジュール作成をテストします。
+func TestModuleModel_ChainEffect付きの作成(t *testing.T) {
+	chainEffect := NewChainEffect(ChainEffectDamageBonus, 25.0)
+	module := NewModuleWithTypeID(
+		"physical_attack_lv1",
+		"物理打撃",
+		PhysicalAttack,
+		1,
+		[]string{"physical_low"},
+		10.0,
+		"STR",
+		"物理攻撃で敵にダメージを与える",
+		&chainEffect,
+	)
+
+	if module.ChainEffect == nil {
+		t.Fatal("ChainEffectがnilです")
+	}
+	if module.ChainEffect.Type != ChainEffectDamageBonus {
+		t.Errorf("ChainEffect.Typeが期待値と異なります: got %s, want %s", module.ChainEffect.Type, ChainEffectDamageBonus)
+	}
+	if module.ChainEffect.Value != 25.0 {
+		t.Errorf("ChainEffect.Valueが期待値と異なります: got %f, want 25.0", module.ChainEffect.Value)
+	}
+}
+
+// TestModuleModel_同一TypeID異なるChainEffect は同一TypeIDで異なるChainEffectを持つモジュールを許容することを確認します。
+func TestModuleModel_同一TypeID異なるChainEffect(t *testing.T) {
+	chainEffect1 := NewChainEffect(ChainEffectDamageBonus, 25.0)
+	chainEffect2 := NewChainEffect(ChainEffectHealBonus, 20.0)
+
+	module1 := NewModuleWithTypeID(
+		"physical_attack_lv1",
+		"物理打撃",
+		PhysicalAttack,
+		1,
+		[]string{"physical_low"},
+		10.0,
+		"STR",
+		"物理攻撃で敵にダメージを与える",
+		&chainEffect1,
+	)
+
+	module2 := NewModuleWithTypeID(
+		"physical_attack_lv1", // 同じTypeID
+		"物理打撃",
+		PhysicalAttack,
+		1,
+		[]string{"physical_low"},
+		10.0,
+		"STR",
+		"物理攻撃で敵にダメージを与える",
+		&chainEffect2, // 異なるChainEffect
+	)
+
+	// 同じTypeIDであっても異なるChainEffectを持つことを許容
+	if module1.TypeID != module2.TypeID {
+		t.Error("同じTypeIDであるべきです")
+	}
+	if module1.ChainEffect.Type == module2.ChainEffect.Type {
+		t.Error("異なるChainEffectを持っているはずです")
+	}
+}
+
+// TestModuleModel_ChainEffectなし はChainEffectがnilのモジュールが正しく動作することを確認します。
+func TestModuleModel_ChainEffectなし(t *testing.T) {
+	module := NewModuleWithTypeID(
+		"heal_lv1",
+		"ヒール",
+		Heal,
+		1,
+		[]string{"heal_low"},
+		15.0,
+		"MAG",
+		"HPを回復する",
+		nil,
+	)
+
+	if module.ChainEffect != nil {
+		t.Errorf("ChainEffectはnilであるべきです: got %v", module.ChainEffect)
+	}
+
+	// HasChainEffectメソッドのテスト
+	if module.HasChainEffect() {
+		t.Error("ChainEffectがない場合、HasChainEffect()はfalseを返すべきです")
+	}
+}
+
+// TestModuleModel_HasChainEffect はHasChainEffectメソッドをテストします。
+func TestModuleModel_HasChainEffect(t *testing.T) {
+	chainEffect := NewChainEffect(ChainEffectBuffExtend, 5.0)
+	moduleWithEffect := NewModuleWithTypeID(
+		"buff_lv1",
+		"バフ",
+		Buff,
+		1,
+		[]string{"buff_low"},
+		10.0,
+		"SPD",
+		"バフを付与する",
+		&chainEffect,
+	)
+
+	if !moduleWithEffect.HasChainEffect() {
+		t.Error("ChainEffectがある場合、HasChainEffect()はtrueを返すべきです")
+	}
+
+	moduleWithoutEffect := NewModuleWithTypeID(
+		"buff_lv1",
+		"バフ",
+		Buff,
+		1,
+		[]string{"buff_low"},
+		10.0,
+		"SPD",
+		"バフを付与する",
+		nil,
+	)
+
+	if moduleWithoutEffect.HasChainEffect() {
+		t.Error("ChainEffectがない場合、HasChainEffect()はfalseを返すべきです")
+	}
+}

@@ -32,7 +32,7 @@
   - 既存のCoreModel参照箇所を更新
   - _Requirements: 4.1, 4.2, 4.3, 4.5_
 
-- [ ] 1.4 ModuleModelをチェイン効果対応にリファクタリングする
+- [x] 1.4 ModuleModelをチェイン効果対応にリファクタリングする
   - インスタンスIDフィールドを削除し、TypeIDフィールドを追加
   - ChainEffectフィールド（nilを許容）を追加
   - 同一TypeIDでも異なるChainEffectを持つことを許容する設計に変更

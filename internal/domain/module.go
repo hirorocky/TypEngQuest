@@ -76,9 +76,15 @@ func GetLevelSuffix(level int) string {
 
 // ModuleModel はゲーム内のモジュール（スキル）エンティティを表す構造体です。
 // モジュールはエージェント合成時にコアに装備され、バトル中に使用可能なスキルになります。
+// 同一TypeIDでも異なるChainEffectを持つことを許容します。
 type ModuleModel struct {
 	// ID はモジュールインスタンスの一意識別子です。
+	// 後方互換性のために残されています。新規コードではTypeIDを使用してください。
 	ID string
+
+	// TypeID はモジュール種別ID（マスタデータ参照用）です。
+	// セーブデータにはTypeIDとChainEffectが保存されます。
+	TypeID string
 
 	// Name はモジュールの表示名です（日本語）。
 	Name string
@@ -101,6 +107,10 @@ type ModuleModel struct {
 
 	// Description はモジュールの効果説明です。
 	Description string
+
+	// ChainEffect はこのモジュールインスタンスのチェイン効果です。
+	// nilの場合はチェイン効果を持たないモジュールです。
+	ChainEffect *ChainEffect
 }
 
 // NewModule は新しいModuleModelを作成します。
@@ -141,4 +151,39 @@ func (m *ModuleModel) IsCompatibleWithCore(core *CoreModel) bool {
 		}
 	}
 	return false
+}
+
+// HasChainEffect はこのモジュールがチェイン効果を持っているかを返します。
+func (m *ModuleModel) HasChainEffect() bool {
+	return m.ChainEffect != nil
+}
+
+// NewModuleWithTypeID はTypeIDベースで新しいModuleModelを作成します。
+// Tagsはコピーされ、元のスライスとの参照共有を避けます。
+// chainEffectはnilを許容します。
+func NewModuleWithTypeID(
+	typeID, name string,
+	category ModuleCategory,
+	level int,
+	tags []string,
+	baseEffect float64,
+	statRef, description string,
+	chainEffect *ChainEffect,
+) *ModuleModel {
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(tags))
+	copy(tagsCopy, tags)
+
+	return &ModuleModel{
+		ID:          typeID, // 後方互換性のため
+		TypeID:      typeID,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tagsCopy,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+		ChainEffect: chainEffect,
+	}
 }
