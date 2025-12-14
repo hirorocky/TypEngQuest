@@ -391,6 +391,117 @@ func convertTriggerConditionType(s string) domain.TriggerConditionType {
 	}
 }
 
+// ==================== チェイン効果定義 ====================
+
+// SkillEffectData はskill_effects.jsonから読み込むチェイン効果データの構造体です。
+type SkillEffectData struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Category    string  `json:"category"`
+	EffectType  string  `json:"effect_type"`
+	MinValue    float64 `json:"min_value"`
+	MaxValue    float64 `json:"max_value"`
+}
+
+// skillEffectsFileData はskill_effects.jsonのルート構造です。
+type skillEffectsFileData struct {
+	SkillEffects []SkillEffectData `json:"skill_effects"`
+}
+
+// LoadSkillEffects はskill_effects.jsonからチェイン効果定義を読み込みます。
+func (l *DataLoader) LoadSkillEffects() ([]SkillEffectData, error) {
+	data, err := l.readFile("skill_effects.json")
+	if err != nil {
+		return nil, fmt.Errorf("skill_effects.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData skillEffectsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("skill_effects.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.SkillEffects, nil
+}
+
+// ToDomainEffectType はSkillEffectDataからドメインモデルのChainEffectTypeに変換します。
+func (s *SkillEffectData) ToDomainEffectType() domain.ChainEffectType {
+	return convertChainEffectType(s.EffectType)
+}
+
+// ToDomainCategory はSkillEffectDataからドメインモデルのChainEffectCategoryに変換します。
+func (s *SkillEffectData) ToDomainCategory() domain.ChainEffectCategory {
+	return convertChainEffectCategory(s.Category)
+}
+
+// convertChainEffectType は文字列をChainEffectTypeに変換します。
+func convertChainEffectType(s string) domain.ChainEffectType {
+	switch s {
+	case "damage_bonus":
+		return domain.ChainEffectDamageBonus
+	case "heal_bonus":
+		return domain.ChainEffectHealBonus
+	case "buff_extend":
+		return domain.ChainEffectBuffExtend
+	case "debuff_extend":
+		return domain.ChainEffectDebuffExtend
+	case "damage_amp":
+		return domain.ChainEffectDamageAmp
+	case "armor_pierce":
+		return domain.ChainEffectArmorPierce
+	case "life_steal":
+		return domain.ChainEffectLifeSteal
+	case "damage_cut":
+		return domain.ChainEffectDamageCut
+	case "evasion":
+		return domain.ChainEffectEvasion
+	case "reflect":
+		return domain.ChainEffectReflect
+	case "regen":
+		return domain.ChainEffectRegen
+	case "heal_amp":
+		return domain.ChainEffectHealAmp
+	case "overheal":
+		return domain.ChainEffectOverheal
+	case "time_extend":
+		return domain.ChainEffectTimeExtend
+	case "auto_correct":
+		return domain.ChainEffectAutoCorrect
+	case "cooldown_reduce":
+		return domain.ChainEffectCooldownReduce
+	case "buff_duration":
+		return domain.ChainEffectBuffDuration
+	case "debuff_duration":
+		return domain.ChainEffectDebuffDuration
+	case "double_cast":
+		return domain.ChainEffectDoubleCast
+	default:
+		return domain.ChainEffectDamageBonus
+	}
+}
+
+// convertChainEffectCategory は文字列をChainEffectCategoryに変換します。
+func convertChainEffectCategory(s string) domain.ChainEffectCategory {
+	switch s {
+	case "attack":
+		return domain.ChainEffectCategoryAttack
+	case "defense":
+		return domain.ChainEffectCategoryDefense
+	case "heal":
+		return domain.ChainEffectCategoryHeal
+	case "typing":
+		return domain.ChainEffectCategoryTyping
+	case "recast":
+		return domain.ChainEffectCategoryRecast
+	case "effect_extend":
+		return domain.ChainEffectCategoryEffectExtend
+	case "special":
+		return domain.ChainEffectCategorySpecial
+	default:
+		return domain.ChainEffectCategorySpecial
+	}
+}
+
 // ==================== タイピング辞書 ====================
 
 // TypingDictionary はwords.jsonから読み込むタイピング辞書データの構造体です。

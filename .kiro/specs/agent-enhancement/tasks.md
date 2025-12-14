@@ -142,7 +142,7 @@
   - マスタデータローダーにパッシブスキル読み込み処理を追加
   - _Requirements: 2.1, 2.4_
 
-- [ ] 2.9 (P) skill_effects.jsonマスタデータを作成する
+- [x] 2.9 (P) skill_effects.jsonマスタデータを作成する
   - 19種類のチェイン効果定義（ダメージアンプ、ダメージカット等）を記述
   - カテゴリ（attack, defense, heal, typing, recast, effect_extend, special）を定義
   - 効果値の最小・最大範囲を定義

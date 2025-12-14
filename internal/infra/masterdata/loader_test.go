@@ -593,3 +593,164 @@ func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
 		t.Errorf("EffectType: got %s, want %s", domainPassiveSkill.EffectType, domain.PassiveEffectMultiplier)
 	}
 }
+
+// TestLoadSkillEffects はチェイン効果定義のロードをテストします。
+func TestLoadSkillEffects(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	skillEffectsJSON := `{
+		"skill_effects": [
+			{
+				"id": "damage_bonus",
+				"name": "ダメージボーナス",
+				"description": "次の攻撃のダメージにボーナスを付与",
+				"category": "attack",
+				"effect_type": "damage_bonus",
+				"min_value": 10,
+				"max_value": 50
+			},
+			{
+				"id": "heal_bonus",
+				"name": "ヒールボーナス",
+				"description": "次の回復量にボーナスを付与",
+				"category": "heal",
+				"effect_type": "heal_bonus",
+				"min_value": 15,
+				"max_value": 40
+			},
+			{
+				"id": "damage_cut",
+				"name": "ダメージカット",
+				"description": "効果中の被ダメージを軽減",
+				"category": "defense",
+				"effect_type": "damage_cut",
+				"min_value": 10,
+				"max_value": 30
+			},
+			{
+				"id": "time_extend",
+				"name": "タイムエクステンド",
+				"description": "効果中のタイピング制限時間を延長",
+				"category": "typing",
+				"effect_type": "time_extend",
+				"min_value": 1,
+				"max_value": 3
+			},
+			{
+				"id": "cooldown_reduce",
+				"name": "クールダウンリデュース",
+				"description": "他エージェントのリキャスト時間を短縮",
+				"category": "recast",
+				"effect_type": "cooldown_reduce",
+				"min_value": 10,
+				"max_value": 30
+			},
+			{
+				"id": "buff_duration",
+				"name": "バフデュレーション",
+				"description": "バフスキルの効果時間を延長",
+				"category": "effect_extend",
+				"effect_type": "buff_duration",
+				"min_value": 1,
+				"max_value": 5
+			},
+			{
+				"id": "double_cast",
+				"name": "ダブルキャスト",
+				"description": "一定確率でスキルを2回発動",
+				"category": "special",
+				"effect_type": "double_cast",
+				"min_value": 10,
+				"max_value": 25
+			}
+		]
+	}`
+
+	skillEffectsPath := filepath.Join(tmpDir, "skill_effects.json")
+	if err := os.WriteFile(skillEffectsPath, []byte(skillEffectsJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	skillEffects, err := loader.LoadSkillEffects()
+	if err != nil {
+		t.Fatalf("チェイン効果のロードに失敗: %v", err)
+	}
+
+	if len(skillEffects) != 7 {
+		t.Errorf("チェイン効果数: got %d, want 7", len(skillEffects))
+	}
+
+	// ダメージボーナス（攻撃カテゴリ）の検証
+	if skillEffects[0].ID != "damage_bonus" {
+		t.Errorf("ID: got %s, want damage_bonus", skillEffects[0].ID)
+	}
+	if skillEffects[0].Category != "attack" {
+		t.Errorf("Category: got %s, want attack", skillEffects[0].Category)
+	}
+	if skillEffects[0].EffectType != "damage_bonus" {
+		t.Errorf("EffectType: got %s, want damage_bonus", skillEffects[0].EffectType)
+	}
+	if skillEffects[0].MinValue != 10 {
+		t.Errorf("MinValue: got %f, want 10", skillEffects[0].MinValue)
+	}
+	if skillEffects[0].MaxValue != 50 {
+		t.Errorf("MaxValue: got %f, want 50", skillEffects[0].MaxValue)
+	}
+
+	// 各カテゴリの検証
+	categories := map[string]bool{
+		"attack":        false,
+		"heal":          false,
+		"defense":       false,
+		"typing":        false,
+		"recast":        false,
+		"effect_extend": false,
+		"special":       false,
+	}
+	for _, effect := range skillEffects {
+		categories[effect.Category] = true
+	}
+	for cat, found := range categories {
+		if !found {
+			t.Errorf("カテゴリ %s が見つからない", cat)
+		}
+	}
+}
+
+// TestConvertToDomainChainEffectType はチェイン効果データからドメインモデルへの変換をテストします。
+func TestConvertToDomainChainEffectType(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	skillEffectsJSON := `{
+		"skill_effects": [
+			{
+				"id": "damage_amp",
+				"name": "ダメージアンプ",
+				"description": "効果中の攻撃ダメージを増加",
+				"category": "attack",
+				"effect_type": "damage_amp",
+				"min_value": 10,
+				"max_value": 30
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "skill_effects.json"), []byte(skillEffectsJSON), 0644)
+
+	loader := NewDataLoader(tmpDir)
+	skillEffects, err := loader.LoadSkillEffects()
+	if err != nil {
+		t.Fatalf("チェイン効果のロードに失敗: %v", err)
+	}
+
+	// ドメインモデルに変換
+	domainEffectType := skillEffects[0].ToDomainEffectType()
+	domainCategory := skillEffects[0].ToDomainCategory()
+
+	if domainEffectType != domain.ChainEffectDamageAmp {
+		t.Errorf("EffectType: got %s, want %s", domainEffectType, domain.ChainEffectDamageAmp)
+	}
+	if domainCategory != domain.ChainEffectCategoryAttack {
+		t.Errorf("Category: got %s, want %s", domainCategory, domain.ChainEffectCategoryAttack)
+	}
+}
