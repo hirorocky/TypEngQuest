@@ -81,6 +81,16 @@ const (
 	// ChainEffectCooldownReduce はクールダウンリデュースを表します。
 	// 効果中に発生した他エージェントのリキャスト時間を短縮します。
 	ChainEffectCooldownReduce ChainEffectType = "cooldown_reduce"
+
+	// === 効果延長カテゴリ ===
+
+	// ChainEffectBuffDuration はバフデュレーションを表します。
+	// 効果中のバフスキル効果時間を延長します。
+	ChainEffectBuffDuration ChainEffectType = "buff_duration"
+
+	// ChainEffectDebuffDuration はデバフデュレーションを表します。
+	// 効果中のデバフスキル効果時間を延長します。
+	ChainEffectDebuffDuration ChainEffectType = "debuff_duration"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -123,6 +133,11 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 	// リキャストカテゴリ
 	case ChainEffectCooldownReduce:
 		return fmt.Sprintf("効果中発生した他エージェントのリキャスト時間%.0f%%短縮", value)
+	// 効果延長カテゴリ
+	case ChainEffectBuffDuration:
+		return fmt.Sprintf("効果中のバフスキル効果時間+%.0f秒", value)
+	case ChainEffectDebuffDuration:
+		return fmt.Sprintf("効果中のデバフスキル効果時間+%.0f秒", value)
 	default:
 		return "チェイン効果"
 	}

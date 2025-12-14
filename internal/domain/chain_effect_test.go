@@ -539,3 +539,71 @@ func TestNewChainEffect_リキャストカテゴリ(t *testing.T) {
 		})
 	}
 }
+
+// TestChainEffectType_効果延長カテゴリ定数の確認 は効果延長カテゴリのChainEffectType定数が正しく定義されていることを確認します。
+func TestChainEffectType_効果延長カテゴリ定数の確認(t *testing.T) {
+	tests := []struct {
+		name       string
+		effectType ChainEffectType
+		expected   string
+	}{
+		{"バフデュレーション", ChainEffectBuffDuration, "buff_duration"},
+		{"デバフデュレーション", ChainEffectDebuffDuration, "debuff_duration"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if string(tt.effectType) != tt.expected {
+				t.Errorf("ChainEffectTypeが期待値と異なります: got %s, want %s", tt.effectType, tt.expected)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_効果延長カテゴリDescription は効果延長カテゴリのチェイン効果種別ごとの説明テンプレートが正しいことを確認します。
+func TestChainEffectType_効果延長カテゴリDescription(t *testing.T) {
+	tests := []struct {
+		effectType ChainEffectType
+		value      float64
+		expected   string
+	}{
+		{ChainEffectBuffDuration, 5.0, "効果中のバフスキル効果時間+5秒"},
+		{ChainEffectDebuffDuration, 5.0, "効果中のデバフスキル効果時間+5秒"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			result := tt.effectType.GenerateDescription(tt.value)
+			if result != tt.expected {
+				t.Errorf("説明が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestNewChainEffect_効果延長カテゴリ は効果延長カテゴリのNewChainEffect関数でチェイン効果が正しく作成されることを確認します。
+func TestNewChainEffect_効果延長カテゴリ(t *testing.T) {
+	tests := []struct {
+		effectType   ChainEffectType
+		value        float64
+		expectedDesc string
+	}{
+		{ChainEffectBuffDuration, 5.0, "効果中のバフスキル効果時間+5秒"},
+		{ChainEffectDebuffDuration, 5.0, "効果中のデバフスキル効果時間+5秒"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			effect := NewChainEffect(tt.effectType, tt.value)
+			if effect.Type != tt.effectType {
+				t.Errorf("Typeが期待値と異なります: got %s, want %s", effect.Type, tt.effectType)
+			}
+			if effect.Value != tt.value {
+				t.Errorf("Valueが期待値と異なります: got %f, want %f", effect.Value, tt.value)
+			}
+			if effect.Description != tt.expectedDesc {
+				t.Errorf("Descriptionが期待値と異なります: got %s, want %s", effect.Description, tt.expectedDesc)
+			}
+		})
+	}
+}

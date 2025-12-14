@@ -67,7 +67,7 @@
   - ChainEffectCooldownReduce: クールダウンリデュース（効果中発生した他エージェントのリキャスト時間X%短縮）
   - _Requirements: 3.4_
 
-- [ ] 1.5.6 (P) 効果延長カテゴリのチェイン効果タイプを追加する
+- [x] 1.5.6 (P) 効果延長カテゴリのチェイン効果タイプを追加する
   - ChainEffectBuffDuration: バフデュレーション（効果中のバフスキル効果時間+X秒）
   - ChainEffectDebuffDuration: デバフデュレーション（効果中のデバフスキル効果時間+X秒）
   - _Requirements: 3.4_
