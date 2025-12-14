@@ -23,6 +23,20 @@ const (
 	// ChainEffectDebuffExtend はデバフ延長効果を表します。
 	// デバフスキルの効果時間を延長します。
 	ChainEffectDebuffExtend ChainEffectType = "debuff_extend"
+
+	// === 攻撃強化カテゴリ ===
+
+	// ChainEffectDamageAmp はダメージアンプを表します。
+	// 効果中の攻撃ダメージを増加させます。
+	ChainEffectDamageAmp ChainEffectType = "damage_amp"
+
+	// ChainEffectArmorPierce はアーマーピアスを表します。
+	// 効果中の攻撃が防御バフを無視します。
+	ChainEffectArmorPierce ChainEffectType = "armor_pierce"
+
+	// ChainEffectLifeSteal はライフスティールを表します。
+	// 効果中の攻撃ダメージの一部をHPとして回復します。
+	ChainEffectLifeSteal ChainEffectType = "life_steal"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -36,6 +50,13 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return fmt.Sprintf("バフ効果時間+%.0f秒", value)
 	case ChainEffectDebuffExtend:
 		return fmt.Sprintf("デバフ効果時間+%.0f秒", value)
+	// 攻撃強化カテゴリ
+	case ChainEffectDamageAmp:
+		return fmt.Sprintf("効果中の攻撃ダメージ+%.0f%%", value)
+	case ChainEffectArmorPierce:
+		return "効果中の攻撃が防御バフ無視"
+	case ChainEffectLifeSteal:
+		return fmt.Sprintf("効果中の攻撃ダメージの%.0f%%回復", value)
 	default:
 		return "チェイン効果"
 	}

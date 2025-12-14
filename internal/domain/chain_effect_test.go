@@ -193,3 +193,74 @@ func TestChainEffect_Equalsのゼロ値(t *testing.T) {
 		t.Error("ゼロ値同士は等価であるべきです")
 	}
 }
+
+// TestChainEffectType_攻撃強化カテゴリ定数の確認 は攻撃強化カテゴリのChainEffectType定数が正しく定義されていることを確認します。
+func TestChainEffectType_攻撃強化カテゴリ定数の確認(t *testing.T) {
+	tests := []struct {
+		name       string
+		effectType ChainEffectType
+		expected   string
+	}{
+		{"ダメージアンプ", ChainEffectDamageAmp, "damage_amp"},
+		{"アーマーピアス", ChainEffectArmorPierce, "armor_pierce"},
+		{"ライフスティール", ChainEffectLifeSteal, "life_steal"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if string(tt.effectType) != tt.expected {
+				t.Errorf("ChainEffectTypeが期待値と異なります: got %s, want %s", tt.effectType, tt.expected)
+			}
+		})
+	}
+}
+
+// TestChainEffectType_攻撃強化カテゴリDescription は攻撃強化カテゴリのチェイン効果種別ごとの説明テンプレートが正しいことを確認します。
+func TestChainEffectType_攻撃強化カテゴリDescription(t *testing.T) {
+	tests := []struct {
+		effectType ChainEffectType
+		value      float64
+		expected   string
+	}{
+		{ChainEffectDamageAmp, 25.0, "効果中の攻撃ダメージ+25%"},
+		{ChainEffectArmorPierce, 0.0, "効果中の攻撃が防御バフ無視"},
+		{ChainEffectLifeSteal, 10.0, "効果中の攻撃ダメージの10%回復"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			result := tt.effectType.GenerateDescription(tt.value)
+			if result != tt.expected {
+				t.Errorf("説明が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestNewChainEffect_攻撃強化カテゴリ は攻撃強化カテゴリのNewChainEffect関数でチェイン効果が正しく作成されることを確認します。
+func TestNewChainEffect_攻撃強化カテゴリ(t *testing.T) {
+	tests := []struct {
+		effectType   ChainEffectType
+		value        float64
+		expectedDesc string
+	}{
+		{ChainEffectDamageAmp, 25.0, "効果中の攻撃ダメージ+25%"},
+		{ChainEffectArmorPierce, 0.0, "効果中の攻撃が防御バフ無視"},
+		{ChainEffectLifeSteal, 10.0, "効果中の攻撃ダメージの10%回復"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.effectType), func(t *testing.T) {
+			effect := NewChainEffect(tt.effectType, tt.value)
+			if effect.Type != tt.effectType {
+				t.Errorf("Typeが期待値と異なります: got %s, want %s", effect.Type, tt.effectType)
+			}
+			if effect.Value != tt.value {
+				t.Errorf("Valueが期待値と異なります: got %f, want %f", effect.Value, tt.value)
+			}
+			if effect.Description != tt.expectedDesc {
+				t.Errorf("Descriptionが期待値と異なります: got %s, want %s", effect.Description, tt.expectedDesc)
+			}
+		})
+	}
+}
