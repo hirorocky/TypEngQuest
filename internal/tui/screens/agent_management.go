@@ -731,6 +731,7 @@ func (s *AgentManagementScreen) renderCoreListItems() string {
 }
 
 // renderCorePreview はコアのプレビューをレンダリングします。
+// タスク 10.1: パッシブスキル情報を表示
 func (s *AgentManagementScreen) renderCorePreview() string {
 	core := s.getSelectedCoreDetail()
 	if core == nil {
@@ -744,6 +745,20 @@ func (s *AgentManagementScreen) renderCorePreview() string {
 	panel.AddItem("MAG", fmt.Sprintf("%d", core.Stats.MAG))
 	panel.AddItem("SPD", fmt.Sprintf("%d", core.Stats.SPD))
 	panel.AddItem("LUK", fmt.Sprintf("%d", core.Stats.LUK))
+
+	// パッシブスキル情報を追加
+	if core.PassiveSkill.ID != "" {
+		passiveNotification := components.NewPassiveSkillNotification(&core.PassiveSkill, core.Level)
+		panel.AddItem("パッシブ", core.PassiveSkill.Name)
+		if core.PassiveSkill.Description != "" {
+			panel.AddItem("効果", core.PassiveSkill.Description)
+		}
+		// 効果リスト
+		effects := passiveNotification.RenderEffectsList()
+		for _, effect := range effects {
+			panel.AddItem("", effect)
+		}
+	}
 
 	return panel.Render(45)
 }
@@ -801,6 +816,7 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 }
 
 // renderModulePreview はモジュールのプレビューをレンダリングします。
+// タスク 10.2: チェイン効果情報を表示
 func (s *AgentManagementScreen) renderModulePreview() string {
 	module := s.getSelectedModuleDetail()
 	if module == nil {
@@ -813,6 +829,12 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect))
 	panel.AddItem("参照ステータス", module.StatRef)
 	panel.AddItem("説明", module.Description)
+
+	// チェイン効果情報を追加
+	if module.HasChainEffect() {
+		chainBadge := components.NewSkillEffectBadge(module.ChainEffect)
+		panel.AddItem("チェイン効果", chainBadge.GetCategoryIcon()+" "+chainBadge.GetDescription())
+	}
 
 	return panel.Render(45)
 }
@@ -997,6 +1019,7 @@ func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) s
 }
 
 // renderSynthesisPreview は合成後の予測ステータスをレンダリングします。
+// タスク 10.3: パッシブスキルとチェイン効果を表示
 func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	if s.synthesisState.selectedCore == nil {
 		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("コアを選択すると\n予測ステータスが表示されます")
@@ -1006,6 +1029,7 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	core := s.synthesisState.selectedCore
 	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
+	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 
 	// 名前
 	builder.WriteString(labelStyle.Render("名前: "))
@@ -1022,16 +1046,38 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d\n", stats.STR, stats.MAG))
 	builder.WriteString(fmt.Sprintf("SPD: %-3d  LUK: %-3d\n", stats.SPD, stats.LUK))
 
+	// パッシブスキル情報
+	if core.PassiveSkill.ID != "" {
+		builder.WriteString("\n")
+		passiveNotification := components.NewPassiveSkillNotification(&core.PassiveSkill, core.Level)
+		builder.WriteString(labelStyle.Render("パッシブ: "))
+		builder.WriteString(passiveStyle.Render(core.PassiveSkill.Name))
+		builder.WriteString("\n")
+		// 効果リスト（最初の2つまで）
+		effects := passiveNotification.RenderEffectsList()
+		for i, effect := range effects {
+			if i >= 2 {
+				break
+			}
+			builder.WriteString("  " + effect + "\n")
+		}
+	}
+
 	// モジュール情報
 	if len(s.synthesisState.selectedModules) > 0 {
 		builder.WriteString("\n")
-		builder.WriteString(labelStyle.Render("攻撃: "))
-		var attacks []string
+		builder.WriteString(labelStyle.Render("モジュール:"))
+		builder.WriteString("\n")
 		for _, m := range s.synthesisState.selectedModules {
 			icon := s.getModuleIcon(m.Category)
-			attacks = append(attacks, fmt.Sprintf("%s(%s+%.0f)", m.Name, icon, m.BaseEffect))
+			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name))
+			// チェイン効果があれば表示
+			if m.HasChainEffect() {
+				chainBadge := components.NewSkillEffectBadge(m.ChainEffect)
+				builder.WriteString(" " + chainBadge.Render())
+			}
+			builder.WriteString("\n")
 		}
-		builder.WriteString(strings.Join(attacks, ", "))
 	}
 
 	return builder.String()
