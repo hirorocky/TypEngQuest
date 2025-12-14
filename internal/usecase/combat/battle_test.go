@@ -626,3 +626,277 @@ func TestBattleStatistics(t *testing.T) {
 		t.Error("タイピング統計が記録されていない")
 	}
 }
+
+// ==================== パッシブスキル統合テスト（Task 6） ====================
+
+// TestRegisterPassiveSkills_SingleAgent は単一エージェントのパッシブスキル登録をテストします。
+func TestRegisterPassiveSkills_SingleAgent(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// バフ効果時間+50%のパッシブスキルを持つエージェントを準備
+	coreType := domain.CoreType{
+		ID:             "buff_master",
+		Name:           "バフマスター",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_buff_extender",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_buff_extender",
+		Name:        "バフエクステンダー",
+		Description: "バフ効果時間+50%",
+		BaseModifiers: domain.StatModifiers{
+			CDReduction: 0.15, // テスト用にCDReductionを設定
+		},
+		ScalePerLevel: 0.1,
+	}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	// TypeIDを設定
+	core.TypeID = "buff_master"
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// パッシブスキルが永続効果として登録されていることを確認
+	coreEffects := state.Player.EffectTable.GetRowsBySource(domain.SourceCore)
+	if len(coreEffects) == 0 {
+		t.Error("パッシブスキルがEffectTableに登録されていない")
+	}
+
+	// 登録された効果が永続（Duration == nil）であることを確認
+	for _, effect := range coreEffects {
+		if effect.Duration != nil {
+			t.Error("パッシブスキル効果が永続ではない（Durationがnilでない）")
+		}
+		if effect.Name != "バフエクステンダー" {
+			t.Errorf("効果名が一致しない: 期待 'バフエクステンダー', 実際 '%s'", effect.Name)
+		}
+	}
+}
+
+// TestRegisterPassiveSkills_MultipleAgents は複数エージェントのパッシブスキル登録をテストします。
+func TestRegisterPassiveSkills_MultipleAgents(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// 2つのエージェントを準備（それぞれ異なるパッシブスキル）
+	coreType1 := domain.CoreType{
+		ID:             "buff_master",
+		Name:           "バフマスター",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_buff_extender",
+	}
+	passiveSkill1 := domain.PassiveSkill{
+		ID:          "ps_buff_extender",
+		Name:        "バフエクステンダー",
+		Description: "バフ効果時間+50%",
+		BaseModifiers: domain.StatModifiers{
+			CDReduction: 0.15,
+		},
+		ScalePerLevel: 0.1,
+	}
+	core1 := domain.NewCore("core_001", "コア1", 5, coreType1, passiveSkill1)
+	core1.TypeID = "buff_master"
+
+	coreType2 := domain.CoreType{
+		ID:             "attacker",
+		Name:           "アタッカー",
+		StatWeights:    map[string]float64{"STR": 1.5, "MAG": 0.5, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_damage_boost",
+	}
+	passiveSkill2 := domain.PassiveSkill{
+		ID:          "ps_damage_boost",
+		Name:        "ダメージブースト",
+		Description: "攻撃ダメージ+20%",
+		BaseModifiers: domain.StatModifiers{
+			STR_Mult: 1.2,
+		},
+		ScalePerLevel: 0.05,
+	}
+	core2 := domain.NewCore("core_002", "コア2", 3, coreType2, passiveSkill2)
+	core2.TypeID = "attacker"
+
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+
+	agent1 := domain.NewAgent("agent_001", core1, modules)
+	agent2 := domain.NewAgent("agent_002", core2, modules)
+	agents := []*domain.AgentModel{agent1, agent2}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// 両方のパッシブスキルが登録されていることを確認
+	coreEffects := state.Player.EffectTable.GetRowsBySource(domain.SourceCore)
+	if len(coreEffects) != 2 {
+		t.Errorf("パッシブスキルの登録数が不正: 期待 2, 実際 %d", len(coreEffects))
+	}
+
+	// 各エージェントのパッシブスキルが登録されていることを確認
+	foundBuffExtender := false
+	foundDamageBoost := false
+	for _, effect := range coreEffects {
+		if effect.Name == "バフエクステンダー" {
+			foundBuffExtender = true
+		}
+		if effect.Name == "ダメージブースト" {
+			foundDamageBoost = true
+		}
+	}
+	if !foundBuffExtender {
+		t.Error("バフエクステンダーが登録されていない")
+	}
+	if !foundDamageBoost {
+		t.Error("ダメージブーストが登録されていない")
+	}
+}
+
+// TestRegisterPassiveSkills_LevelScaling はコアレベルに応じた効果量計算をテストします。
+func TestRegisterPassiveSkills_LevelScaling(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// レベル10のコアを準備
+	coreType := domain.CoreType{
+		ID:             "tank",
+		Name:           "タンク",
+		StatWeights:    map[string]float64{"STR": 0.8, "MAG": 0.5, "SPD": 0.7, "LUK": 1.0},
+		AllowedTags:    []string{"physical_low"},
+		PassiveSkillID: "ps_damage_reduction",
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "ps_damage_reduction",
+		Name:        "ダメージリダクション",
+		Description: "被ダメージ軽減",
+		BaseModifiers: domain.StatModifiers{
+			DamageReduction: 0.1, // レベル1で10%軽減
+		},
+		ScalePerLevel: 0.05, // レベルごとに5%増加
+	}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	core.TypeID = "tank"
+
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// 効果量がレベルスケーリングされていることを確認
+	// レベル10: 0.1 × (1 + 0.05 × 9) = 0.1 × 1.45 = 0.145
+	coreEffects := state.Player.EffectTable.GetRowsBySource(domain.SourceCore)
+	if len(coreEffects) == 0 {
+		t.Fatal("パッシブスキルが登録されていない")
+	}
+
+	expectedReduction := 0.1 * (1 + 0.05*9) // 0.145
+	actualReduction := coreEffects[0].Modifiers.DamageReduction
+
+	// 浮動小数点の比較は許容誤差を使用
+	tolerance := 0.001
+	if actualReduction < expectedReduction-tolerance || actualReduction > expectedReduction+tolerance {
+		t.Errorf("効果量のスケーリングが不正: 期待 %.3f, 実際 %.3f", expectedReduction, actualReduction)
+	}
+}
+
+// TestRegisterPassiveSkills_EmptyPassiveSkill は空のパッシブスキルをスキップすることをテストします。
+func TestRegisterPassiveSkills_EmptyPassiveSkill(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	// パッシブスキルIDが空のコア
+	coreType := domain.CoreType{
+		ID:          "no_passive",
+		Name:        "ノーパッシブ",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+		// PassiveSkillIDは空
+	}
+	passiveSkill := domain.PassiveSkill{
+		// IDが空
+		Name: "",
+	}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		domain.NewModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		domain.NewModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(5, agents)
+
+	// パッシブスキルを登録
+	engine.RegisterPassiveSkills(state, agents)
+
+	// 空のパッシブスキルは登録されないことを確認
+	coreEffects := state.Player.EffectTable.GetRowsBySource(domain.SourceCore)
+	if len(coreEffects) != 0 {
+		t.Errorf("空のパッシブスキルが登録された: %d件", len(coreEffects))
+	}
+}

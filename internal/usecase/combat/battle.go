@@ -699,3 +699,41 @@ func (e *BattleEngine) RecordTypingResult(state *BattleState, result *typing.Typ
 func (e *BattleEngine) ShouldUpdateMaxLevel(battleLevel, currentMaxLevel int) bool {
 	return battleLevel > currentMaxLevel
 }
+
+// ==================== パッシブスキル統合（Task 6） ====================
+
+// RegisterPassiveSkills は装備エージェントのパッシブスキルをEffectTableに登録します。
+// 各エージェントのコアに紐づくパッシブスキルを永続効果として登録します。
+// パッシブスキルの効果量はコアレベルに応じてスケーリングされます。
+func (e *BattleEngine) RegisterPassiveSkills(
+	state *BattleState,
+	agents []*domain.AgentModel,
+) {
+	for i, agent := range agents {
+		if agent == nil || agent.Core == nil {
+			continue
+		}
+
+		passiveSkill := agent.Core.PassiveSkill
+
+		// パッシブスキルIDが空の場合はスキップ
+		if passiveSkill.ID == "" {
+			continue
+		}
+
+		// コアレベルに応じた効果量を計算
+		scaledModifiers := passiveSkill.CalculateModifiers(agent.Core.Level)
+
+		// 一意なIDを生成（エージェントインデックスとパッシブスキルIDを組み合わせ）
+		effectID := fmt.Sprintf("passive_%d_%s", i, passiveSkill.ID)
+
+		// 永続効果としてEffectTableに登録（Duration == nil）
+		state.Player.EffectTable.AddRow(domain.EffectRow{
+			ID:         effectID,
+			SourceType: domain.SourceCore,
+			Name:       passiveSkill.Name,
+			Duration:   nil, // 永続効果
+			Modifiers:  scaledModifiers,
+		})
+	}
+}
