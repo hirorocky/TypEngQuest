@@ -11,6 +11,8 @@ import (
 	"hirorocky/type-battle/internal/tui/ascii"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/usecase/combat"
+	"hirorocky/type-battle/internal/usecase/combat/chain"
+	"hirorocky/type-battle/internal/usecase/combat/recast"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -88,6 +90,10 @@ type BattleScreen struct {
 	battleEngine *combat.BattleEngine
 	battleState  *combat.BattleState
 
+	// リキャスト・チェイン効果管理
+	recastManager      *recast.RecastManager
+	chainEffectManager *chain.ChainEffectManager
+
 	// 敵攻撃
 	nextEnemyAttack time.Time
 
@@ -131,6 +137,9 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		challengeGenerator: typing.NewChallengeGenerator(dictionary),
 		evaluator:          typing.NewEvaluator(),
 		battleEngine:       combat.NewBattleEngine(enemyTypes),
+		// リキャスト・チェイン効果管理を初期化
+		recastManager:      recast.NewRecastManager(),
+		chainEffectManager: chain.NewChainEffectManager(),
 		styles:             gs,
 		winLoseRenderer:    ascii.NewWinLoseRenderer(gs),
 		width:              140,
@@ -267,6 +276,9 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 	// クールダウンを更新
 	s.UpdateCooldowns(deltaSeconds)
 
+	// リキャストを更新（チェイン効果の期限切れも処理）
+	s.UpdateRecasts(deltaSeconds)
+
 	// UI改善: アニメーション更新
 	deltaMS := int(tickInterval.Milliseconds())
 	s.floatingDamageManager.Update(deltaMS)
@@ -361,7 +373,8 @@ func (s *BattleScreen) handleModuleSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		// 現在のエージェント内で次のモジュールに移動
 		s.moveToNextModuleInAgent()
 	case "enter":
-		if len(s.moduleSlots) > 0 && s.moduleSlots[s.selectedSlot].IsReady() {
+		// モジュール使用可能チェック（クールダウンとリキャスト両方）
+		if len(s.moduleSlots) > 0 && s.isModuleUsable(s.selectedSlot) {
 			// モジュール選択 → タイピングチャレンジ開始
 			s.selectedModuleIdx = s.selectedSlot
 			module := s.moduleSlots[s.selectedSlot].Module

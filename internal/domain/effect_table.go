@@ -191,6 +191,32 @@ func (t *EffectTable) GetRowsBySource(sourceType SourceType) []EffectRow {
 	return result
 }
 
+// ExtendBuffDurations は全てのバフ効果の持続時間を延長します。
+// 延長秒数が正の値で、バフが存在する場合に適用されます。
+func (t *EffectTable) ExtendBuffDurations(seconds float64) {
+	if seconds <= 0 {
+		return
+	}
+	for i := range t.Rows {
+		if t.Rows[i].SourceType == SourceBuff && t.Rows[i].Duration != nil {
+			*t.Rows[i].Duration += seconds
+		}
+	}
+}
+
+// ExtendDebuffDurations は全てのデバフ効果の持続時間を延長します。
+// 延長秒数が正の値で、デバフが存在する場合に適用されます。
+func (t *EffectTable) ExtendDebuffDurations(seconds float64) {
+	if seconds <= 0 {
+		return
+	}
+	for i := range t.Rows {
+		if t.Rows[i].SourceType == SourceDebuff && t.Rows[i].Duration != nil {
+			*t.Rows[i].Duration += seconds
+		}
+	}
+}
+
 // FinalStats は効果適用後の最終ステータスを表す構造体です。
 // 基本ステータス（整数）と特殊効果（浮動小数点）を含みます。
 type FinalStats struct {

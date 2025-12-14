@@ -187,3 +187,33 @@ func NewModuleWithTypeID(
 		ChainEffect: chainEffect,
 	}
 }
+
+// NewModuleWithChainEffect はチェイン効果付きで新しいModuleModelを作成します。
+// NewModuleと同じですが、チェイン効果を指定できます。
+// IDとTypeIDは同じ値が設定されます（後方互換性のため）。
+func NewModuleWithChainEffect(
+	id, name string,
+	category ModuleCategory,
+	level int,
+	tags []string,
+	baseEffect float64,
+	statRef, description string,
+	chainEffect *ChainEffect,
+) *ModuleModel {
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(tags))
+	copy(tagsCopy, tags)
+
+	return &ModuleModel{
+		ID:          id,
+		TypeID:      id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tagsCopy,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+		ChainEffect: chainEffect,
+	}
+}

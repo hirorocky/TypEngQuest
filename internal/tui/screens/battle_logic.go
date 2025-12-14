@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/usecase/combat"
+	"hirorocky/type-battle/internal/usecase/combat/chain"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -159,6 +161,132 @@ func (s *BattleScreen) StartCooldown(slotIndex int, duration float64) {
 	}
 }
 
+// ==================== ゲームロジック: リキャスト管理 ====================
+
+// UpdateRecasts はリキャスト時間を更新し、終了したエージェントのチェイン効果を破棄します。
+func (s *BattleScreen) UpdateRecasts(deltaSeconds float64) {
+	if s.recastManager == nil {
+		return
+	}
+
+	// リキャスト時間を更新（deltaSecondsをtime.Durationに変換）
+	delta := time.Duration(deltaSeconds * float64(time.Second))
+	completedAgents := s.recastManager.UpdateRecast(delta)
+
+	// リキャスト完了したエージェントのチェイン効果を破棄
+	if s.chainEffectManager != nil {
+		for _, agentIndex := range completedAgents {
+			s.chainEffectManager.ExpireEffectsForAgent(agentIndex)
+		}
+	}
+}
+
+// isModuleUsable は指定スロットのモジュールが使用可能かを判定します。
+// モジュールのクールダウンとエージェントのリキャスト状態を両方チェックします。
+func (s *BattleScreen) isModuleUsable(slotIndex int) bool {
+	if slotIndex < 0 || slotIndex >= len(s.moduleSlots) {
+		return false
+	}
+
+	slot := s.moduleSlots[slotIndex]
+
+	// モジュールのクールダウンチェック
+	if !slot.IsReady() {
+		return false
+	}
+
+	// エージェントのリキャストチェック
+	if s.recastManager != nil && !s.recastManager.IsAgentReady(slot.AgentIndex) {
+		return false
+	}
+
+	return true
+}
+
+// startAgentRecast はエージェントのリキャストを開始し、チェイン効果を登録します。
+func (s *BattleScreen) startAgentRecast(agentIndex int, module *domain.ModuleModel) {
+	if s.recastManager == nil {
+		return
+	}
+
+	// エージェントのリキャストを開始
+	s.recastManager.StartRecast(agentIndex, config.DefaultRecastDuration)
+
+	// チェイン効果を登録
+	if s.chainEffectManager != nil && module.ChainEffect != nil {
+		moduleID := module.ID
+		if module.TypeID != "" {
+			moduleID = module.TypeID
+		}
+		s.chainEffectManager.RegisterChainEffect(agentIndex, module.ChainEffect, moduleID)
+	}
+}
+
+// triggerChainEffects はモジュール使用時に他エージェントのチェイン効果を発動します。
+func (s *BattleScreen) triggerChainEffects(usingAgentIndex int, moduleCategory domain.ModuleCategory) {
+	if s.chainEffectManager == nil {
+		return
+	}
+
+	// チェイン効果の発動をチェック
+	triggered := s.chainEffectManager.CheckAndTrigger(usingAgentIndex, moduleCategory)
+
+	// 発動した効果を適用
+	for _, effect := range triggered {
+		s.applyTriggeredChainEffect(&effect)
+	}
+}
+
+// applyTriggeredChainEffect は発動したチェイン効果を適用します。
+func (s *BattleScreen) applyTriggeredChainEffect(effect *chain.TriggeredChainEffect) {
+	// 効果タイプに応じた処理
+	switch effect.Effect.Type {
+	case domain.ChainEffectDamageBonus:
+		// 追加ダメージ（敵へのダメージ）
+		bonusDamage := int(effect.EffectValue)
+		if s.enemy != nil {
+			s.enemy.HP -= bonusDamage
+			if s.enemy.HP < 0 {
+				s.enemy.HP = 0
+			}
+			s.floatingDamageManager.AddDamage(bonusDamage, "enemy")
+			s.enemyHPBar.SetTarget(s.enemy.HP)
+			s.message = fmt.Sprintf("チェイン発動！ %s (+%dダメージ)", effect.Message, bonusDamage)
+		}
+
+	case domain.ChainEffectHealBonus:
+		// 追加回復
+		bonusHeal := int(effect.EffectValue)
+		if s.player != nil {
+			s.player.HP += bonusHeal
+			if s.player.HP > s.player.MaxHP {
+				s.player.HP = s.player.MaxHP
+			}
+			s.floatingDamageManager.AddHeal(bonusHeal, "player")
+			s.playerHPBar.SetTarget(s.player.HP)
+			s.message = fmt.Sprintf("チェイン発動！ %s (+%d回復)", effect.Message, bonusHeal)
+		}
+
+	case domain.ChainEffectBuffExtend, domain.ChainEffectBuffDuration:
+		// バフ延長
+		if s.player != nil && s.player.EffectTable != nil {
+			s.player.EffectTable.ExtendBuffDurations(effect.EffectValue)
+			s.message = fmt.Sprintf("チェイン発動！ %s", effect.Message)
+		}
+
+	case domain.ChainEffectDebuffExtend, domain.ChainEffectDebuffDuration:
+		// デバフ延長
+		if s.enemy != nil && s.enemy.EffectTable != nil {
+			s.enemy.EffectTable.ExtendDebuffDurations(effect.EffectValue)
+			s.message = fmt.Sprintf("チェイン発動！ %s", effect.Message)
+		}
+
+	default:
+		// その他の効果は現時点では未実装
+		s.message = fmt.Sprintf("チェイン発動！ %s", effect.Message)
+	}
+}
+
 // ==================== ゲームロジック: タイピング ====================
 
 // StartTypingChallenge はタイピングチャレンジを開始します。
@@ -231,6 +359,10 @@ func (s *BattleScreen) CompleteTyping() {
 	slot := s.moduleSlots[s.selectedModuleIdx]
 	agent := slot.Agent
 	module := slot.Module
+	agentIndex := slot.AgentIndex
+
+	// 他エージェントの待機中チェイン効果を発動（モジュール効果適用前）
+	s.triggerChainEffects(agentIndex, module.Category)
 
 	var effectAmount int
 	if s.battleEngine != nil && s.battleState != nil {
@@ -256,6 +388,9 @@ func (s *BattleScreen) CompleteTyping() {
 
 	// クールダウンを開始
 	s.StartCooldown(s.selectedModuleIdx, slot.CooldownTotal)
+
+	// エージェントのリキャストを開始し、チェイン効果を登録
+	s.startAgentRecast(agentIndex, module)
 
 	// フェーズ変化をチェック
 	if s.battleEngine != nil && s.battleState != nil {

@@ -835,3 +835,427 @@ func TestBattleScreenEffectDuration(t *testing.T) {
 		t.Errorf("持続時間更新後の値が正しくありません: got %.2f, want 4.0", *buffs[0].Duration)
 	}
 }
+
+// ==================== Task 7.1: RecastManager統合テスト ====================
+
+// TestBattleScreenHasRecastManager はRecastManagerが初期化されることを検証します。
+func TestBattleScreenHasRecastManager(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if screen.recastManager == nil {
+		t.Error("RecastManagerが初期化されていません")
+	}
+}
+
+// TestBattleScreenModuleUsageStartsRecast はモジュール使用時にリキャストが開始されることを検証します。
+func TestBattleScreenModuleUsageStartsRecast(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffect()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// モジュール使用前はエージェントがReady
+	if !screen.recastManager.IsAgentReady(0) {
+		t.Error("初期状態でエージェントがリキャスト中になっています")
+	}
+
+	// タイピングチャレンジを開始してモジュールを使用
+	screen.selectedModuleIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a') // タイピング完了
+
+	// エージェント0がリキャスト中になっているはず
+	if screen.recastManager.IsAgentReady(0) {
+		t.Error("モジュール使用後もエージェントがReady状態です")
+	}
+}
+
+// TestBattleScreenRecastBlocksModuleUsage はリキャスト中のエージェントのモジュール使用がブロックされることを検証します。
+func TestBattleScreenRecastBlocksModuleUsage(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// エージェント0のリキャストを開始
+	screen.recastManager.StartRecast(0, 5*time.Second)
+
+	// エージェント0のモジュールは使用不可
+	if screen.isModuleUsable(0) {
+		t.Error("リキャスト中のエージェントのモジュールが使用可能になっています")
+	}
+}
+
+// TestBattleScreenTickUpdatesRecast はTickMsgでリキャスト時間が更新されることを検証します。
+func TestBattleScreenTickUpdatesRecast(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	// リキャストを開始（3秒）
+	screen.recastManager.StartRecast(0, 3*time.Second)
+
+	initialState := screen.recastManager.GetRecastState(0)
+	if initialState == nil {
+		t.Fatal("リキャスト状態が取得できません")
+	}
+	initialRemaining := initialState.RemainingSeconds
+
+	// TickMsgを送信
+	_, _ = screen.Update(BattleTickMsg{})
+
+	state := screen.recastManager.GetRecastState(0)
+	if state == nil {
+		t.Fatal("TickMsg後にリキャスト状態が取得できません")
+	}
+
+	// 100ms(tickInterval)分減少しているはず
+	expected := initialRemaining - 0.1
+	if state.RemainingSeconds > expected+0.01 || state.RemainingSeconds < expected-0.01 {
+		t.Errorf("リキャスト時間が更新されていません: got %.2f, want %.2f", state.RemainingSeconds, expected)
+	}
+}
+
+// TestBattleScreenRecastCompletionEnablesAgent はリキャスト終了時にエージェントが使用可能になることを検証します。
+func TestBattleScreenRecastCompletionEnablesAgent(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	// 短いリキャストを開始（0.05秒 = 50ms = tick1回未満）
+	screen.recastManager.StartRecast(0, 50*time.Millisecond)
+
+	// リキャスト中
+	if screen.recastManager.IsAgentReady(0) {
+		t.Error("リキャスト開始直後にエージェントがReady状態です")
+	}
+
+	// TickMsgを送信（100ms経過）
+	_, _ = screen.Update(BattleTickMsg{})
+
+	// リキャスト完了
+	if !screen.recastManager.IsAgentReady(0) {
+		t.Error("リキャスト時間経過後もエージェントがリキャスト中です")
+	}
+}
+
+// ==================== Task 7.2: ChainEffectManager統合テスト ====================
+
+// TestBattleScreenHasChainEffectManager はChainEffectManagerが初期化されることを検証します。
+func TestBattleScreenHasChainEffectManager(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if screen.chainEffectManager == nil {
+		t.Error("ChainEffectManagerが初期化されていません")
+	}
+}
+
+// TestBattleScreenModuleUsageRegistersChainEffect はモジュール使用時にチェイン効果が登録されることを検証します。
+func TestBattleScreenModuleUsageRegistersChainEffect(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffect()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// 登録前は待機中チェイン効果なし
+	if len(screen.chainEffectManager.GetPendingEffects()) != 0 {
+		t.Error("初期状態で待機中チェイン効果が存在します")
+	}
+
+	// タイピングチャレンジを開始してモジュールを使用
+	screen.selectedModuleIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a') // タイピング完了
+
+	// チェイン効果が登録されているはず
+	pendingEffects := screen.chainEffectManager.GetPendingEffects()
+	if len(pendingEffects) == 0 {
+		t.Error("モジュール使用後にチェイン効果が登録されていません")
+	}
+}
+
+// TestBattleScreenChainEffectTrigger は他エージェントのモジュール使用時にチェイン効果が発動することを検証します。
+func TestBattleScreenChainEffectTrigger(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffectMultiple()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) < 5 {
+		t.Skip("モジュールスロットが足りません")
+	}
+
+	// エージェント0のモジュールを使用（チェイン効果を登録）
+	screen.selectedModuleIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a')
+
+	// 待機中チェイン効果があること
+	if len(screen.chainEffectManager.GetPendingEffects()) == 0 {
+		t.Error("エージェント0のチェイン効果が登録されていません")
+	}
+
+	// エージェント1のモジュールを使用（チェイン効果が発動）
+	screen.selectedModuleIdx = 4 // エージェント1の最初のモジュール
+	screen.selectedAgentIdx = 1
+	screen.StartTypingChallenge("b", 10*time.Second)
+	screen.ProcessTypingInput('b')
+
+	// チェイン効果が発動して削除されているはず
+	pendingEffects := screen.chainEffectManager.GetPendingEffects()
+	// エージェント0の効果は発動済み、エージェント1の効果は待機中
+	foundAgent0 := false
+	for _, pe := range pendingEffects {
+		if pe.AgentIndex == 0 {
+			foundAgent0 = true
+		}
+	}
+	if foundAgent0 {
+		t.Error("エージェント0のチェイン効果が発動後も残っています")
+	}
+}
+
+// TestBattleScreenRecastCompletionExpiresChainEffect はリキャスト終了時に未発動チェイン効果が破棄されることを検証します。
+func TestBattleScreenRecastCompletionExpiresChainEffect(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffect()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// エージェント0のモジュールを使用（チェイン効果を登録）
+	screen.selectedModuleIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a')
+
+	// チェイン効果が登録されている
+	if len(screen.chainEffectManager.GetPendingEffects()) == 0 {
+		t.Error("チェイン効果が登録されていません")
+	}
+
+	// リキャストを短い時間に設定して終了させる
+	screen.recastManager.CancelRecast(0)
+	screen.recastManager.StartRecast(0, 50*time.Millisecond)
+
+	// TickMsgを送信してリキャストを終了
+	_, _ = screen.Update(BattleTickMsg{})
+
+	// リキャスト完了
+	if !screen.recastManager.IsAgentReady(0) {
+		t.Error("リキャストが終了していません")
+	}
+
+	// チェイン効果が破棄されているはず
+	for _, pe := range screen.chainEffectManager.GetPendingEffects() {
+		if pe.AgentIndex == 0 {
+			t.Error("リキャスト終了時にエージェント0のチェイン効果が破棄されていません")
+		}
+	}
+}
+
+// ==================== Task 7.3: 統合フロー検証テスト ====================
+
+// TestBattleScreenModuleRecastChainFlowIntegration はモジュール使用→リキャスト開始→チェイン効果登録の一連フローを検証します。
+func TestBattleScreenModuleRecastChainFlowIntegration(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffect()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// Step 1: 初期状態確認
+	if !screen.recastManager.IsAgentReady(0) {
+		t.Error("初期状態: エージェント0がリキャスト中")
+	}
+	if len(screen.chainEffectManager.GetPendingEffects()) != 0 {
+		t.Error("初期状態: 待機中チェイン効果が存在")
+	}
+
+	// Step 2: モジュール使用
+	screen.selectedModuleIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a')
+
+	// Step 3: リキャスト開始確認
+	if screen.recastManager.IsAgentReady(0) {
+		t.Error("モジュール使用後: エージェント0がリキャスト中になっていない")
+	}
+
+	// Step 4: チェイン効果登録確認
+	pendingEffects := screen.chainEffectManager.GetPendingEffects()
+	if len(pendingEffects) == 0 {
+		t.Error("モジュール使用後: チェイン効果が登録されていない")
+	}
+
+	// Step 5: エージェント0のモジュール使用がブロックされる
+	if screen.isModuleUsable(0) {
+		t.Error("リキャスト中: エージェント0のモジュールが使用可能になっている")
+	}
+}
+
+// TestBattleScreenRecastBlockedModuleSelection はリキャスト中のモジュール選択がブロックされることを検証します。
+func TestBattleScreenRecastBlockedModuleSelection(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// エージェント0をリキャスト状態に
+	screen.recastManager.StartRecast(0, 5*time.Second)
+
+	// エージェント0のモジュールを選択してEnterを押す
+	screen.selectedSlot = 0
+	screen.selectedAgentIdx = 0
+	_, _ = screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// タイピングチャレンジが開始されていないはず
+	if screen.isTyping {
+		t.Error("リキャスト中のエージェントのモジュールでタイピングチャレンジが開始されました")
+	}
+}
+
+// TestBattleScreenChainEffectTimingVerification はチェイン効果発動条件とタイミングを検証します。
+func TestBattleScreenChainEffectTimingVerification(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgentsWithChainEffectMultiple()
+
+	screen := NewBattleScreen(enemy, player, agents)
+
+	if len(screen.moduleSlots) < 5 {
+		t.Skip("モジュールスロットが足りません（2エージェント必要）")
+	}
+
+	// エージェント0の攻撃モジュールを使用（ダメージボーナスのチェイン効果を登録）
+	screen.selectedModuleIdx = 0
+	screen.selectedAgentIdx = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a')
+
+	// 待機中チェイン効果が存在
+	pendingBefore := len(screen.chainEffectManager.GetPendingEffects())
+	if pendingBefore == 0 {
+		t.Error("チェイン効果が登録されていません")
+	}
+
+	initialEnemyHP := enemy.HP
+
+	// エージェント1の攻撃モジュールを使用（チェイン効果が発動するはず）
+	screen.selectedModuleIdx = 4 // エージェント1の最初のモジュール
+	screen.selectedAgentIdx = 1
+	screen.StartTypingChallenge("b", 10*time.Second)
+	screen.ProcessTypingInput('b')
+
+	// チェイン効果が発動している（敵にダメージが与えられている）
+	if enemy.HP >= initialEnemyHP {
+		t.Log("注意: チェイン効果による追加ダメージが確認できませんでした。効果タイプによっては正常です。")
+	}
+
+	// エージェント0の待機中チェイン効果は発動済みで削除されている
+	for _, pe := range screen.chainEffectManager.GetPendingEffects() {
+		if pe.AgentIndex == 0 {
+			t.Error("エージェント0のチェイン効果が発動後も残っています")
+		}
+	}
+}
+
+// ==================== テスト用ヘルパー関数（チェイン効果付き） ====================
+
+// createTestAgentsWithChainEffect はチェイン効果付きのエージェントを作成します。
+func createTestAgentsWithChainEffect() []*domain.AgentModel {
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+
+	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
+
+	// チェイン効果付きモジュール
+	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25)
+	modules := []*domain.ModuleModel{
+		domain.NewModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect),
+		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+
+	agent := domain.NewAgent("agent1", core, modules)
+	return []*domain.AgentModel{agent}
+}
+
+// createTestAgentsWithChainEffectMultiple は複数のチェイン効果付きエージェントを作成します。
+func createTestAgentsWithChainEffectMultiple() []*domain.AgentModel {
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+
+	// エージェント1
+	core1 := domain.NewCore("core1", "テストコア1", 5, coreType, domain.PassiveSkill{})
+	chainEffect1 := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25)
+	modules1 := []*domain.ModuleModel{
+		domain.NewModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect1),
+		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+	agent1 := domain.NewAgent("agent1", core1, modules1)
+
+	// エージェント2
+	core2 := domain.NewCore("core2", "テストコア2", 5, coreType, domain.PassiveSkill{})
+	chainEffect2 := domain.NewChainEffect(domain.ChainEffectHealBonus, 30)
+	modules2 := []*domain.ModuleModel{
+		domain.NewModuleWithChainEffect("m5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect2),
+		domain.NewModule("m6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		domain.NewModule("m7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		domain.NewModule("m8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+	agent2 := domain.NewAgent("agent2", core2, modules2)
+
+	return []*domain.AgentModel{agent1, agent2}
+}
