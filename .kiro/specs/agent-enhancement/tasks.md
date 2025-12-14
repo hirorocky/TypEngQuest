@@ -83,7 +83,7 @@
   - _Requirements: 3.4, 3.8_
 
 - [ ] 2. マスタデータの拡張とパッシブスキル実装
-- [ ] 2.1 パッシブスキルの基本構造とトリガータイプを定義する
+- [x] 2.1 パッシブスキルの基本構造とトリガータイプを定義する
   - PassiveTriggerType（conditional, probability, permanent）の型定義
   - PassiveEffectType（modifier, multiplier, special）の型定義
   - TriggerCondition構造体の定義
