@@ -176,8 +176,8 @@
   - モジュールとチェイン効果の対応関係を永続化
   - _Requirements: 5.4_
 
-- [ ] 4. リキャストマネージャーの実装
-- [ ] 4.1 RecastManagerを実装する
+- [x] 4. リキャストマネージャーの実装
+- [x] 4.1 RecastManagerを実装する
   - RecastState構造体（AgentIndex, RemainingSeconds, TotalSeconds）を定義
   - エージェントごとのリキャスト状態を管理するマップを実装
   - StartRecast: エージェントのリキャストを開始する処理
@@ -186,7 +186,7 @@
   - GetRecastState/GetAllRecastStates: 状態取得メソッド
   - _Requirements: 1.1, 1.2, 1.4, 1.5_
 
-- [ ] 4.2 RecastManagerのユニットテストを作成する
+- [x] 4.2 RecastManagerのユニットテストを作成する
   - リキャスト開始→更新→終了の状態遷移テスト
   - 複数エージェントの同時リキャスト管理テスト
   - IsAgentReady判定の正確性テスト
