@@ -37,6 +37,24 @@ const (
 	// ChainEffectLifeSteal はライフスティールを表します。
 	// 効果中の攻撃ダメージの一部をHPとして回復します。
 	ChainEffectLifeSteal ChainEffectType = "life_steal"
+
+	// === 防御強化カテゴリ ===
+
+	// ChainEffectDamageCut はダメージカットを表します。
+	// 効果中の被ダメージを軽減します。
+	ChainEffectDamageCut ChainEffectType = "damage_cut"
+
+	// ChainEffectEvasion はイベイジョンを表します。
+	// 効果中に一定確率で攻撃を回避します。
+	ChainEffectEvasion ChainEffectType = "evasion"
+
+	// ChainEffectReflect はリフレクトを表します。
+	// 効果中の被ダメージを反射します。
+	ChainEffectReflect ChainEffectType = "reflect"
+
+	// ChainEffectRegen はリジェネを表します。
+	// 効果中毎秒HPを回復します。
+	ChainEffectRegen ChainEffectType = "regen"
 )
 
 // GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
@@ -57,6 +75,15 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 		return "効果中の攻撃が防御バフ無視"
 	case ChainEffectLifeSteal:
 		return fmt.Sprintf("効果中の攻撃ダメージの%.0f%%回復", value)
+	// 防御強化カテゴリ
+	case ChainEffectDamageCut:
+		return fmt.Sprintf("効果中の被ダメージ-%.0f%%", value)
+	case ChainEffectEvasion:
+		return fmt.Sprintf("効果中%.0f%%で攻撃回避", value)
+	case ChainEffectReflect:
+		return fmt.Sprintf("効果中被ダメージの%.0f%%反射", value)
+	case ChainEffectRegen:
+		return fmt.Sprintf("効果中毎秒HP%.0f%%回復", value)
 	default:
 		return "チェイン効果"
 	}

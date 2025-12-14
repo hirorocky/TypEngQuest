@@ -46,7 +46,7 @@
   - ChainEffectLifeSteal: ライフスティール（効果中の攻撃ダメージのX%回復）
   - _Requirements: 3.4_
 
-- [ ] 1.5.2 (P) 防御強化カテゴリのチェイン効果タイプを追加する
+- [x] 1.5.2 (P) 防御強化カテゴリのチェイン効果タイプを追加する
   - ChainEffectDamageCut: ダメージカット（効果中の被ダメージ-X%）
   - ChainEffectEvasion: イベイジョン（効果中X%で攻撃回避）
   - ChainEffectReflect: リフレクト（効果中被ダメージ反射）
