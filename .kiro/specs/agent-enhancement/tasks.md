@@ -11,7 +11,7 @@
 ## Tasks
 
 - [ ] 1. ドメイン層の値オブジェクトとエンティティ拡張
-- [ ] 1.1 (P) ChainEffect値オブジェクトを実装する
+- [x] 1.1 (P) ChainEffect値オブジェクトを実装する
   - チェイン効果の種別（damage_bonus, heal_bonus, buff_extend, debuff_extend）を定義
   - チェイン効果のType、Value、Descriptionフィールドを持つイミュータブルな構造体を作成
   - チェイン効果種別ごとの説明テンプレートを定義
