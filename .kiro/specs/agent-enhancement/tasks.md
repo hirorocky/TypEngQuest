@@ -155,22 +155,22 @@
   - マスタデータからドメインへの変換処理を更新
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3. 永続化層（セーブ/ロード）のリファクタリング
-- [ ] 3.1 (P) CoreInstanceSaveをリファクタリングする
+- [x] 3. 永続化層（セーブ/ロード）のリファクタリング
+- [x] 3.1 (P) CoreInstanceSaveをリファクタリングする
   - IDフィールドを削除し、core_type_idとlevelのみを保持する構造に変更
   - セーブデータのバージョンをv1.0.0として定義
   - CoreInstanceSaveからCoreModelへの変換処理を実装
   - 旧フォーマット検出時の新規ゲーム開始処理を実装
   - _Requirements: 4.4_
 
-- [ ] 3.2 (P) ModuleInstanceSaveを新規実装する
+- [x] 3.2 (P) ModuleInstanceSaveを新規実装する
   - type_idとchain_effect（オプショナル）を持つ構造体を作成
   - ChainEffectSave構造体（type, value）を作成
   - 既存のModuleCountsマップをModuleInstancesスライスに置き換え
   - ModuleInstanceSaveからModuleModelへの変換処理を実装
   - _Requirements: 5.4, 5.5_
 
-- [ ] 3.3 AgentInstanceSaveをチェイン効果対応に更新する
+- [x] 3.3 AgentInstanceSaveをチェイン効果対応に更新する
   - module_chain_effectsフィールド（nullを含むスライス）を追加
   - エージェント保存・読み込み処理を更新
   - モジュールとチェイン効果の対応関係を永続化

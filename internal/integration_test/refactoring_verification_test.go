@@ -99,26 +99,27 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 	// プレイヤー情報（装備エージェントIDのみ）
 	saveData.Player.EquippedAgentIDs = [3]string{"agent_1", "agent_2", ""}
 
-	// インベントリ情報（ID化された構造）
+	// インベントリ情報（v1.0.0形式）
 	saveData.Inventory.CoreInstances = []savedata.CoreInstanceSave{
-		{ID: "core_1", CoreTypeID: "all_rounder", Level: 5},
-		{ID: "core_2", CoreTypeID: "all_rounder", Level: 3},
+		{CoreTypeID: "all_rounder", Level: 5},
+		{CoreTypeID: "all_rounder", Level: 3},
 	}
-	saveData.Inventory.ModuleCounts = map[string]int{
-		"physical_strike_lv1": 2,
-		"fireball_lv1":        1,
-		"heal_lv1":            1,
-		"attack_buff_lv1":     1,
+	saveData.Inventory.ModuleInstances = []savedata.ModuleInstanceSave{
+		{TypeID: "physical_strike_lv1", ChainEffect: nil},
+		{TypeID: "physical_strike_lv1", ChainEffect: nil},
+		{TypeID: "fireball_lv1", ChainEffect: nil},
+		{TypeID: "heal_lv1", ChainEffect: nil},
+		{TypeID: "attack_buff_lv1", ChainEffect: nil},
 	}
 	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
 		{
 			ID: "agent_1",
 			Core: savedata.CoreInstanceSave{
-				ID:         "core_1",
 				CoreTypeID: "all_rounder",
 				Level:      5,
 			},
-			ModuleIDs: []string{"physical_strike_lv1", "fireball_lv1", "heal_lv1", "attack_buff_lv1"},
+			ModuleIDs:          []string{"physical_strike_lv1", "fireball_lv1", "heal_lv1", "attack_buff_lv1"},
+			ModuleChainEffects: []*savedata.ChainEffectSave{nil, nil, nil, nil},
 		},
 	}
 

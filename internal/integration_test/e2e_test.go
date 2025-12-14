@@ -246,16 +246,24 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 		t.Error("平均WPMが計算されるべきです")
 	}
 
-	// 報酬をインベントリに追加（ID化された構造）
+	// 報酬をインベントリに追加（v1.0.0形式）
 	for _, c := range rewards.DroppedCores {
 		saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
-			ID:         c.ID,
-			CoreTypeID: c.Type.ID,
+			CoreTypeID: c.TypeID,
 			Level:      c.Level,
 		})
 	}
 	for _, m := range rewards.DroppedModules {
-		saveData.Inventory.ModuleCounts[m.ID]++
+		modSave := savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
+		if m.ChainEffect != nil {
+			modSave.ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
+		saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, modSave)
 	}
 
 	// 統計更新
@@ -294,12 +302,12 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	// 追加アイテム付きで新規ゲーム開始
 	saveData := initializer.CreateNewGameWithExtraItems()
 
-	// コアとモジュールがインベントリにある（ID化された構造）
+	// コアとモジュールがインベントリにある（v1.0.0形式）
 	if len(saveData.Inventory.CoreInstances) == 0 {
 		t.Fatal("コアがありません")
 	}
-	if len(saveData.Inventory.ModuleCounts) < 4 {
-		t.Fatal("モジュールが4種類未満です")
+	if len(saveData.Inventory.ModuleInstances) < 4 {
+		t.Fatalf("モジュールが4個未満です: got %d", len(saveData.Inventory.ModuleInstances))
 	}
 
 	// テスト用にドメインオブジェクトを直接作成
@@ -332,19 +340,26 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 		t.Error("エージェントは4つのモジュールを持つべきです")
 	}
 
-	// インベントリに追加（コア情報を直接埋め込み）
+	// インベントリに追加（v1.0.0形式: コア情報とチェイン効果を埋め込み）
 	moduleIDs := make([]string, len(newAgent.Modules))
+	moduleChainEffects := make([]*savedata.ChainEffectSave, len(newAgent.Modules))
 	for i, m := range newAgent.Modules {
-		moduleIDs[i] = m.ID
+		moduleIDs[i] = m.TypeID
+		if m.ChainEffect != nil {
+			moduleChainEffects[i] = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
 	}
 	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, savedata.AgentInstanceSave{
 		ID: newAgent.ID,
 		Core: savedata.CoreInstanceSave{
-			ID:         newAgent.Core.ID,
-			CoreTypeID: newAgent.Core.Type.ID,
+			CoreTypeID: newAgent.Core.TypeID,
 			Level:      newAgent.Core.Level,
 		},
-		ModuleIDs: moduleIDs,
+		ModuleIDs:          moduleIDs,
+		ModuleChainEffects: moduleChainEffects,
 	})
 
 	// エージェント装備（空きスロットを探して装備）

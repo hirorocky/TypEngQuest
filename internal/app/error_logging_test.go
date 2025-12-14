@@ -32,17 +32,16 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()
 
-	// 正常なセーブデータを作成
+	// 正常なセーブデータを作成（v1.0.0形式）
 	saveData := savedata.NewSaveData()
 	saveData.Inventory = &savedata.InventorySaveData{
 		CoreInstances: []savedata.CoreInstanceSave{
 			{
-				ID:         "test_core_001",
 				CoreTypeID: "all_rounder",
 				Level:      1,
 			},
 		},
-		ModuleCounts: map[string]int{},
+		ModuleInstances: []savedata.ModuleInstanceSave{},
 	}
 
 	// GameStateをセーブデータから作成
@@ -63,20 +62,20 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()
 
-	// エージェントを含むセーブデータを作成
+	// エージェントを含むセーブデータを作成（v1.0.0形式）
 	saveData := savedata.NewSaveData()
 	saveData.Inventory = &savedata.InventorySaveData{
-		CoreInstances: []savedata.CoreInstanceSave{},
-		ModuleCounts:  map[string]int{"mod_slash": 4},
+		CoreInstances:   []savedata.CoreInstanceSave{},
+		ModuleInstances: []savedata.ModuleInstanceSave{},
 		AgentInstances: []savedata.AgentInstanceSave{
 			{
 				ID: "test_agent_001",
 				Core: savedata.CoreInstanceSave{
-					ID:         "agent_core_001",
 					CoreTypeID: "all_rounder",
 					Level:      1,
 				},
-				ModuleIDs: []string{"mod_slash", "mod_slash", "mod_slash", "mod_slash"},
+				ModuleIDs:          []string{"mod_slash", "mod_slash", "mod_slash", "mod_slash"},
+				ModuleChainEffects: []*savedata.ChainEffectSave{nil, nil, nil, nil},
 			},
 		},
 	}

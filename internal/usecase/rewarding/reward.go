@@ -173,7 +173,7 @@ type ModuleDropInfo struct {
 
 // ToDomain はModuleDropInfoをドメインモデルのModuleModelに変換します。
 func (m *ModuleDropInfo) ToDomain() *domain.ModuleModel {
-	return domain.NewModule(
+	return domain.NewModuleWithTypeID(
 		m.ID,
 		m.Name,
 		m.Category,
@@ -182,6 +182,22 @@ func (m *ModuleDropInfo) ToDomain() *domain.ModuleModel {
 		m.BaseEffect,
 		m.StatRef,
 		m.Description,
+		nil, // チェイン効果なし
+	)
+}
+
+// ToDomainWithChainEffect はチェイン効果付きでドメインモデルに変換します。
+func (m *ModuleDropInfo) ToDomainWithChainEffect(chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleWithTypeID(
+		m.ID,
+		m.Name,
+		m.Category,
+		m.Level,
+		m.Tags,
+		m.BaseEffect,
+		m.StatRef,
+		m.Description,
+		chainEffect,
 	)
 }
 

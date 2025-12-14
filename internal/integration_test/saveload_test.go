@@ -58,22 +58,27 @@ func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
 }
 
 func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
-	// インベントリの永続化テスト（ID化された構造）
+	// インベントリの永続化テスト（v1.0.0形式）
 	tempDir := t.TempDir()
 	io := savedata.NewSaveDataIO(tempDir)
 
 	// テスト用データを作成
 	saveData := savedata.NewSaveData()
 
-	// コアインスタンスを追加（ID化された構造）
+	// コアインスタンスを追加（v1.0.0形式: TypeIDとLevelのみ）
 	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
-		ID:         "core_1",
 		CoreTypeID: "test_type",
 		Level:      5,
 	})
 
-	// モジュールカウントを追加（ID化された構造）
-	saveData.Inventory.ModuleCounts["module_1"] = 1
+	// モジュールインスタンスを追加（v1.0.0形式: TypeIDとChainEffect）
+	saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, savedata.ModuleInstanceSave{
+		TypeID: "module_1",
+		ChainEffect: &savedata.ChainEffectSave{
+			Type:  "damage_bonus",
+			Value: 15.0,
+		},
+	})
 
 	// セーブ
 	err := io.SaveGame(saveData)
@@ -87,21 +92,28 @@ func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 		t.Fatalf("ロードに失敗: %v", err)
 	}
 
-	// コア確認（ID化された構造）
+	// コア確認（v1.0.0形式）
 	if len(loadedData.Inventory.CoreInstances) != 1 {
 		t.Fatalf("コアインスタンス数 expected 1, got %d", len(loadedData.Inventory.CoreInstances))
 	}
 	loadedCore := loadedData.Inventory.CoreInstances[0]
-	if loadedCore.ID != "core_1" {
-		t.Errorf("Core ID expected 'core_1', got '%s'", loadedCore.ID)
+	if loadedCore.CoreTypeID != "test_type" {
+		t.Errorf("Core CoreTypeID expected 'test_type', got '%s'", loadedCore.CoreTypeID)
 	}
 	if loadedCore.Level != 5 {
 		t.Errorf("Core Level expected 5, got %d", loadedCore.Level)
 	}
 
-	// モジュール確認（ID化された構造）
-	if loadedData.Inventory.ModuleCounts["module_1"] != 1 {
-		t.Errorf("モジュールカウント expected 1, got %d", loadedData.Inventory.ModuleCounts["module_1"])
+	// モジュール確認（v1.0.0形式）
+	if len(loadedData.Inventory.ModuleInstances) != 1 {
+		t.Fatalf("モジュールインスタンス数 expected 1, got %d", len(loadedData.Inventory.ModuleInstances))
+	}
+	loadedMod := loadedData.Inventory.ModuleInstances[0]
+	if loadedMod.TypeID != "module_1" {
+		t.Errorf("Module TypeID expected 'module_1', got '%s'", loadedMod.TypeID)
+	}
+	if loadedMod.ChainEffect == nil || loadedMod.ChainEffect.Type != "damage_bonus" {
+		t.Error("Module ChainEffect not correctly restored")
 	}
 }
 

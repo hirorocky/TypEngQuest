@@ -153,18 +153,26 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 
 	// インベントリにエージェントを追加（コア情報を直接埋め込み）
 	moduleIDs := make([]string, len(initialAgent.Modules))
+	moduleChainEffects := make([]*savedata.ChainEffectSave, len(initialAgent.Modules))
 	for idx, m := range initialAgent.Modules {
-		moduleIDs[idx] = m.ID
+		moduleIDs[idx] = m.TypeID
+		// チェイン効果があれば変換
+		if m.ChainEffect != nil {
+			moduleChainEffects[idx] = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
 	}
 	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
 		{
 			ID: initialAgent.ID,
 			Core: savedata.CoreInstanceSave{
-				ID:         initialAgent.Core.ID,
-				CoreTypeID: initialAgent.Core.Type.ID,
+				CoreTypeID: initialAgent.Core.TypeID,
 				Level:      initialAgent.Core.Level,
 			},
-			ModuleIDs: moduleIDs,
+			ModuleIDs:          moduleIDs,
+			ModuleChainEffects: moduleChainEffects,
 		},
 	}
 
@@ -182,22 +190,31 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 
 // CreateNewGameWithExtraItems は追加アイテム付きで新規ゲームを初期化します。
 // デバッグや特殊条件での開始用
-// ID化最適化に対応：フルオブジェクトではなくID参照を保存
+// v1.0.0形式に対応：TypeIDとLevelのみを保存
 func (i *NewGameInitializer) CreateNewGameWithExtraItems() *savedata.SaveData {
 	saveData := i.InitializeNewGame()
 
-	// 追加のコアを作成してインベントリにID化して追加
+	// 追加のコアを作成してインベントリに追加
 	extraCore := i.CreateInitialCore()
 	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
-		ID:         extraCore.ID,
-		CoreTypeID: extraCore.Type.ID,
+		CoreTypeID: extraCore.TypeID,
 		Level:      extraCore.Level,
 	})
 
-	// 追加のモジュールを作成してインベントリにカウント追加
+	// 追加のモジュールを作成してインベントリにModuleInstancesとして追加
 	extraModules := i.CreateInitialModules()
 	for _, module := range extraModules {
-		saveData.Inventory.ModuleCounts[module.ID]++
+		modSave := savedata.ModuleInstanceSave{
+			TypeID: module.TypeID,
+		}
+		// チェイン効果があれば変換
+		if module.ChainEffect != nil {
+			modSave.ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(module.ChainEffect.Type),
+				Value: module.ChainEffect.Value,
+			}
+		}
+		saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, modSave)
 	}
 
 	return saveData

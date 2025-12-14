@@ -3,7 +3,6 @@
 package session
 
 import (
-	"fmt"
 	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
@@ -23,46 +22,61 @@ type DomainDataSources struct {
 }
 
 // ToSaveData はGameStateをセーブデータに変換します。
-// ID化最適化により、フルオブジェクトではなくID参照を保存します。
+// v1.0.0形式: TypeIDとLevel（コア）、TypeIDとChainEffect（モジュール）を保存します。
 func (g *GameState) ToSaveData() *savedata.SaveData {
 	saveData := savedata.NewSaveData()
 
 	// 最高到達レベル
 	saveData.Statistics.MaxLevelReached = g.MaxLevelReached
 
-	// コアをID化して保存
+	// コアをv1.0.0形式で保存（IDなし）
 	coreInstances := make([]savedata.CoreInstanceSave, 0)
 	for _, core := range g.inventory.GetCores() {
 		coreInstances = append(coreInstances, savedata.CoreInstanceSave{
-			ID:         core.ID,
-			CoreTypeID: core.Type.ID,
+			CoreTypeID: core.TypeID,
 			Level:      core.Level,
 		})
 	}
 	saveData.Inventory.CoreInstances = coreInstances
 
-	// モジュールをカウント化して保存
-	moduleCounts := make(map[string]int)
+	// モジュールをModuleInstancesとして保存（チェイン効果対応）
+	moduleInstances := make([]savedata.ModuleInstanceSave, 0)
 	for _, module := range g.inventory.GetModules() {
-		moduleCounts[module.ID]++
+		modSave := savedata.ModuleInstanceSave{
+			TypeID: module.TypeID,
+		}
+		if module.ChainEffect != nil {
+			modSave.ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(module.ChainEffect.Type),
+				Value: module.ChainEffect.Value,
+			}
+		}
+		moduleInstances = append(moduleInstances, modSave)
 	}
-	saveData.Inventory.ModuleCounts = moduleCounts
+	saveData.Inventory.ModuleInstances = moduleInstances
 
-	// エージェントを保存（コア情報を直接埋め込み）
+	// エージェントを保存（コア情報を直接埋め込み、チェイン効果対応）
 	agentInstances := make([]savedata.AgentInstanceSave, 0)
 	for _, ag := range g.agentManager.GetAgents() {
 		moduleIDs := make([]string, len(ag.Modules))
+		moduleChainEffects := make([]*savedata.ChainEffectSave, len(ag.Modules))
 		for i, m := range ag.Modules {
-			moduleIDs[i] = m.ID
+			moduleIDs[i] = m.TypeID
+			if m.ChainEffect != nil {
+				moduleChainEffects[i] = &savedata.ChainEffectSave{
+					Type:  string(m.ChainEffect.Type),
+					Value: m.ChainEffect.Value,
+				}
+			}
 		}
 		agentInstances = append(agentInstances, savedata.AgentInstanceSave{
 			ID: ag.ID,
 			Core: savedata.CoreInstanceSave{
-				ID:         ag.Core.ID,
-				CoreTypeID: ag.Core.Type.ID,
+				CoreTypeID: ag.Core.TypeID,
 				Level:      ag.Core.Level,
 			},
-			ModuleIDs: moduleIDs,
+			ModuleIDs:          moduleIDs,
+			ModuleChainEffects: moduleChainEffects,
 		})
 	}
 	saveData.Inventory.AgentInstances = agentInstances
@@ -101,7 +115,7 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 }
 
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
-// ID化最適化されたセーブデータからオブジェクトを再構築します。
+// v1.0.0形式のセーブデータからオブジェクトを再構築します。
 // sourcesが提供されている場合はそれを使用し、なければデフォルト値を使用します。
 func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) *GameState {
 	// マスタデータを取得（ドメイン型）
@@ -131,42 +145,61 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	// インベントリマネージャーを作成
 	invManager := NewInventoryManager()
 
-	// コアのIDマップを作成（エージェント復元時に使用）
-	coreMap := make(map[string]*domain.CoreModel)
-
-	// セーブデータからコアを再構築
+	// セーブデータからコアを再構築（v1.0.0形式: TypeIDとLevelのみ）
 	if data.Inventory != nil {
 		for _, coreSave := range data.Inventory.CoreInstances {
 			// コア特性を検索（ドメイン型）
 			coreType := FindCoreType(coreTypes, coreSave.CoreTypeID)
 			passiveSkill := FindPassiveSkill(passiveSkills, coreSave.CoreTypeID)
 
-			// コアを再構築（ステータスは自動計算される）
-			core := domain.NewCore(
-				coreSave.ID,
-				coreType.Name+" Lv."+fmt.Sprintf("%d", coreSave.Level),
+			// コアを再構築（v1.0.0形式: TypeIDベース）
+			core := domain.NewCoreWithTypeID(
+				coreSave.CoreTypeID,
 				coreSave.Level,
 				coreType,
 				passiveSkill,
 			)
-			coreMap[coreSave.ID] = core
 			if err := invManager.AddCore(core); err != nil {
 				slog.Error("コア追加に失敗",
-					slog.String("core_id", core.ID),
+					slog.String("core_type_id", core.TypeID),
 					slog.String("core_type", core.Type.ID),
 					slog.Any("error", err),
 				)
 			}
 		}
 
-		// モジュールを再構築
+		// モジュールを再構築（v1.0.0形式: ModuleInstances）
+		for _, modSave := range data.Inventory.ModuleInstances {
+			moduleDropInfo := FindModuleDropInfo(moduleTypes, modSave.TypeID)
+			if moduleDropInfo != nil {
+				// チェイン効果を復元
+				var chainEffect *domain.ChainEffect
+				if modSave.ChainEffect != nil {
+					ce := domain.NewChainEffect(
+						domain.ChainEffectType(modSave.ChainEffect.Type),
+						modSave.ChainEffect.Value,
+					)
+					chainEffect = &ce
+				}
+				module := moduleDropInfo.ToDomainWithChainEffect(chainEffect)
+				if err := invManager.AddModule(module); err != nil {
+					slog.Error("モジュール追加に失敗",
+						slog.String("module_type_id", module.TypeID),
+						slog.String("module_name", module.Name),
+						slog.Any("error", err),
+					)
+				}
+			}
+		}
+
+		// 後方互換性: 旧形式ModuleCountsからの復元
 		for moduleID, count := range data.Inventory.ModuleCounts {
 			moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
 			if moduleDropInfo != nil {
 				for i := 0; i < count; i++ {
 					module := moduleDropInfo.ToDomain()
 					if err := invManager.AddModule(module); err != nil {
-						slog.Error("モジュール追加に失敗",
+						slog.Error("モジュール追加に失敗（旧形式）",
 							slog.String("module_id", module.ID),
 							slog.String("module_name", module.Name),
 							slog.Any("error", err),
@@ -186,23 +219,31 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	// セーブデータからエージェントを再構築（コア情報は各エージェントに埋め込まれている）
 	if data.Inventory != nil {
 		for _, agentSave := range data.Inventory.AgentInstances {
-			// エージェント内のコア情報からコアを再構築
+			// エージェント内のコア情報からコアを再構築（v1.0.0形式）
 			coreType := FindCoreType(coreTypes, agentSave.Core.CoreTypeID)
 			passiveSkill := FindPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
-			core := domain.NewCore(
-				agentSave.Core.ID,
-				coreType.Name+" Lv."+fmt.Sprintf("%d", agentSave.Core.Level),
+			core := domain.NewCoreWithTypeID(
+				agentSave.Core.CoreTypeID,
 				agentSave.Core.Level,
 				coreType,
 				passiveSkill,
 			)
 
-			// モジュールを再構築
+			// モジュールを再構築（チェイン効果対応）
 			modules := make([]*domain.ModuleModel, 0, len(agentSave.ModuleIDs))
-			for _, moduleID := range agentSave.ModuleIDs {
+			for i, moduleID := range agentSave.ModuleIDs {
 				moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
 				if moduleDropInfo != nil {
-					modules = append(modules, moduleDropInfo.ToDomain())
+					// チェイン効果を復元
+					var chainEffect *domain.ChainEffect
+					if len(agentSave.ModuleChainEffects) > i && agentSave.ModuleChainEffects[i] != nil {
+						ce := domain.NewChainEffect(
+							domain.ChainEffectType(agentSave.ModuleChainEffects[i].Type),
+							agentSave.ModuleChainEffects[i].Value,
+						)
+						chainEffect = &ce
+					}
+					modules = append(modules, moduleDropInfo.ToDomainWithChainEffect(chainEffect))
 				}
 			}
 
