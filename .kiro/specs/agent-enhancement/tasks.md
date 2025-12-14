@@ -82,7 +82,7 @@
   - 全チェイン効果タイプのユニットテストを追加
   - _Requirements: 3.4, 3.8_
 
-- [ ] 2. マスタデータの拡張とパッシブスキル実装
+- [x] 2. マスタデータの拡張とパッシブスキル実装
 - [x] 2.1 パッシブスキルの基本構造とトリガータイプを定義する
   - PassiveTriggerType（conditional, probability, permanent）の型定義
   - PassiveEffectType（modifier, multiplier, special）の型定義
