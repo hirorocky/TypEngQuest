@@ -24,7 +24,7 @@
   - StatModifiersとの連携インターフェースを定義
   - _Requirements: 2.1, 2.4_
 
-- [ ] 1.3 CoreModelをtypeIdとlevelベースに リファクタリングする
+- [x] 1.3 CoreModelをtypeIdとlevelベースに リファクタリングする
   - インスタンスIDフィールドを削除し、TypeIDフィールドを追加
   - TypeIDとLevelの組み合わせによる同一性判定（Equalsメソッド）を実装
   - PassiveSkillをCoreTypeから導出する仕組みを構築

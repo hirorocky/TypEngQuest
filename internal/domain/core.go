@@ -2,6 +2,8 @@
 // コア、モジュール、エージェント、敵、プレイヤーなどのエンティティとそのビジネスルールを含みます。
 package domain
 
+import "fmt"
+
 // BaseStatValue はステータス計算で使用する基礎値です。
 // ステータス = 基礎値 × レベル × 重み
 const BaseStatValue = 10
@@ -125,9 +127,15 @@ type CoreType struct {
 // CoreModel はゲーム内のコアエンティティを表す構造体です。
 // コアはエージェント合成時の中核となる素材で、レベルとステータスを持ちます。
 // コアのレベルはドロップ時に固定され、成長/アップグレードはできません。
+// TypeIDとLevelの組み合わせで同一性が判定されます。
 type CoreModel struct {
 	// ID はコアインスタンスの一意識別子です。
+	// 後方互換性のために残されています。新規コードではTypeIDを使用してください。
 	ID string
+
+	// TypeID はコア特性ID（マスタデータ参照用）です。
+	// セーブデータにはTypeIDとLevelのみが保存されます。
+	TypeID string
 
 	// Name はコアの表示名です。
 	Name string
@@ -149,6 +157,15 @@ type CoreModel struct {
 	// AllowedTags はこのコアに装備可能なモジュールタグのリストです。
 	// 通常はType.AllowedTagsと同じですが、直接参照用にコピーされます。
 	AllowedTags []string
+}
+
+// Equals はコアの同一性を判定します。
+// TypeIDとLevelの組み合わせが同じ場合に等価とみなします。
+func (c *CoreModel) Equals(other *CoreModel) bool {
+	if other == nil {
+		return false
+	}
+	return c.TypeID == other.TypeID && c.Level == other.Level
 }
 
 // CalculateStats はコアレベルとコア特性からステータス値を計算します。
@@ -203,4 +220,36 @@ func (c *CoreModel) IsTagAllowed(tag string) bool {
 		}
 	}
 	return false
+}
+
+// NewCoreWithTypeID はTypeIDとLevelベースでCoreModelを作成します。
+// ステータスはTypeIDから取得したCoreTypeとLevelから自動計算されます。
+// Nameは "Type.Name Lv.Level" 形式で自動生成されます。
+// IDは後方互換性のためにTypeIDと同じ値が設定されますが、新規コードでは使用しないでください。
+func NewCoreWithTypeID(typeID string, level int, coreType CoreType, passiveSkill PassiveSkill) *CoreModel {
+	// ステータスを自動計算
+	stats := CalculateStats(level, coreType)
+
+	// AllowedTagsをコピー（スライスの参照共有を避ける）
+	allowedTags := make([]string, len(coreType.AllowedTags))
+	copy(allowedTags, coreType.AllowedTags)
+
+	// Nameを自動生成
+	name := coreType.Name + " Lv." + formatLevel(level)
+
+	return &CoreModel{
+		ID:           typeID, // 後方互換性のため
+		TypeID:       typeID,
+		Name:         name,
+		Level:        level,
+		Type:         coreType,
+		Stats:        stats,
+		PassiveSkill: passiveSkill,
+		AllowedTags:  allowedTags,
+	}
+}
+
+// formatLevel はレベルを文字列にフォーマットします。
+func formatLevel(level int) string {
+	return fmt.Sprintf("%d", level)
 }

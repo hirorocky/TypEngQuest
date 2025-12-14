@@ -718,3 +718,100 @@ func TestPassiveSkill_CalculateModifiers_全フィールド(t *testing.T) {
 		t.Errorf("CDReductionが期待値と異なります: got %f, want %f", modifiers.CDReduction, expectedCDReduction)
 	}
 }
+
+// ==================== CoreModel TypeIDベースリファクタリングテスト ====================
+
+// TestCoreModel_TypeIDフィールドの確認 はCoreModelにTypeIDフィールドが存在することを確認します。
+func TestCoreModel_TypeIDフィールドの確認(t *testing.T) {
+	coreType := CoreType{
+		ID:             "attack_balance",
+		Name:           "攻撃バランス",
+		StatWeights:    map[string]float64{"STR": 1.2, "MAG": 1.0, "SPD": 0.8, "LUK": 1.0},
+		PassiveSkillID: "balanced_stance",
+		AllowedTags:    []string{"physical_low", "magic_low"},
+		MinDropLevel:   1,
+	}
+
+	passiveSkill := PassiveSkill{
+		ID:          "balanced_stance",
+		Name:        "バランススタンス",
+		Description: "物理と魔法のダメージをバランスよく強化する",
+	}
+
+	core := NewCoreWithTypeID("attack_balance", 10, coreType, passiveSkill)
+
+	if core.TypeID != "attack_balance" {
+		t.Errorf("TypeIDが期待値と異なります: got %s, want attack_balance", core.TypeID)
+	}
+	if core.Level != 10 {
+		t.Errorf("Levelが期待値と異なります: got %d, want 10", core.Level)
+	}
+	// Nameはデフォルトで "Type.Name Lv.Level" 形式
+	expectedName := "攻撃バランス Lv.10"
+	if core.Name != expectedName {
+		t.Errorf("Nameが期待値と異なります: got %s, want %s", core.Name, expectedName)
+	}
+}
+
+// TestCoreModel_Equals_同一性判定 はEqualsメソッドがTypeIDとLevelで同一性を判定することを確認します。
+func TestCoreModel_Equals_同一性判定(t *testing.T) {
+	coreType := CoreType{
+		ID:             "attack_balance",
+		Name:           "攻撃バランス",
+		StatWeights:    map[string]float64{"STR": 1.2, "MAG": 1.0, "SPD": 0.8, "LUK": 1.0},
+		PassiveSkillID: "balanced_stance",
+		AllowedTags:    []string{"physical_low", "magic_low"},
+	}
+	passiveSkill := PassiveSkill{ID: "balanced_stance"}
+
+	core1 := NewCoreWithTypeID("attack_balance", 10, coreType, passiveSkill)
+	core2 := NewCoreWithTypeID("attack_balance", 10, coreType, passiveSkill)
+	core3 := NewCoreWithTypeID("attack_balance", 5, coreType, passiveSkill)
+	core4 := NewCoreWithTypeID("healer", 10, coreType, passiveSkill)
+
+	if !core1.Equals(core2) {
+		t.Error("同じTypeIDとLevelのコアは等価であるべきです")
+	}
+
+	if core1.Equals(core3) {
+		t.Error("異なるLevelのコアは等価でないべきです")
+	}
+
+	if core1.Equals(core4) {
+		t.Error("異なるTypeIDのコアは等価でないべきです")
+	}
+}
+
+// TestCoreModel_Equals_nilチェック はEqualsメソッドがnilを正しく処理することを確認します。
+func TestCoreModel_Equals_nilチェック(t *testing.T) {
+	coreType := CoreType{
+		ID:          "attack_balance",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+	}
+	passiveSkill := PassiveSkill{ID: "test"}
+	core := NewCoreWithTypeID("attack_balance", 10, coreType, passiveSkill)
+
+	if core.Equals(nil) {
+		t.Error("nilとの比較はfalseを返すべきです")
+	}
+}
+
+// TestCoreModel_ステータス再計算 はNewCoreWithTypeIDでステータスが正しく計算されることを確認します。
+func TestCoreModel_ステータス再計算(t *testing.T) {
+	coreType := CoreType{
+		ID:             "attack_balance",
+		Name:           "攻撃バランス",
+		StatWeights:    map[string]float64{"STR": 1.2, "MAG": 1.0, "SPD": 0.8, "LUK": 1.0},
+		PassiveSkillID: "balanced_stance",
+		AllowedTags:    []string{"physical_low", "magic_low"},
+	}
+	passiveSkill := PassiveSkill{ID: "balanced_stance"}
+
+	core := NewCoreWithTypeID("attack_balance", 10, coreType, passiveSkill)
+
+	// ステータスがTypeIDとLevelから正しく計算されていることを確認
+	// STR: 10 × 10 × 1.2 = 120
+	if core.Stats.STR != 120 {
+		t.Errorf("Stats.STRが期待値と異なります: got %d, want 120", core.Stats.STR)
+	}
+}
