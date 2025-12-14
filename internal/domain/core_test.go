@@ -2,8 +2,14 @@
 package domain
 
 import (
+	"math"
 	"testing"
 )
+
+// floatEquals は2つの浮動小数点数がほぼ等しいかを判定します。
+func floatEquals(a, b float64) bool {
+	return math.Abs(a-b) < 1e-9
+}
 
 // TestStats_ゼロ値の確認 はStats構造体のゼロ値が正しいことを確認します。
 func TestStats_ゼロ値の確認(t *testing.T) {
@@ -505,5 +511,210 @@ func TestNewCore_AllowedTagsの独立性(t *testing.T) {
 func TestBaseStatValue(t *testing.T) {
 	if BaseStatValue != 10 {
 		t.Errorf("BaseStatValueが期待値と異なります: got %d, want 10", BaseStatValue)
+	}
+}
+
+// ==================== PassiveSkill効果量計算テスト ====================
+
+// TestPassiveSkill_拡張フィールドの確認 はPassiveSkill拡張フィールドが正しく設定されることを確認します。
+func TestPassiveSkill_拡張フィールドの確認(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_buff_extender",
+		Name:        "バフエクステンダー",
+		Description: "バフ効果時間+50%",
+		BaseModifiers: StatModifiers{
+			CDReduction: 0.1,
+		},
+		ScalePerLevel: 0.02,
+	}
+
+	if skill.ID != "ps_buff_extender" {
+		t.Errorf("IDが期待値と異なります: got %s, want ps_buff_extender", skill.ID)
+	}
+	if skill.BaseModifiers.CDReduction != 0.1 {
+		t.Errorf("BaseModifiers.CDReductionが期待値と異なります: got %f, want 0.1", skill.BaseModifiers.CDReduction)
+	}
+	if skill.ScalePerLevel != 0.02 {
+		t.Errorf("ScalePerLevelが期待値と異なります: got %f, want 0.02", skill.ScalePerLevel)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_レベル1 はレベル1での効果量計算をテストします。
+func TestPassiveSkill_CalculateModifiers_レベル1(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_buff_extender",
+		Name:        "バフエクステンダー",
+		Description: "バフ効果時間+50%",
+		BaseModifiers: StatModifiers{
+			CDReduction: 0.1,
+			STR_Add:     10,
+		},
+		ScalePerLevel: 0.5, // 50%増加/レベル
+	}
+
+	modifiers := skill.CalculateModifiers(1)
+
+	// レベル1: 基礎値のまま（レベル1からのスケールはなし）
+	if modifiers.CDReduction != 0.1 {
+		t.Errorf("CDReductionが期待値と異なります: got %f, want 0.1", modifiers.CDReduction)
+	}
+	if modifiers.STR_Add != 10 {
+		t.Errorf("STR_Addが期待値と異なります: got %d, want 10", modifiers.STR_Add)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_レベル5 はレベル5での効果量計算をテストします。
+func TestPassiveSkill_CalculateModifiers_レベル5(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_buff_extender",
+		Name:        "バフエクステンダー",
+		Description: "バフ効果時間+50%",
+		BaseModifiers: StatModifiers{
+			CDReduction: 0.1,
+			STR_Add:     10,
+		},
+		ScalePerLevel: 0.5, // 50%増加/レベル（レベル1からの差分）
+	}
+
+	modifiers := skill.CalculateModifiers(5)
+
+	// レベル5: 基礎値 × (1 + 0.5 × (5-1)) = 基礎値 × 3.0
+	// CDReduction: 0.1 × 3.0 = 0.3
+	// STR_Add: 10 × 3.0 = 30
+	if !floatEquals(modifiers.CDReduction, 0.3) {
+		t.Errorf("CDReductionが期待値と異なります: got %f, want 0.3", modifiers.CDReduction)
+	}
+	if modifiers.STR_Add != 30 {
+		t.Errorf("STR_Addが期待値と異なります: got %d, want 30", modifiers.STR_Add)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_レベル10 はレベル10での効果量計算をテストします。
+func TestPassiveSkill_CalculateModifiers_レベル10(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_damage_amp",
+		Name:        "ダメージアンプ",
+		Description: "攻撃ダメージ+10%",
+		BaseModifiers: StatModifiers{
+			STR_Mult: 1.1, // 10%増加
+			MAG_Add:  5,
+		},
+		ScalePerLevel: 0.1, // 10%増加/レベル
+	}
+
+	modifiers := skill.CalculateModifiers(10)
+
+	// レベル10: 基礎値 × (1 + 0.1 × (10-1)) = 基礎値 × 1.9
+	// STR_Mult: 1.1はそのまま（乗算は1.0からのオフセットとして計算）
+	// オフセット0.1 × 1.9 = 0.19、結果 = 1.0 + 0.19 = 1.19
+	expectedSTRMult := 1.0 + (0.1 * 1.9)
+	if !floatEquals(modifiers.STR_Mult, expectedSTRMult) {
+		t.Errorf("STR_Multが期待値と異なります: got %f, want %f", modifiers.STR_Mult, expectedSTRMult)
+	}
+
+	// MAG_Add: 5 × 1.9 = 9（整数部分）
+	if modifiers.MAG_Add != 9 {
+		t.Errorf("MAG_Addが期待値と異なります: got %d, want 9", modifiers.MAG_Add)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_ゼロレベル はレベル0またはそれ以下での計算をテストします。
+func TestPassiveSkill_CalculateModifiers_ゼロレベル(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_test",
+		Name:        "テストスキル",
+		Description: "テスト",
+		BaseModifiers: StatModifiers{
+			STR_Add: 10,
+		},
+		ScalePerLevel: 0.5,
+	}
+
+	// レベル0はレベル1として扱う
+	modifiers := skill.CalculateModifiers(0)
+
+	if modifiers.STR_Add != 10 {
+		t.Errorf("レベル0はレベル1として扱われるべきです: got %d, want 10", modifiers.STR_Add)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_ゼロスケール はスケールが0の場合をテストします。
+func TestPassiveSkill_CalculateModifiers_ゼロスケール(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_fixed",
+		Name:        "固定効果スキル",
+		Description: "レベルに関係なく固定効果",
+		BaseModifiers: StatModifiers{
+			CritRate: 0.05,
+		},
+		ScalePerLevel: 0.0, // スケールなし
+	}
+
+	modifiers := skill.CalculateModifiers(10)
+
+	// スケールが0なので、レベルに関係なく基礎値のまま
+	if modifiers.CritRate != 0.05 {
+		t.Errorf("CritRateが期待値と異なります: got %f, want 0.05", modifiers.CritRate)
+	}
+}
+
+// TestPassiveSkill_CalculateModifiers_全フィールド は全フィールドがスケールされることをテストします。
+func TestPassiveSkill_CalculateModifiers_全フィールド(t *testing.T) {
+	skill := PassiveSkill{
+		ID:          "ps_full",
+		Name:        "フルスキル",
+		Description: "全効果テスト",
+		BaseModifiers: StatModifiers{
+			STR_Add:         10,
+			MAG_Add:         10,
+			SPD_Add:         10,
+			LUK_Add:         10,
+			STR_Mult:        1.1,
+			MAG_Mult:        1.1,
+			SPD_Mult:        1.1,
+			LUK_Mult:        1.1,
+			CDReduction:     0.1,
+			TypingTimeExt:   1.0,
+			DamageReduction: 0.1,
+			CritRate:        0.05,
+			PhysicalEvade:   0.1,
+			MagicEvade:      0.1,
+		},
+		ScalePerLevel: 1.0, // 100%増加/レベル
+	}
+
+	modifiers := skill.CalculateModifiers(3)
+
+	// レベル3: 基礎値 × (1 + 1.0 × (3-1)) = 基礎値 × 3.0
+	scale := 3.0
+
+	// 加算フィールドは整数に切り捨て
+	expectedAdd := int(10 * scale)
+	if modifiers.STR_Add != expectedAdd {
+		t.Errorf("STR_Addが期待値と異なります: got %d, want %d", modifiers.STR_Add, expectedAdd)
+	}
+	if modifiers.MAG_Add != expectedAdd {
+		t.Errorf("MAG_Addが期待値と異なります: got %d, want %d", modifiers.MAG_Add, expectedAdd)
+	}
+	if modifiers.SPD_Add != expectedAdd {
+		t.Errorf("SPD_Addが期待値と異なります: got %d, want %d", modifiers.SPD_Add, expectedAdd)
+	}
+	if modifiers.LUK_Add != expectedAdd {
+		t.Errorf("LUK_Addが期待値と異なります: got %d, want %d", modifiers.LUK_Add, expectedAdd)
+	}
+
+	// 乗算フィールドはオフセットをスケール
+	expectedMult := 1.0 + (0.1 * scale)
+	if !floatEquals(modifiers.STR_Mult, expectedMult) {
+		t.Errorf("STR_Multが期待値と異なります: got %f, want %f", modifiers.STR_Mult, expectedMult)
+	}
+	if !floatEquals(modifiers.MAG_Mult, expectedMult) {
+		t.Errorf("MAG_Multが期待値と異なります: got %f, want %f", modifiers.MAG_Mult, expectedMult)
+	}
+
+	// 特殊効果フィールド
+	expectedCDReduction := 0.1 * scale
+	if !floatEquals(modifiers.CDReduction, expectedCDReduction) {
+		t.Errorf("CDReductionが期待値と異なります: got %f, want %f", modifiers.CDReduction, expectedCDReduction)
 	}
 }

@@ -33,6 +33,7 @@ func (s Stats) Total() int {
 
 // PassiveSkill はコア特性に紐づくパッシブスキルを表す構造体です。
 // 各コア特性は1つの固有パッシブスキルを持ちます。
+// 効果量はコアレベルに応じてスケーリングされます。
 type PassiveSkill struct {
 	// ID はパッシブスキルの一意識別子です。
 	ID string
@@ -42,6 +43,57 @@ type PassiveSkill struct {
 
 	// Description はパッシブスキルの効果説明です。
 	Description string
+
+	// BaseModifiers はレベル1時点の基礎効果です。
+	BaseModifiers StatModifiers
+
+	// ScalePerLevel はレベルごとのスケール係数です。
+	// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
+	ScalePerLevel float64
+}
+
+// CalculateModifiers はコアレベルに応じた効果量を計算します。
+// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
+// レベルが0以下の場合はレベル1として扱います。
+func (p PassiveSkill) CalculateModifiers(coreLevel int) StatModifiers {
+	// レベル0以下はレベル1として扱う
+	if coreLevel < 1 {
+		coreLevel = 1
+	}
+
+	// スケール計算: 1 + ScalePerLevel × (Level - 1)
+	scale := 1.0 + p.ScalePerLevel*float64(coreLevel-1)
+
+	// 乗算フィールドはオフセット（1.0からの差分）をスケールする
+	scaleMultiplier := func(baseMult float64) float64 {
+		if baseMult == 0 {
+			return 0
+		}
+		offset := baseMult - 1.0
+		return 1.0 + (offset * scale)
+	}
+
+	return StatModifiers{
+		// 加算フィールドはそのままスケール
+		STR_Add: int(float64(p.BaseModifiers.STR_Add) * scale),
+		MAG_Add: int(float64(p.BaseModifiers.MAG_Add) * scale),
+		SPD_Add: int(float64(p.BaseModifiers.SPD_Add) * scale),
+		LUK_Add: int(float64(p.BaseModifiers.LUK_Add) * scale),
+
+		// 乗算フィールドはオフセットをスケール
+		STR_Mult: scaleMultiplier(p.BaseModifiers.STR_Mult),
+		MAG_Mult: scaleMultiplier(p.BaseModifiers.MAG_Mult),
+		SPD_Mult: scaleMultiplier(p.BaseModifiers.SPD_Mult),
+		LUK_Mult: scaleMultiplier(p.BaseModifiers.LUK_Mult),
+
+		// 特殊効果フィールドはそのままスケール
+		CDReduction:     p.BaseModifiers.CDReduction * scale,
+		TypingTimeExt:   p.BaseModifiers.TypingTimeExt * scale,
+		DamageReduction: p.BaseModifiers.DamageReduction * scale,
+		CritRate:        p.BaseModifiers.CritRate * scale,
+		PhysicalEvade:   p.BaseModifiers.PhysicalEvade * scale,
+		MagicEvade:      p.BaseModifiers.MagicEvade * scale,
+	}
 }
 
 // CoreType はコアの特性（タイプ）を定義する構造体です。

@@ -18,7 +18,7 @@
   - 値の等価性判定メソッドを実装
   - _Requirements: 3.1, 3.4, 5.1_
 
-- [ ] 1.2 (P) PassiveSkillを効果量計算対応に拡張する
+- [x] 1.2 (P) PassiveSkillを効果量計算対応に拡張する
   - 既存のPassiveSkill構造体にBaseModifiersとScalePerLevelフィールドを追加
   - コアレベルに応じた効果量を計算するCalculateModifiersメソッドを実装
   - StatModifiersとの連携インターフェースを定義
