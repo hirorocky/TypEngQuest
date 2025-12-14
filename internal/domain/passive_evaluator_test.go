@@ -545,3 +545,193 @@ func TestPassiveEvaluationResult_フィールドの確認(t *testing.T) {
 		t.Errorf("Probabilityが期待値と異なります: got %f, want 0.3", result.Probability)
 	}
 }
+
+// TestPassiveEvaluator_確率トリガー_モック化テスト は確率判定のモック化テストを行います。
+func TestPassiveEvaluator_確率トリガー_モック化テスト(t *testing.T) {
+	def := PassiveSkillDefinition{
+		ID:          "ps_echo_skill",
+		Name:        "エコースキル",
+		Description: "15%の確率でスキル2回発動",
+		TriggerType: PassiveTriggerProbability,
+		TriggerCondition: &TriggerCondition{
+			Type: TriggerConditionOnSkillUse,
+		},
+		EffectType:  PassiveEffectSpecial,
+		Probability: 0.15,
+	}
+
+	// スキル使用イベント
+	ctx := &PassiveEvaluationContext{
+		Event: PassiveEventSkillUse,
+	}
+	result := EvaluatePassive(def, ctx)
+
+	// 確率チェックが必要であることを確認
+	if !result.NeedsProbabilityCheck {
+		t.Error("スキル使用イベント時は確率チェックが必要です")
+	}
+	if result.Probability != 0.15 {
+		t.Errorf("Probabilityが期待値と異なります: got %f, want 0.15", result.Probability)
+	}
+
+	// 発動判定はユースケース層で行うので、ここでは確率値の返却を確認
+	// モック化テスト: 確率0の場合は発動しない
+	defNoChance := PassiveSkillDefinition{
+		ID:          "test_no_chance",
+		TriggerType: PassiveTriggerProbability,
+		TriggerCondition: &TriggerCondition{
+			Type: TriggerConditionOnSkillUse,
+		},
+		Probability: 0,
+	}
+	resultNoChance := EvaluatePassive(defNoChance, ctx)
+	// Probability 0 でも確率チェックが必要（実際の発動判定はユースケース層）
+	if !resultNoChance.NeedsProbabilityCheck {
+		t.Error("確率0でも確率チェックフラグは立つべきです")
+	}
+}
+
+// TestPassiveEvaluator_複数パッシブスキル併存 は複数のパッシブスキルが独立して評価されることを確認します。
+func TestPassiveEvaluator_複数パッシブスキル併存(t *testing.T) {
+	// 永続効果
+	buffExtender := PassiveSkillDefinition{
+		ID:          "ps_buff_extender",
+		TriggerType: PassiveTriggerPermanent,
+		EffectType:  PassiveEffectMultiplier,
+		EffectValue: 1.5,
+	}
+
+	// 条件付き効果
+	perfectRhythm := PassiveSkillDefinition{
+		ID:          "ps_perfect_rhythm",
+		TriggerType: PassiveTriggerConditional,
+		TriggerCondition: &TriggerCondition{
+			Type:  TriggerConditionAccuracyEquals,
+			Value: 100,
+		},
+		EffectType:  PassiveEffectMultiplier,
+		EffectValue: 1.5,
+	}
+
+	// 同一コンテキストで両方を評価
+	ctx := &PassiveEvaluationContext{
+		Accuracy: 100,
+	}
+
+	result1 := EvaluatePassive(buffExtender, ctx)
+	result2 := EvaluatePassive(perfectRhythm, ctx)
+
+	// 両方が独立してアクティブ
+	if !result1.IsActive {
+		t.Error("buffExtenderはアクティブであるべきです")
+	}
+	if !result2.IsActive {
+		t.Error("perfectRhythmはアクティブであるべきです（正確性100%）")
+	}
+
+	// 効果倍率の合成は上位層の責務だが、独立した値を返すことを確認
+	if result1.EffectMultiplier != 1.5 {
+		t.Errorf("buffExtenderのEffectMultiplierが期待値と異なります: got %f, want 1.5", result1.EffectMultiplier)
+	}
+	if result2.EffectMultiplier != 1.5 {
+		t.Errorf("perfectRhythmのEffectMultiplierが期待値と異なります: got %f, want 1.5", result2.EffectMultiplier)
+	}
+
+	// 正確性が100%でない場合、perfectRhythmは不発動
+	ctx2 := &PassiveEvaluationContext{
+		Accuracy: 95,
+	}
+	result3 := EvaluatePassive(buffExtender, ctx2)
+	result4 := EvaluatePassive(perfectRhythm, ctx2)
+
+	if !result3.IsActive {
+		t.Error("buffExtenderは常にアクティブであるべきです")
+	}
+	if result4.IsActive {
+		t.Error("perfectRhythmは正確性95%では不発動であるべきです")
+	}
+}
+
+// TestPassiveEvaluator_条件付きnil はTriggerConditionがnilの場合の処理を確認します。
+func TestPassiveEvaluator_条件付きnil(t *testing.T) {
+	def := PassiveSkillDefinition{
+		ID:               "test_no_condition",
+		TriggerType:      PassiveTriggerConditional,
+		TriggerCondition: nil, // 条件なし
+		EffectType:       PassiveEffectMultiplier,
+		EffectValue:      1.5,
+	}
+
+	ctx := &PassiveEvaluationContext{}
+	result := EvaluatePassive(def, ctx)
+
+	// 条件がない場合は発動しない
+	if result.IsActive {
+		t.Error("TriggerConditionがnilの場合は発動しないべきです")
+	}
+}
+
+// TestPassiveEvaluator_スタック型_条件nil はスタック型でTriggerConditionがnilの場合の処理を確認します。
+func TestPassiveEvaluator_スタック型_条件nil(t *testing.T) {
+	def := PassiveSkillDefinition{
+		ID:               "test_stack_no_condition",
+		TriggerType:      PassiveTriggerStack,
+		TriggerCondition: nil, // 条件なし
+		EffectValue:      0.1,
+		MaxStacks:        5,
+	}
+
+	ctx := &PassiveEvaluationContext{
+		CurrentStacks: 3,
+	}
+	result := EvaluatePassive(def, ctx)
+
+	// 条件がない場合はデフォルト値
+	if result.IsActive {
+		t.Error("TriggerConditionがnilの場合は発動しないべきです")
+	}
+}
+
+// TestPassiveEvaluator_反応型_条件nil は反応型でTriggerConditionがnilの場合の処理を確認します。
+func TestPassiveEvaluator_反応型_条件nil(t *testing.T) {
+	def := PassiveSkillDefinition{
+		ID:               "test_reactive_no_condition",
+		TriggerType:      PassiveTriggerReactive,
+		TriggerCondition: nil, // 条件なし
+		EffectType:       PassiveEffectSpecial,
+	}
+
+	ctx := &PassiveEvaluationContext{
+		Event: PassiveEventBattleStart,
+	}
+	result := EvaluatePassive(def, ctx)
+
+	// 条件がない場合は発動しない
+	if result.IsActive {
+		t.Error("TriggerConditionがnilの場合は発動しないべきです")
+	}
+}
+
+// TestPassiveEvaluator_使用回数無制限 は使用回数制限なし（UsesPerBattle=0）の処理を確認します。
+func TestPassiveEvaluator_使用回数無制限(t *testing.T) {
+	def := PassiveSkillDefinition{
+		ID:          "test_unlimited_uses",
+		TriggerType: PassiveTriggerReactive,
+		TriggerCondition: &TriggerCondition{
+			Type: TriggerConditionOnDamageReceived,
+		},
+		EffectType:    PassiveEffectSpecial,
+		UsesPerBattle: 0, // 無制限
+	}
+
+	ctx := &PassiveEvaluationContext{
+		Event:         PassiveEventDamageReceived,
+		UsesRemaining: 0, // 使用回数切れ状態でもUsesPerBattle=0なら発動
+	}
+	result := EvaluatePassive(def, ctx)
+
+	// UsesPerBattle=0の場合は使用回数チェックなしで発動
+	if !result.IsActive {
+		t.Error("UsesPerBattle=0の場合は使用回数制限なしで発動するべきです")
+	}
+}
