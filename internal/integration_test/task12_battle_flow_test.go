@@ -10,6 +10,34 @@ import (
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
+// newTestModuleTask12 はテスト用モジュールを作成するヘルパー関数です。
+func newTestModuleTask12(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
+// newTestModuleWithChainEffectTask12 はチェイン効果付きモジュールを作成するヘルパー関数です。
+func newTestModuleWithChainEffectTask12(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, chainEffect)
+}
+
 // ==================================================
 // Task 12.2: バトルフロー全体の統合テスト
 // ==================================================
@@ -85,24 +113,24 @@ func createTestAgentsWithPassiveSkills() []*domain.AgentModel {
 	chainEffect3 := domain.NewChainEffect(domain.ChainEffectBuffDuration, 5.0)
 
 	modules1 := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("physical_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "", &chainEffect1),
-		domain.NewModuleWithChainEffect("magic_lv1", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "", nil),
-		domain.NewModule("buff_lv1", "攻撃バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
-		domain.NewModule("debuff_lv1", "速度デバフLv1", domain.Debuff, 1, []string{"debuff_low"}, 5.0, "SPD", ""),
+		newTestModuleWithChainEffectTask12("physical_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "", &chainEffect1),
+		newTestModuleWithChainEffectTask12("magic_lv1", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "", nil),
+		newTestModuleTask12("buff_lv1", "攻撃バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestModuleTask12("debuff_lv1", "速度デバフLv1", domain.Debuff, 1, []string{"debuff_low"}, 5.0, "SPD", ""),
 	}
 
 	modules2 := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("heal_lv1", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "", &chainEffect2),
-		domain.NewModuleWithChainEffect("buff_lv2", "防御バフLv1", domain.Buff, 1, []string{"buff_low"}, 6.0, "SPD", "", &chainEffect3),
-		domain.NewModule("magic_lv2", "アイスボルトLv1", domain.MagicAttack, 1, []string{"magic_low"}, 9.0, "MAG", ""),
-		domain.NewModule("heal_lv2", "リジェネLv1", domain.Heal, 1, []string{"heal_low"}, 6.0, "MAG", ""),
+		newTestModuleWithChainEffectTask12("heal_lv1", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "", &chainEffect2),
+		newTestModuleWithChainEffectTask12("buff_lv2", "防御バフLv1", domain.Buff, 1, []string{"buff_low"}, 6.0, "SPD", "", &chainEffect3),
+		newTestModuleTask12("magic_lv2", "アイスボルトLv1", domain.MagicAttack, 1, []string{"magic_low"}, 9.0, "MAG", ""),
+		newTestModuleTask12("heal_lv2", "リジェネLv1", domain.Heal, 1, []string{"heal_low"}, 6.0, "MAG", ""),
 	}
 
 	modules3 := []*domain.ModuleModel{
-		domain.NewModule("physical_lv2", "スラッシュLv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 12.0, "STR", ""),
-		domain.NewModule("buff_lv3", "速度バフLv1", domain.Buff, 1, []string{"buff_low"}, 7.0, "SPD", ""),
-		domain.NewModule("debuff_lv2", "攻撃デバフLv1", domain.Debuff, 1, []string{"debuff_low"}, 5.0, "SPD", ""),
-		domain.NewModule("physical_lv3", "強撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 15.0, "STR", ""),
+		newTestModuleTask12("physical_lv2", "スラッシュLv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 12.0, "STR", ""),
+		newTestModuleTask12("buff_lv3", "速度バフLv1", domain.Buff, 1, []string{"buff_low"}, 7.0, "SPD", ""),
+		newTestModuleTask12("debuff_lv2", "攻撃デバフLv1", domain.Debuff, 1, []string{"debuff_low"}, 5.0, "SPD", ""),
+		newTestModuleTask12("physical_lv3", "強撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 15.0, "STR", ""),
 	}
 
 	return []*domain.AgentModel{

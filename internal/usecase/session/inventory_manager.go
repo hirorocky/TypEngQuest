@@ -62,8 +62,9 @@ func (m *InventoryManager) RemoveCore(id string) error {
 }
 
 // RemoveModule はモジュールをインベントリから削除します。
-func (m *InventoryManager) RemoveModule(id string) error {
-	m.modules.Remove(id)
+// 指定されたTypeIDを持つ最初のモジュールを削除します。
+func (m *InventoryManager) RemoveModule(typeID string) error {
+	m.modules.RemoveByTypeID(typeID)
 	return nil
 }
 
@@ -127,87 +128,87 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	// 初期モジュールを追加
-	physicalMod := domain.NewModule(
-		"mod_001", "斬撃", domain.PhysicalAttack, 1,
-		[]string{"physical_low"}, 10.0, "STR", "基本的な物理攻撃",
-	)
+	physicalMod := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_001", Name: "斬撃", Category: domain.PhysicalAttack, Level: 1,
+		Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃",
+	}, nil)
 	if err := m.modules.Add(physicalMod); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", physicalMod.ID),
-			slog.String("module_name", physicalMod.Name),
+			slog.String("module_type_id", physicalMod.TypeID),
+			slog.String("module_name", physicalMod.Name()),
 			slog.Any("error", err),
 		)
 	}
 
-	magicMod := domain.NewModule(
-		"mod_002", "火球", domain.MagicAttack, 1,
-		[]string{"magic_low", "fire"}, 12.0, "MAG", "火属性の魔法攻撃",
-	)
+	magicMod := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_002", Name: "火球", Category: domain.MagicAttack, Level: 1,
+		Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃",
+	}, nil)
 	if err := m.modules.Add(magicMod); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", magicMod.ID),
-			slog.String("module_name", magicMod.Name),
+			slog.String("module_type_id", magicMod.TypeID),
+			slog.String("module_name", magicMod.Name()),
 			slog.Any("error", err),
 		)
 	}
 
-	healMod := domain.NewModule(
-		"mod_003", "ヒール", domain.Heal, 1,
-		[]string{"heal_low"}, 15.0, "MAG", "基本的な回復魔法",
-	)
+	healMod := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_003", Name: "ヒール", Category: domain.Heal, Level: 1,
+		Tags: []string{"heal_low"}, BaseEffect: 15.0, StatRef: "MAG", Description: "基本的な回復魔法",
+	}, nil)
 	if err := m.modules.Add(healMod); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", healMod.ID),
-			slog.String("module_name", healMod.Name),
+			slog.String("module_type_id", healMod.TypeID),
+			slog.String("module_name", healMod.Name()),
 			slog.Any("error", err),
 		)
 	}
 
-	buffMod := domain.NewModule(
-		"mod_004", "攻撃力アップ", domain.Buff, 1,
-		[]string{"buff_low"}, 5.0, "LUK", "攻撃力を上昇させる",
-	)
+	buffMod := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_004", Name: "攻撃力アップ", Category: domain.Buff, Level: 1,
+		Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "LUK", Description: "攻撃力を上昇させる",
+	}, nil)
 	if err := m.modules.Add(buffMod); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", buffMod.ID),
-			slog.String("module_name", buffMod.Name),
+			slog.String("module_type_id", buffMod.TypeID),
+			slog.String("module_name", buffMod.Name()),
 			slog.Any("error", err),
 		)
 	}
 
 	// 追加の初期モジュール
-	extraMod1 := domain.NewModule(
-		"mod_005", "突き", domain.PhysicalAttack, 1,
-		[]string{"physical_low"}, 8.0, "STR", "素早い物理攻撃",
-	)
+	extraMod1 := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_005", Name: "突き", Category: domain.PhysicalAttack, Level: 1,
+		Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃",
+	}, nil)
 	if err := m.modules.Add(extraMod1); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", extraMod1.ID),
-			slog.String("module_name", extraMod1.Name),
+			slog.String("module_type_id", extraMod1.TypeID),
+			slog.String("module_name", extraMod1.Name()),
 			slog.Any("error", err),
 		)
 	}
 
-	extraMod2 := domain.NewModule(
-		"mod_006", "氷結", domain.MagicAttack, 1,
-		[]string{"magic_low", "ice"}, 11.0, "MAG", "氷属性の魔法攻撃",
-	)
+	extraMod2 := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_006", Name: "氷結", Category: domain.MagicAttack, Level: 1,
+		Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatRef: "MAG", Description: "氷属性の魔法攻撃",
+	}, nil)
 	if err := m.modules.Add(extraMod2); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", extraMod2.ID),
-			slog.String("module_name", extraMod2.Name),
+			slog.String("module_type_id", extraMod2.TypeID),
+			slog.String("module_name", extraMod2.Name()),
 			slog.Any("error", err),
 		)
 	}
 
-	extraMod3 := domain.NewModule(
-		"mod_007", "防御アップ", domain.Buff, 1,
-		[]string{"buff_low"}, 4.0, "LUK", "防御力を上昇させる",
-	)
+	extraMod3 := domain.NewModuleFromType(domain.ModuleType{
+		ID: "mod_007", Name: "防御アップ", Category: domain.Buff, Level: 1,
+		Tags: []string{"buff_low"}, BaseEffect: 4.0, StatRef: "LUK", Description: "防御力を上昇させる",
+	}, nil)
 	if err := m.modules.Add(extraMod3); err != nil {
 		slog.Error("初期モジュール追加に失敗",
-			slog.String("module_id", extraMod3.ID),
-			slog.String("module_name", extraMod3.Name),
+			slog.String("module_type_id", extraMod3.TypeID),
+			slog.String("module_name", extraMod3.Name()),
 			slog.Any("error", err),
 		)
 	}

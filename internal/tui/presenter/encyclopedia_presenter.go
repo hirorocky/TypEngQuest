@@ -79,7 +79,7 @@ func CreateEncyclopediaData(gs *session.GameState) *screens.EncyclopediaData {
 	// 所持モジュールタイプを取得
 	acquiredModuleTypes := make([]string, 0)
 	for _, module := range gs.Inventory().GetModules() {
-		acquiredModuleTypes = append(acquiredModuleTypes, module.ID)
+		acquiredModuleTypes = append(acquiredModuleTypes, module.TypeID)
 	}
 
 	return &screens.EncyclopediaData{

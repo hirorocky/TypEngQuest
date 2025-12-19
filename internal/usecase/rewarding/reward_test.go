@@ -9,6 +9,34 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// newTestModule はテスト用モジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
+// newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
+func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, chainEffect)
+}
+
 // TestBattleReward_Victory_ShowsRewardScreen は勝利時に報酬画面を表示することをテストします。
 func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
@@ -348,7 +376,7 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 
 	// ドロップしたアイテムを一時保管
 	droppedCore := domain.NewCore("temp_core", "一時コア", 10, domain.CoreType{}, domain.PassiveSkill{})
-	droppedModule := domain.NewModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
+	droppedModule := newTestModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
 
 	storage := calculator.CreateTempStorage()
 	storage.AddCore(droppedCore)
@@ -678,7 +706,7 @@ func TestCalculateRewards_WithChainEffectPool(t *testing.T) {
 func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
 	// チェイン効果付きモジュールを作成
 	effect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 25)
-	module := domain.NewModuleWithChainEffect(
+	module := newTestModuleWithChainEffect(
 		"physical_lv1",
 		"物理攻撃Lv1",
 		domain.PhysicalAttack,

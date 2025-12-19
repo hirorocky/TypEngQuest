@@ -79,7 +79,7 @@ func TestMultipleEffects_PassiveAndChainEffectIndependence(t *testing.T) {
 	core := domain.NewCoreWithTypeID("attack_balance", 5, coreType, passiveSkill)
 
 	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 25.0)
-	module := domain.NewModuleWithChainEffect(
+	module := newTestModuleWithChainEffectForChain(
 		"physical_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 10.0, "STR", "",
 		&chainEffect,
@@ -87,9 +87,9 @@ func TestMultipleEffects_PassiveAndChainEffectIndependence(t *testing.T) {
 
 	agent := domain.NewAgent("agent_1", core, []*domain.ModuleModel{
 		module,
-		domain.NewModule("m2", "魔法攻撃Lv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		domain.NewModule("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		domain.NewModule("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestModuleForChain("m2", "魔法攻撃Lv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
+		newTestModuleForChain("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
+		newTestModuleForChain("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
 	})
 
 	// パッシブスキルが存在することを確認
@@ -128,10 +128,10 @@ func TestMultipleEffects_MultipleChainEffectsCoexist(t *testing.T) {
 	core := domain.NewCoreWithTypeID("test_type", 1, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "", &chainEffect1),
-		domain.NewModuleWithChainEffect("m2", "回復", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "", &chainEffect2),
-		domain.NewModuleWithChainEffect("m3", "バフ", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", "", &chainEffect3),
-		domain.NewModule("m4", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""), // チェイン効果なし
+		newTestModuleWithChainEffectForChain("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "", &chainEffect1),
+		newTestModuleWithChainEffectForChain("m2", "回復", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "", &chainEffect2),
+		newTestModuleWithChainEffectForChain("m3", "バフ", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", "", &chainEffect3),
+		newTestModuleForChain("m4", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""), // チェイン効果なし
 	}
 
 	agent := domain.NewAgent("agent_multi_chain", core, modules)
@@ -316,7 +316,7 @@ func TestEffectTiming_PassiveRegistrationAtBattleStart(t *testing.T) {
 func TestEffectTiming_ChainEffectWaitingState(t *testing.T) {
 	// チェイン効果付きモジュールの確認
 	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 25.0)
-	module := domain.NewModuleWithChainEffect(
+	module := newTestModuleWithChainEffectForChain(
 		"physical_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 10.0, "STR", "",
 		&chainEffect,

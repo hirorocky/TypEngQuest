@@ -9,6 +9,34 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// newTestModule はテスト用モジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
+// newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
+func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, chainEffect)
+}
+
 // ==================== Task 10.4: エージェント管理画面のテスト ====================
 
 // TestNewAgentManagementScreen はAgentManagementScreenの初期化をテストします。
@@ -281,9 +309,9 @@ func (i *TestInventory) RemoveCore(id string) error {
 }
 
 // RemoveModule はモジュールを削除します。
-func (i *TestInventory) RemoveModule(id string) error {
+func (i *TestInventory) RemoveModule(typeID string) error {
 	for idx, m := range i.modules {
-		if m.ID == id {
+		if m.TypeID == typeID {
 			i.modules = append(i.modules[:idx], i.modules[idx+1:]...)
 			return nil
 		}
@@ -320,27 +348,27 @@ func createTestInventory() *TestInventory {
 	core2 := domain.NewCore("core2", "コア2", 10, coreType, domain.PassiveSkill{})
 
 	modules := []*domain.ModuleModel{
-		domain.NewModule("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
-		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
-		domain.NewModule("m5", "デバフ", domain.Debuff, 1, []string{"debuff_low"}, 10, "SPD", "攻撃力DOWN"),
+		newTestModule("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		newTestModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModule("m5", "デバフ", domain.Debuff, 1, []string{"debuff_low"}, 10, "SPD", "攻撃力DOWN"),
 	}
 
 	// テスト用エージェントを作成
 	agentCore1 := domain.NewCore("agent_core1", "エージェントコア1", 5, coreType, domain.PassiveSkill{})
 	agentCore2 := domain.NewCore("agent_core2", "エージェントコア2", 10, coreType, domain.PassiveSkill{})
 	agentModules1 := []*domain.ModuleModel{
-		domain.NewModule("am1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
-		domain.NewModule("am2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("am3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("am4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModule("am1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		newTestModule("am2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("am3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("am4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 	agentModules2 := []*domain.ModuleModel{
-		domain.NewModule("am5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
-		domain.NewModule("am6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("am7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("am8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModule("am5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		newTestModule("am6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("am7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("am8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 	agent1 := domain.NewAgent("agent1", agentCore1, agentModules1)
 	agent2 := domain.NewAgent("agent2", agentCore2, agentModules2)
@@ -485,26 +513,26 @@ func createTestInventoryWithPassiveAndChain() *TestInventory {
 
 	// チェイン効果付きモジュール
 	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
-	module1 := domain.NewModuleWithChainEffect(
+	module1 := newTestModuleWithChainEffect(
 		"module1", "攻撃モジュール",
 		domain.PhysicalAttack, 1,
 		[]string{"physical_low"},
 		50.0, "STR", "テスト攻撃",
 		&chainEffect,
 	)
-	module2 := domain.NewModule(
+	module2 := newTestModule(
 		"module2", "魔法モジュール",
 		domain.MagicAttack, 1,
 		[]string{"magic_low"},
 		40.0, "MAG", "テスト魔法",
 	)
-	module3 := domain.NewModule(
+	module3 := newTestModule(
 		"module3", "回復モジュール",
 		domain.Heal, 1,
 		[]string{"magic_low"},
 		30.0, "MAG", "テスト回復",
 	)
-	module4 := domain.NewModule(
+	module4 := newTestModule(
 		"module4", "バフモジュール",
 		domain.Buff, 1,
 		[]string{"magic_low"},

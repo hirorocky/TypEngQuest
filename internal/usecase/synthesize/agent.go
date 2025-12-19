@@ -82,7 +82,7 @@ func (m *AgentManager) InitializeWithDefaults() {
 		core := cores[0]
 		moduleIDs := make([]string, domain.ModuleSlotCount)
 		for i := 0; i < domain.ModuleSlotCount; i++ {
-			moduleIDs[i] = modules[i].ID
+			moduleIDs[i] = modules[i].TypeID
 		}
 
 		agent, err := m.SynthesizeAgent(core.ID, moduleIDs)
@@ -135,13 +135,13 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 	// モジュールを取得し、互換性チェック
 	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
 	for _, moduleID := range moduleIDs {
-		module := m.moduleInventory.Get(moduleID)
+		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {
 			return nil, fmt.Errorf("モジュールが見つかりません: %s", moduleID)
 		}
 
 		if !m.ValidateModuleCompatibility(core, module) {
-			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name, core.Name)
+			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name(), core.Name)
 		}
 
 		modules = append(modules, module)
@@ -157,7 +157,7 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 
 	m.coreInventory.Remove(coreID)
 	for _, moduleID := range moduleIDs {
-		m.moduleInventory.Remove(moduleID)
+		m.moduleInventory.RemoveByTypeID(moduleID)
 	}
 
 	// エージェントをインベントリに追加
@@ -182,12 +182,12 @@ func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*
 
 	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
 	for _, moduleID := range moduleIDs {
-		module := m.moduleInventory.Get(moduleID)
+		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {
 			return nil, fmt.Errorf("モジュールが見つかりません: %s", moduleID)
 		}
 		if !m.ValidateModuleCompatibility(core, module) {
-			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name, core.Name)
+			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name(), core.Name)
 		}
 		modules = append(modules, module)
 	}

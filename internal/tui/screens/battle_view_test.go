@@ -28,17 +28,16 @@ func createTestAgentWithPassive(passiveSkill domain.PassiveSkill, modules []*dom
 
 // createTestModuleWithChain はチェイン効果付きテスト用モジュールを作成します。
 func createTestModuleWithChain(name string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
-	return domain.NewModuleWithChainEffect(
-		"test_module_"+name,
-		name,
-		domain.PhysicalAttack,
-		1,
-		[]string{"physical_low"},
-		50.0,
-		"STR",
-		"テスト攻撃モジュール",
-		chainEffect,
-	)
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          "test_module_" + name,
+		Name:        name,
+		Category:    domain.PhysicalAttack,
+		Level:       1,
+		Tags:        []string{"physical_low"},
+		BaseEffect:  50.0,
+		StatRef:     "STR",
+		Description: "テスト攻撃モジュール",
+	}, chainEffect)
 }
 
 // TestBattleScreen_RenderAgentAreaWithRecast はリキャスト状態表示のテストです。

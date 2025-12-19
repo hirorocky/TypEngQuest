@@ -479,10 +479,10 @@ func createTestAgents() []*domain.AgentModel {
 	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
 
 	modules := []*domain.ModuleModel{
-		domain.NewModule("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
-		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModule("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		newTestModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 
 	agent := domain.NewAgent("agent1", core, modules)
@@ -1216,10 +1216,10 @@ func createTestAgentsWithChainEffect() []*domain.AgentModel {
 	// チェイン効果付きモジュール
 	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25)
 	modules := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect),
-		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect),
+		newTestModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 
 	agent := domain.NewAgent("agent1", core, modules)
@@ -1239,10 +1239,10 @@ func createTestAgentsWithChainEffectMultiple() []*domain.AgentModel {
 	core1 := domain.NewCore("core1", "テストコア1", 5, coreType, domain.PassiveSkill{})
 	chainEffect1 := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25)
 	modules1 := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect1),
-		domain.NewModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModuleWithChainEffect("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect1),
+		newTestModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 	agent1 := domain.NewAgent("agent1", core1, modules1)
 
@@ -1250,10 +1250,10 @@ func createTestAgentsWithChainEffectMultiple() []*domain.AgentModel {
 	core2 := domain.NewCore("core2", "テストコア2", 5, coreType, domain.PassiveSkill{})
 	chainEffect2 := domain.NewChainEffect(domain.ChainEffectHealBonus, 30)
 	modules2 := []*domain.ModuleModel{
-		domain.NewModuleWithChainEffect("m5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect2),
-		domain.NewModule("m6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
-		domain.NewModule("m7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
-		domain.NewModule("m8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+		newTestModuleWithChainEffect("m5", "物理攻撃2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ", &chainEffect2),
+		newTestModule("m6", "魔法攻撃2", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m7", "回復2", domain.Heal, 1, []string{"heal_low"}, 10, "MAG", "HP回復"),
+		newTestModule("m8", "バフ2", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
 	}
 	agent2 := domain.NewAgent("agent2", core2, modules2)
 

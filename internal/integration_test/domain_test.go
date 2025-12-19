@@ -8,6 +8,20 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// newTestModule はテスト用モジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
 // ==================================================
 // Task 15.1: ドメインモデル単体テスト
 // ==================================================
@@ -82,7 +96,7 @@ func TestCoreModel_TagAllowance(t *testing.T) {
 
 func TestModuleModel_CategoryAndTags(t *testing.T) {
 
-	module := domain.NewModule(
+	module := newTestModule(
 		"module_1",
 		"物理打撃Lv1",
 		domain.PhysicalAttack,
@@ -94,8 +108,8 @@ func TestModuleModel_CategoryAndTags(t *testing.T) {
 	)
 
 	// カテゴリチェック
-	if module.Category != domain.PhysicalAttack {
-		t.Errorf("Category expected PhysicalAttack, got %v", module.Category)
+	if module.Category() != domain.PhysicalAttack {
+		t.Errorf("Category expected PhysicalAttack, got %v", module.Category())
 	}
 
 	// タグチェック
@@ -118,7 +132,7 @@ func TestModuleModel_CoreCompatibility(t *testing.T) {
 	core := domain.NewCore("core_1", "テストコア", 1, coreType, passiveSkill)
 
 	// 互換性のあるモジュール
-	compatibleModule := domain.NewModule(
+	compatibleModule := newTestModule(
 		"module_1", "物理打撃Lv1", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 10.0, "STR", "物理攻撃",
 	)
@@ -127,7 +141,7 @@ func TestModuleModel_CoreCompatibility(t *testing.T) {
 	}
 
 	// 互換性のないモジュール
-	incompatibleModule := domain.NewModule(
+	incompatibleModule := newTestModule(
 		"module_2", "ヒールLv2", domain.Heal, 2,
 		[]string{"heal_mid"}, 15.0, "MAG", "回復",
 	)
@@ -147,10 +161,10 @@ func TestAgentModel_LevelEqualsCore(t *testing.T) {
 	core := domain.NewCore("core_1", "テストコア", 10, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		domain.NewModule("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		domain.NewModule("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		domain.NewModule("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		domain.NewModule("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestModule("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
+		newTestModule("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
+		newTestModule("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	agent := domain.NewAgent("agent_1", core, modules)

@@ -109,15 +109,15 @@ func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
 
 	// 全てレベル1であること
 	for _, m := range modules {
-		if m.Level != 1 {
-			t.Errorf("初期モジュールはレベル1であるべきです: got %d", m.Level)
+		if m.Level() != 1 {
+			t.Errorf("初期モジュールはレベル1であるべきです: got %d", m.Level())
 		}
 	}
 
 	// カテゴリが多様であること（同じカテゴリが4つではないこと）
 	categories := make(map[string]bool)
 	for _, m := range modules {
-		categories[string(m.Category)] = true
+		categories[string(m.Category())] = true
 	}
 	if len(categories) < 2 {
 		t.Error("初期モジュールは複数のカテゴリを含むべきです")

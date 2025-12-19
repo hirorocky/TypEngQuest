@@ -166,8 +166,8 @@ func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
 	return fileData.Modules, nil
 }
 
-// ToDomain はModuleDefinitionDataをドメインモデルのModuleModelに変換します。
-func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
+// ToDomainType はModuleDefinitionDataをドメインモデルのModuleTypeに変換します。
+func (m *ModuleDefinitionData) ToDomainType() domain.ModuleType {
 	// カテゴリ文字列をModuleCategoryに変換
 	var category domain.ModuleCategory
 	switch m.Category {
@@ -185,16 +185,30 @@ func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
 		category = domain.PhysicalAttack // デフォルト
 	}
 
-	return domain.NewModule(
-		m.ID,
-		m.Name,
-		category,
-		m.Level,
-		m.Tags,
-		m.BaseEffect,
-		m.StatReference,
-		m.Description,
-	)
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(m.Tags))
+	copy(tagsCopy, m.Tags)
+
+	return domain.ModuleType{
+		ID:              m.ID,
+		Name:            m.Name,
+		Category:        category,
+		Level:           m.Level,
+		Tags:            tagsCopy,
+		BaseEffect:      m.BaseEffect,
+		StatRef:         m.StatReference,
+		Description:     m.Description,
+		CooldownSeconds: m.CooldownSeconds,
+		Difficulty:      m.Difficulty,
+		MinDropLevel:    m.MinDropLevel,
+	}
+}
+
+// ToDomain はModuleDefinitionDataをドメインモデルのModuleModelに変換します。
+// チェイン効果なしのモジュールを作成します。
+func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
+	moduleType := m.ToDomainType()
+	return domain.NewModuleFromType(moduleType, nil)
 }
 
 // ==================== 敵タイプ定義 ====================

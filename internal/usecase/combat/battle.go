@@ -548,7 +548,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 ) int {
 
 	var statValue int
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
 		statValue = agent.BaseStats.STR
 	case "MAG":
@@ -562,7 +562,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 	}
 
 	// 基礎効果 × ステータス値 × スケール係数
-	baseEffect := module.BaseEffect * float64(statValue) * EffectScaleFactor
+	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
 
 	// 速度係数と正確性係数を適用
 	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
@@ -584,7 +584,7 @@ func (e *BattleEngine) ApplyModuleEffect(
 ) int {
 	effectAmount := e.CalculateModuleEffect(agent, module, typingResult)
 
-	switch module.Category {
+	switch module.Category() {
 	case domain.PhysicalAttack, domain.MagicAttack:
 		// 攻撃系モジュール - 敵にダメージ（敵のダメージ軽減を考慮）
 		enemyStats := state.Enemy.EffectTable.Calculate(domain.Stats{})
@@ -618,7 +618,7 @@ func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.Module
 	duration := config.BuffDuration
 
 	modifiers := domain.StatModifiers{}
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
 		modifiers.STR_Add = effectAmount
 	case "MAG":
@@ -634,7 +634,7 @@ func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.Module
 	state.Player.EffectTable.AddRow(domain.EffectRow{
 		ID:         uuid.New().String(),
 		SourceType: domain.SourceBuff,
-		Name:       module.Name,
+		Name:       module.Name(),
 		Duration:   &duration,
 		Modifiers:  modifiers,
 	})
@@ -645,7 +645,7 @@ func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.Modul
 	duration := config.DebuffDuration
 
 	modifiers := domain.StatModifiers{}
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
 		modifiers.STR_Add = -effectAmount // 攻撃力低下
 	case "MAG":
@@ -657,7 +657,7 @@ func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.Modul
 	state.Enemy.EffectTable.AddRow(domain.EffectRow{
 		ID:         uuid.New().String(),
 		SourceType: domain.SourceDebuff,
-		Name:       module.Name,
+		Name:       module.Name(),
 		Duration:   &duration,
 		Modifiers:  modifiers,
 	})
@@ -755,7 +755,7 @@ func (e *BattleEngine) CalculateModuleEffectWithPassive(
 
 	// 基礎ステータスにパッシブスキル効果を適用
 	var statValue int
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
 		// 加算と乗算を適用
 		base := agent.BaseStats.STR + passiveModifiers.STR_Add
@@ -790,7 +790,7 @@ func (e *BattleEngine) CalculateModuleEffectWithPassive(
 	}
 
 	// 基礎効果 × ステータス値 × スケール係数
-	baseEffect := module.BaseEffect * float64(statValue) * EffectScaleFactor
+	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
 
 	// 速度係数と正確性係数を適用
 	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor

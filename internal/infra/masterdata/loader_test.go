@@ -417,11 +417,11 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 	// ドメインモデルに変換
 	domainModule := modules[0].ToDomain()
 
-	if domainModule.ID != "physical_strike_lv1" {
-		t.Errorf("ID: got %s, want physical_strike_lv1", domainModule.ID)
+	if domainModule.TypeID != "physical_strike_lv1" {
+		t.Errorf("TypeID: got %s, want physical_strike_lv1", domainModule.TypeID)
 	}
-	if domainModule.Category != domain.PhysicalAttack {
-		t.Errorf("Category: got %v, want %v", domainModule.Category, domain.PhysicalAttack)
+	if domainModule.Category() != domain.PhysicalAttack {
+		t.Errorf("Category: got %v, want %v", domainModule.Category(), domain.PhysicalAttack)
 	}
 }
 

@@ -418,7 +418,7 @@ func (s *AgentManagementScreen) handleDelete() (tea.Model, tea.Cmd) {
 			module := s.moduleList[s.selectedIndex]
 			s.confirmDialog = components.NewConfirmDialog(
 				"モジュールの削除",
-				fmt.Sprintf("「%s」を削除しますか？", module.Name),
+				fmt.Sprintf("「%s」を削除しますか？", module.Name()),
 			)
 			s.confirmDialog.Show()
 			s.pendingDeleteIdx = s.selectedIndex
@@ -453,9 +453,9 @@ func (s *AgentManagementScreen) executeDelete() {
 		}
 	case TabModuleList:
 		if s.pendingDeleteIdx < len(s.moduleList) {
-			if err := s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].ID); err != nil {
+			if err := s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].TypeID); err != nil {
 				slog.Error("モジュール削除に失敗",
-					slog.String("module_id", s.moduleList[s.pendingDeleteIdx].ID),
+					slog.String("module_type_id", s.moduleList[s.pendingDeleteIdx].TypeID),
 					slog.Any("error", err),
 				)
 			}
@@ -471,7 +471,7 @@ func (s *AgentManagementScreen) executeDelete() {
 // isModuleAlreadySelected は指定されたモジュールが既に選択済みかをチェックします。
 func (s *AgentManagementScreen) isModuleAlreadySelected(module *domain.ModuleModel) bool {
 	for _, selected := range s.synthesisState.selectedModules {
-		if selected.ID == module.ID {
+		if selected.TypeID == module.TypeID {
 			return true
 		}
 	}
@@ -484,7 +484,7 @@ func (s *AgentManagementScreen) isModuleCompatible(module *domain.ModuleModel) b
 		return false
 	}
 	allowedTags := s.synthesisState.selectedCore.Type.AllowedTags
-	for _, moduleTag := range module.Tags {
+	for _, moduleTag := range module.Tags() {
 		for _, allowedTag := range allowedTags {
 			if moduleTag == allowedTag {
 				return true
@@ -532,9 +532,9 @@ func (s *AgentManagementScreen) executeSynthesis() {
 		)
 	}
 	for _, m := range s.synthesisState.selectedModules {
-		if err := s.inventory.RemoveModule(m.ID); err != nil {
+		if err := s.inventory.RemoveModule(m.TypeID); err != nil {
 			slog.Error("合成素材のモジュール削除に失敗",
-				slog.String("module_id", m.ID),
+				slog.String("module_type_id", m.TypeID),
 				slog.Any("error", err),
 			)
 		}
@@ -809,7 +809,7 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s [%s] Lv.%d", module.Name, module.Category.String(), module.Level)
+		item := fmt.Sprintf("%s [%s] Lv.%d", module.Name(), module.Category().String(), module.Level())
 		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
@@ -823,12 +823,12 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 		return "モジュールを選択してください"
 	}
 
-	panel := components.NewInfoPanel(module.Name)
-	panel.AddItem("カテゴリ", module.Category.String())
-	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", module.Level))
-	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect))
-	panel.AddItem("参照ステータス", module.StatRef)
-	panel.AddItem("説明", module.Description)
+	panel := components.NewInfoPanel(module.Name())
+	panel.AddItem("カテゴリ", module.Category().String())
+	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", module.Level()))
+	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect()))
+	panel.AddItem("参照ステータス", module.StatRef())
+	panel.AddItem("説明", module.Description())
 
 	// チェイン効果情報を追加
 	if module.HasChainEffect() {
@@ -936,7 +936,7 @@ func (s *AgentManagementScreen) renderSynthesisRightPanel() string {
 	for i := 0; i < 4; i++ {
 		builder.WriteString(labelStyle.Render(fmt.Sprintf("モジュール%d: ", i+1)))
 		if i < len(s.synthesisState.selectedModules) {
-			builder.WriteString(valueStyle.Render(s.synthesisState.selectedModules[i].Name))
+			builder.WriteString(valueStyle.Render(s.synthesisState.selectedModules[i].Name()))
 		} else {
 			builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(未選択)"))
 		}
@@ -1004,16 +1004,16 @@ func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) s
 	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
 	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 
-	builder.WriteString(nameStyle.Render(module.Name))
+	builder.WriteString(nameStyle.Render(module.Name()))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("カテゴリ: "))
-	builder.WriteString(s.getModuleIcon(module.Category) + " " + module.Category.String())
+	builder.WriteString(s.getModuleIcon(module.Category()) + " " + module.Category().String())
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("基礎効果: "))
-	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect))
+	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect()))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("説明: "))
-	builder.WriteString(module.Description)
+	builder.WriteString(module.Description())
 
 	return builder.String()
 }
@@ -1069,8 +1069,8 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 		builder.WriteString(labelStyle.Render("モジュール:"))
 		builder.WriteString("\n")
 		for _, m := range s.synthesisState.selectedModules {
-			icon := s.getModuleIcon(m.Category)
-			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name))
+			icon := s.getModuleIcon(m.Category())
+			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name()))
 			// チェイン効果があれば表示
 			if m.HasChainEffect() {
 				chainBadge := components.NewSkillEffectBadge(m.ChainEffect)
@@ -1127,8 +1127,8 @@ func (s *AgentManagementScreen) renderSynthesisModuleListItems() string {
 			style = style.Foreground(styles.ColorSubtle)
 		}
 
-		icon := s.getModuleIcon(module.Category)
-		item := fmt.Sprintf("%s %s", icon, module.Name)
+		icon := s.getModuleIcon(module.Category())
+		item := fmt.Sprintf("%s %s", icon, module.Name())
 		if !compatible {
 			item += " (互換性なし)"
 		} else if alreadySelected {
@@ -1296,8 +1296,8 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 	builder.WriteString(labelStyle.Render("モジュール:"))
 	builder.WriteString("\n")
 	for _, module := range selectedAgent.Modules {
-		icon := s.getModuleIcon(module.Category)
-		builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name))
+		icon := s.getModuleIcon(module.Category())
+		builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name()))
 	}
 
 	return builder.String()
@@ -1327,7 +1327,7 @@ func (s *AgentManagementScreen) renderEquipBottomSection() string {
 			// モジュールアイコン
 			var icons []string
 			for _, module := range agent.Modules {
-				icons = append(icons, s.getModuleIcon(module.Category))
+				icons = append(icons, s.getModuleIcon(module.Category()))
 			}
 			cardContent.WriteString(strings.Join(icons, ""))
 		} else {

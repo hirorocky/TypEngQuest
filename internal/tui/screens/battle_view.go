@@ -229,7 +229,7 @@ func (s *BattleScreen) renderAgentArea() string {
 				isModuleSelected := isSelected && j == s.getSelectedModuleInAgent(i)
 
 				// モジュールアイコン
-				icon := s.getModuleIcon(slot.Module.Category)
+				icon := s.getModuleIcon(slot.Module.Category())
 
 				// モジュール名とクールダウン
 				var moduleStyle lipgloss.Style
@@ -259,14 +259,14 @@ func (s *BattleScreen) renderAgentArea() string {
 
 				if !slot.IsReady() {
 					cdBar := s.styles.RenderCooldownBarWithTime(slot.CooldownRemaining, slot.CooldownTotal, 8)
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s ", prefix, icon, chainBadgeStr, slot.Module.Name)))
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s ", prefix, icon, chainBadgeStr, slot.Module.Name())))
 					cardContent.WriteString(cdBar)
 				} else if recastState != nil {
 					// リキャスト中のモジュールは使用不可表示
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name)))
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
 					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render(" [WAIT]"))
 				} else {
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name)))
+					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
 					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Render(" [READY]"))
 				}
 				cardContent.WriteString("\n")

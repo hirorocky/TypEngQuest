@@ -255,38 +255,47 @@ type ModuleDropInfo struct {
 	// Description はモジュールの効果説明です。
 	Description string
 
+	// CooldownSeconds はモジュールのクールダウン時間（秒）です。
+	CooldownSeconds float64
+
+	// Difficulty はタイピングの難易度レベルです。
+	Difficulty int
+
 	// MinDropLevel はこのモジュールがドロップする最低敵レベルです。
 	MinDropLevel int
 }
 
+// ToModuleType はModuleDropInfoをドメインモデルのModuleTypeに変換します。
+func (m *ModuleDropInfo) ToModuleType() domain.ModuleType {
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(m.Tags))
+	copy(tagsCopy, m.Tags)
+
+	return domain.ModuleType{
+		ID:              m.ID,
+		Name:            m.Name,
+		Category:        m.Category,
+		Level:           m.Level,
+		Tags:            tagsCopy,
+		BaseEffect:      m.BaseEffect,
+		StatRef:         m.StatRef,
+		Description:     m.Description,
+		CooldownSeconds: m.CooldownSeconds,
+		Difficulty:      m.Difficulty,
+		MinDropLevel:    m.MinDropLevel,
+	}
+}
+
 // ToDomain はModuleDropInfoをドメインモデルのModuleModelに変換します。
 func (m *ModuleDropInfo) ToDomain() *domain.ModuleModel {
-	return domain.NewModuleWithTypeID(
-		m.ID,
-		m.Name,
-		m.Category,
-		m.Level,
-		m.Tags,
-		m.BaseEffect,
-		m.StatRef,
-		m.Description,
-		nil, // チェイン効果なし
-	)
+	moduleType := m.ToModuleType()
+	return domain.NewModuleFromType(moduleType, nil)
 }
 
 // ToDomainWithChainEffect はチェイン効果付きでドメインモデルに変換します。
 func (m *ModuleDropInfo) ToDomainWithChainEffect(chainEffect *domain.ChainEffect) *domain.ModuleModel {
-	return domain.NewModuleWithTypeID(
-		m.ID,
-		m.Name,
-		m.Category,
-		m.Level,
-		m.Tags,
-		m.BaseEffect,
-		m.StatRef,
-		m.Description,
-		chainEffect,
-	)
+	moduleType := m.ToModuleType()
+	return domain.NewModuleFromType(moduleType, chainEffect)
 }
 
 // RewardCalculator はドメイン型を使用した報酬計算を担当する構造体です。
@@ -554,8 +563,8 @@ func AddRewardsToInventory(
 		} else {
 			if err := moduleInv.Add(module); err != nil {
 				slog.Error("報酬モジュールのインベントリ追加に失敗",
-					slog.String("module_id", module.ID),
-					slog.String("module_name", module.Name),
+					slog.String("module_type_id", module.TypeID),
+					slog.String("module_name", module.Name()),
 					slog.Any("error", err),
 				)
 			}

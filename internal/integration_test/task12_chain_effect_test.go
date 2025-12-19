@@ -8,6 +8,34 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// newTestModuleForChain はテスト用モジュールを作成します。
+func newTestModuleForChain(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
+// newTestModuleWithChainEffectForChain はチェイン効果付きテスト用モジュールを作成します。
+func newTestModuleWithChainEffectForChain(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Level:       level,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, chainEffect)
+}
+
 // ==================================================
 // Task 12.3: 全19種類のチェイン効果の挙動検証テスト
 // ==================================================
@@ -371,7 +399,7 @@ func TestChainEffect_ValueCalculation(t *testing.T) {
 func TestChainEffect_ModuleIntegration(t *testing.T) {
 	// チェイン効果付きモジュール
 	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 25.0)
-	module := domain.NewModuleWithChainEffect(
+	module := newTestModuleWithChainEffectForChain(
 		"physical_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1,
 		[]string{"physical_low"}, 10.0, "STR", "物理ダメージ",
 		&chainEffect,
@@ -386,7 +414,7 @@ func TestChainEffect_ModuleIntegration(t *testing.T) {
 	}
 
 	// チェイン効果なしモジュール
-	moduleNoEffect := domain.NewModule(
+	moduleNoEffect := newTestModuleForChain(
 		"physical_lv2", "物理打撃Lv2", domain.PhysicalAttack, 2,
 		[]string{"physical_mid"}, 15.0, "STR", "物理ダメージ",
 	)

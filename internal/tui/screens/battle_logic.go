@@ -214,11 +214,7 @@ func (s *BattleScreen) startAgentRecast(agentIndex int, module *domain.ModuleMod
 
 	// チェイン効果を登録
 	if s.chainEffectManager != nil && module.ChainEffect != nil {
-		moduleID := module.ID
-		if module.TypeID != "" {
-			moduleID = module.TypeID
-		}
-		s.chainEffectManager.RegisterChainEffect(agentIndex, module.ChainEffect, moduleID)
+		s.chainEffectManager.RegisterChainEffect(agentIndex, module.ChainEffect, module.TypeID)
 	}
 }
 
@@ -362,7 +358,7 @@ func (s *BattleScreen) CompleteTyping() {
 	agentIndex := slot.AgentIndex
 
 	// 他エージェントの待機中チェイン効果を発動（モジュール効果適用前）
-	s.triggerChainEffects(agentIndex, module.Category)
+	s.triggerChainEffects(agentIndex, module.Category())
 
 	var effectAmount int
 	if s.battleEngine != nil && s.battleState != nil {
@@ -371,7 +367,7 @@ func (s *BattleScreen) CompleteTyping() {
 
 	// UI改善: フローティングダメージ/回復とHPアニメーション
 	if effectAmount > 0 {
-		switch module.Category {
+		switch module.Category() {
 		case domain.PhysicalAttack, domain.MagicAttack:
 			// 敵へのダメージ
 			s.floatingDamageManager.AddDamage(effectAmount, "enemy")
@@ -403,15 +399,15 @@ func (s *BattleScreen) CompleteTyping() {
 // formatEffectMessage は効果メッセージをフォーマットします。
 func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult) string {
 	var action string
-	switch module.Category {
+	switch module.Category() {
 	case domain.PhysicalAttack, domain.MagicAttack:
 		action = fmt.Sprintf("%dダメージを与えた！", effectAmount)
 	case domain.Heal:
 		action = fmt.Sprintf("%d回復した！", effectAmount)
 	case domain.Buff:
-		action = fmt.Sprintf("%sを付与した！", module.Name)
+		action = fmt.Sprintf("%sを付与した！", module.Name())
 	case domain.Debuff:
-		action = fmt.Sprintf("敵に%sを付与した！", module.Name)
+		action = fmt.Sprintf("敵に%sを付与した！", module.Name())
 	default:
 		action = "効果を発動した！"
 	}

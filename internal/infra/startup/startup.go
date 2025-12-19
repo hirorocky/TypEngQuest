@@ -114,10 +114,26 @@ func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
 	if len(modules) == 0 {
 		// デフォルトのモジュールを作成
 		modules = []*domain.ModuleModel{
-			domain.NewModule("physical_strike_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理ダメージを与える基本攻撃"),
-			domain.NewModule("fireball_lv1", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", "魔法ダメージを与える基本魔法"),
-			domain.NewModule("heal_lv1", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "HPを回復する基本回復魔法"),
-			domain.NewModule("attack_buff_lv1", "攻撃バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", "一時的に攻撃力を上昇させる"),
+			domain.NewModuleFromType(domain.ModuleType{
+				ID: "physical_strike_lv1", Name: "物理打撃Lv1", Category: domain.PhysicalAttack,
+				Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR",
+				Description: "物理ダメージを与える基本攻撃", CooldownSeconds: 2.0, Difficulty: 1,
+			}, nil),
+			domain.NewModuleFromType(domain.ModuleType{
+				ID: "fireball_lv1", Name: "ファイアボールLv1", Category: domain.MagicAttack,
+				Level: 1, Tags: []string{"magic_low"}, BaseEffect: 12.0, StatRef: "MAG",
+				Description: "魔法ダメージを与える基本魔法", CooldownSeconds: 2.5, Difficulty: 1,
+			}, nil),
+			domain.NewModuleFromType(domain.ModuleType{
+				ID: "heal_lv1", Name: "ヒールLv1", Category: domain.Heal,
+				Level: 1, Tags: []string{"heal_low"}, BaseEffect: 8.0, StatRef: "MAG",
+				Description: "HPを回復する基本回復魔法", CooldownSeconds: 3.0, Difficulty: 1,
+			}, nil),
+			domain.NewModuleFromType(domain.ModuleType{
+				ID: "attack_buff_lv1", Name: "攻撃バフLv1", Category: domain.Buff,
+				Level: 1, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "SPD",
+				Description: "一時的に攻撃力を上昇させる", CooldownSeconds: 8.0, Difficulty: 1,
+			}, nil),
 		}
 	} else if len(modules) < len(initialModuleIDs) {
 		// ログを出力（デバッグ用）

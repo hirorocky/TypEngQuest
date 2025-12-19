@@ -134,10 +134,11 @@ func (inv *CoreInventory) SortByType(ascending bool) []*CoreModel {
 // ==================== モジュールインベントリ ====================
 
 // ModuleInventory はモジュールのインベントリを管理する構造体です。
+// モジュールはTypeIDとChainEffectの組み合わせで識別されるため、スライスで管理します。
 
 type ModuleInventory struct {
-	// modules はモジュールのマップ（ID → ModuleModel）です。
-	modules map[string]*ModuleModel
+	// modules はモジュールのスライスです。
+	modules []*ModuleModel
 
 	// maxSlots はモジュールの最大保持数です。
 	maxSlots int
@@ -146,7 +147,7 @@ type ModuleInventory struct {
 // NewModuleInventory は新しいModuleInventoryを作成します。
 func NewModuleInventory(maxSlots int) *ModuleInventory {
 	return &ModuleInventory{
-		modules:  make(map[string]*ModuleModel),
+		modules:  make([]*ModuleModel, 0),
 		maxSlots: maxSlots,
 	}
 }
@@ -158,24 +159,51 @@ func (inv *ModuleInventory) Add(module *ModuleModel) error {
 	if len(inv.modules) >= inv.maxSlots {
 		return fmt.Errorf("モジュールインベントリが満杯です（上限: %d）", inv.maxSlots)
 	}
-	inv.modules[module.ID] = module
+	inv.modules = append(inv.modules, module)
 	return nil
 }
 
 // Remove はモジュールをインベントリから削除します。
+// インデックスで指定します。無効なインデックスの場合はnilを返します。
 
-func (inv *ModuleInventory) Remove(id string) *ModuleModel {
-	module, exists := inv.modules[id]
-	if !exists {
+func (inv *ModuleInventory) Remove(index int) *ModuleModel {
+	if index < 0 || index >= len(inv.modules) {
 		return nil
 	}
-	delete(inv.modules, id)
+	module := inv.modules[index]
+	inv.modules = append(inv.modules[:index], inv.modules[index+1:]...)
 	return module
 }
 
-// Get は指定されたIDのモジュールを取得します。
-func (inv *ModuleInventory) Get(id string) *ModuleModel {
-	return inv.modules[id]
+// RemoveByTypeID は指定されたTypeIDの最初のモジュールを削除します。
+// 後方互換性のためのメソッドです。
+
+func (inv *ModuleInventory) RemoveByTypeID(typeID string) *ModuleModel {
+	for i, module := range inv.modules {
+		if module.TypeID == typeID {
+			return inv.Remove(i)
+		}
+	}
+	return nil
+}
+
+// Get は指定されたインデックスのモジュールを取得します。
+func (inv *ModuleInventory) Get(index int) *ModuleModel {
+	if index < 0 || index >= len(inv.modules) {
+		return nil
+	}
+	return inv.modules[index]
+}
+
+// GetByTypeID は指定されたTypeIDの最初のモジュールを取得します。
+// 後方互換性のためのメソッドです。
+func (inv *ModuleInventory) GetByTypeID(typeID string) *ModuleModel {
+	for _, module := range inv.modules {
+		if module.TypeID == typeID {
+			return module
+		}
+	}
+	return nil
 }
 
 // Count はインベントリ内のモジュール数を返します。
@@ -196,10 +224,8 @@ func (inv *ModuleInventory) IsFull() bool {
 // List は全てのモジュールをリストで返します。
 
 func (inv *ModuleInventory) List() []*ModuleModel {
-	result := make([]*ModuleModel, 0, len(inv.modules))
-	for _, module := range inv.modules {
-		result = append(result, module)
-	}
+	result := make([]*ModuleModel, len(inv.modules))
+	copy(result, inv.modules)
 	return result
 }
 
@@ -208,7 +234,7 @@ func (inv *ModuleInventory) List() []*ModuleModel {
 func (inv *ModuleInventory) FilterByCategory(category ModuleCategory) []*ModuleModel {
 	result := make([]*ModuleModel, 0)
 	for _, module := range inv.modules {
-		if module.Category == category {
+		if module.Category() == category {
 			result = append(result, module)
 		}
 	}
@@ -220,7 +246,7 @@ func (inv *ModuleInventory) FilterByCategory(category ModuleCategory) []*ModuleM
 func (inv *ModuleInventory) FilterByLevel(level int) []*ModuleModel {
 	result := make([]*ModuleModel, 0)
 	for _, module := range inv.modules {
-		if module.Level == level {
+		if module.Level() == level {
 			result = append(result, module)
 		}
 	}
@@ -256,9 +282,9 @@ func (inv *ModuleInventory) SortByLevel(ascending bool) []*ModuleModel {
 	result := inv.List()
 	sort.Slice(result, func(i, j int) bool {
 		if ascending {
-			return result[i].Level < result[j].Level
+			return result[i].Level() < result[j].Level()
 		}
-		return result[i].Level > result[j].Level
+		return result[i].Level() > result[j].Level()
 	})
 	return result
 }
@@ -269,9 +295,9 @@ func (inv *ModuleInventory) SortByCategory(ascending bool) []*ModuleModel {
 	result := inv.List()
 	sort.Slice(result, func(i, j int) bool {
 		if ascending {
-			return result[i].Category < result[j].Category
+			return result[i].Category() < result[j].Category()
 		}
-		return result[i].Category > result[j].Category
+		return result[i].Category() > result[j].Category()
 	})
 	return result
 }

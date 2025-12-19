@@ -185,7 +185,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 				if err := invManager.AddModule(module); err != nil {
 					slog.Error("モジュール追加に失敗",
 						slog.String("module_type_id", module.TypeID),
-						slog.String("module_name", module.Name),
+						slog.String("module_name", module.Name()),
 						slog.Any("error", err),
 					)
 				}
@@ -200,8 +200,8 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 					module := moduleDropInfo.ToDomain()
 					if err := invManager.AddModule(module); err != nil {
 						slog.Error("モジュール追加に失敗（旧形式）",
-							slog.String("module_id", module.ID),
-							slog.String("module_name", module.Name),
+							slog.String("module_type_id", module.TypeID),
+							slog.String("module_name", module.Name()),
 							slog.Any("error", err),
 						)
 					}
