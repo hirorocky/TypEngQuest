@@ -116,22 +116,22 @@ func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
 		modules = []*domain.ModuleModel{
 			domain.NewModuleFromType(domain.ModuleType{
 				ID: "physical_strike_lv1", Name: "物理打撃Lv1", Category: domain.PhysicalAttack,
-				Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR",
+				Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR",
 				Description: "物理ダメージを与える基本攻撃", CooldownSeconds: 2.0, Difficulty: 1,
 			}, nil),
 			domain.NewModuleFromType(domain.ModuleType{
 				ID: "fireball_lv1", Name: "ファイアボールLv1", Category: domain.MagicAttack,
-				Level: 1, Tags: []string{"magic_low"}, BaseEffect: 12.0, StatRef: "MAG",
+				Tags: []string{"magic_low"}, BaseEffect: 12.0, StatRef: "MAG",
 				Description: "魔法ダメージを与える基本魔法", CooldownSeconds: 2.5, Difficulty: 1,
 			}, nil),
 			domain.NewModuleFromType(domain.ModuleType{
 				ID: "heal_lv1", Name: "ヒールLv1", Category: domain.Heal,
-				Level: 1, Tags: []string{"heal_low"}, BaseEffect: 8.0, StatRef: "MAG",
+				Tags: []string{"heal_low"}, BaseEffect: 8.0, StatRef: "MAG",
 				Description: "HPを回復する基本回復魔法", CooldownSeconds: 3.0, Difficulty: 1,
 			}, nil),
 			domain.NewModuleFromType(domain.ModuleType{
 				ID: "attack_buff_lv1", Name: "攻撃バフLv1", Category: domain.Buff,
-				Level: 1, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "SPD",
+				Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "SPD",
 				Description: "一時的に攻撃力を上昇させる", CooldownSeconds: 8.0, Difficulty: 1,
 			}, nil),
 		}

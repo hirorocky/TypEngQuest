@@ -379,8 +379,8 @@ func (s *BattleScreen) handleModuleSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd
 			s.selectedModuleIdx = s.selectedSlot
 			module := s.moduleSlots[s.selectedSlot].Module
 
-			// モジュールレベルに応じた難易度でチャレンジを生成
-			difficulty := typing.GetDifficultyForModuleLevel(module.Level())
+			// モジュールの難易度に応じたタイピングチャレンジを生成
+			difficulty := typing.GetDifficultyForModuleLevel(module.Difficulty())
 			timeLimit := typing.GetDefaultTimeLimit(difficulty)
 			challenge := s.challengeGenerator.Generate(difficulty, timeLimit)
 

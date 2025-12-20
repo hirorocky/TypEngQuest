@@ -34,7 +34,6 @@ func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.Mod
 			ID:           t.ID,
 			Name:         t.Name,
 			Category:     convertCategory(t.Category),
-			Level:        t.Level,
 			Tags:         t.Tags,
 			BaseEffect:   t.BaseEffect,
 			StatRef:      t.StatReference,

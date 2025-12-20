@@ -29,10 +29,10 @@ func createTestAgentWithPassive(passiveSkill domain.PassiveSkill, modules []*dom
 // createTestModuleWithChain はチェイン効果付きテスト用モジュールを作成します。
 func createTestModuleWithChain(name string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
-		ID:          "test_module_" + name,
-		Name:        name,
-		Category:    domain.PhysicalAttack,
-		Level:       1,
+		ID:       "test_module_" + name,
+		Name:     name,
+		Category: domain.PhysicalAttack,
+
 		Tags:        []string{"physical_low"},
 		BaseEffect:  50.0,
 		StatRef:     "STR",

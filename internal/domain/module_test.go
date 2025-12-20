@@ -56,7 +56,6 @@ func TestModuleModel_フィールドの確認(t *testing.T) {
 		ID:          "fireball_lv1",
 		Name:        "ファイアボール",
 		Category:    MagicAttack,
-		Level:       1,
 		Tags:        []string{"magic_low"},
 		BaseEffect:  10.0,
 		StatRef:     "MAG",
@@ -71,9 +70,6 @@ func TestModuleModel_フィールドの確認(t *testing.T) {
 	}
 	if module.Category() != MagicAttack {
 		t.Errorf("Category()が期待値と異なります: got %s, want magic_attack", module.Category())
-	}
-	if module.Level() != 1 {
-		t.Errorf("Level()が期待値と異なります: got %d, want 1", module.Level())
 	}
 	if len(module.Tags()) != 1 || module.Tags()[0] != "magic_low" {
 		t.Errorf("Tags()が期待値と異なります: got %v, want [magic_low]", module.Tags())
@@ -95,7 +91,6 @@ func TestNewModuleFromType_モジュール作成(t *testing.T) {
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
 		Category:    PhysicalAttack,
-		Level:       1,
 		Tags:        []string{"physical_low"},
 		BaseEffect:  10.0,
 		StatRef:     "STR",
@@ -110,9 +105,6 @@ func TestNewModuleFromType_モジュール作成(t *testing.T) {
 	}
 	if module.Category() != PhysicalAttack {
 		t.Errorf("Category()が期待値と異なります: got %s, want physical_attack", module.Category())
-	}
-	if module.Level() != 1 {
-		t.Errorf("Level()が期待値と異なります: got %d, want 1", module.Level())
 	}
 	if module.BaseEffect() != 10.0 {
 		t.Errorf("BaseEffect()が期待値と異なります: got %f, want 10.0", module.BaseEffect())
@@ -129,7 +121,6 @@ func TestNewModuleFromType_タグのコピー(t *testing.T) {
 		ID:          "fireball_lv1",
 		Name:        "ファイアボール",
 		Category:    MagicAttack,
-		Level:       1,
 		Tags:        originalTags,
 		BaseEffect:  10.0,
 		StatRef:     "MAG",
@@ -244,31 +235,6 @@ func TestModuleCategory_Unknown_String(t *testing.T) {
 	}
 }
 
-// TestGetLevelSuffix はレベルに応じた接尾辞が正しく返されることを確認します。
-func TestGetLevelSuffix(t *testing.T) {
-	tests := []struct {
-		level    int
-		expected string
-	}{
-		{1, "low"},
-		{2, "mid"},
-		{3, "high"},
-		{4, "high"}, // 3以上はすべてhigh
-		{10, "high"},
-		{0, "low"},  // 0以下はlow
-		{-1, "low"}, // 負の値はlow
-	}
-
-	for _, tt := range tests {
-		t.Run(string(rune(tt.level)), func(t *testing.T) {
-			result := GetLevelSuffix(tt.level)
-			if result != tt.expected {
-				t.Errorf("GetLevelSuffix(%d)が期待値と異なります: got %s, want %s", tt.level, result, tt.expected)
-			}
-		})
-	}
-}
-
 // ==================== Task 7.2: Icon()メソッドのテスト ====================
 
 // TestModuleCategory_Icon はModuleCategoryのIcon()メソッドが正しいアイコンを返すことを確認します。
@@ -320,7 +286,6 @@ func TestModuleModel_TypeIDフィールドの確認(t *testing.T) {
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
 		Category:    PhysicalAttack,
-		Level:       1,
 		Tags:        []string{"physical_low"},
 		BaseEffect:  10.0,
 		StatRef:     "STR",
@@ -342,7 +307,6 @@ func TestModuleModel_ChainEffect付きの作成(t *testing.T) {
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
 		Category:    PhysicalAttack,
-		Level:       1,
 		Tags:        []string{"physical_low"},
 		BaseEffect:  10.0,
 		StatRef:     "STR",
@@ -369,7 +333,6 @@ func TestModuleModel_同一TypeID異なるChainEffect(t *testing.T) {
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
 		Category:    PhysicalAttack,
-		Level:       1,
 		Tags:        []string{"physical_low"},
 		BaseEffect:  10.0,
 		StatRef:     "STR",
@@ -394,7 +357,6 @@ func TestModuleModel_ChainEffectなし(t *testing.T) {
 		ID:          "heal_lv1",
 		Name:        "ヒール",
 		Category:    Heal,
-		Level:       1,
 		Tags:        []string{"heal_low"},
 		BaseEffect:  15.0,
 		StatRef:     "MAG",
@@ -418,7 +380,6 @@ func TestModuleModel_HasChainEffect(t *testing.T) {
 		ID:          "buff_lv1",
 		Name:        "バフ",
 		Category:    Buff,
-		Level:       1,
 		Tags:        []string{"buff_low"},
 		BaseEffect:  10.0,
 		StatRef:     "SPD",
@@ -433,7 +394,6 @@ func TestModuleModel_HasChainEffect(t *testing.T) {
 		ID:          "buff_lv1",
 		Name:        "バフ",
 		Category:    Buff,
-		Level:       1,
 		Tags:        []string{"buff_low"},
 		BaseEffect:  10.0,
 		StatRef:     "SPD",

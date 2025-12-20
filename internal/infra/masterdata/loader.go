@@ -135,7 +135,6 @@ type ModuleDefinitionData struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
 	Category        string   `json:"category"`
-	Level           int      `json:"level"`
 	Tags            []string `json:"tags"`
 	BaseEffect      float64  `json:"base_effect"`
 	StatReference   string   `json:"stat_reference"`
@@ -147,7 +146,7 @@ type ModuleDefinitionData struct {
 
 // modulesFileData はmodules.jsonのルート構造です。
 type modulesFileData struct {
-	Modules []ModuleDefinitionData `json:"modules"`
+	ModuleTypes []ModuleDefinitionData `json:"module_types"`
 }
 
 // LoadModuleDefinitions はmodules.jsonからモジュール定義を読み込みます。
@@ -163,7 +162,7 @@ func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
 		return nil, fmt.Errorf("modules.jsonのパースに失敗: %w", err)
 	}
 
-	return fileData.Modules, nil
+	return fileData.ModuleTypes, nil
 }
 
 // ToDomainType はModuleDefinitionDataをドメインモデルのModuleTypeに変換します。
@@ -193,7 +192,6 @@ func (m *ModuleDefinitionData) ToDomainType() domain.ModuleType {
 		ID:              m.ID,
 		Name:            m.Name,
 		Category:        category,
-		Level:           m.Level,
 		Tags:            tagsCopy,
 		BaseEffect:      m.BaseEffect,
 		StatRef:         m.StatReference,
@@ -644,9 +642,6 @@ func ValidateModuleDefinitionData(data ModuleDefinitionData) error {
 	}
 	if data.Category == "" {
 		return fmt.Errorf("モジュールカテゴリが空です: ID=%s", data.ID)
-	}
-	if data.Level < 1 {
-		return fmt.Errorf("モジュールレベルが不正です: ID=%s, Level=%d", data.ID, data.Level)
 	}
 	return nil
 }

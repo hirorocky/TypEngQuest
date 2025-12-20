@@ -17,7 +17,6 @@ func newTestModuleBattle(id, name string, category domain.ModuleCategory, level 
 		ID:          id,
 		Name:        name,
 		Category:    category,
-		Level:       level,
 		Tags:        tags,
 		BaseEffect:  baseEffect,
 		StatRef:     statRef,

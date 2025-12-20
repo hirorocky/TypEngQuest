@@ -26,7 +26,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "physical_strike_lv1",
 				Name:          "物理打撃Lv1",
 				Category:      "physical_attack",
-				Level:         1,
 				Tags:          []string{"physical_low"},
 				BaseEffect:    10.0,
 				StatReference: "STR",
@@ -36,7 +35,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "fireball_lv1",
 				Name:          "ファイアボールLv1",
 				Category:      "magic_attack",
-				Level:         1,
 				Tags:          []string{"magic_low"},
 				BaseEffect:    12.0,
 				StatReference: "MAG",
@@ -46,7 +44,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "heal_lv1",
 				Name:          "ヒールLv1",
 				Category:      "heal",
-				Level:         1,
 				Tags:          []string{"heal_low"},
 				BaseEffect:    8.0,
 				StatReference: "MAG",
@@ -56,7 +53,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "attack_buff_lv1",
 				Name:          "攻撃バフLv1",
 				Category:      "buff",
-				Level:         1,
 				Tags:          []string{"buff_low"},
 				BaseEffect:    5.0,
 				StatReference: "SPD",
@@ -105,13 +101,6 @@ func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
 	modules := initializer.CreateInitialModules()
 	if len(modules) != 4 {
 		t.Errorf("初期モジュールは4個であるべきです: got %d", len(modules))
-	}
-
-	// 全てレベル1であること
-	for _, m := range modules {
-		if m.Level() != 1 {
-			t.Errorf("初期モジュールはレベル1であるべきです: got %d", m.Level())
-		}
 	}
 
 	// カテゴリが多様であること（同じカテゴリが4つではないこと）

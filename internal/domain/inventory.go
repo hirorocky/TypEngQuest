@@ -241,18 +241,6 @@ func (inv *ModuleInventory) FilterByCategory(category ModuleCategory) []*ModuleM
 	return result
 }
 
-// FilterByLevel は指定されたレベルでフィルタリングします。
-
-func (inv *ModuleInventory) FilterByLevel(level int) []*ModuleModel {
-	result := make([]*ModuleModel, 0)
-	for _, module := range inv.modules {
-		if module.Level() == level {
-			result = append(result, module)
-		}
-	}
-	return result
-}
-
 // FilterByTag はタグでフィルタリングします。
 func (inv *ModuleInventory) FilterByTag(tag string) []*ModuleModel {
 	result := make([]*ModuleModel, 0)
@@ -273,19 +261,6 @@ func (inv *ModuleInventory) FilterCompatibleWithCore(core *CoreModel) []*ModuleM
 			result = append(result, module)
 		}
 	}
-	return result
-}
-
-// SortByLevel はレベルでソートしたモジュールリストを返します。
-
-func (inv *ModuleInventory) SortByLevel(ascending bool) []*ModuleModel {
-	result := inv.List()
-	sort.Slice(result, func(i, j int) bool {
-		if ascending {
-			return result[i].Level() < result[j].Level()
-		}
-		return result[i].Level() > result[j].Level()
-	})
 	return result
 }
 

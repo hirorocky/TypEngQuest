@@ -77,12 +77,11 @@ func TestLoadModuleDefinitions(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",
@@ -95,7 +94,6 @@ func TestLoadModuleDefinitions(t *testing.T) {
 				"id": "fireball_lv2",
 				"name": "ファイアボールLv2",
 				"category": "magic_attack",
-				"level": 2,
 				"tags": ["magic_mid"],
 				"base_effect": 20.0,
 				"stat_reference": "MAG",
@@ -128,9 +126,6 @@ func TestLoadModuleDefinitions(t *testing.T) {
 	}
 	if modules[0].Category != "physical_attack" {
 		t.Errorf("Category: got %s, want physical_attack", modules[0].Category)
-	}
-	if modules[0].Level != 1 {
-		t.Errorf("Level: got %d, want 1", modules[0].Level)
 	}
 	if modules[0].BaseEffect != 10.0 {
 		t.Errorf("BaseEffect: got %f, want 10.0", modules[0].BaseEffect)
@@ -286,12 +281,11 @@ func TestLoadAllExternalData(t *testing.T) {
 
 	// modules.json
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",
@@ -390,12 +384,11 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",

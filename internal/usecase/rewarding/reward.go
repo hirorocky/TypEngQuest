@@ -240,9 +240,6 @@ type ModuleDropInfo struct {
 	// Category はモジュールのカテゴリです。
 	Category domain.ModuleCategory
 
-	// Level はモジュールのレベルです。
-	Level int
-
 	// Tags はモジュールのタグリストです。
 	Tags []string
 
@@ -275,7 +272,6 @@ func (m *ModuleDropInfo) ToModuleType() domain.ModuleType {
 		ID:              m.ID,
 		Name:            m.Name,
 		Category:        m.Category,
-		Level:           m.Level,
 		Tags:            tagsCopy,
 		BaseEffect:      m.BaseEffect,
 		StatRef:         m.StatRef,

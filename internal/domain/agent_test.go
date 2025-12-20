@@ -6,12 +6,11 @@ import (
 )
 
 // newTestModule はテスト用モジュールを作成するヘルパー関数です。
-func newTestModule(id, name string, category ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *ModuleModel {
+func newTestModule(id, name string, category ModuleCategory, tags []string, baseEffect float64, statRef, description string) *ModuleModel {
 	return NewModuleFromType(ModuleType{
 		ID:          id,
 		Name:        name,
 		Category:    category,
-		Level:       level,
 		Tags:        tags,
 		BaseEffect:  baseEffect,
 		StatRef:     statRef,
@@ -39,10 +38,10 @@ func TestAgentModel_フィールドの確認(t *testing.T) {
 	core := NewCore("core_001", "バランスコア", 10, coreType, passiveSkill)
 
 	modules := []*ModuleModel{
-		newTestModule("mod_001", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
-		newTestModule("mod_002", "ファイアボールLv1", MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
-		newTestModule("mod_003", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
-		newTestModule("mod_004", "ファイアボールLv1", MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
+		newTestModule("mod_001", "物理打撃Lv1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
+		newTestModule("mod_002", "ファイアボールLv1", MagicAttack, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
+		newTestModule("mod_003", "物理打撃Lv1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
+		newTestModule("mod_004", "ファイアボールLv1", MagicAttack, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
 	}
 
 	agent := AgentModel{
@@ -94,10 +93,10 @@ func TestAgentModel_レベル等価制約(t *testing.T) {
 			core := NewCore("core_test", "テストコア", tt.coreLevel, coreType, passiveSkill)
 
 			modules := []*ModuleModel{
-				newTestModule("mod_001", "テストモジュール1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-				newTestModule("mod_002", "テストモジュール2", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-				newTestModule("mod_003", "テストモジュール3", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-				newTestModule("mod_004", "テストモジュール4", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
+				newTestModule("mod_001", "テストモジュール1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+				newTestModule("mod_002", "テストモジュール2", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+				newTestModule("mod_003", "テストモジュール3", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+				newTestModule("mod_004", "テストモジュール4", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
 			}
 
 			agent := NewAgent("agent_test", core, modules)
@@ -129,10 +128,10 @@ func TestNewAgent_エージェント作成(t *testing.T) {
 	core := NewCore("core_001", "バランスコア", 10, coreType, passiveSkill)
 
 	modules := []*ModuleModel{
-		newTestModule("mod_001", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
-		newTestModule("mod_002", "ファイアボールLv1", MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
-		newTestModule("mod_003", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
-		newTestModule("mod_004", "ファイアボールLv1", MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
+		newTestModule("mod_001", "物理打撃Lv1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
+		newTestModule("mod_002", "ファイアボールLv1", MagicAttack, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
+		newTestModule("mod_003", "物理打撃Lv1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "物理攻撃"),
+		newTestModule("mod_004", "ファイアボールLv1", MagicAttack, []string{"magic_low"}, 10.0, "MAG", "魔法攻撃"),
 	}
 
 	agent := NewAgent("agent_001", core, modules)
@@ -162,10 +161,10 @@ func TestNewAgent_モジュール数確認(t *testing.T) {
 	core := NewCore("core_test", "テストコア", 5, coreType, passiveSkill)
 
 	modules := []*ModuleModel{
-		newTestModule("mod_001", "テストモジュール1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-		newTestModule("mod_002", "テストモジュール2", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-		newTestModule("mod_003", "テストモジュール3", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-		newTestModule("mod_004", "テストモジュール4", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_001", "テストモジュール1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_002", "テストモジュール2", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_003", "テストモジュール3", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_004", "テストモジュール4", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
 	}
 
 	agent := NewAgent("agent_test", core, modules)
@@ -236,7 +235,7 @@ func TestAgentModel_基礎ステータス算出(t *testing.T) {
 
 			modules := make([]*ModuleModel, 4)
 			for i := 0; i < 4; i++ {
-				modules[i] = newTestModule("mod", "テスト", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト")
+				modules[i] = newTestModule("mod", "テスト", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト")
 			}
 
 			agent := NewAgent("agent_test", core, modules)
@@ -268,10 +267,10 @@ func TestAgentModel_Modules(t *testing.T) {
 	core := NewCore("core_test", "テストコア", 5, coreType, passiveSkill)
 
 	modules := []*ModuleModel{
-		newTestModule("mod_001", "モジュール1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-		newTestModule("mod_002", "モジュール2", PhysicalAttack, 1, []string{"physical_low"}, 15.0, "STR", "テスト"),
-		newTestModule("mod_003", "モジュール3", PhysicalAttack, 1, []string{"physical_low"}, 20.0, "STR", "テスト"),
-		newTestModule("mod_004", "モジュール4", PhysicalAttack, 1, []string{"physical_low"}, 25.0, "STR", "テスト"),
+		newTestModule("mod_001", "モジュール1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_002", "モジュール2", PhysicalAttack, []string{"physical_low"}, 15.0, "STR", "テスト"),
+		newTestModule("mod_003", "モジュール3", PhysicalAttack, []string{"physical_low"}, 20.0, "STR", "テスト"),
+		newTestModule("mod_004", "モジュール4", PhysicalAttack, []string{"physical_low"}, 25.0, "STR", "テスト"),
 	}
 
 	agent := NewAgent("agent_test", core, modules)
@@ -305,16 +304,16 @@ func TestAgentModel_モジュールの独立性(t *testing.T) {
 	core := NewCore("core_test", "テストコア", 5, coreType, passiveSkill)
 
 	originalModules := []*ModuleModel{
-		newTestModule("mod_001", "モジュール1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト"),
-		newTestModule("mod_002", "モジュール2", PhysicalAttack, 1, []string{"physical_low"}, 15.0, "STR", "テスト"),
-		newTestModule("mod_003", "モジュール3", PhysicalAttack, 1, []string{"physical_low"}, 20.0, "STR", "テスト"),
-		newTestModule("mod_004", "モジュール4", PhysicalAttack, 1, []string{"physical_low"}, 25.0, "STR", "テスト"),
+		newTestModule("mod_001", "モジュール1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "テスト"),
+		newTestModule("mod_002", "モジュール2", PhysicalAttack, []string{"physical_low"}, 15.0, "STR", "テスト"),
+		newTestModule("mod_003", "モジュール3", PhysicalAttack, []string{"physical_low"}, 20.0, "STR", "テスト"),
+		newTestModule("mod_004", "モジュール4", PhysicalAttack, []string{"physical_low"}, 25.0, "STR", "テスト"),
 	}
 
 	agent := NewAgent("agent_test", core, originalModules)
 
 	// 元のスライスを変更
-	originalModules[0] = newTestModule("mod_changed", "変更済み", PhysicalAttack, 1, []string{"physical_low"}, 99.0, "STR", "変更")
+	originalModules[0] = newTestModule("mod_changed", "変更済み", PhysicalAttack, []string{"physical_low"}, 99.0, "STR", "変更")
 
 	// エージェントのモジュールは影響を受けないはず
 	if agent.Modules[0].TypeID == "mod_changed" {

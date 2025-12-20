@@ -2,6 +2,7 @@
 package masterdata
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -59,27 +60,27 @@ func TestModulesJSONExists(t *testing.T) {
 		t.Fatalf("modules.jsonの読み込みに失敗: %v", err)
 	}
 
-	// 各カテゴリにLv1〜Lv3が存在すること
+	// 各カテゴリにモジュールが存在すること
 
-	categoryLevelCount := make(map[string]map[int]bool)
+	categoryCount := make(map[string]int)
 	categories := []string{"physical_attack", "magic_attack", "heal", "buff", "debuff"}
 	for _, cat := range categories {
-		categoryLevelCount[cat] = make(map[int]bool)
+		categoryCount[cat] = 0
 	}
 
 	for _, m := range modules {
 		if err := ValidateModuleDefinitionData(m); err != nil {
 			t.Errorf("モジュールのバリデーションに失敗: %v", err)
 		}
-		if _, ok := categoryLevelCount[m.Category]; ok {
-			categoryLevelCount[m.Category][m.Level] = true
+		if _, ok := categoryCount[m.Category]; ok {
+			categoryCount[m.Category]++
 		}
 	}
 
-	// 各カテゴリにLv1が存在することを確認
-	for cat, levels := range categoryLevelCount {
-		if !levels[1] {
-			t.Errorf("%s カテゴリにLv1モジュールがありません", cat)
+	// 各カテゴリにモジュールが存在することを確認
+	for cat, count := range categoryCount {
+		if count == 0 {
+			t.Errorf("%s カテゴリにモジュールがありません", cat)
 		}
 	}
 }
@@ -258,11 +259,18 @@ func TestModuleTagsMatchCoreAllowedTags(t *testing.T) {
 		}
 	}
 
-	// Lv1モジュール（_low タグ）のみが初期コアで使用可能であることを確認
-	// 高レベルモジュール（_mid, _high タグ）はゲーム進行で追加されるコアで使用可能になる想定
+	// _low タグを持つモジュールのみが初期コアで使用可能であることを確認
+	// 高難度モジュール（_mid, _high タグ）はゲーム進行で追加されるコアで使用可能になる想定
 	for _, m := range modules {
-		// Lv1モジュールのみ検証
-		if m.Level != 1 {
+		// _low タグを持つモジュールのみ検証
+		hasLowTag := false
+		for _, tag := range m.Tags {
+			if strings.HasSuffix(tag, "_low") {
+				hasLowTag = true
+				break
+			}
+		}
+		if !hasLowTag {
 			continue
 		}
 		hasValidTag := false
@@ -273,7 +281,7 @@ func TestModuleTagsMatchCoreAllowedTags(t *testing.T) {
 			}
 		}
 		if !hasValidTag && len(m.Tags) > 0 {
-			t.Errorf("Lv1モジュール %s のタグ %v がどのコアの許可タグにも含まれていません", m.ID, m.Tags)
+			t.Errorf("基本モジュール %s のタグ %v がどのコアの許可タグにも含まれていません", m.ID, m.Tags)
 		}
 	}
 }

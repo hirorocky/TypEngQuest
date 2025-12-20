@@ -247,7 +247,6 @@ func createTestAgents(levels []int) []*AgentModel {
 			ID:          "mod",
 			Name:        "テスト",
 			Category:    PhysicalAttack,
-			Level:       1,
 			Tags:        []string{"physical_low"},
 			BaseEffect:  10.0,
 			StatRef:     "STR",

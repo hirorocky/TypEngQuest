@@ -809,7 +809,7 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s [%s] Lv.%d", module.Name(), module.Category().String(), module.Level())
+		item := fmt.Sprintf("%s [%s]", module.Name(), module.Category().String())
 		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
@@ -825,7 +825,6 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 
 	panel := components.NewInfoPanel(module.Name())
 	panel.AddItem("カテゴリ", module.Category().String())
-	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", module.Level()))
 	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect()))
 	panel.AddItem("参照ステータス", module.StatRef())
 	panel.AddItem("説明", module.Description())

@@ -63,17 +63,6 @@ func (c ModuleCategory) Icon() string {
 	}
 }
 
-// GetLevelSuffix はレベルに応じた接尾辞（low, mid, high）を返します。
-// レベル1はlow、レベル2はmid、レベル3以上はhighです。
-func GetLevelSuffix(level int) string {
-	if level <= 1 {
-		return "low"
-	} else if level == 2 {
-		return "mid"
-	}
-	return "high"
-}
-
 // ModuleType はモジュールの種別（タイプ）を定義する構造体です。
 // 外部データファイル（modules.json）から読み込まれ、ゲーム内のモジュール種別を定義します。
 type ModuleType struct {
@@ -85,9 +74,6 @@ type ModuleType struct {
 
 	// Category はモジュールのカテゴリです（物理攻撃、魔法攻撃、回復、バフ、デバフ）。
 	Category ModuleCategory
-
-	// Level はモジュールのレベルです。
-	Level int
 
 	// Tags はモジュールのタグリストです。
 	// コア特性との互換性チェックに使用されます。
@@ -147,11 +133,6 @@ func (m *ModuleModel) Name() string {
 // Category はモジュールのカテゴリを返します。
 func (m *ModuleModel) Category() ModuleCategory {
 	return m.Type.Category
-}
-
-// Level はモジュールのレベルを返します。
-func (m *ModuleModel) Level() int {
-	return m.Type.Level
 }
 
 // Tags はモジュールのタグリストを返します。

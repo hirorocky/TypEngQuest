@@ -46,17 +46,17 @@ func GetDefaultCoreTypes() []domain.CoreType {
 // GetDefaultModuleDropInfos はデフォルトのモジュール定義をドメイン型で返します。
 func GetDefaultModuleDropInfos() []rewarding.ModuleDropInfo {
 	return []rewarding.ModuleDropInfo{
-		{ID: "mod_slash", Name: "斬撃", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃", MinDropLevel: 1},
-		{ID: "mod_thrust", Name: "突き", Category: domain.PhysicalAttack, Level: 1, Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃", MinDropLevel: 1},
-		{ID: "mod_fireball", Name: "火球", Category: domain.MagicAttack, Level: 1, Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃", MinDropLevel: 1},
-		{ID: "mod_ice", Name: "氷結", Category: domain.MagicAttack, Level: 1, Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatRef: "MAG", Description: "氷属性の魔法攻撃", MinDropLevel: 1},
-		{ID: "mod_heal", Name: "ヒール", Category: domain.Heal, Level: 1, Tags: []string{"heal_low"}, BaseEffect: 15.0, StatRef: "MAG", Description: "基本的な回復魔法", MinDropLevel: 1},
-		{ID: "mod_attack_up", Name: "攻撃力アップ", Category: domain.Buff, Level: 1, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "LUK", Description: "攻撃力を上昇させる", MinDropLevel: 1},
-		{ID: "mod_defense_up", Name: "防御アップ", Category: domain.Buff, Level: 1, Tags: []string{"buff_low"}, BaseEffect: 4.0, StatRef: "LUK", Description: "防御力を上昇させる", MinDropLevel: 1},
-		// レベル2モジュール
-		{ID: "mod_heavy_slash", Name: "強斬撃", Category: domain.PhysicalAttack, Level: 2, Tags: []string{"physical_mid"}, BaseEffect: 20.0, StatRef: "STR", Description: "強力な物理攻撃", MinDropLevel: 5},
-		{ID: "mod_blizzard", Name: "ブリザード", Category: domain.MagicAttack, Level: 2, Tags: []string{"magic_mid", "ice"}, BaseEffect: 22.0, StatRef: "MAG", Description: "氷属性の範囲魔法", MinDropLevel: 5},
-		{ID: "mod_cure", Name: "キュア", Category: domain.Heal, Level: 2, Tags: []string{"heal_mid"}, BaseEffect: 30.0, StatRef: "MAG", Description: "中級回復魔法", MinDropLevel: 5},
+		{ID: "mod_slash", Name: "斬撃", Category: domain.PhysicalAttack, Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃", MinDropLevel: 1},
+		{ID: "mod_thrust", Name: "突き", Category: domain.PhysicalAttack, Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃", MinDropLevel: 1},
+		{ID: "mod_fireball", Name: "火球", Category: domain.MagicAttack, Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃", MinDropLevel: 1},
+		{ID: "mod_ice", Name: "氷結", Category: domain.MagicAttack, Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatRef: "MAG", Description: "氷属性の魔法攻撃", MinDropLevel: 1},
+		{ID: "mod_heal", Name: "ヒール", Category: domain.Heal, Tags: []string{"heal_low"}, BaseEffect: 15.0, StatRef: "MAG", Description: "基本的な回復魔法", MinDropLevel: 1},
+		{ID: "mod_attack_up", Name: "攻撃力アップ", Category: domain.Buff, Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "LUK", Description: "攻撃力を上昇させる", MinDropLevel: 1},
+		{ID: "mod_defense_up", Name: "防御アップ", Category: domain.Buff, Tags: []string{"buff_low"}, BaseEffect: 4.0, StatRef: "LUK", Description: "防御力を上昇させる", MinDropLevel: 1},
+		// 強化モジュール
+		{ID: "mod_heavy_slash", Name: "強斬撃", Category: domain.PhysicalAttack, Tags: []string{"physical_mid"}, BaseEffect: 20.0, StatRef: "STR", Description: "強力な物理攻撃", MinDropLevel: 5},
+		{ID: "mod_blizzard", Name: "ブリザード", Category: domain.MagicAttack, Tags: []string{"magic_mid", "ice"}, BaseEffect: 22.0, StatRef: "MAG", Description: "氷属性の範囲魔法", MinDropLevel: 5},
+		{ID: "mod_cure", Name: "キュア", Category: domain.Heal, Tags: []string{"heal_mid"}, BaseEffect: 30.0, StatRef: "MAG", Description: "中級回復魔法", MinDropLevel: 5},
 	}
 }
 

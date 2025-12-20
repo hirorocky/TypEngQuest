@@ -38,7 +38,6 @@ func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate
 			ID:           md.ID,
 			Name:         md.Name,
 			Category:     categoryStringToModule(md.Category),
-			Level:        md.Level,
 			Tags:         md.Tags,
 			BaseEffect:   md.BaseEffect,
 			StatRef:      md.StatReference,

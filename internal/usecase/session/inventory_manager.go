@@ -129,7 +129,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 
 	// 初期モジュールを追加
 	physicalMod := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_001", Name: "斬撃", Category: domain.PhysicalAttack, Level: 1,
+		ID: "mod_001", Name: "斬撃", Category: domain.PhysicalAttack,
 		Tags: []string{"physical_low"}, BaseEffect: 10.0, StatRef: "STR", Description: "基本的な物理攻撃",
 	}, nil)
 	if err := m.modules.Add(physicalMod); err != nil {
@@ -141,7 +141,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	magicMod := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_002", Name: "火球", Category: domain.MagicAttack, Level: 1,
+		ID: "mod_002", Name: "火球", Category: domain.MagicAttack,
 		Tags: []string{"magic_low", "fire"}, BaseEffect: 12.0, StatRef: "MAG", Description: "火属性の魔法攻撃",
 	}, nil)
 	if err := m.modules.Add(magicMod); err != nil {
@@ -153,7 +153,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	healMod := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_003", Name: "ヒール", Category: domain.Heal, Level: 1,
+		ID: "mod_003", Name: "ヒール", Category: domain.Heal,
 		Tags: []string{"heal_low"}, BaseEffect: 15.0, StatRef: "MAG", Description: "基本的な回復魔法",
 	}, nil)
 	if err := m.modules.Add(healMod); err != nil {
@@ -165,7 +165,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	buffMod := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_004", Name: "攻撃力アップ", Category: domain.Buff, Level: 1,
+		ID: "mod_004", Name: "攻撃力アップ", Category: domain.Buff,
 		Tags: []string{"buff_low"}, BaseEffect: 5.0, StatRef: "LUK", Description: "攻撃力を上昇させる",
 	}, nil)
 	if err := m.modules.Add(buffMod); err != nil {
@@ -178,7 +178,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 
 	// 追加の初期モジュール
 	extraMod1 := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_005", Name: "突き", Category: domain.PhysicalAttack, Level: 1,
+		ID: "mod_005", Name: "突き", Category: domain.PhysicalAttack,
 		Tags: []string{"physical_low"}, BaseEffect: 8.0, StatRef: "STR", Description: "素早い物理攻撃",
 	}, nil)
 	if err := m.modules.Add(extraMod1); err != nil {
@@ -190,7 +190,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	extraMod2 := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_006", Name: "氷結", Category: domain.MagicAttack, Level: 1,
+		ID: "mod_006", Name: "氷結", Category: domain.MagicAttack,
 		Tags: []string{"magic_low", "ice"}, BaseEffect: 11.0, StatRef: "MAG", Description: "氷属性の魔法攻撃",
 	}, nil)
 	if err := m.modules.Add(extraMod2); err != nil {
@@ -202,7 +202,7 @@ func (m *InventoryManager) InitializeWithDefaults() {
 	}
 
 	extraMod3 := domain.NewModuleFromType(domain.ModuleType{
-		ID: "mod_007", Name: "防御アップ", Category: domain.Buff, Level: 1,
+		ID: "mod_007", Name: "防御アップ", Category: domain.Buff,
 		Tags: []string{"buff_low"}, BaseEffect: 4.0, StatRef: "LUK", Description: "防御力を上昇させる",
 	}, nil)
 	if err := m.modules.Add(extraMod3); err != nil {
