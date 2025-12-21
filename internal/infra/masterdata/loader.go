@@ -70,7 +70,9 @@ type ExternalData struct {
 	CoreTypes         []CoreTypeData
 	ModuleDefinitions []ModuleDefinitionData
 	EnemyTypes        []EnemyTypeData
+	PassiveSkills     []PassiveSkillData
 	TypingDictionary  *TypingDictionary
+	FirstAgent        *FirstAgentData
 }
 
 // ==================== コア特性定義 ====================
@@ -580,6 +582,49 @@ func (l *DataLoader) LoadTypingDictionary() (*TypingDictionary, error) {
 	return &fileData.Words, nil
 }
 
+// ==================== 初期エージェント定義 ====================
+
+// FirstAgentData はfirst_agent.jsonから読み込む初期エージェントデータの構造体です。
+type FirstAgentData struct {
+	ID         string                 `json:"id"`
+	CoreTypeID string                 `json:"core_type_id"`
+	CoreLevel  int                    `json:"core_level"`
+	Modules    []FirstAgentModuleData `json:"modules"`
+}
+
+// FirstAgentModuleData は初期エージェントのモジュールデータの構造体です。
+// ChainEffectはモジュールと密結合しているため、同じ構造体で定義します。
+type FirstAgentModuleData struct {
+	TypeID           string  `json:"type_id"`
+	ChainEffectType  string  `json:"chain_effect_type,omitempty"`
+	ChainEffectValue float64 `json:"chain_effect_value,omitempty"`
+}
+
+// HasChainEffect はチェイン効果を持つかどうかを返します。
+func (m *FirstAgentModuleData) HasChainEffect() bool {
+	return m.ChainEffectType != ""
+}
+
+// firstAgentFileData はfirst_agent.jsonのルート構造です。
+type firstAgentFileData struct {
+	FirstAgent FirstAgentData `json:"first_agent"`
+}
+
+// LoadFirstAgent はfirst_agent.jsonから初期エージェント定義を読み込みます。
+func (l *DataLoader) LoadFirstAgent() (*FirstAgentData, error) {
+	data, err := l.readFile("first_agent.json")
+	if err != nil {
+		return nil, fmt.Errorf("first_agent.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData firstAgentFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("first_agent.jsonのパースに失敗: %w", err)
+	}
+
+	return &fileData.FirstAgent, nil
+}
+
 // ==================== 全データ一括ロード ====================
 
 // LoadAllExternalData は全ての外部データファイルを一括でロードします。
@@ -600,16 +645,28 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		return nil, fmt.Errorf("敵タイプのロードに失敗: %w", err)
 	}
 
+	passiveSkills, err := l.LoadPassiveSkills()
+	if err != nil {
+		return nil, fmt.Errorf("パッシブスキルのロードに失敗: %w", err)
+	}
+
 	dictionary, err := l.LoadTypingDictionary()
 	if err != nil {
 		return nil, fmt.Errorf("タイピング辞書のロードに失敗: %w", err)
+	}
+
+	firstAgent, err := l.LoadFirstAgent()
+	if err != nil {
+		return nil, fmt.Errorf("初期エージェントのロードに失敗: %w", err)
 	}
 
 	return &ExternalData{
 		CoreTypes:         coreTypes,
 		ModuleDefinitions: modules,
 		EnemyTypes:        enemyTypes,
+		PassiveSkills:     passiveSkills,
 		TypingDictionary:  dictionary,
+		FirstAgent:        firstAgent,
 	}, nil
 }
 

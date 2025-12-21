@@ -9,10 +9,10 @@ import (
 
 // TestNewGameState は新しいGameStateの作成をテストします。
 func TestNewGameState(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	if gs == nil {
-		t.Fatal("NewGameState() returned nil")
+		t.Fatal("NewGameStateForTest() returned nil")
 	}
 
 	// 初期状態の確認
@@ -43,7 +43,7 @@ func TestNewGameState(t *testing.T) {
 
 // TestRecordBattleVictory はバトル勝利の記録をテストします。
 func TestRecordBattleVictory(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	// レベル1で勝利
 	gs.RecordBattleVictory(1)
@@ -72,7 +72,7 @@ func TestRecordBattleVictory(t *testing.T) {
 
 // TestRecordBattleDefeat はバトル敗北の記録をテストします。
 func TestRecordBattleDefeat(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	gs.RecordBattleDefeat(1)
 
@@ -84,7 +84,7 @@ func TestRecordBattleDefeat(t *testing.T) {
 
 // TestRecordTypingResult はタイピング結果の記録をテストします。
 func TestRecordTypingResult(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	gs.RecordTypingResult(60, 95.0, 100, 95, 5)
 
@@ -102,7 +102,7 @@ func TestRecordTypingResult(t *testing.T) {
 
 // TestAddEncounteredEnemy は敵エンカウントの記録をテストします。
 func TestAddEncounteredEnemy(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	// 敵を追加
 	gs.AddEncounteredEnemy("enemy_001")
@@ -135,7 +135,7 @@ func TestAddEncounteredEnemy(t *testing.T) {
 
 // TestPreparePlayerForBattle はバトル準備をテストします。
 func TestPreparePlayerForBattle(t *testing.T) {
-	gs := NewGameState()
+	gs := NewGameStateForTest()
 
 	// プレイヤーの準備
 	gs.PreparePlayerForBattle()

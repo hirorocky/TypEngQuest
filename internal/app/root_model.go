@@ -106,11 +106,12 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	var domainSources *gamestate.DomainDataSources
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
+		passiveSkills := ConvertPassiveSkills(externalData.PassiveSkills)
 		domainSources = &gamestate.DomainDataSources{
 			CoreTypes:     coreTypes,
 			ModuleTypes:   moduleTypes,
 			EnemyTypes:    enemyTypes,
-			PassiveSkills: gamestate.GetDefaultPassiveSkills(),
+			PassiveSkills: passiveSkills,
 		}
 	}
 

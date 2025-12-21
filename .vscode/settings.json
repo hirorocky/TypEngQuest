@@ -1,7 +1,21 @@
 {
+  // リンターとして golangci-lint を指定
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["--fast"],
+  // 保存時に自動でリンターを実行
+  "go.lintOnSave": "package",
+
+  // mise のパスを VSCode に認識させる
   "go.alternateTools": {
-    "go": "/Users/hiro/.local/share/mise/installs/go/1.25.4/bin/go"
+    "go": "/Users/hiro/.local/share/mise/installs/go/1.25.4/bin/go",
+    "golangci-lint": "golangci-lint"
   },
+
+  // ターミナルだけでなく VSCode 全体に mise のパスを反映させる設定
+  "go.toolsEnvVars": {
+    "PATH": "${env:HOME}/.local/share/mise/shims:${env:PATH}"
+  },
+
   "cSpell.words": [
     "Bubbletea",
     "charmbracelet",

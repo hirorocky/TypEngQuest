@@ -62,15 +62,15 @@ func TestSceneType_String(t *testing.T) {
 
 // TestNewGameState は新しいGameStateが正しく初期化されることを検証します
 func TestNewGameState(t *testing.T) {
-	gs := gamestate.NewGameState()
+	gs := gamestate.NewGameStateForTest()
 	if gs == nil {
-		t.Fatal("NewGameState() returned nil")
+		t.Fatal("NewGameStateForTest() returned nil")
 	}
 }
 
 // TestGameState_HasMaxLevelReached はGameStateが到達最高レベルを保持することを検証します
 func TestGameState_HasMaxLevelReached(t *testing.T) {
-	gs := gamestate.NewGameState()
+	gs := gamestate.NewGameStateForTest()
 	// 初期値は0または1であるべき
 	if gs.MaxLevelReached < 0 {
 		t.Errorf("MaxLevelReached should not be negative, got %d", gs.MaxLevelReached)

@@ -71,28 +71,6 @@ func NewAgentManager(
 	}
 }
 
-// InitializeWithDefaults は初期エージェントをセットアップします。
-func (m *AgentManager) InitializeWithDefaults() {
-	// 初期エージェントを作成（コアとモジュールが存在する場合のみ）
-	cores := m.coreInventory.List()
-	modules := m.moduleInventory.List()
-
-	if len(cores) > 0 && len(modules) >= domain.ModuleSlotCount {
-		// 最初のコアと最初の4つのモジュールで初期エージェントを合成
-		core := cores[0]
-		moduleIDs := make([]string, domain.ModuleSlotCount)
-		for i := 0; i < domain.ModuleSlotCount; i++ {
-			moduleIDs[i] = modules[i].TypeID
-		}
-
-		agent, err := m.SynthesizeAgent(core.ID, moduleIDs)
-		if err == nil && agent != nil {
-			// 初期エージェントを装備（スロット0）
-			m.equippedAgents[0] = agent
-		}
-	}
-}
-
 // ==================== コア特性とモジュールタグ互換性検証（Task 5.1） ====================
 
 // GetAllowedTags はコア特性の許可タグリストを取得します。

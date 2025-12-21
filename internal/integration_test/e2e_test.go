@@ -78,6 +78,24 @@ func createTestExternalData() *masterdata.ExternalData {
 				BaseAttackPower: 5,
 			},
 		},
+		PassiveSkills: []masterdata.PassiveSkillData{
+			{
+				ID:          "ps_combo_master",
+				Name:        "コンボマスター",
+				Description: "連続タイピングでダメージ増加",
+			},
+		},
+		FirstAgent: &masterdata.FirstAgentData{
+			ID:         "agent_first",
+			CoreTypeID: "all_rounder",
+			CoreLevel:  1,
+			Modules: []masterdata.FirstAgentModuleData{
+				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 1.2},
+				{TypeID: "fireball_lv1"},
+				{TypeID: "heal_lv1"},
+				{TypeID: "attack_buff_lv1"},
+			},
+		},
 	}
 }
 
@@ -305,23 +323,16 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 		t.Fatalf("モジュールが4個未満です: got %d", len(saveData.Inventory.ModuleInstances))
 	}
 
-	// テスト用にドメインオブジェクトを直接作成
-	core := initializer.CreateInitialCore()
-	modules := initializer.CreateInitialModules()
-
-	// 互換性のあるモジュールを選択
-	selectedModules := make([]*domain.ModuleModel, 0, 4)
-	for _, m := range modules {
-		if m.IsCompatibleWithCore(core) {
-			selectedModules = append(selectedModules, m)
-			if len(selectedModules) >= 4 {
-				break
-			}
-		}
+	// テスト用にドメインオブジェクトを作成（マスタデータから初期エージェントを使用）
+	firstAgent := initializer.CreateInitialAgent()
+	if firstAgent == nil {
+		t.Fatal("初期エージェントの作成に失敗しました")
 	}
+	core := firstAgent.Core
+	selectedModules := firstAgent.Modules
 
 	if len(selectedModules) != 4 {
-		t.Fatalf("互換性のあるモジュールが4個見つかりません: got %d", len(selectedModules))
+		t.Fatalf("初期モジュールが4個必要です: got %d", len(selectedModules))
 	}
 
 	// エージェント合成

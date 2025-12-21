@@ -17,7 +17,7 @@ func createTestExternalData() *masterdata.ExternalData {
 				Name:           "オールラウンダー",
 				AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
 				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-				PassiveSkillID: "adaptability",
+				PassiveSkillID: "ps_combo_master",
 				MinDropLevel:   1,
 			},
 		},
@@ -67,6 +67,24 @@ func createTestExternalData() *masterdata.ExternalData {
 				BaseAttackPower: 5,
 			},
 		},
+		PassiveSkills: []masterdata.PassiveSkillData{
+			{
+				ID:          "ps_combo_master",
+				Name:        "コンボマスター",
+				Description: "連続タイピングでダメージ増加",
+			},
+		},
+		FirstAgent: &masterdata.FirstAgentData{
+			ID:         "agent_first",
+			CoreTypeID: "all_rounder",
+			CoreLevel:  1,
+			Modules: []masterdata.FirstAgentModuleData{
+				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 1.2},
+				{TypeID: "fireball_lv1"},
+				{TypeID: "heal_lv1"},
+				{TypeID: "attack_buff_lv1"},
+			},
+		},
 	}
 }
 
@@ -74,47 +92,7 @@ func createTestExternalData() *masterdata.ExternalData {
 // Task 14.1: 新規ゲーム初期化テスト
 // ==================================================
 
-func TestNewGameInitializer_CreateInitialCore(t *testing.T) {
-
-	initializer := NewNewGameInitializer(createTestExternalData())
-
-	core := initializer.CreateInitialCore()
-	if core == nil {
-		t.Fatal("初期コアが作成されるべきです")
-	}
-
-	// レベル1であること
-	if core.Level != 1 {
-		t.Errorf("初期コアはレベル1であるべきです: got %d", core.Level)
-	}
-
-	// オールラウンダー特性であること
-	if core.Type.ID != "all_rounder" {
-		t.Errorf("初期コアはオールラウンダー特性であるべきです: got %s", core.Type.ID)
-	}
-}
-
-func TestNewGameInitializer_CreateInitialModules(t *testing.T) {
-
-	initializer := NewNewGameInitializer(createTestExternalData())
-
-	modules := initializer.CreateInitialModules()
-	if len(modules) != 4 {
-		t.Errorf("初期モジュールは4個であるべきです: got %d", len(modules))
-	}
-
-	// カテゴリが多様であること（同じカテゴリが4つではないこと）
-	categories := make(map[string]bool)
-	for _, m := range modules {
-		categories[string(m.Category())] = true
-	}
-	if len(categories) < 2 {
-		t.Error("初期モジュールは複数のカテゴリを含むべきです")
-	}
-}
-
 func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
-
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	agent := initializer.CreateInitialAgent()
@@ -135,6 +113,11 @@ func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
 	// エージェントレベルがコアレベルと一致すること
 	if agent.Level != agent.Core.Level {
 		t.Error("エージェントレベルはコアレベルと一致するべきです")
+	}
+
+	// オールラウンダー特性であること（FirstAgentから作成）
+	if agent.Core.Type.ID != "all_rounder" {
+		t.Errorf("初期コアはオールラウンダー特性であるべきです: got %s", agent.Core.Type.ID)
 	}
 }
 
@@ -220,16 +203,25 @@ func TestInitialAgent_ModulesCompatibleWithCore(t *testing.T) {
 }
 
 func TestNewGameInitializer_MultipleCalls(t *testing.T) {
-	// 複数回呼び出しても毎回新しいデータが作成されること
+	// 複数回呼び出しても毎回新しいセーブデータオブジェクトが作成されること
 	initializer := NewNewGameInitializer(createTestExternalData())
 
 	saveData1 := initializer.InitializeNewGame()
 	saveData2 := initializer.InitializeNewGame()
 
-	// 異なるエージェントIDが割り当てられていること（ID化された構造）
-	if len(saveData1.Inventory.AgentInstances) > 0 && len(saveData2.Inventory.AgentInstances) > 0 {
-		if saveData1.Inventory.AgentInstances[0].ID == saveData2.Inventory.AgentInstances[0].ID {
-			t.Error("異なる呼び出しで異なるIDが割り当てられるべきです")
-		}
+	// 別のセーブデータオブジェクトが作成されていること
+	if saveData1 == saveData2 {
+		t.Error("異なる呼び出しで異なるセーブデータオブジェクトが作成されるべきです")
 	}
+
+	// 両方のセーブデータにエージェントが含まれていること
+	if len(saveData1.Inventory.AgentInstances) == 0 {
+		t.Error("saveData1にエージェントが含まれているべきです")
+	}
+	if len(saveData2.Inventory.AgentInstances) == 0 {
+		t.Error("saveData2にエージェントが含まれているべきです")
+	}
+
+	// FirstAgentは固定IDを返すため、エージェントIDは同じ
+	// （これは新しい設計の正しい動作）
 }

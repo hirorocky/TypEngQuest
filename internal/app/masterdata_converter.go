@@ -94,3 +94,17 @@ func ConvertSkillEffects(effects []masterdata.SkillEffectData) []rewarding.Skill
 	}
 	return result
 }
+
+// ConvertPassiveSkills はmasterdata.PassiveSkillDataのスライスをdomain.PassiveSkillのマップに変換します。
+// キーはパッシブスキルのIDです。
+func ConvertPassiveSkills(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkill {
+	result := make(map[string]domain.PassiveSkill, len(skills))
+	for _, s := range skills {
+		result[s.ID] = domain.PassiveSkill{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+		}
+	}
+	return result
+}

@@ -314,6 +314,18 @@ func TestLoadAllExternalData(t *testing.T) {
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "enemies.json"), []byte(enemiesJSON), 0644)
 
+	// passive_skills.json
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "balanced_stance",
+				"name": "バランススタンス",
+				"description": "バランスの取れた姿勢"
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "passive_skills.json"), []byte(passiveSkillsJSON), 0644)
+
 	// words.json
 	wordsJSON := `{
 		"words": {
@@ -323,6 +335,19 @@ func TestLoadAllExternalData(t *testing.T) {
 		}
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "words.json"), []byte(wordsJSON), 0644)
+
+	// first_agent.json
+	firstAgentJSON := `{
+		"first_agent": {
+			"id": "agent_first",
+			"core_type_id": "attack_balance",
+			"core_level": 1,
+			"modules": [
+				{"type_id": "physical_strike_lv1"}
+			]
+		}
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "first_agent.json"), []byte(firstAgentJSON), 0644)
 
 	loader := NewDataLoader(tmpDir)
 	externalData, err := loader.LoadAllExternalData()
@@ -339,8 +364,14 @@ func TestLoadAllExternalData(t *testing.T) {
 	if len(externalData.EnemyTypes) != 1 {
 		t.Errorf("EnemyTypes: got %d, want 1", len(externalData.EnemyTypes))
 	}
+	if len(externalData.PassiveSkills) != 1 {
+		t.Errorf("PassiveSkills: got %d, want 1", len(externalData.PassiveSkills))
+	}
 	if externalData.TypingDictionary == nil {
 		t.Error("TypingDictionary should not be nil")
+	}
+	if externalData.FirstAgent == nil {
+		t.Error("FirstAgent should not be nil")
 	}
 }
 

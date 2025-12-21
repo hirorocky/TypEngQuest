@@ -50,30 +50,27 @@ type GameState struct {
 	encounteredEnemies []string
 }
 
-// NewGameState はデフォルト値で新しいGameStateを作成します。
+// NewGameState はマスタデータを使用して新しいGameStateを作成します。
 // 初回起動時やセーブデータが存在しない場合に使用されます。
-func NewGameState() *GameState {
+func NewGameState(
+	coreTypes []domain.CoreType,
+	moduleTypes []rewarding.ModuleDropInfo,
+	passiveSkills map[string]domain.PassiveSkill,
+) *GameState {
 	// インベントリマネージャーを作成
 	invManager := NewInventoryManager()
-	invManager.InitializeWithDefaults()
 
 	// エージェントマネージャーを作成（エージェント・装備管理を一元化）
 	agentMgr := synthesize.NewAgentManager(
 		invManager.Cores(),
 		invManager.Modules(),
 	)
-	agentMgr.InitializeWithDefaults()
 
 	// 実績マネージャーを作成
 	achievementMgr := achievement.NewAchievementManager()
 
-	// 報酬計算用のデータを準備
-	coreTypes := GetDefaultCoreTypes()
-	moduleDropInfos := GetDefaultModuleDropInfos()
-	passiveSkills := GetDefaultPassiveSkills()
-
 	// RewardCalculatorを作成
-	rewardCalc := rewarding.NewRewardCalculator(coreTypes, moduleDropInfos, passiveSkills)
+	rewardCalc := rewarding.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 
 	// EnemyGeneratorを作成（デフォルト敵タイプを使用）
 	enemyGen := spawning.NewEnemyGenerator(nil)

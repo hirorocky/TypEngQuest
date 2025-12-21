@@ -116,31 +116,18 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 
 // GameStateFromSaveData はセーブデータからGameStateを生成します。
 // v1.0.0形式のセーブデータからオブジェクトを再構築します。
-// sourcesが提供されている場合はそれを使用し、なければデフォルト値を使用します。
+// sourcesにはマスタデータから変換されたドメイン型データを渡す必要があります。
 func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) *GameState {
+	if sources == nil {
+		slog.Error("マスタデータソースが必要です")
+		return nil
+	}
+
 	// マスタデータを取得（ドメイン型）
-	var coreTypes []domain.CoreType
-	var moduleTypes []rewarding.ModuleDropInfo
-	var passiveSkills map[string]domain.PassiveSkill
-	var enemyTypes []domain.EnemyType
-
-	if sources != nil {
-		coreTypes = sources.CoreTypes
-		moduleTypes = sources.ModuleTypes
-		passiveSkills = sources.PassiveSkills
-		enemyTypes = sources.EnemyTypes
-	}
-
-	// データが空の場合はデフォルト値を使用
-	if len(coreTypes) == 0 {
-		coreTypes = GetDefaultCoreTypes()
-	}
-	if len(moduleTypes) == 0 {
-		moduleTypes = GetDefaultModuleDropInfos()
-	}
-	if passiveSkills == nil {
-		passiveSkills = GetDefaultPassiveSkills()
-	}
+	coreTypes := sources.CoreTypes
+	moduleTypes := sources.ModuleTypes
+	passiveSkills := sources.PassiveSkills
+	enemyTypes := sources.EnemyTypes
 
 	// インベントリマネージャーを作成
 	invManager := NewInventoryManager()
@@ -149,8 +136,8 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	if data.Inventory != nil {
 		for _, coreSave := range data.Inventory.CoreInstances {
 			// コア特性を検索（ドメイン型）
-			coreType := FindCoreType(coreTypes, coreSave.CoreTypeID)
-			passiveSkill := FindPassiveSkill(passiveSkills, coreSave.CoreTypeID)
+			coreType := findCoreType(coreTypes, coreSave.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, coreSave.CoreTypeID)
 
 			// コアを再構築（v1.0.0形式: TypeIDベース）
 			core := domain.NewCoreWithTypeID(
@@ -170,7 +157,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 
 		// モジュールを再構築（v1.0.0形式: ModuleInstances）
 		for _, modSave := range data.Inventory.ModuleInstances {
-			moduleDropInfo := FindModuleDropInfo(moduleTypes, modSave.TypeID)
+			moduleDropInfo := findModuleDropInfo(moduleTypes, modSave.TypeID)
 			if moduleDropInfo != nil {
 				// チェイン効果を復元
 				var chainEffect *domain.ChainEffect
@@ -194,7 +181,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 
 		// 後方互換性: 旧形式ModuleCountsからの復元
 		for moduleID, count := range data.Inventory.ModuleCounts {
-			moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
+			moduleDropInfo := findModuleDropInfo(moduleTypes, moduleID)
 			if moduleDropInfo != nil {
 				for i := 0; i < count; i++ {
 					module := moduleDropInfo.ToDomain()
@@ -220,8 +207,8 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	if data.Inventory != nil {
 		for _, agentSave := range data.Inventory.AgentInstances {
 			// エージェント内のコア情報からコアを再構築（v1.0.0形式）
-			coreType := FindCoreType(coreTypes, agentSave.Core.CoreTypeID)
-			passiveSkill := FindPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
+			coreType := findCoreType(coreTypes, agentSave.Core.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
 			core := domain.NewCoreWithTypeID(
 				agentSave.Core.CoreTypeID,
 				agentSave.Core.Level,
@@ -232,7 +219,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 			// モジュールを再構築（チェイン効果対応）
 			modules := make([]*domain.ModuleModel, 0, len(agentSave.ModuleIDs))
 			for i, moduleID := range agentSave.ModuleIDs {
-				moduleDropInfo := FindModuleDropInfo(moduleTypes, moduleID)
+				moduleDropInfo := findModuleDropInfo(moduleTypes, moduleID)
 				if moduleDropInfo != nil {
 					// チェイン効果を復元
 					var chainEffect *domain.ChainEffect
@@ -332,4 +319,38 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		enemyGenerator:     enemyGen,
 		encounteredEnemies: encounteredEnemies,
 	}
+}
+
+// findCoreType はコア特性リストから指定IDのコア特性を検索します。
+func findCoreType(coreTypes []domain.CoreType, coreTypeID string) domain.CoreType {
+	for _, ct := range coreTypes {
+		if ct.ID == coreTypeID {
+			return ct
+		}
+	}
+	// 見つからない場合は最初のコア特性を返す（フォールバック）
+	if len(coreTypes) > 0 {
+		return coreTypes[0]
+	}
+	return domain.CoreType{}
+}
+
+// findPassiveSkill はパッシブスキルマップから指定コア特性に対応するスキルを検索します。
+func findPassiveSkill(passiveSkills map[string]domain.PassiveSkill, coreTypeID string) domain.PassiveSkill {
+	// まずコア特性IDに対応するパッシブスキルを検索
+	if skill, ok := passiveSkills[coreTypeID]; ok {
+		return skill
+	}
+	// 見つからない場合は空のパッシブスキルを返す
+	return domain.PassiveSkill{}
+}
+
+// findModuleDropInfo はモジュール定義リストから指定IDのモジュール定義を検索します。
+func findModuleDropInfo(moduleDefs []rewarding.ModuleDropInfo, moduleID string) *rewarding.ModuleDropInfo {
+	for i := range moduleDefs {
+		if moduleDefs[i].ID == moduleID {
+			return &moduleDefs[i]
+		}
+	}
+	return nil
 }
