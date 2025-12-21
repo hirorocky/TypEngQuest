@@ -10,9 +10,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// SkillEffectBadge はチェイン効果をコンパクトに表示するバッジコンポーネントです。
+// ChainEffectBadge はチェイン効果をコンパクトに表示するバッジコンポーネントです。
 // チェイン効果のカテゴリに応じたアイコンと効果値を簡潔に表示します。
-type SkillEffectBadge struct {
+type ChainEffectBadge struct {
 	effect     *domain.ChainEffect
 	gameStyles *styles.GameStyles
 }
@@ -28,10 +28,10 @@ var categoryIcons = map[domain.ChainEffectCategory]string{
 	domain.ChainEffectCategorySpecial:      "✨",
 }
 
-// NewSkillEffectBadge は新しいSkillEffectBadgeを作成します。
+// NewChainEffectBadge は新しいChainEffectBadgeを作成します。
 // effectがnilの場合でも有効なバッジを作成します（表示は空になります）。
-func NewSkillEffectBadge(effect *domain.ChainEffect) *SkillEffectBadge {
-	return &SkillEffectBadge{
+func NewChainEffectBadge(effect *domain.ChainEffect) *ChainEffectBadge {
+	return &ChainEffectBadge{
 		effect:     effect,
 		gameStyles: styles.NewGameStyles(),
 	}
@@ -39,7 +39,7 @@ func NewSkillEffectBadge(effect *domain.ChainEffect) *SkillEffectBadge {
 
 // GetCategoryIcon はチェイン効果のカテゴリに応じたアイコンを返します。
 // effectがnilの場合は空文字列を返します。
-func (b *SkillEffectBadge) GetCategoryIcon() string {
+func (b *ChainEffectBadge) GetCategoryIcon() string {
 	if b.effect == nil {
 		return ""
 	}
@@ -53,7 +53,7 @@ func (b *SkillEffectBadge) GetCategoryIcon() string {
 
 // GetDescription は効果の説明文を返します。
 // effectがnilの場合は空文字列を返します。
-func (b *SkillEffectBadge) GetDescription() string {
+func (b *ChainEffectBadge) GetDescription() string {
 	if b.effect == nil {
 		return ""
 	}
@@ -61,7 +61,7 @@ func (b *SkillEffectBadge) GetDescription() string {
 }
 
 // getCategoryColor はカテゴリに応じた色を返します。
-func (b *SkillEffectBadge) getCategoryColor() lipgloss.Color {
+func (b *ChainEffectBadge) getCategoryColor() lipgloss.Color {
 	if b.effect == nil {
 		return styles.ColorSubtle
 	}
@@ -89,7 +89,7 @@ func (b *SkillEffectBadge) getCategoryColor() lipgloss.Color {
 
 // Render はバッジをレンダリングします（アイコンのみ）。
 // effectがnilの場合は空文字列を返します。
-func (b *SkillEffectBadge) Render() string {
+func (b *ChainEffectBadge) Render() string {
 	if b.effect == nil {
 		return ""
 	}
@@ -103,7 +103,7 @@ func (b *SkillEffectBadge) Render() string {
 
 // RenderWithValue はバッジをレンダリングします（アイコンと効果値）。
 // effectがnilの場合は空文字列を返します。
-func (b *SkillEffectBadge) RenderWithValue() string {
+func (b *ChainEffectBadge) RenderWithValue() string {
 	if b.effect == nil {
 		return ""
 	}
@@ -121,7 +121,7 @@ func (b *SkillEffectBadge) RenderWithValue() string {
 
 // RenderFull はバッジをフルフォーマットでレンダリングします（アイコン、効果値、説明）。
 // effectがnilの場合は「(No Effect)」を返します。
-func (b *SkillEffectBadge) RenderFull() string {
+func (b *ChainEffectBadge) RenderFull() string {
 	if b.effect == nil {
 		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(No Effect)")
 	}
@@ -138,7 +138,7 @@ func (b *SkillEffectBadge) RenderFull() string {
 }
 
 // formatValue は効果値をフォーマットします。
-func (b *SkillEffectBadge) formatValue() string {
+func (b *ChainEffectBadge) formatValue() string {
 	if b.effect == nil {
 		return ""
 	}
@@ -170,6 +170,6 @@ func (b *SkillEffectBadge) formatValue() string {
 }
 
 // HasEffect はこのバッジが有効なチェイン効果を持っているかを返します。
-func (b *SkillEffectBadge) HasEffect() bool {
+func (b *ChainEffectBadge) HasEffect() bool {
 	return b.effect != nil
 }

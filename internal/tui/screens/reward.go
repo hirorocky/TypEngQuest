@@ -195,7 +195,7 @@ func (s *RewardScreen) renderDrops() string {
 
 			// チェイン効果がある場合はバッジを追加
 			if module.HasChainEffect() {
-				badge := components.NewSkillEffectBadge(module.ChainEffect)
+				badge := components.NewChainEffectBadge(module.ChainEffect)
 				moduleInfo = fmt.Sprintf("%s %s", moduleInfo, badge.RenderWithValue())
 			}
 

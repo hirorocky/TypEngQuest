@@ -407,8 +407,8 @@ func convertTriggerConditionType(s string) domain.TriggerConditionType {
 
 // ==================== チェイン効果定義 ====================
 
-// SkillEffectData はskill_effects.jsonから読み込むチェイン効果データの構造体です。
-type SkillEffectData struct {
+// ChainEffectData はchain_effects.jsonから読み込むチェイン効果データの構造体です。
+type ChainEffectData struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -418,40 +418,40 @@ type SkillEffectData struct {
 	MaxValue    float64 `json:"max_value"`
 }
 
-// skillEffectsFileData はskill_effects.jsonのルート構造です。
-type skillEffectsFileData struct {
-	SkillEffects []SkillEffectData `json:"skill_effects"`
+// chainEffectsFileData はchain_effects.jsonのルート構造です。
+type chainEffectsFileData struct {
+	ChainEffects []ChainEffectData `json:"chain_effects"`
 }
 
-// LoadSkillEffects はskill_effects.jsonからチェイン効果定義を読み込みます。
-func (l *DataLoader) LoadSkillEffects() ([]SkillEffectData, error) {
-	data, err := l.readFile("skill_effects.json")
+// LoadChainEffects はchain_effects.jsonからチェイン効果定義を読み込みます。
+func (l *DataLoader) LoadChainEffects() ([]ChainEffectData, error) {
+	data, err := l.readFile("chain_effects.json")
 	if err != nil {
-		return nil, fmt.Errorf("skill_effects.jsonの読み込みに失敗: %w", err)
+		return nil, fmt.Errorf("chain_effects.jsonの読み込みに失敗: %w", err)
 	}
 
-	var fileData skillEffectsFileData
+	var fileData chainEffectsFileData
 	if err := json.Unmarshal(data, &fileData); err != nil {
-		return nil, fmt.Errorf("skill_effects.jsonのパースに失敗: %w", err)
+		return nil, fmt.Errorf("chain_effects.jsonのパースに失敗: %w", err)
 	}
 
-	return fileData.SkillEffects, nil
+	return fileData.ChainEffects, nil
 }
 
-// ToDomainEffectType はSkillEffectDataからドメインモデルのChainEffectTypeに変換します。
-func (s *SkillEffectData) ToDomainEffectType() domain.ChainEffectType {
+// ToDomainEffectType はChainEffectDataからドメインモデルのChainEffectTypeに変換します。
+func (s *ChainEffectData) ToDomainEffectType() domain.ChainEffectType {
 	return convertChainEffectType(s.EffectType)
 }
 
-// ToDomainCategory はSkillEffectDataからドメインモデルのChainEffectCategoryに変換します。
-func (s *SkillEffectData) ToDomainCategory() domain.ChainEffectCategory {
+// ToDomainCategory はChainEffectDataからドメインモデルのChainEffectCategoryに変換します。
+func (s *ChainEffectData) ToDomainCategory() domain.ChainEffectCategory {
 	return convertChainEffectCategory(s.Category)
 }
 
-// ToSkillEffectDefinition はSkillEffectDataをSkillEffectDefinitionに変換します。
+// ToChainEffectDefinition はChainEffectDataをChainEffectDefinitionに変換します。
 // rewardingパッケージのChainEffectPoolで使用されます。
-func (s *SkillEffectData) ToSkillEffectDefinition() SkillEffectDefinitionData {
-	return SkillEffectDefinitionData{
+func (s *ChainEffectData) ToChainEffectDefinition() ChainEffectDefinitionData {
+	return ChainEffectDefinitionData{
 		ID:         s.ID,
 		Name:       s.Name,
 		Category:   s.Category,
@@ -461,9 +461,9 @@ func (s *SkillEffectData) ToSkillEffectDefinition() SkillEffectDefinitionData {
 	}
 }
 
-// SkillEffectDefinitionData はチェイン効果定義のデータ構造体です。
-// rewardingパッケージのSkillEffectDefinitionと同等の構造を持ちます。
-type SkillEffectDefinitionData struct {
+// ChainEffectDefinitionData はチェイン効果定義のデータ構造体です。
+// rewardingパッケージのChainEffectDefinitionと同等の構造を持ちます。
+type ChainEffectDefinitionData struct {
 	// ID はチェイン効果の一意識別子です。
 	ID string
 

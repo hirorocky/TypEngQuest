@@ -416,7 +416,7 @@ func TestInventoryFull_PromptDiscard(t *testing.T) {
 
 // TestChainEffectPool_CreateFromSkillEffects はチェイン効果プールの作成をテストします。
 func TestChainEffectPool_CreateFromSkillEffects(t *testing.T) {
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -447,7 +447,7 @@ func TestChainEffectPool_CreateFromSkillEffects(t *testing.T) {
 
 // TestChainEffectPool_GenerateRandomEffect はランダムなチェイン効果生成をテストします。
 func TestChainEffectPool_GenerateRandomEffect(t *testing.T) {
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -477,7 +477,7 @@ func TestChainEffectPool_GenerateRandomEffect(t *testing.T) {
 
 // TestChainEffectPool_GenerateWithNilProbability はチェイン効果なしの確率をテストします。
 func TestChainEffectPool_GenerateWithNilProbability(t *testing.T) {
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -528,7 +528,7 @@ func TestModuleDrop_WithChainEffect(t *testing.T) {
 		},
 	}
 
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -571,7 +571,7 @@ func TestModuleDrop_ChainEffectValueInRange(t *testing.T) {
 		},
 	}
 
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -651,7 +651,7 @@ func TestCalculateRewards_WithChainEffectPool(t *testing.T) {
 		},
 	}
 
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",
@@ -751,7 +751,7 @@ func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
 
 // TestChainEffectPool_MultipleEffectTypes は複数のチェイン効果タイプからランダム選択されることをテストします。
 func TestChainEffectPool_MultipleEffectTypes(t *testing.T) {
-	skillEffects := []SkillEffectDefinition{
+	skillEffects := []ChainEffectDefinition{
 		{
 			ID:         "damage_amp",
 			Name:       "ダメージアンプ",

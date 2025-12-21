@@ -618,12 +618,12 @@ func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
 	}
 }
 
-// TestLoadSkillEffects はチェイン効果定義のロードをテストします。
-func TestLoadSkillEffects(t *testing.T) {
+// TestLoadChainEffects はチェイン効果定義のロードをテストします。
+func TestLoadChainEffects(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	skillEffectsJSON := `{
-		"skill_effects": [
+	chainEffectsJSON := `{
+		"chain_effects": [
 			{
 				"id": "damage_bonus",
 				"name": "ダメージボーナス",
@@ -690,36 +690,36 @@ func TestLoadSkillEffects(t *testing.T) {
 		]
 	}`
 
-	skillEffectsPath := filepath.Join(tmpDir, "skill_effects.json")
-	if err := os.WriteFile(skillEffectsPath, []byte(skillEffectsJSON), 0644); err != nil {
+	chainEffectsPath := filepath.Join(tmpDir, "chain_effects.json")
+	if err := os.WriteFile(chainEffectsPath, []byte(chainEffectsJSON), 0644); err != nil {
 		t.Fatalf("テストファイルの作成に失敗: %v", err)
 	}
 
 	loader := NewDataLoader(tmpDir)
-	skillEffects, err := loader.LoadSkillEffects()
+	chainEffects, err := loader.LoadChainEffects()
 	if err != nil {
 		t.Fatalf("チェイン効果のロードに失敗: %v", err)
 	}
 
-	if len(skillEffects) != 7 {
-		t.Errorf("チェイン効果数: got %d, want 7", len(skillEffects))
+	if len(chainEffects) != 7 {
+		t.Errorf("チェイン効果数: got %d, want 7", len(chainEffects))
 	}
 
 	// ダメージボーナス（攻撃カテゴリ）の検証
-	if skillEffects[0].ID != "damage_bonus" {
-		t.Errorf("ID: got %s, want damage_bonus", skillEffects[0].ID)
+	if chainEffects[0].ID != "damage_bonus" {
+		t.Errorf("ID: got %s, want damage_bonus", chainEffects[0].ID)
 	}
-	if skillEffects[0].Category != "attack" {
-		t.Errorf("Category: got %s, want attack", skillEffects[0].Category)
+	if chainEffects[0].Category != "attack" {
+		t.Errorf("Category: got %s, want attack", chainEffects[0].Category)
 	}
-	if skillEffects[0].EffectType != "damage_bonus" {
-		t.Errorf("EffectType: got %s, want damage_bonus", skillEffects[0].EffectType)
+	if chainEffects[0].EffectType != "damage_bonus" {
+		t.Errorf("EffectType: got %s, want damage_bonus", chainEffects[0].EffectType)
 	}
-	if skillEffects[0].MinValue != 10 {
-		t.Errorf("MinValue: got %f, want 10", skillEffects[0].MinValue)
+	if chainEffects[0].MinValue != 10 {
+		t.Errorf("MinValue: got %f, want 10", chainEffects[0].MinValue)
 	}
-	if skillEffects[0].MaxValue != 50 {
-		t.Errorf("MaxValue: got %f, want 50", skillEffects[0].MaxValue)
+	if chainEffects[0].MaxValue != 50 {
+		t.Errorf("MaxValue: got %f, want 50", chainEffects[0].MaxValue)
 	}
 
 	// 各カテゴリの検証
@@ -732,7 +732,7 @@ func TestLoadSkillEffects(t *testing.T) {
 		"effect_extend": false,
 		"special":       false,
 	}
-	for _, effect := range skillEffects {
+	for _, effect := range chainEffects {
 		categories[effect.Category] = true
 	}
 	for cat, found := range categories {
@@ -746,8 +746,8 @@ func TestLoadSkillEffects(t *testing.T) {
 func TestConvertToDomainChainEffectType(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	skillEffectsJSON := `{
-		"skill_effects": [
+	chainEffectsJSON := `{
+		"chain_effects": [
 			{
 				"id": "damage_amp",
 				"name": "ダメージアンプ",
@@ -759,17 +759,17 @@ func TestConvertToDomainChainEffectType(t *testing.T) {
 			}
 		]
 	}`
-	os.WriteFile(filepath.Join(tmpDir, "skill_effects.json"), []byte(skillEffectsJSON), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "chain_effects.json"), []byte(chainEffectsJSON), 0644)
 
 	loader := NewDataLoader(tmpDir)
-	skillEffects, err := loader.LoadSkillEffects()
+	chainEffects, err := loader.LoadChainEffects()
 	if err != nil {
 		t.Fatalf("チェイン効果のロードに失敗: %v", err)
 	}
 
 	// ドメインモデルに変換
-	domainEffectType := skillEffects[0].ToDomainEffectType()
-	domainCategory := skillEffects[0].ToDomainCategory()
+	domainEffectType := chainEffects[0].ToDomainEffectType()
+	domainCategory := chainEffects[0].ToDomainCategory()
 
 	if domainEffectType != domain.ChainEffectDamageAmp {
 		t.Errorf("EffectType: got %s, want %s", domainEffectType, domain.ChainEffectDamageAmp)

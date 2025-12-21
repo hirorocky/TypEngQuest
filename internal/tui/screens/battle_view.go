@@ -217,7 +217,7 @@ func (s *BattleScreen) renderAgentArea() string {
 			// 待機中チェイン効果表示
 			pendingChain := s.chainEffectManager.GetPendingEffectForAgent(i)
 			if pendingChain != nil {
-				chainBadge := components.NewSkillEffectBadge(&pendingChain.Effect)
+				chainBadge := components.NewChainEffectBadge(&pendingChain.Effect)
 				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorBuff).Render("🔗 "))
 				cardContent.WriteString(chainBadge.RenderWithValue())
 				cardContent.WriteString("\n")
@@ -253,7 +253,7 @@ func (s *BattleScreen) renderAgentArea() string {
 				// チェイン効果バッジ
 				chainBadgeStr := ""
 				if slot.Module.HasChainEffect() {
-					chainBadge := components.NewSkillEffectBadge(slot.Module.ChainEffect)
+					chainBadge := components.NewChainEffectBadge(slot.Module.ChainEffect)
 					chainBadgeStr = chainBadge.Render() + " "
 				}
 

@@ -831,7 +831,7 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 
 	// チェイン効果情報を追加
 	if module.HasChainEffect() {
-		chainBadge := components.NewSkillEffectBadge(module.ChainEffect)
+		chainBadge := components.NewChainEffectBadge(module.ChainEffect)
 		panel.AddItem("チェイン効果", chainBadge.GetCategoryIcon()+" "+chainBadge.GetDescription())
 	}
 
@@ -1072,7 +1072,7 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name()))
 			// チェイン効果があれば表示
 			if m.HasChainEffect() {
-				chainBadge := components.NewSkillEffectBadge(m.ChainEffect)
+				chainBadge := components.NewChainEffectBadge(m.ChainEffect)
 				builder.WriteString(" " + chainBadge.Render())
 			}
 			builder.WriteString("\n")

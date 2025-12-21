@@ -17,9 +17,9 @@ import (
 // デフォルトのチェイン効果なし確率（30%）
 const DefaultNoEffectProbability = 0.3
 
-// SkillEffectDefinition はチェイン効果定義の構造体です。
-// マスタデータからロードされたスキル効果情報を保持します。
-type SkillEffectDefinition struct {
+// ChainEffectDefinition はチェイン効果定義の構造体です。
+// マスタデータからロードされたチェイン効果情報を保持します。
+type ChainEffectDefinition struct {
 	// ID はチェイン効果の一意識別子です。
 	ID string
 
@@ -43,7 +43,7 @@ type SkillEffectDefinition struct {
 // モジュール入手時にランダムなチェイン効果を生成します。
 type ChainEffectPool struct {
 	// Effects は利用可能なチェイン効果定義のリストです。
-	Effects []SkillEffectDefinition
+	Effects []ChainEffectDefinition
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
@@ -53,7 +53,7 @@ type ChainEffectPool struct {
 }
 
 // NewChainEffectPool は新しいChainEffectPoolを作成します。
-func NewChainEffectPool(effects []SkillEffectDefinition) *ChainEffectPool {
+func NewChainEffectPool(effects []ChainEffectDefinition) *ChainEffectPool {
 	return &ChainEffectPool{
 		Effects:             effects,
 		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),

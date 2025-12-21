@@ -1,5 +1,5 @@
 {
-  "skill_effects": [
+  "chain_effects": [
     {
       "id": "damage_bonus",
       "name": "ダメージボーナス",

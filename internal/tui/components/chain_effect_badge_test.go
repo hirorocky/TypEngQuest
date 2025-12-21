@@ -8,24 +8,24 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
-func TestSkillEffectBadge_NewSkillEffectBadge(t *testing.T) {
+func TestChainEffectBadge_NewChainEffectBadge(t *testing.T) {
 	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
-	badge := NewSkillEffectBadge(&effect)
+	badge := NewChainEffectBadge(&effect)
 
 	if badge == nil {
-		t.Fatal("NewSkillEffectBadge should return non-nil")
+		t.Fatal("NewChainEffectBadge should return non-nil")
 	}
 }
 
-func TestSkillEffectBadge_NewSkillEffectBadgeWithNil(t *testing.T) {
-	badge := NewSkillEffectBadge(nil)
+func TestChainEffectBadge_NewChainEffectBadgeWithNil(t *testing.T) {
+	badge := NewChainEffectBadge(nil)
 
 	if badge == nil {
-		t.Fatal("NewSkillEffectBadge should return non-nil even for nil effect")
+		t.Fatal("NewChainEffectBadge should return non-nil even for nil effect")
 	}
 }
 
-func TestSkillEffectBadge_GetCategoryIcon(t *testing.T) {
+func TestChainEffectBadge_GetCategoryIcon(t *testing.T) {
 	tests := []struct {
 		name       string
 		effectType domain.ChainEffectType
@@ -55,7 +55,7 @@ func TestSkillEffectBadge_GetCategoryIcon(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			effect := domain.NewChainEffect(tt.effectType, 10.0)
-			badge := NewSkillEffectBadge(&effect)
+			badge := NewChainEffectBadge(&effect)
 
 			got := badge.GetCategoryIcon()
 			if got != tt.wantIcon {
@@ -65,9 +65,9 @@ func TestSkillEffectBadge_GetCategoryIcon(t *testing.T) {
 	}
 }
 
-func TestSkillEffectBadge_Render(t *testing.T) {
+func TestChainEffectBadge_Render(t *testing.T) {
 	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
-	badge := NewSkillEffectBadge(&effect)
+	badge := NewChainEffectBadge(&effect)
 
 	result := badge.Render()
 
@@ -77,9 +77,9 @@ func TestSkillEffectBadge_Render(t *testing.T) {
 	}
 }
 
-func TestSkillEffectBadge_RenderWithValue(t *testing.T) {
+func TestChainEffectBadge_RenderWithValue(t *testing.T) {
 	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
-	badge := NewSkillEffectBadge(&effect)
+	badge := NewChainEffectBadge(&effect)
 
 	result := badge.RenderWithValue()
 
@@ -92,8 +92,8 @@ func TestSkillEffectBadge_RenderWithValue(t *testing.T) {
 	}
 }
 
-func TestSkillEffectBadge_RenderNilEffect(t *testing.T) {
-	badge := NewSkillEffectBadge(nil)
+func TestChainEffectBadge_RenderNilEffect(t *testing.T) {
+	badge := NewChainEffectBadge(nil)
 
 	result := badge.Render()
 
@@ -103,9 +103,9 @@ func TestSkillEffectBadge_RenderNilEffect(t *testing.T) {
 	}
 }
 
-func TestSkillEffectBadge_GetDescription(t *testing.T) {
+func TestChainEffectBadge_GetDescription(t *testing.T) {
 	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
-	badge := NewSkillEffectBadge(&effect)
+	badge := NewChainEffectBadge(&effect)
 
 	desc := badge.GetDescription()
 
