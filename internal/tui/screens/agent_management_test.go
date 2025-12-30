@@ -12,26 +12,28 @@ import (
 // newTestModule はテスト用モジュールを作成するヘルパー関数です。
 func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
-		ID:          id,
-		Name:        name,
-		Category:    category,
-		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
-		Description: description,
+		ID:              id,
+		Name:            name,
+		Category:        category,
+		Tags:            tags,
+		BaseEffect:      baseEffect,
+		StatRef:         statRef,
+		Description:     description,
+		CooldownSeconds: 10.0, // テスト用デフォルト値
 	}, nil)
 }
 
 // newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
 func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
-		ID:          id,
-		Name:        name,
-		Category:    category,
-		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
-		Description: description,
+		ID:              id,
+		Name:            name,
+		Category:        category,
+		Tags:            tags,
+		BaseEffect:      baseEffect,
+		StatRef:         statRef,
+		Description:     description,
+		CooldownSeconds: 10.0, // テスト用デフォルト値
 	}, chainEffect)
 }
 

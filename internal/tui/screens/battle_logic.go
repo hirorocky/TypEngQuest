@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"time"
 
-	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/usecase/combat"
@@ -269,8 +268,9 @@ func (s *BattleScreen) startAgentRecast(agentIndex int, module *domain.ModuleMod
 		return
 	}
 
-	// エージェントのリキャストを開始
-	s.recastManager.StartRecast(agentIndex, config.DefaultRecastDuration)
+	// モジュールのクールダウン秒数を使用してリキャストを開始
+	cooldownDuration := time.Duration(module.CooldownSeconds() * float64(time.Second))
+	s.recastManager.StartRecast(agentIndex, cooldownDuration)
 
 	// チェイン効果を登録
 	if s.chainEffectManager != nil && module.ChainEffect != nil {
