@@ -18,7 +18,7 @@ import (
 func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 初期データを作成
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
@@ -60,7 +60,7 @@ func TestSaveLoadFlow_WriteAndRead(t *testing.T) {
 func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 	// インベントリの永続化テスト（v1.0.0形式）
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// テスト用データを作成
 	saveData := savedata.NewSaveData()
@@ -120,7 +120,7 @@ func TestSaveLoadFlow_InventoryPersistence(t *testing.T) {
 func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 正常なデータをセーブ
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
@@ -166,7 +166,7 @@ func TestSaveLoadFlow_CorruptedData_BackupRestore(t *testing.T) {
 func TestSaveLoadFlow_BackupRotation(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
@@ -205,7 +205,7 @@ func TestSaveLoadFlow_BackupRotation(t *testing.T) {
 func TestSaveLoadFlow_NewGameWhenNoSave(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// セーブファイルが存在しないことを確認
 	if io.Exists() {
@@ -243,7 +243,7 @@ func TestSaveLoadFlow_NewGameWhenNoSave(t *testing.T) {
 func TestSaveLoadFlow_DataValidation(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// バージョンが空のデータを作成
 	savePath := filepath.Join(tempDir, "save.json")
@@ -267,7 +267,7 @@ func TestSaveLoadFlow_DataValidation(t *testing.T) {
 func TestSaveLoadFlow_ResetSaveData(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// データをセーブ
 	initializer := startup.NewNewGameInitializer(createTestExternalData())

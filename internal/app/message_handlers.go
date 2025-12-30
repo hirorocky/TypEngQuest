@@ -61,6 +61,8 @@ func (mh *MessageHandlers) Handle(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return mh.handleBattleTickMsg(msg)
 	case screens.BattleResultMsg:
 		return mh.handleBattleResultMsg(msg)
+	case screens.SaveRequestMsg:
+		return mh.handleSaveRequestMsg(msg)
 	}
 	return mh.model, nil
 }
@@ -86,6 +88,7 @@ func (mh *MessageHandlers) handleKeyMsg(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// ホーム画面以外ならホームに戻る
 		if mh.model.currentScene != SceneHome {
+			mh.model.homeScreen.RefreshMenuState()
 			mh.model.currentScene = SceneHome
 			return mh.model, nil
 		}
@@ -144,6 +147,12 @@ func (mh *MessageHandlers) handleBattleTickMsg(msg tea.Msg) (tea.Model, tea.Cmd)
 func (mh *MessageHandlers) handleBattleResultMsg(msg tea.Msg) (tea.Model, tea.Cmd) {
 	resultMsg := msg.(screens.BattleResultMsg)
 	mh.model.handleBattleResult(resultMsg)
+	return mh.model, nil
+}
+
+// handleSaveRequestMsg はセーブ要求メッセージを処理します。
+func (mh *MessageHandlers) handleSaveRequestMsg(_ tea.Msg) (tea.Model, tea.Cmd) {
+	mh.model.handleSaveRequest()
 	return mh.model, nil
 }
 

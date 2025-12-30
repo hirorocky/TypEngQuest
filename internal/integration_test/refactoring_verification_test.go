@@ -89,7 +89,7 @@ func categoryStringToModule(category string) domain.ModuleCategory {
 // 要件12.2: 既存セーブデータが正常に読み込めることを確認
 func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	externalData := createTestExternalData()
 
 	// リファクタリング前の形式でセーブデータを作成（手動構築）
@@ -202,7 +202,7 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 // 要件12.1, 12.2, 12.3: データ整合性の維持
 func TestRefactoring_GameStateRoundTrip(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	externalData := createTestExternalData()
 
 	// 新規ゲームを初期化
@@ -504,7 +504,7 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	saveData := initializer.InitializeNewGame()
 
 	// 2. セーブ/ロード
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	err := io.SaveGame(saveData)
 	if err != nil {
 		t.Fatalf("セーブに失敗: %v", err)

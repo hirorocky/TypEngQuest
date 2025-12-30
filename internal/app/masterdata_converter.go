@@ -39,6 +39,7 @@ func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.Mod
 			StatRef:      t.StatReference,
 			Description:  t.Description,
 			MinDropLevel: t.MinDropLevel,
+			Difficulty:   t.Difficulty,
 		}
 	}
 	return result
@@ -105,6 +106,17 @@ func ConvertPassiveSkills(skills []masterdata.PassiveSkillData) map[string]domai
 			Name:        s.Name,
 			Description: s.Description,
 		}
+	}
+	return result
+}
+
+// ConvertPassiveSkillDefinitions はmasterdata.PassiveSkillDataのスライスを
+// domain.PassiveSkillDefinitionのマップに変換します。
+// キーはパッシブスキルのIDです。
+func ConvertPassiveSkillDefinitions(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkillDefinition {
+	result := make(map[string]domain.PassiveSkillDefinition, len(skills))
+	for _, s := range skills {
+		result[s.ID] = s.ToDomain()
 	}
 	return result
 }

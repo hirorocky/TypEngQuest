@@ -120,7 +120,7 @@ func (s *BattleScreen) renderEnemyArea() string {
 	builder.WriteString("\n")
 
 	// 敵のバフ表示
-	buffs := s.enemy.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs := s.enemy.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) > 0 {
 		for _, buff := range buffs {
 			if buff.Duration != nil {
@@ -166,7 +166,6 @@ func (s *BattleScreen) renderEnemyArea() string {
 }
 
 // renderAgentArea はエージェントエリア（3体横並びカード）をレンダリングします。
-// UI-Improvement Requirement 3.2: エージェント横並びカード表示
 // タスク 9: リキャスト状態、チェイン効果、パッシブスキル表示を追加
 func (s *BattleScreen) renderAgentArea() string {
 	// 画面幅に基づいてカード幅を計算（余白を最小限に）
@@ -257,18 +256,7 @@ func (s *BattleScreen) renderAgentArea() string {
 					chainBadgeStr = chainBadge.Render() + " "
 				}
 
-				if !slot.IsReady() {
-					cdBar := s.styles.RenderCooldownBarWithTime(slot.CooldownRemaining, slot.CooldownTotal, 8)
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s ", prefix, icon, chainBadgeStr, slot.Module.Name())))
-					cardContent.WriteString(cdBar)
-				} else if recastState != nil {
-					// リキャスト中のモジュールは使用不可表示
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
-					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render(" [WAIT]"))
-				} else {
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
-					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Render(" [READY]"))
-				}
+				cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
 				cardContent.WriteString("\n")
 			}
 		} else {
@@ -347,7 +335,7 @@ func (s *BattleScreen) renderPlayerArea() string {
 	builder.WriteString("\n")
 
 	// バフ表示
-	buffs := s.player.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs := s.player.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) > 0 {
 		builder.WriteString("バフ: ")
 		for _, buff := range buffs {
@@ -360,7 +348,7 @@ func (s *BattleScreen) renderPlayerArea() string {
 	}
 
 	// デバフ表示
-	debuffs := s.player.EffectTable.GetRowsBySource(domain.SourceDebuff)
+	debuffs := s.player.EffectTable.FindBySourceType(domain.SourceDebuff)
 	if len(debuffs) > 0 {
 		builder.WriteString("デバフ: ")
 		for _, debuff := range debuffs {
@@ -369,6 +357,31 @@ func (s *BattleScreen) renderPlayerArea() string {
 				builder.WriteString(" ")
 			}
 		}
+		builder.WriteString("\n")
+	}
+
+	// パッシブスキル表示（スタック型パッシブのダメージ倍率）
+	passives := s.player.EffectTable.FindBySourceType(domain.SourcePassive)
+	hasStackPassive := false
+	for _, passive := range passives {
+		if passive.MaxStacks > 0 {
+			if !hasStackPassive {
+				builder.WriteString("パッシブ: ")
+				hasStackPassive = true
+			}
+			// スタック数を計算（コンボ数を使用、最大スタックでキャップ）
+			stacks := s.comboCount
+			if stacks > passive.MaxStacks {
+				stacks = passive.MaxStacks
+			}
+			// ダメージ倍率を計算（スタック数 × 効果増分）
+			bonusPercent := float64(stacks) * passive.StackIncrement * 100
+			builder.WriteString(s.styles.RenderPassive(passive.Name, bonusPercent))
+			builder.WriteString(" ")
+		}
+	}
+	if hasStackPassive {
+		builder.WriteString("\n")
 	}
 
 	// エリアボックス

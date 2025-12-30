@@ -52,7 +52,7 @@ func TestBattleScreen_RenderAgentAreaWithRecast(t *testing.T) {
 	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
 
 	// BattleScreen作成
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 
 	// エージェント0のリキャストを開始
 	screen.recastManager.StartRecast(0, 5*time.Second)
@@ -79,7 +79,7 @@ func TestBattleScreen_RenderAgentAreaWithChainEffect(t *testing.T) {
 	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
 
 	// BattleScreen作成
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 
 	// チェイン効果を登録
 	screen.chainEffectManager.RegisterChainEffect(0, &chainEffect, "test_module")
@@ -115,7 +115,7 @@ func TestBattleScreen_RenderAgentAreaWithPassiveSkill(t *testing.T) {
 	agent := createTestAgentWithPassive(passiveSkill, modules)
 
 	// BattleScreen作成
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 
 	// View()を呼び出し
 	result := screen.View()
@@ -136,7 +136,7 @@ func TestBattleScreen_RecastStateAffectsModuleUsability(t *testing.T) {
 	}
 	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
 
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 
 	// リキャスト前は使用可能
 	if !screen.isModuleUsable(0) {
@@ -202,7 +202,7 @@ func TestRenderModuleWithChainEffectBadge(t *testing.T) {
 	}
 	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
 
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 	result := screen.View()
 
 	// モジュールが表示されている
@@ -221,7 +221,7 @@ func TestBattleScreen_RenderRecastProgress(t *testing.T) {
 	}
 	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
 
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
 
 	// リキャスト開始
 	screen.recastManager.StartRecast(0, 5*time.Second)
@@ -258,7 +258,7 @@ func TestBattleScreen_ChainEffectFeedback(t *testing.T) {
 		createTestModuleWithChain("攻撃H", nil),
 	})
 
-	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent0, agent1})
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent0, agent1}, nil)
 
 	// エージェント0のチェイン効果を登録
 	screen.chainEffectManager.RegisterChainEffect(0, &chainEffect, "test_module")

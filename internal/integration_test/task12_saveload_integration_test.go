@@ -17,7 +17,7 @@ import (
 // TestSaveLoad_NewFormatPersistence は新形式セーブデータの保存・読み込みを検証します。
 func TestSaveLoad_NewFormatPersistence(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 新形式のセーブデータを作成
 	saveData := savedata.NewSaveData()
@@ -143,7 +143,7 @@ func TestSaveLoad_NewFormatPersistence(t *testing.T) {
 // TestSaveLoad_ChainEffectPersistence はChainEffectの永続化・復元を詳細に検証します。
 func TestSaveLoad_ChainEffectPersistence(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 全種類のチェイン効果タイプをテスト
 	chainEffectTypes := []string{
@@ -206,7 +206,7 @@ func TestSaveLoad_ChainEffectPersistence(t *testing.T) {
 // PassiveSkillはマスタデータから導出されるため、CoreTypeIDの永続化で間接的に検証します。
 func TestSaveLoad_PassiveSkillDataIntegrity(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	saveData := savedata.NewSaveData()
 
@@ -283,7 +283,7 @@ func TestSaveLoad_PassiveSkillDataIntegrity(t *testing.T) {
 // TestSaveLoad_OldFormatDetection は旧形式セーブデータ検出時の処理を検証します。
 func TestSaveLoad_OldFormatDetection(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 旧形式（version空）のセーブデータを直接書き込み
 	oldFormatData := `{
@@ -318,7 +318,7 @@ func TestSaveLoad_OldFormatDetection(t *testing.T) {
 // TestSaveLoad_DataVersionMigration はデータバージョン管理を検証します。
 func TestSaveLoad_DataVersionMigration(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	// 現在のバージョンでセーブ
 	saveData := savedata.NewSaveData()
@@ -357,7 +357,7 @@ func TestSaveLoad_DataVersionMigration(t *testing.T) {
 // TestSaveLoad_ComplexAgentData は複雑なエージェントデータの永続化を検証します。
 func TestSaveLoad_ComplexAgentData(t *testing.T) {
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 
 	saveData := savedata.NewSaveData()
 

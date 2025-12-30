@@ -19,7 +19,7 @@ func TestNewBattleScreen(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if screen == nil {
 		t.Fatal("BattleScreenがnilです")
@@ -41,7 +41,7 @@ func TestBattleScreenEnemyInfo(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -63,18 +63,14 @@ func TestBattleScreenPlayerInfo(t *testing.T) {
 	player.MaxHP = 100
 
 	// バフを追加
-	duration := 5.0
-	player.EffectTable.AddRow(domain.EffectRow{
-		ID:         "buff1",
-		SourceType: domain.SourceBuff,
-		Name:       "攻撃UP",
-		Duration:   &duration,
+	player.EffectTable.AddBuff("攻撃UP", 5.0, map[domain.EffectColumn]float64{
+		domain.ColDamageBonus: 10,
 	})
 
 	enemy := createTestEnemy()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -92,7 +88,7 @@ func TestBattleScreenModuleList(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// モジュールスロットが作成されていることを確認
 	if len(screen.moduleSlots) == 0 {
@@ -113,7 +109,7 @@ func TestBattleScreenCooldownDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// クールダウンを設定
 	if len(screen.moduleSlots) > 0 {
@@ -138,7 +134,7 @@ func TestBattleScreenTypingChallenge(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// タイピングチャレンジを開始
 	screen.StartTypingChallenge("hello", 5*time.Second)
@@ -159,7 +155,7 @@ func TestBattleScreenTimeLimit(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// タイピングチャレンジを開始
 	screen.StartTypingChallenge("test", 10*time.Second)
@@ -176,7 +172,7 @@ func TestBattleScreenRender(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -195,7 +191,7 @@ func TestBattleScreenInitReturnsTick(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	cmd := screen.Init()
 
 	if cmd == nil {
@@ -209,7 +205,7 @@ func TestBattleScreenTickUpdatesCooldowns(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// クールダウンを設定
 	if len(screen.moduleSlots) > 0 {
@@ -236,7 +232,7 @@ func TestBattleScreenTickReturnsNextTick(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	_, cmd := screen.Update(BattleTickMsg{})
 
@@ -253,7 +249,7 @@ func TestBattleScreenTickHandlesEnemyAttack(t *testing.T) {
 	player.MaxHP = 100
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// 敵攻撃時間を過去に設定
 	screen.nextEnemyAttack = time.Now().Add(-1 * time.Second)
@@ -273,7 +269,7 @@ func TestBattleScreenTypingTimeout(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// タイピングを開始（非常に短い制限時間）
 	screen.StartTypingChallenge("test", 10*time.Millisecond)
@@ -299,7 +295,7 @@ func TestBattleScreenDefeatDetection(t *testing.T) {
 	player.HP = 0
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// TickMsgを送信
 	_, cmd := screen.Update(BattleTickMsg{})
@@ -329,7 +325,7 @@ func TestBattleScreenDefeatAfterEnemyAttack(t *testing.T) {
 	player.MaxHP = 100
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// 敵攻撃時間を過去に設定
 	screen.nextEnemyAttack = time.Now().Add(-1 * time.Second)
@@ -356,7 +352,7 @@ func TestBattleScreenVictoryDetection(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// TickMsgを送信
 	_, _ = screen.Update(BattleTickMsg{})
@@ -385,7 +381,7 @@ func TestBattleScreenResultWaitsForEnter(t *testing.T) {
 	player.HP = 0
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// TickMsgを送信して敗北状態に
 	_, _ = screen.Update(BattleTickMsg{})
@@ -418,7 +414,7 @@ func TestBattleScreenResultDisplaysMessage(t *testing.T) {
 	player.HP = 0
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -498,7 +494,7 @@ func TestBattleScreen3AreaLayout(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -527,7 +523,7 @@ func TestBattleScreenAgentModuleDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -546,7 +542,7 @@ func TestBattleScreenHPBarDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -565,7 +561,7 @@ func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -584,7 +580,7 @@ func TestBattleScreenTypingColorDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -612,7 +608,7 @@ func TestBattleScreenWinDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -640,7 +636,7 @@ func TestBattleScreenLoseDisplay(t *testing.T) {
 
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -670,7 +666,7 @@ func TestBattleScreenLogicSeparation(t *testing.T) {
 	player.HP = 100
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// checkGameOver - 正常状態では終了しない
 	if screen.checkGameOver() {
@@ -694,7 +690,7 @@ func TestBattleScreenViewSeparation(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -730,7 +726,7 @@ func TestBattleScreenCooldownLogic(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -767,7 +763,7 @@ func TestBattleScreenTypingLogic(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// タイピング開始
 	screen.StartTypingChallenge("test", 10*time.Second)
@@ -805,18 +801,14 @@ func TestBattleScreenEffectDuration(t *testing.T) {
 	agents := createTestAgents()
 
 	// プレイヤーにバフを追加
-	duration := 5.0
-	player.EffectTable.AddRow(domain.EffectRow{
-		ID:         "test_buff",
-		SourceType: domain.SourceBuff,
-		Name:       "テストバフ",
-		Duration:   &duration,
+	player.EffectTable.AddBuff("テストバフ", 5.0, map[domain.EffectColumn]float64{
+		domain.ColDamageBonus: 10,
 	})
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// 初期状態確認
-	buffs := player.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs := player.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) == 0 {
 		t.Fatal("バフが追加されていません")
 	}
@@ -827,7 +819,7 @@ func TestBattleScreenEffectDuration(t *testing.T) {
 	// エフェクト持続時間更新
 	screen.updateEffectDurations(1.0)
 
-	buffs = player.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs = player.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) == 0 {
 		t.Fatal("バフが消えてしまいました")
 	}
@@ -844,7 +836,7 @@ func TestBattleScreenHasRecastManager(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if screen.recastManager == nil {
 		t.Error("RecastManagerが初期化されていません")
@@ -857,7 +849,7 @@ func TestBattleScreenModuleUsageStartsRecast(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffect()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -885,7 +877,7 @@ func TestBattleScreenRecastBlocksModuleUsage(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -906,7 +898,7 @@ func TestBattleScreenTickUpdatesRecast(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// リキャストを開始（3秒）
 	screen.recastManager.StartRecast(0, 3*time.Second)
@@ -938,7 +930,7 @@ func TestBattleScreenRecastCompletionEnablesAgent(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	// 短いリキャストを開始（0.05秒 = 50ms = tick1回未満）
 	screen.recastManager.StartRecast(0, 50*time.Millisecond)
@@ -965,7 +957,7 @@ func TestBattleScreenHasChainEffectManager(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if screen.chainEffectManager == nil {
 		t.Error("ChainEffectManagerが初期化されていません")
@@ -978,7 +970,7 @@ func TestBattleScreenModuleUsageRegistersChainEffect(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffect()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -1007,7 +999,7 @@ func TestBattleScreenChainEffectTrigger(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffectMultiple()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) < 5 {
 		t.Skip("モジュールスロットが足りません")
@@ -1049,7 +1041,7 @@ func TestBattleScreenRecastCompletionExpiresChainEffect(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffect()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -1093,7 +1085,7 @@ func TestBattleScreenModuleRecastChainFlowIntegration(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffect()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -1135,7 +1127,7 @@ func TestBattleScreenRecastBlockedModuleSelection(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) == 0 {
 		t.Skip("モジュールスロットがありません")
@@ -1161,7 +1153,7 @@ func TestBattleScreenChainEffectTimingVerification(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgentsWithChainEffectMultiple()
 
-	screen := NewBattleScreen(enemy, player, agents)
+	screen := NewBattleScreen(enemy, player, agents, nil)
 
 	if len(screen.moduleSlots) < 5 {
 		t.Skip("モジュールスロットが足りません（2エージェント必要）")
@@ -1224,6 +1216,366 @@ func createTestAgentsWithChainEffect() []*domain.AgentModel {
 
 	agent := domain.NewAgent("agent1", core, modules)
 	return []*domain.AgentModel{agent}
+}
+
+// ==================== チェイン効果消費側テスト ====================
+
+// TestTimeExtend_ExtendsTypingTimeLimit はタイピング制限時間延長をテストします。
+func TestTimeExtend_ExtendsTypingTimeLimit(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// TimeExtend効果を追加（3秒延長）
+	player.EffectTable.AddBuff("タイム延長", 10.0, map[domain.EffectColumn]float64{
+		domain.ColTimeExtend: 3.0,
+	})
+
+	// タイピングチャレンジを開始
+	originalTimeLimit := 5 * time.Second
+	screen.StartTypingChallenge("test", originalTimeLimit)
+
+	// 制限時間が延長されていることを確認
+	expectedTimeLimit := originalTimeLimit + 3*time.Second
+	if screen.typingTimeLimit != expectedTimeLimit {
+		t.Errorf("TimeExtend効果が適用されていない: got %v, want %v", screen.typingTimeLimit, expectedTimeLimit)
+	}
+}
+
+// TestTimeExtend_NegativeValue はTimeExtendが負の場合（デバフ）の動作をテストします。
+func TestTimeExtend_NegativeValue(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// TimeExtend効果を追加（-2秒、デバフ）
+	player.EffectTable.AddDebuff("タイム短縮", 10.0, map[domain.EffectColumn]float64{
+		domain.ColTimeExtend: -2.0,
+	})
+
+	// タイピングチャレンジを開始
+	originalTimeLimit := 5 * time.Second
+	screen.StartTypingChallenge("test", originalTimeLimit)
+
+	// 制限時間が短縮されていることを確認
+	expectedTimeLimit := originalTimeLimit - 2*time.Second
+	if screen.typingTimeLimit != expectedTimeLimit {
+		t.Errorf("TimeExtendデバフが適用されていない: got %v, want %v", screen.typingTimeLimit, expectedTimeLimit)
+	}
+}
+
+// TestTimeExtend_MinimumTimeLimit は制限時間が最低値を下回らないことをテストします。
+func TestTimeExtend_MinimumTimeLimit(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// TimeExtend効果を追加（-10秒、強力なデバフ）
+	player.EffectTable.AddDebuff("タイム大幅短縮", 10.0, map[domain.EffectColumn]float64{
+		domain.ColTimeExtend: -10.0,
+	})
+
+	// タイピングチャレンジを開始（5秒制限）
+	screen.StartTypingChallenge("test", 5*time.Second)
+
+	// 制限時間は最低1秒を下回らない
+	minTimeLimit := 1 * time.Second
+	if screen.typingTimeLimit < minTimeLimit {
+		t.Errorf("制限時間が最低値を下回っている: got %v, want >= %v", screen.typingTimeLimit, minTimeLimit)
+	}
+}
+
+// TestCooldownReduce_ShortensInitialCooldown はクールダウン初期値の短縮をテストします。
+func TestCooldownReduce_ShortensInitialCooldown(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// CooldownReduce効果を追加（30%短縮）
+	player.EffectTable.AddBuff("クールダウン短縮", 10.0, map[domain.EffectColumn]float64{
+		domain.ColCooldownReduce: 0.3,
+	})
+
+	// クールダウンを設定（10秒）→ 30%短縮で7秒になるはず
+	screen.StartCooldown(0, 10.0)
+
+	expected := 7.0
+	tolerance := 0.01
+	if screen.moduleSlots[0].CooldownRemaining < expected-tolerance ||
+		screen.moduleSlots[0].CooldownRemaining > expected+tolerance {
+		t.Errorf("CooldownReduce効果が初期値に適用されていない: got %.2f, want %.2f",
+			screen.moduleSlots[0].CooldownRemaining, expected)
+	}
+
+	// CooldownTotal は元の値（表示用）
+	if screen.moduleSlots[0].CooldownTotal != 10.0 {
+		t.Errorf("CooldownTotal が変更されている: got %.2f, want 10.0",
+			screen.moduleSlots[0].CooldownTotal)
+	}
+}
+
+// TestCooldownReduce_NegativeValue はCooldownReduceが負の場合（クールダウン延長）をテストします。
+func TestCooldownReduce_NegativeValue(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// CooldownReduce効果を追加（-30%、つまり延長）
+	player.EffectTable.AddDebuff("クールダウン延長", 10.0, map[domain.EffectColumn]float64{
+		domain.ColCooldownReduce: -0.3,
+	})
+
+	// クールダウンを設定（10秒）→ -30%延長で13秒になるはず
+	screen.StartCooldown(0, 10.0)
+
+	expected := 13.0
+	tolerance := 0.01
+	if screen.moduleSlots[0].CooldownRemaining < expected-tolerance ||
+		screen.moduleSlots[0].CooldownRemaining > expected+tolerance {
+		t.Errorf("CooldownReduce延長効果が初期値に適用されていない: got %.2f, want %.2f",
+			screen.moduleSlots[0].CooldownRemaining, expected)
+	}
+}
+
+// TestCooldownReduce_MinimumLimit は短縮しすぎない下限をテストします。
+func TestCooldownReduce_MinimumLimit(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	if len(screen.moduleSlots) == 0 {
+		t.Skip("モジュールスロットがありません")
+	}
+
+	// CooldownReduce効果を追加（95%短縮 → 下限10%適用）
+	player.EffectTable.AddBuff("超クールダウン短縮", 10.0, map[domain.EffectColumn]float64{
+		domain.ColCooldownReduce: 0.95,
+	})
+
+	// クールダウンを設定（10秒）→ 最低10%で1秒になるはず
+	screen.StartCooldown(0, 10.0)
+
+	minExpected := 1.0
+	if screen.moduleSlots[0].CooldownRemaining < minExpected {
+		t.Errorf("CooldownReduce の下限が適用されていない: got %.2f, want >= %.2f",
+			screen.moduleSlots[0].CooldownRemaining, minExpected)
+	}
+}
+
+// TestDoubleCast_DoublesDamageEffect はダブルキャストによる2回発動をテストします。
+func TestDoubleCast_DoublesDamageEffect(t *testing.T) {
+	// まず、DoubleCastなしでの基準ダメージを計測
+	enemy1 := createTestEnemy()
+	enemy1.HP = 1000
+	player1 := createTestPlayer()
+	agents1 := createTestAgents()
+	screen1 := NewBattleScreen(enemy1, player1, agents1, nil)
+
+	screen1.selectedModuleIdx = 0
+	screen1.selectedSlot = 0
+	screen1.StartTypingChallenge("a", 10*time.Second)
+	initialHP1 := enemy1.HP
+	screen1.ProcessTypingInput('a')
+	baseDamage := initialHP1 - enemy1.HP
+
+	// 次に、DoubleCast100%でのダメージを計測
+	enemy2 := createTestEnemy()
+	enemy2.HP = 1000
+	player2 := createTestPlayer()
+	agents2 := createTestAgents()
+	screen2 := NewBattleScreen(enemy2, player2, agents2, nil)
+
+	// DoubleCast効果を追加（100%確率で2回発動）
+	player2.EffectTable.AddBuff("ダブルキャスト", 10.0, map[domain.EffectColumn]float64{
+		domain.ColDoubleCast: 1.0, // 100%
+	})
+
+	screen2.selectedModuleIdx = 0
+	screen2.selectedSlot = 0
+	screen2.StartTypingChallenge("a", 10*time.Second)
+	initialHP2 := enemy2.HP
+	screen2.ProcessTypingInput('a')
+	doubleDamage := initialHP2 - enemy2.HP
+
+	// DoubleCastにより2倍のダメージが与えられているはず
+	// 少なくとも1.8倍以上になっていることを確認（誤差許容）
+	expectedMinDamage := int(float64(baseDamage) * 1.8)
+	if doubleDamage < expectedMinDamage {
+		t.Errorf("DoubleCast効果が適用されていない: baseDamage=%d, doubleDamage=%d, expected>=%d",
+			baseDamage, doubleDamage, expectedMinDamage)
+	}
+
+	t.Logf("基準ダメージ: %d, DoubleCastダメージ: %d (%.1f倍)", baseDamage, doubleDamage, float64(doubleDamage)/float64(baseDamage))
+}
+
+// TestDoubleCast_ZeroProbability はDoubleCast確率0%の場合のテストです。
+func TestDoubleCast_ZeroProbability(t *testing.T) {
+	enemy := createTestEnemy()
+	enemy.HP = 1000
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// DoubleCast効果なし（0%）
+	// バフを追加しない
+
+	// タイピングチャレンジを完了
+	screen.selectedModuleIdx = 0
+	screen.selectedSlot = 0
+	screen.StartTypingChallenge("a", 10*time.Second)
+	initialEnemyHP := enemy.HP
+	screen.ProcessTypingInput('a')
+
+	// 通常の1回分ダメージのみ
+	damageDone := initialEnemyHP - enemy.HP
+	if damageDone <= 0 {
+		t.Error("ダメージが与えられていない")
+	}
+
+	t.Logf("DoubleCastなしでのダメージ: %d", damageDone)
+}
+
+// TestOverheal_ConvertExcessToTempHP はオーバーヒールによる一時HP変換をテストします。
+func TestOverheal_ConvertExcessToTempHP(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	player.HP = player.MaxHP // 満タン状態
+	agents := createTestAgentsWithHealModule()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// Overheal効果を追加（フラグ形式）
+	entry := domain.EffectEntry{
+		SourceType: domain.SourceBuff,
+		Name:       "オーバーヒール",
+		Values:     map[domain.EffectColumn]float64{},
+		Flags: map[domain.EffectColumn]bool{
+			domain.ColOverheal: true,
+		},
+	}
+	duration := 10.0
+	entry.Duration = &duration
+	player.EffectTable.Entries = append(player.EffectTable.Entries, entry)
+
+	// 回復モジュールを使用
+	screen.selectedModuleIdx = 2 // 回復モジュール
+	screen.selectedSlot = 2
+	screen.StartTypingChallenge("a", 10*time.Second)
+	screen.ProcessTypingInput('a')
+
+	// Overhealにより超過分がTempHPに変換されているはず
+	if player.TempHP == 0 {
+		t.Errorf("Overheal効果によりTempHPが増えていない: got %d, want > 0", player.TempHP)
+	}
+
+	t.Logf("HP: %d/%d, TempHP: %d", player.HP, player.MaxHP, player.TempHP)
+}
+
+// TestTempHP_AbsorbsDamage は一時HPがダメージを吸収することをテストします。
+func TestTempHP_AbsorbsDamage(t *testing.T) {
+	player := createTestPlayer()
+	player.HP = 100
+	player.MaxHP = 100
+	player.TempHP = 30
+
+	// 20ダメージ（TempHPで吸収）
+	player.TakeDamage(20)
+	if player.TempHP != 10 {
+		t.Errorf("TempHPが消費されていない: got %d, want 10", player.TempHP)
+	}
+	if player.HP != 100 {
+		t.Errorf("HPが減少している: got %d, want 100", player.HP)
+	}
+
+	// さらに20ダメージ（TempHPを貫通してHPにダメージ）
+	player.TakeDamage(20)
+	if player.TempHP != 0 {
+		t.Errorf("TempHPがゼロになっていない: got %d", player.TempHP)
+	}
+	if player.HP != 90 {
+		t.Errorf("HPが正しく減少していない: got %d, want 90", player.HP)
+	}
+}
+
+// createTestAgentsWithHealModule は回復モジュール付きのエージェントを作成します。
+func createTestAgentsWithHealModule() []*domain.AgentModel {
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low", "heal_low"},
+	}
+
+	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
+
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "物理攻撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", "物理ダメージ"),
+		newTestModule("m2", "魔法攻撃", domain.MagicAttack, 1, []string{"magic_low"}, 10, "MAG", "魔法ダメージ"),
+		newTestModule("m3", "回復", domain.Heal, 1, []string{"heal_low"}, 50, "MAG", "HP回復"), // 50回復
+		newTestModule("m4", "バフ", domain.Buff, 1, []string{"buff_low"}, 10, "SPD", "攻撃力UP"),
+	}
+
+	agent := domain.NewAgent("agent1", core, modules)
+	return []*domain.AgentModel{agent}
+}
+
+// TestAutoCorrect_IgnoresMistakes はミス無視機能をテストします。
+func TestAutoCorrect_IgnoresMistakes(t *testing.T) {
+	enemy := createTestEnemy()
+	player := createTestPlayer()
+	agents := createTestAgents()
+
+	screen := NewBattleScreen(enemy, player, agents, nil)
+
+	// AutoCorrect効果を追加（2回分）
+	player.EffectTable.AddBuff("オートコレクト", 10.0, map[domain.EffectColumn]float64{
+		domain.ColAutoCorrect: 2.0,
+	})
+
+	// タイピングチャレンジを開始
+	screen.StartTypingChallenge("abc", 10*time.Second)
+
+	// 1回目のミス（無視される）
+	screen.ProcessTypingInput('x')
+	if len(screen.typingMistakes) != 0 {
+		t.Errorf("AutoCorrectでミスが無視されていない（1回目）: got %d mistakes", len(screen.typingMistakes))
+	}
+	if screen.typingIndex != 0 {
+		t.Errorf("ミス無視後にインデックスが進んでいる: got %d", screen.typingIndex)
+	}
+
+	// 2回目のミス（無視される）
+	screen.ProcessTypingInput('y')
+	if len(screen.typingMistakes) != 0 {
+		t.Errorf("AutoCorrectでミスが無視されていない（2回目）: got %d mistakes", len(screen.typingMistakes))
+	}
+
+	// 3回目のミス（AutoCorrect消費済みなので記録される）
+	screen.ProcessTypingInput('z')
+	if len(screen.typingMistakes) != 1 {
+		t.Errorf("AutoCorrect消費後にミスが記録されていない: got %d mistakes, want 1", len(screen.typingMistakes))
+	}
 }
 
 // createTestAgentsWithChainEffectMultiple は複数のチェイン効果付きエージェントを作成します。

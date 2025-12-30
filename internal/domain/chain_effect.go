@@ -237,3 +237,79 @@ func (t ChainEffectType) Category() ChainEffectCategory {
 		return ChainEffectCategorySpecial
 	}
 }
+
+// ToEntry は ChainEffect を EffectEntry に変換します。
+// agentIndex は効果を登録したエージェントのインデックスです。
+func (c ChainEffect) ToEntry(agentIndex int) EffectEntry {
+	idx := agentIndex
+	return EffectEntry{
+		SourceType:  SourceChain,
+		SourceID:    string(c.Type),
+		SourceIndex: idx,
+		Name:        c.Description,
+		EnableCondition: func(ctx *EffectContext) bool {
+			// 他エージェントがモジュールを使った時に発動
+			if ctx.EventType != EventOnModuleUse {
+				return false
+			}
+			return ctx.LastModuleAgent != idx && ctx.LastModuleAgent >= 0
+		},
+		Values:  c.buildValues(),
+		Flags:   c.buildFlags(),
+		OneShot: true, // チェイン効果は一度発動したら消える
+	}
+}
+
+// buildValues はチェイン効果を EffectColumn の map に変換します。
+func (c ChainEffect) buildValues() map[EffectColumn]float64 {
+	values := make(map[EffectColumn]float64)
+
+	switch c.Type {
+	case ChainEffectDamageBonus:
+		values[ColDamageBonus] = c.Value
+	case ChainEffectDamageAmp:
+		values[ColDamageMultiplier] = 1.0 + c.Value/100.0
+	case ChainEffectLifeSteal:
+		values[ColLifeSteal] = c.Value / 100.0
+	case ChainEffectDamageCut:
+		values[ColDamageCut] = c.Value / 100.0
+	case ChainEffectEvasion:
+		values[ColEvasion] = c.Value / 100.0
+	case ChainEffectReflect:
+		values[ColReflect] = c.Value / 100.0
+	case ChainEffectRegen:
+		values[ColRegen] = c.Value
+	case ChainEffectHealBonus:
+		values[ColHealBonus] = c.Value
+	case ChainEffectHealAmp:
+		values[ColHealMultiplier] = 1.0 + c.Value/100.0
+	case ChainEffectTimeExtend:
+		values[ColTimeExtend] = c.Value
+	case ChainEffectAutoCorrect:
+		values[ColAutoCorrect] = c.Value
+	case ChainEffectCooldownReduce:
+		values[ColCooldownReduce] = c.Value / 100.0
+	case ChainEffectBuffExtend, ChainEffectBuffDuration:
+		values[ColBuffExtend] = c.Value
+	case ChainEffectDebuffExtend, ChainEffectDebuffDuration:
+		values[ColDebuffExtend] = c.Value
+	case ChainEffectDoubleCast:
+		values[ColDoubleCast] = c.Value / 100.0
+	}
+
+	return values
+}
+
+// buildFlags はbool型効果を EffectColumn の map に変換します。
+func (c ChainEffect) buildFlags() map[EffectColumn]bool {
+	flags := make(map[EffectColumn]bool)
+
+	switch c.Type {
+	case ChainEffectArmorPierce:
+		flags[ColArmorPierce] = true
+	case ChainEffectOverheal:
+		flags[ColOverheal] = true
+	}
+
+	return flags
+}

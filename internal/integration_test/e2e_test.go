@@ -145,7 +145,7 @@ func createTestRewardCalculator() *rewarding.RewardCalculator {
 func TestE2E_NewGameFlow(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// セーブデータがない場合は新規ゲーム開始
@@ -184,7 +184,7 @@ func TestE2E_NewGameFlow(t *testing.T) {
 func TestE2E_BattleVictoryFlow(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 新規ゲーム開始
@@ -309,7 +309,7 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	// エージェント合成フロー
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 追加アイテム付きで新規ゲーム開始
@@ -404,7 +404,7 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 func TestE2E_ProgressionFlow(t *testing.T) {
 	// ゲーム進行フロー：複数バトル→レベル上昇
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
@@ -483,7 +483,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// ゲーム開始（セッション1）
@@ -500,7 +500,7 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 	}
 
 	// 再起動シミュレート（新しいIOインスタンス）
-	io2 := savedata.NewSaveDataIO(tempDir)
+	io2 := savedata.NewSaveDataIO(tempDir, false)
 
 	// ロード
 	loadedData, err := io2.LoadGame()
@@ -531,7 +531,7 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 func TestE2E_DefeatAndRetry(t *testing.T) {
 	// 敗北→リトライフロー
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()

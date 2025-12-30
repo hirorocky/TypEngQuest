@@ -20,10 +20,10 @@ func TestNewHomeScreen(t *testing.T) {
 		t.Fatal("HomeScreenがnilです")
 	}
 
-	// 初期状態で4つのメニューアイテムがあること
+	// 初期状態で6つのメニューアイテムがあること
 
-	if len(screen.menu.Items) != 5 { // 4メニュー + 設定
-		t.Errorf("メニューアイテム数が不正: got %d, want 5", len(screen.menu.Items))
+	if len(screen.menu.Items) != 6 { // エージェント管理、バトル選択、図鑑、統計/実績、セーブ、設定
+		t.Errorf("メニューアイテム数が不正: got %d, want 6", len(screen.menu.Items))
 	}
 }
 
@@ -37,6 +37,7 @@ func TestHomeScreenMenuItems(t *testing.T) {
 		"battle_select",
 		"encyclopedia",
 		"stats_achievements",
+		"save",
 		"settings",
 	}
 

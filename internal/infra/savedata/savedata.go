@@ -19,8 +19,14 @@ const CurrentSaveDataVersion = "2.0.0"
 // SaveFileName はセーブファイル名です。
 const SaveFileName = "save.json"
 
+// DebugSaveFileName はデバッグモード用セーブファイル名です。
+const DebugSaveFileName = "debug_save.json"
+
 // TempSaveFileName は一時セーブファイル名です（原子的書き込み用）。
 const TempSaveFileName = "save.json.tmp"
+
+// DebugTempSaveFileName はデバッグモード用一時セーブファイル名です。
+const DebugTempSaveFileName = "debug_save.json.tmp"
 
 // MaxBackupCount はバックアップの最大世代数です。
 
@@ -233,12 +239,25 @@ func NewSaveData() *SaveData {
 type SaveDataIO struct {
 	// saveDir はセーブファイルを保存するディレクトリパスです。
 	saveDir string
+	// saveFileName はセーブファイル名です（通常: save.json、デバッグ: debug_save.json）。
+	saveFileName string
+	// tempSaveFileName は一時セーブファイル名です。
+	tempSaveFileName string
 }
 
 // NewSaveDataIO は新しいSaveDataIOを作成します。
-func NewSaveDataIO(saveDir string) *SaveDataIO {
+// debugModeがtrueの場合、デバッグ専用のセーブファイル（debug_save.json）を使用します。
+func NewSaveDataIO(saveDir string, debugMode bool) *SaveDataIO {
+	saveFileName := SaveFileName
+	tempFileName := TempSaveFileName
+	if debugMode {
+		saveFileName = DebugSaveFileName
+		tempFileName = DebugTempSaveFileName
+	}
 	return &SaveDataIO{
-		saveDir: saveDir,
+		saveDir:          saveDir,
+		saveFileName:     saveFileName,
+		tempSaveFileName: tempFileName,
 	}
 }
 
@@ -260,7 +279,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	}
 
 	// 一時ファイルに書き込み
-	tmpPath := filepath.Join(io.saveDir, TempSaveFileName)
+	tmpPath := filepath.Join(io.saveDir, io.tempSaveFileName)
 	if err := os.WriteFile(tmpPath, jsonData, 0644); err != nil {
 		return fmt.Errorf("一時ファイルへの書き込みに失敗: %w", err)
 	}
@@ -281,7 +300,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	_ = io.RotateBackups()
 
 	// 原子的リネーム
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	if err := os.Rename(tmpPath, savePath); err != nil {
 		return fmt.Errorf("セーブファイルのリネームに失敗: %w", err)
 	}
@@ -292,7 +311,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 // LoadGame はセーブデータをファイルから読み込みます。
 
 func (io *SaveDataIO) LoadGame() (*SaveData, error) {
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 
 	// メインのセーブファイルを読み込み
 	data, err := io.loadFromFile(savePath)
@@ -302,7 +321,7 @@ func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 
 	// メインファイルの読み込みに失敗した場合、バックアップから復元を試みる
 	for i := 1; i <= MaxBackupCount; i++ {
-		backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
+		backupPath := filepath.Join(io.saveDir, io.backupFileName(i))
 		data, err := io.loadFromFile(backupPath)
 		if err == nil {
 			// バックアップからの復元に成功
@@ -315,6 +334,11 @@ func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 	}
 
 	return nil, fmt.Errorf("セーブデータのロードに失敗: %w", err)
+}
+
+// backupFileName はバックアップファイル名を生成します。
+func (io *SaveDataIO) backupFileName(index int) string {
+	return fmt.Sprintf("%s.bak%d", io.saveFileName, index)
 }
 
 // loadFromFile は指定されたファイルからセーブデータを読み込みます。
@@ -345,30 +369,29 @@ func (io *SaveDataIO) LoadFromBackup(backupIndex int) (*SaveData, error) {
 		return nil, fmt.Errorf("不正なバックアップインデックス: %d", backupIndex)
 	}
 
-	backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", backupIndex))
+	backupPath := filepath.Join(io.saveDir, io.backupFileName(backupIndex))
 	return io.loadFromFile(backupPath)
 }
 
 // RotateBackups はバックアップファイルをローテーションします。
-
-// save.json → save.json.bak1 → save.json.bak2 → save.json.bak3 (削除)
+// {saveFileName} → {saveFileName}.bak1 → {saveFileName}.bak2 → {saveFileName}.bak3 (削除)
 func (io *SaveDataIO) RotateBackups() error {
 	// 古いバックアップを削除（存在しない場合は無視）
-	bak3 := filepath.Join(io.saveDir, "save.json.bak3")
+	bak3 := filepath.Join(io.saveDir, io.backupFileName(MaxBackupCount))
 	_ = os.Remove(bak3)
 
 	// バックアップをシフト
 	for i := MaxBackupCount - 1; i >= 1; i-- {
-		oldPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
-		newPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i+1))
+		oldPath := filepath.Join(io.saveDir, io.backupFileName(i))
+		newPath := filepath.Join(io.saveDir, io.backupFileName(i+1))
 		if _, err := os.Stat(oldPath); err == nil {
 			_ = os.Rename(oldPath, newPath)
 		}
 	}
 
 	// 現在のセーブファイルをbak1にコピー
-	savePath := filepath.Join(io.saveDir, SaveFileName)
-	bak1 := filepath.Join(io.saveDir, "save.json.bak1")
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
+	bak1 := filepath.Join(io.saveDir, io.backupFileName(1))
 	if _, err := os.Stat(savePath); err == nil {
 		data, err := os.ReadFile(savePath)
 		if err == nil {
@@ -383,12 +406,12 @@ func (io *SaveDataIO) RotateBackups() error {
 
 func (io *SaveDataIO) ResetSaveData() error {
 	// メインセーブファイルを削除
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	_ = os.Remove(savePath)
 
 	// バックアップファイルも削除
 	for i := 1; i <= MaxBackupCount; i++ {
-		backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
+		backupPath := filepath.Join(io.saveDir, io.backupFileName(i))
 		_ = os.Remove(backupPath)
 	}
 
@@ -421,7 +444,7 @@ func ValidateSaveData(data *SaveData) error {
 
 // Exists はセーブファイルが存在するかどうかを確認します。
 func (io *SaveDataIO) Exists() bool {
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	_, err := os.Stat(savePath)
 	return err == nil
 }

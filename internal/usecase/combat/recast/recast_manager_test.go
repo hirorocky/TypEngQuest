@@ -275,6 +275,56 @@ func TestGetProgress(t *testing.T) {
 	}
 }
 
+// TestReduceAllRecasts は全エージェントのリキャスト短縮をテストします。
+func TestReduceAllRecasts(t *testing.T) {
+	rm := NewRecastManager()
+
+	// 複数エージェントのリキャスト開始
+	rm.StartRecast(0, 5.0*time.Second)
+	rm.StartRecast(1, 3.0*time.Second)
+
+	// 2秒短縮
+	rm.ReduceAllRecasts(2.0 * time.Second)
+
+	// エージェント0: 5.0 - 2.0 = 3.0秒
+	state0 := rm.GetRecastState(0)
+	if state0 == nil {
+		t.Fatal("エージェント0の状態がnilです")
+	}
+	if state0.RemainingSeconds != 3.0 {
+		t.Errorf("エージェント0のRemainingSeconds: got %f, want 3.0", state0.RemainingSeconds)
+	}
+
+	// エージェント1: 3.0 - 2.0 = 1.0秒
+	state1 := rm.GetRecastState(1)
+	if state1 == nil {
+		t.Fatal("エージェント1の状態がnilです")
+	}
+	if state1.RemainingSeconds != 1.0 {
+		t.Errorf("エージェント1のRemainingSeconds: got %f, want 1.0", state1.RemainingSeconds)
+	}
+}
+
+// TestReduceAllRecasts_ClampToZero はリキャスト短縮が0未満にならないことをテストします。
+func TestReduceAllRecasts_ClampToZero(t *testing.T) {
+	rm := NewRecastManager()
+
+	// 短いリキャストを開始
+	rm.StartRecast(0, 1.0*time.Second)
+
+	// 大幅に短縮（元の時間より長い）
+	rm.ReduceAllRecasts(5.0 * time.Second)
+
+	// 0未満にはならない
+	state := rm.GetRecastState(0)
+	if state == nil {
+		t.Fatal("状態がnilです")
+	}
+	if state.RemainingSeconds < 0 {
+		t.Errorf("RemainingSecondsが負になっています: %f", state.RemainingSeconds)
+	}
+}
+
 // TestCancelRecast はリキャストキャンセルをテストします。
 func TestCancelRecast(t *testing.T) {
 	rm := NewRecastManager()

@@ -15,10 +15,11 @@ import (
 
 // DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
 type DomainDataSources struct {
-	CoreTypes     []domain.CoreType
-	ModuleTypes   []rewarding.ModuleDropInfo
-	EnemyTypes    []domain.EnemyType
-	PassiveSkills map[string]domain.PassiveSkill
+	CoreTypes               []domain.CoreType
+	ModuleTypes             []rewarding.ModuleDropInfo
+	EnemyTypes              []domain.EnemyType
+	PassiveSkills           map[string]domain.PassiveSkill
+	PassiveSkillDefinitions map[string]domain.PassiveSkillDefinition
 }
 
 // ToSaveData はGameStateをセーブデータに変換します。
@@ -137,7 +138,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		for _, coreSave := range data.Inventory.CoreInstances {
 			// コア特性を検索（ドメイン型）
 			coreType := findCoreType(coreTypes, coreSave.CoreTypeID)
-			passiveSkill := findPassiveSkill(passiveSkills, coreSave.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, coreType.PassiveSkillID)
 
 			// コアを再構築（v1.0.0形式: TypeIDベース）
 			core := domain.NewCoreWithTypeID(
@@ -208,7 +209,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		for _, agentSave := range data.Inventory.AgentInstances {
 			// エージェント内のコア情報からコアを再構築（v1.0.0形式）
 			coreType := findCoreType(coreTypes, agentSave.Core.CoreTypeID)
-			passiveSkill := findPassiveSkill(passiveSkills, agentSave.Core.CoreTypeID)
+			passiveSkill := findPassiveSkill(passiveSkills, coreType.PassiveSkillID)
 			core := domain.NewCoreWithTypeID(
 				agentSave.Core.CoreTypeID,
 				agentSave.Core.Level,

@@ -4,10 +4,12 @@ package screens
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 
@@ -44,11 +46,37 @@ type InventoryProvider interface {
 	UnequipAgent(slot int) error
 }
 
+// DebugInventoryProvider はデバッグモード用のインベントリプロバイダーインターフェースです。
+type DebugInventoryProvider interface {
+	InventoryProvider
+	GetCoreTypes() []masterdata.CoreTypeData
+	GetModuleTypes() []masterdata.ModuleDefinitionData
+	GetChainEffects() []masterdata.ChainEffectData
+	CreateCoreFromType(typeID string, level int) *domain.CoreModel
+	CreateModuleFromType(typeID string, chainEffect *domain.ChainEffect) *domain.ModuleModel
+}
+
 // SynthesisState は合成状態を表します。
 type SynthesisState struct {
 	selectedCore    *domain.CoreModel
 	selectedModules []*domain.ModuleModel
 	step            int // 0: コア選択, 1: モジュール選択, 2: 確認
+}
+
+// DebugSynthesisState はデバッグモード専用の合成状態です。
+type DebugSynthesisState struct {
+	step             int // 0:コアタイプ, 1:レベル入力, 2:モジュール, 3:チェイン, 4:確認
+	selectedCoreType *masterdata.CoreTypeData
+	coreLevel        int
+	levelInput       string
+	selectedModules  []*DebugModuleSelection
+	currentModuleIdx int
+}
+
+// DebugModuleSelection はデバッグモードでのモジュール選択状態です。
+type DebugModuleSelection struct {
+	ModuleType  *masterdata.ModuleDefinitionData
+	ChainEffect *domain.ChainEffect
 }
 
 // AgentManagementScreen はエージェント管理画面を表します。
@@ -74,10 +102,16 @@ type AgentManagementScreen struct {
 	// エラー/ステータスメッセージ
 	errorMessage  string
 	statusMessage string
+	// デバッグモード
+	debugMode           bool
+	debugProvider       DebugInventoryProvider
+	debugSynthesisState DebugSynthesisState
 }
 
 // NewAgentManagementScreen は新しいAgentManagementScreenを作成します。
-func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScreen {
+// debugMode: デバッグモードを有効化
+// debugProvider: デバッグモード用のプロバイダー（nilの場合は通常モード）
+func NewAgentManagementScreen(inventory InventoryProvider, debugMode bool, debugProvider DebugInventoryProvider) *AgentManagementScreen {
 	screen := &AgentManagementScreen{
 		inventory:     inventory,
 		currentTab:    TabCoreList,
@@ -86,9 +120,14 @@ func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScree
 		synthesisState: SynthesisState{
 			selectedModules: []*domain.ModuleModel{},
 		},
-		styles: styles.NewGameStyles(),
-		width:  140,
-		height: 40,
+		styles:        styles.NewGameStyles(),
+		width:         140,
+		height:        40,
+		debugMode:     debugMode,
+		debugProvider: debugProvider,
+		debugSynthesisState: DebugSynthesisState{
+			selectedModules: make([]*DebugModuleSelection, 0),
+		},
 	}
 	screen.updateCurrentList()
 	return screen
@@ -130,6 +169,11 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 			return s, nil
 		}
 		return s, nil
+	}
+
+	// デバッグモードで合成タブの場合は専用処理
+	if s.debugMode && s.currentTab == TabSynthesis {
+		return s.handleDebugSynthesisKeyMsg(msg)
 	}
 
 	// 装備タブの場合は専用の処理
@@ -666,6 +710,10 @@ func (s *AgentManagementScreen) renderMainContent() string {
 	case TabModuleList:
 		return s.renderModuleList()
 	case TabSynthesis:
+		// デバッグモードでは専用のUIを使用
+		if s.debugMode {
+			return s.renderDebugSynthesis()
+		}
 		return s.renderSynthesis()
 	case TabEquip:
 		return s.renderEquip()
@@ -1369,4 +1417,419 @@ func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) st
 	default:
 		return "•"
 	}
+}
+
+// ==================== デバッグモード専用の関数群 ====================
+
+// handleDebugSynthesisKeyMsg はデバッグモード合成画面のキー処理です。
+func (s *AgentManagementScreen) handleDebugSynthesisKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch s.debugSynthesisState.step {
+	case 0: // コアタイプ選択
+		return s.handleDebugCoreTypeSelection(msg)
+	case 1: // レベル入力
+		return s.handleDebugLevelInput(msg)
+	case 2: // モジュールタイプ選択
+		return s.handleDebugModuleTypeSelection(msg)
+	case 3: // チェイン効果選択
+		return s.handleDebugChainEffectSelection(msg)
+	case 4: // 確認
+		return s.handleDebugConfirmation(msg)
+	}
+	return s, nil
+}
+
+// handleDebugCoreTypeSelection はコアタイプ選択を処理します。
+func (s *AgentManagementScreen) handleDebugCoreTypeSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	coreTypes := s.debugProvider.GetCoreTypes()
+
+	switch msg.String() {
+	case "esc":
+		return s, func() tea.Msg {
+			return ChangeSceneMsg{Scene: "home"}
+		}
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < len(coreTypes)-1 {
+			s.selectedIndex++
+		}
+	case "enter":
+		if s.selectedIndex < len(coreTypes) {
+			ct := coreTypes[s.selectedIndex]
+			s.debugSynthesisState.selectedCoreType = &ct
+			s.debugSynthesisState.step = 1 // レベル入力へ
+			s.debugSynthesisState.levelInput = ""
+			s.selectedIndex = 0
+		}
+	case "left", "h":
+		s.prevTab()
+	case "right", "l":
+		s.nextTab()
+	}
+	return s, nil
+}
+
+// handleDebugLevelInput はレベル入力を処理します。
+func (s *AgentManagementScreen) handleDebugLevelInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		// 数字を追加（最大2桁）
+		if len(s.debugSynthesisState.levelInput) < 2 {
+			s.debugSynthesisState.levelInput += msg.String()
+		}
+	case "backspace":
+		// 数字を削除
+		if len(s.debugSynthesisState.levelInput) > 0 {
+			s.debugSynthesisState.levelInput = s.debugSynthesisState.levelInput[:len(s.debugSynthesisState.levelInput)-1]
+		} else {
+			// コアタイプ選択に戻る
+			s.debugSynthesisState.step = 0
+			s.selectedIndex = 0
+		}
+	case "enter":
+		// レベルを確定
+		level, _ := strconv.Atoi(s.debugSynthesisState.levelInput)
+		if level >= 1 && level <= 99 {
+			s.debugSynthesisState.coreLevel = level
+			s.debugSynthesisState.step = 2 // モジュール選択へ
+			s.debugSynthesisState.currentModuleIdx = 0
+			s.selectedIndex = 0
+		}
+	case "esc":
+		// コアタイプ選択に戻る
+		s.debugSynthesisState.step = 0
+		s.debugSynthesisState.levelInput = ""
+		s.selectedIndex = 0
+	}
+	return s, nil
+}
+
+// handleDebugModuleTypeSelection はモジュールタイプ選択を処理します。
+func (s *AgentManagementScreen) handleDebugModuleTypeSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	moduleTypes := s.debugProvider.GetModuleTypes()
+
+	switch msg.String() {
+	case "esc":
+		// 前のモジュールに戻る、または レベル入力に戻る
+		if s.debugSynthesisState.currentModuleIdx > 0 {
+			s.debugSynthesisState.currentModuleIdx--
+			s.debugSynthesisState.selectedModules = s.debugSynthesisState.selectedModules[:len(s.debugSynthesisState.selectedModules)-1]
+		} else {
+			s.debugSynthesisState.step = 1
+		}
+		s.selectedIndex = 0
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < len(moduleTypes)-1 {
+			s.selectedIndex++
+		}
+	case "enter":
+		if s.selectedIndex < len(moduleTypes) {
+			mt := moduleTypes[s.selectedIndex]
+			s.debugSynthesisState.selectedModules = append(s.debugSynthesisState.selectedModules, &DebugModuleSelection{
+				ModuleType:  &mt,
+				ChainEffect: nil,
+			})
+			s.debugSynthesisState.step = 3 // チェイン効果選択へ
+			s.selectedIndex = 0
+		}
+	}
+	return s, nil
+}
+
+// handleDebugChainEffectSelection はチェイン効果選択を処理します。
+func (s *AgentManagementScreen) handleDebugChainEffectSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	chainEffects := s.debugProvider.GetChainEffects()
+	// +1 は「なし」オプション用
+	maxIndex := len(chainEffects)
+
+	switch msg.String() {
+	case "esc":
+		// モジュール選択に戻る（最後のモジュールを削除）
+		s.debugSynthesisState.selectedModules = s.debugSynthesisState.selectedModules[:len(s.debugSynthesisState.selectedModules)-1]
+		s.debugSynthesisState.step = 2
+		s.selectedIndex = 0
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < maxIndex {
+			s.selectedIndex++
+		}
+	case "enter":
+		// チェイン効果を選択
+		moduleIdx := s.debugSynthesisState.currentModuleIdx
+		if s.selectedIndex == 0 {
+			// 「なし」を選択
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = nil
+		} else {
+			ce := chainEffects[s.selectedIndex-1]
+			// 効果値はmax_valueを使用（デバッグモードなので最大値）
+			chainEffect := domain.NewChainEffect(ce.ToDomainEffectType(), ce.MaxValue)
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = &chainEffect
+		}
+
+		// 次のモジュールスロットへ、または確認画面へ
+		if s.debugSynthesisState.currentModuleIdx < 3 {
+			s.debugSynthesisState.currentModuleIdx++
+			s.debugSynthesisState.step = 2 // モジュール選択に戻る
+		} else {
+			s.debugSynthesisState.step = 4 // 確認画面へ
+		}
+		s.selectedIndex = 0
+	}
+	return s, nil
+}
+
+// handleDebugConfirmation は確認画面を処理します。
+func (s *AgentManagementScreen) handleDebugConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "backspace":
+		// 最後のチェイン効果選択に戻る
+		s.debugSynthesisState.step = 3
+		s.debugSynthesisState.currentModuleIdx = 3
+		s.selectedIndex = 0
+	case "enter":
+		// 合成を実行
+		s.executeDebugSynthesis()
+	}
+	return s, nil
+}
+
+// executeDebugSynthesis はデバッグモードの合成を実行します。
+func (s *AgentManagementScreen) executeDebugSynthesis() {
+	state := s.debugSynthesisState
+
+	// コアを作成
+	core := s.debugProvider.CreateCoreFromType(
+		state.selectedCoreType.ID,
+		state.coreLevel,
+	)
+	if core == nil {
+		s.errorMessage = "コアの作成に失敗しました"
+		return
+	}
+
+	// モジュールを作成
+	var modules []*domain.ModuleModel
+	for _, sel := range state.selectedModules {
+		module := s.debugProvider.CreateModuleFromType(
+			sel.ModuleType.ID,
+			sel.ChainEffect,
+		)
+		if module == nil {
+			s.errorMessage = fmt.Sprintf("モジュール %s の作成に失敗しました", sel.ModuleType.ID)
+			return
+		}
+		modules = append(modules, module)
+	}
+
+	// エージェントを作成
+	agentID := fmt.Sprintf("debug_agent_%d", len(s.debugProvider.GetAgents())+1)
+	agent := domain.NewAgent(agentID, core, modules)
+
+	// インベントリに追加
+	if err := s.inventory.AddAgent(agent); err != nil {
+		s.errorMessage = fmt.Sprintf("エージェント作成に失敗: %v", err)
+		return
+	}
+
+	s.statusMessage = fmt.Sprintf("デバッグエージェント「%s」を作成しました", agent.GetCoreTypeName())
+	s.errorMessage = ""
+	s.resetDebugSynthesisState()
+	s.updateCurrentList()
+}
+
+// resetDebugSynthesisState はデバッグ合成状態をリセットします。
+func (s *AgentManagementScreen) resetDebugSynthesisState() {
+	s.debugSynthesisState = DebugSynthesisState{
+		selectedModules: make([]*DebugModuleSelection, 0),
+	}
+	s.selectedIndex = 0
+}
+
+// renderDebugSynthesis はデバッグ合成画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugSynthesis() string {
+	var b strings.Builder
+
+	// ヘッダー
+	b.WriteString(s.styles.Text.Title.Render("[DEBUG] エージェント合成"))
+	b.WriteString("\n\n")
+
+	switch s.debugSynthesisState.step {
+	case 0:
+		b.WriteString(s.renderDebugCoreTypeList())
+	case 1:
+		b.WriteString(s.renderDebugLevelInput())
+	case 2:
+		b.WriteString(s.renderDebugModuleTypeList())
+	case 3:
+		b.WriteString(s.renderDebugChainEffectList())
+	case 4:
+		b.WriteString(s.renderDebugConfirmation())
+	}
+
+	// エラー/ステータスメッセージ
+	if s.errorMessage != "" {
+		b.WriteString("\n")
+		b.WriteString(s.styles.Text.Error.Render(s.errorMessage))
+	}
+	if s.statusMessage != "" {
+		b.WriteString("\n")
+		b.WriteString(s.styles.Text.Success.Render(s.statusMessage))
+	}
+
+	return b.String()
+}
+
+// renderDebugCoreTypeList はコアタイプ選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugCoreTypeList() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("コアタイプ選択"))
+	b.WriteString("\n\n")
+
+	coreTypes := s.debugProvider.GetCoreTypes()
+	for i, ct := range coreTypes {
+		prefix := "  "
+		if i == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s", prefix, ct.Name)
+		if i == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  ←/→: タブ切替  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugLevelInput はレベル入力画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugLevelInput() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("レベル入力"))
+	b.WriteString("\n\n")
+
+	b.WriteString(fmt.Sprintf("選択中コア: %s\n\n", s.debugSynthesisState.selectedCoreType.Name))
+	b.WriteString(fmt.Sprintf("レベル (1-99): [%s]\n", s.debugSynthesisState.levelInput))
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("数字キー: 入力  Enter: 確定  Backspace: 削除/戻る  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugModuleTypeList はモジュールタイプ選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugModuleTypeList() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render(fmt.Sprintf("モジュール選択 (%d/4)", s.debugSynthesisState.currentModuleIdx+1)))
+	b.WriteString("\n\n")
+
+	// 選択済みモジュール表示
+	if len(s.debugSynthesisState.selectedModules) > 0 {
+		b.WriteString("選択済み: ")
+		for i, sel := range s.debugSynthesisState.selectedModules {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(sel.ModuleType.Name)
+		}
+		b.WriteString("\n\n")
+	}
+
+	moduleTypes := s.debugProvider.GetModuleTypes()
+	for i, mt := range moduleTypes {
+		prefix := "  "
+		if i == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s [%s]", prefix, mt.Name, mt.Category)
+		if i == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugChainEffectList はチェイン効果選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugChainEffectList() string {
+	var b strings.Builder
+	moduleIdx := s.debugSynthesisState.currentModuleIdx
+	moduleName := s.debugSynthesisState.selectedModules[moduleIdx].ModuleType.Name
+	b.WriteString(s.styles.Text.Subtitle.Render(fmt.Sprintf("チェイン効果選択 - %s", moduleName)))
+	b.WriteString("\n\n")
+
+	// 「なし」オプション
+	prefix := "  "
+	if s.selectedIndex == 0 {
+		prefix = "> "
+	}
+	item := prefix + "なし"
+	if s.selectedIndex == 0 {
+		b.WriteString(s.styles.Text.Bold.Render(item))
+	} else {
+		b.WriteString(item)
+	}
+	b.WriteString("\n")
+
+	// チェイン効果リスト
+	chainEffects := s.debugProvider.GetChainEffects()
+	for i, ce := range chainEffects {
+		prefix := "  "
+		if i+1 == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s (最大値: %.0f)", prefix, ce.Name, ce.MaxValue)
+		if i+1 == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugConfirmation は確認画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugConfirmation() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("合成確認"))
+	b.WriteString("\n\n")
+
+	state := s.debugSynthesisState
+
+	// コア情報
+	b.WriteString(fmt.Sprintf("コア: %s Lv.%d\n\n", state.selectedCoreType.Name, state.coreLevel))
+
+	// モジュール情報
+	for i, sel := range state.selectedModules {
+		b.WriteString(fmt.Sprintf("モジュール%d: %s\n", i+1, sel.ModuleType.Name))
+		if sel.ChainEffect != nil {
+			b.WriteString(fmt.Sprintf("  チェイン: %s\n", sel.ChainEffect.Description))
+		} else {
+			b.WriteString("  チェイン: なし\n")
+		}
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("Enter: 合成実行  Backspace/Esc: 戻る"))
+	return b.String()
 }

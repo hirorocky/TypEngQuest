@@ -2,13 +2,22 @@
 package masterdata
 
 import (
+	"embed"
 	"strings"
 	"testing"
 )
 
+//go:embed testdata/*
+var testData embed.FS
+
 // createTestLoader は埋め込みデータを使用するDataLoaderを作成します。
 func createTestLoader() *DataLoader {
 	return NewEmbeddedDataLoader(EmbeddedData, "data")
+}
+
+// createTestDataLoader はテスト用データを使用するDataLoaderを作成します。
+func createTestDataLoader() *DataLoader {
+	return NewEmbeddedDataLoader(testData, "testdata")
 }
 
 // TestCoresJSONExists はcores.jsonの存在と内容を検証します。
@@ -113,8 +122,9 @@ func TestEnemiesJSONExists(t *testing.T) {
 }
 
 // TestWordsJSONExists はwords.jsonの存在と内容を検証します。
+// テスト用のwords.jsonを使用して、本番データの変更に影響されないようにします。
 func TestWordsJSONExists(t *testing.T) {
-	loader := createTestLoader()
+	loader := createTestDataLoader()
 
 	dictionary, err := loader.LoadTypingDictionary()
 	if err != nil {

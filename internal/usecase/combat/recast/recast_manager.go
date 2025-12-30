@@ -128,3 +128,15 @@ func (m *RecastManager) CancelRecast(agentIndex int) {
 func (m *RecastManager) CancelAllRecasts() {
 	m.states = make(map[int]*RecastState)
 }
+
+// ReduceAllRecasts は全エージェントのリキャスト残り時間を短縮します。
+// reduction が残り時間より大きい場合でも0未満にはなりません。
+func (m *RecastManager) ReduceAllRecasts(reduction time.Duration) {
+	seconds := reduction.Seconds()
+	for _, state := range m.states {
+		state.RemainingSeconds -= seconds
+		if state.RemainingSeconds < 0 {
+			state.RemainingSeconds = 0
+		}
+	}
+}

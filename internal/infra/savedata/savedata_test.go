@@ -38,7 +38,7 @@ func TestNewSaveData(t *testing.T) {
 // TestSaveAndLoadGame はセーブとロードの基本動作をテストします。
 func TestSaveAndLoadGame(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// テスト用のセーブデータを作成
 	saveData := NewSaveData()
@@ -73,7 +73,7 @@ func TestSaveAndLoadGame(t *testing.T) {
 
 func TestAtomicWrite(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	saveData := NewSaveData()
 
@@ -99,7 +99,7 @@ func TestAtomicWrite(t *testing.T) {
 
 func TestBackupRotation(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 4回セーブして、バックアップローテーションを確認
 	for i := 0; i < 4; i++ {
@@ -130,7 +130,7 @@ func TestBackupRotation(t *testing.T) {
 
 func TestLoadFromBackup(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 1回目のセーブ（これがバックアップになる）
 	saveData1 := NewSaveData()
@@ -169,7 +169,7 @@ func TestLoadFromBackup(t *testing.T) {
 
 func TestVersionCheck(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	saveData := NewSaveData()
 	if err := io.SaveGame(saveData); err != nil {
@@ -190,7 +190,7 @@ func TestVersionCheck(t *testing.T) {
 // TestLoadGameFileNotFound はセーブファイルが存在しない場合のエラーをテストします。
 func TestLoadGameFileNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	_, err := io.LoadGame()
 	if err == nil {
@@ -202,7 +202,7 @@ func TestLoadGameFileNotFound(t *testing.T) {
 // v1.0.0形式のセーブデータ構造をテスト
 func TestSaveDataWithInventory(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成（v1.0.0形式: IDなし）
 	saveData := NewSaveData()
@@ -246,7 +246,7 @@ func TestSaveDataWithInventory(t *testing.T) {
 // v1.0.0形式のセーブデータ構造をテスト
 func TestSaveDataWithAgents(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成（v1.0.0形式: Core.IDなし）
 	saveData := NewSaveData()
@@ -293,7 +293,7 @@ func TestSaveDataWithAgents(t *testing.T) {
 
 func TestSaveDataTimestamp(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 1回目のセーブ
 	saveData1 := NewSaveData()
@@ -327,7 +327,7 @@ func TestSaveDataTimestamp(t *testing.T) {
 
 func TestResetSaveData(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成
 	saveData := NewSaveData()
@@ -370,7 +370,7 @@ func TestValidateSaveData(t *testing.T) {
 // CoreInstanceSaveはcore_type_idとlevelのみを保持する。
 func TestCoreInstanceSaveWithoutID(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成（新形式: IDなし）
 	saveData := NewSaveData()
@@ -406,7 +406,7 @@ func TestCoreInstanceSaveWithoutID(t *testing.T) {
 // TestModuleInstanceSaveWithChainEffect はチェイン効果付きModuleInstanceSaveをテストします。
 func TestModuleInstanceSaveWithChainEffect(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成（新形式: ModuleInstances）
 	saveData := NewSaveData()
@@ -467,7 +467,7 @@ func TestModuleInstanceSaveWithChainEffect(t *testing.T) {
 // TestAgentInstanceSaveWithChainEffects はチェイン効果付きAgentInstanceSaveをテストします。
 func TestAgentInstanceSaveWithChainEffects(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成
 	saveData := NewSaveData()
@@ -543,7 +543,7 @@ func TestAgentInstanceSaveWithChainEffects(t *testing.T) {
 // TestSaveDataVersionV1 はv1.0.0形式のセーブデータをテストします。
 func TestSaveDataVersionV1(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成
 	saveData := NewSaveData()
@@ -568,7 +568,7 @@ func TestSaveDataVersionV1(t *testing.T) {
 // TestModuleInstancesReplacesModuleCounts はModuleCountsがModuleInstancesに置き換わることをテストします。
 func TestModuleInstancesReplacesModuleCounts(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 新形式のセーブデータを作成
 	saveData := NewSaveData()

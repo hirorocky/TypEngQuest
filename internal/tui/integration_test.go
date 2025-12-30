@@ -81,7 +81,7 @@ func TestIntegrationHomeScreenWithoutAgents(t *testing.T) {
 
 func TestIntegrationAgentManagement(t *testing.T) {
 	inventory := createTestInventory()
-	screen := screens.NewAgentManagementScreen(inventory)
+	screen := screens.NewAgentManagementScreen(inventory, false, nil)
 	screen.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
 	// 全タブのレンダリングテスト
@@ -107,7 +107,7 @@ func TestIntegrationBattleScreen(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := screens.NewBattleScreen(enemy, player, agents)
+	screen := screens.NewBattleScreen(enemy, player, agents, nil)
 	screen.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
 	rendered := screen.View()
@@ -132,7 +132,7 @@ func TestIntegrationBattleScreenWinLose(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
-	screen := screens.NewBattleScreen(enemy, player, agents)
+	screen := screens.NewBattleScreen(enemy, player, agents, nil)
 	screen.Update(screens.BattleTickMsg{})
 
 	if !screen.IsVictory() {

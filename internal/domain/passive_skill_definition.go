@@ -158,3 +158,140 @@ func (d PassiveSkillDefinition) HasProbability() bool {
 func (d PassiveSkillDefinition) IsStackable() bool {
 	return d.TriggerType == PassiveTriggerStack && d.MaxStacks > 0
 }
+
+// ToEntry は PassiveSkillDefinition を EffectEntry に変換します。
+// 効果テーブルV2に登録可能な形式に変換します。
+func (d PassiveSkillDefinition) ToEntry() EffectEntry {
+	entry := EffectEntry{
+		SourceType:      SourcePassive,
+		SourceID:        d.ID,
+		Name:            d.Name,
+		EnableCondition: d.buildCondition(),
+		Values:          d.buildValues(),
+		Flags:           d.buildFlags(),
+		Probability:     d.Probability,
+		MaxStacks:       d.MaxStacks,
+		StackIncrement:  d.StackIncrement,
+	}
+	return entry
+}
+
+// buildCondition はトリガー条件を EnableCondition 関数に変換します。
+func (d PassiveSkillDefinition) buildCondition() func(*EffectContext) bool {
+	if d.TriggerCondition == nil {
+		return nil // 常に有効
+	}
+
+	cond := d.TriggerCondition
+	switch cond.Type {
+	case TriggerConditionHPBelowPercent:
+		threshold := cond.Value / 100.0 // パーセントを0-1に変換
+		return func(ctx *EffectContext) bool {
+			return ctx.PlayerHPPercent < threshold
+		}
+
+	case TriggerConditionAccuracyEquals:
+		return func(ctx *EffectContext) bool {
+			return ctx.Accuracy >= 1.0
+		}
+
+	case TriggerConditionWPMAbove:
+		threshold := cond.Value
+		return func(ctx *EffectContext) bool {
+			return ctx.WPM >= threshold
+		}
+
+	case TriggerConditionEnemyHPBelowPercent:
+		threshold := cond.Value / 100.0
+		return func(ctx *EffectContext) bool {
+			return ctx.EnemyHPPercent < threshold
+		}
+
+	case TriggerConditionEnemyHasDebuff:
+		return func(ctx *EffectContext) bool {
+			return ctx.EnemyHasDebuff
+		}
+
+	case TriggerConditionOnDamageReceived:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnDamageRecv
+		}
+
+	case TriggerConditionOnHeal:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnHeal
+		}
+
+	case TriggerConditionOnSkillUse:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnModuleUse
+		}
+
+	case TriggerConditionOnTypingMiss:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnTypingMiss
+		}
+
+	case TriggerConditionOnBattleStart:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnBattleStart
+		}
+
+	case TriggerConditionNoMissStreak:
+		count := int(cond.Value)
+		return func(ctx *EffectContext) bool {
+			return ctx.ComboCount >= count
+		}
+
+	case TriggerConditionOnTimeout:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnTimeout
+		}
+
+	case TriggerConditionOnPhysicalAttack:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnModuleUse && ctx.IsPhysical
+		}
+
+	case TriggerConditionOnBuffDebuffUse:
+		return func(ctx *EffectContext) bool {
+			return ctx.EventType == EventOnModuleUse &&
+				(ctx.ModuleCategory == Buff || ctx.ModuleCategory == Debuff)
+		}
+
+	case TriggerConditionSameAttackCount:
+		threshold := int(cond.Value)
+		return func(ctx *EffectContext) bool {
+			return ctx.SameAttackCount >= threshold
+		}
+
+	default:
+		return nil // 常に有効
+	}
+}
+
+// buildValues は効果を EffectColumn の map に変換します。
+func (d PassiveSkillDefinition) buildValues() map[EffectColumn]float64 {
+	values := make(map[EffectColumn]float64)
+
+	switch d.EffectType {
+	case PassiveEffectMultiplier:
+		// 効果倍率はダメージ倍率として扱う
+		values[ColDamageMultiplier] = d.EffectValue
+	case PassiveEffectModifier:
+		// ステータス修正は固定ダメージボーナスとして扱う
+		values[ColDamageBonus] = d.EffectValue
+	case PassiveEffectSpecial:
+		// 特殊効果は個別に判定
+		// 例: ダメージ軽減、回避、CD短縮など
+		// 今後必要に応じて拡張
+	}
+
+	return values
+}
+
+// buildFlags は bool 型効果を map に変換します。
+func (d PassiveSkillDefinition) buildFlags() map[EffectColumn]bool {
+	// 現時点では bool 型効果なし
+	return nil
+}

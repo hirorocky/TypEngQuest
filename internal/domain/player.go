@@ -21,6 +21,10 @@ type PlayerModel struct {
 
 	MaxHP int
 
+	// TempHP は一時HPです（オーバーヒール等で付与）。
+	// ダメージを受けるとTempHPから先に消費されます。
+	TempHP int
+
 	// EffectTable はプレイヤーに適用されているステータス効果テーブルです。
 	// バフ/デバフ/コア特性/モジュールパッシブなどの効果を集約します。
 
@@ -68,8 +72,18 @@ func (p *PlayerModel) FullHeal() {
 }
 
 // TakeDamage はダメージを受けてHPを減少させます。
-// HPは0未満にはなりません。
+// TempHPがある場合は先に消費されます。HPは0未満にはなりません。
 func (p *PlayerModel) TakeDamage(damage int) {
+	// TempHPから先に消費
+	if p.TempHP > 0 {
+		if damage <= p.TempHP {
+			p.TempHP -= damage
+			return
+		}
+		damage -= p.TempHP
+		p.TempHP = 0
+	}
+
 	p.HP -= damage
 	if p.HP < 0 {
 		p.HP = 0
@@ -83,6 +97,33 @@ func (p *PlayerModel) Heal(amount int) {
 	if p.HP > p.MaxHP {
 		p.HP = p.MaxHP
 	}
+}
+
+// HealWithOverheal はHPを回復し、オーバーヒール分をTempHPに変換します。
+// TempHPの上限はMaxHPの50%です。
+func (p *PlayerModel) HealWithOverheal(amount int) int {
+	// まず通常回復
+	hpBefore := p.HP
+	p.HP += amount
+	overflow := 0
+
+	if p.HP > p.MaxHP {
+		overflow = p.HP - p.MaxHP
+		p.HP = p.MaxHP
+	}
+
+	// 超過分をTempHPに変換（上限はMaxHPの50%）
+	tempHPCap := p.MaxHP / 2
+	if overflow > 0 {
+		p.TempHP += overflow
+		if p.TempHP > tempHPCap {
+			p.TempHP = tempHPCap
+		}
+	}
+
+	// 実際に回復した量（通常回復+TempHP）を返す
+	healed := p.HP - hpBefore + overflow
+	return healed
 }
 
 // IsAlive はプレイヤーが生存しているかどうかを返します。

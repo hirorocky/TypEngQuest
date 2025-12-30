@@ -40,7 +40,7 @@ func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategor
 // TestNewAgentManagementScreen はAgentManagementScreenの初期化をテストします。
 func TestNewAgentManagementScreen(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	if screen == nil {
 		t.Fatal("AgentManagementScreenがnilです")
@@ -55,7 +55,7 @@ func TestNewAgentManagementScreen(t *testing.T) {
 
 func TestAgentManagementTabs(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 初期タブ
 	if screen.currentTab != TabCoreList {
@@ -79,7 +79,7 @@ func TestAgentManagementTabs(t *testing.T) {
 
 func TestAgentManagementCoreList(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// コア一覧タブに移動
 	screen.currentTab = TabCoreList
@@ -95,7 +95,7 @@ func TestAgentManagementCoreList(t *testing.T) {
 
 func TestAgentManagementModuleList(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// モジュール一覧タブに移動
 	screen.currentTab = TabModuleList
@@ -111,7 +111,7 @@ func TestAgentManagementModuleList(t *testing.T) {
 
 func TestAgentManagementSynthesis(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 合成タブに移動
 	screen.currentTab = TabSynthesis
@@ -131,7 +131,7 @@ func TestAgentManagementSynthesis(t *testing.T) {
 
 func TestAgentManagementEquip(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 装備タブに移動
 	screen.currentTab = TabEquip
@@ -147,7 +147,7 @@ func TestAgentManagementEquip(t *testing.T) {
 
 func TestAgentManagementCoreDetailDisplay(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// コア一覧タブでコアを選択
 	screen.currentTab = TabCoreList
@@ -167,7 +167,7 @@ func TestAgentManagementCoreDetailDisplay(t *testing.T) {
 
 func TestAgentManagementModuleDetailDisplay(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// モジュール一覧タブでモジュールを選択
 	screen.currentTab = TabModuleList
@@ -187,7 +187,7 @@ func TestAgentManagementModuleDetailDisplay(t *testing.T) {
 
 func TestAgentManagementSynthesisFlow(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 合成タブに移動
 	screen.currentTab = TabSynthesis
@@ -214,7 +214,7 @@ func TestAgentManagementSynthesisFlow(t *testing.T) {
 
 func TestAgentManagementEquipFlow(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 装備タブに移動
 	screen.currentTab = TabEquip
@@ -236,7 +236,7 @@ func TestAgentManagementEquipFlow(t *testing.T) {
 // TestAgentManagementBackNavigation は戻るナビゲーションをテストします。
 func TestAgentManagementBackNavigation(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	_, cmd := screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyEsc})
 
@@ -248,7 +248,7 @@ func TestAgentManagementBackNavigation(t *testing.T) {
 // TestAgentManagementRender はレンダリングをテストします。
 func TestAgentManagementRender(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 	screen.width = 120
 	screen.height = 40
 
@@ -385,7 +385,7 @@ func createTestInventory() *TestInventory {
 
 func TestAgentManagementSynthesisLeftRightLayout(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 	screen.currentTab = TabSynthesis
 	screen.width = 120
 	screen.height = 40
@@ -412,7 +412,7 @@ func TestAgentManagementSynthesisLeftRightLayout(t *testing.T) {
 
 func TestAgentManagementSynthesisDetailAndPreview(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 	screen.currentTab = TabSynthesis
 	screen.synthesisState.step = 0
 	screen.width = 120
@@ -438,7 +438,7 @@ func TestAgentManagementSynthesisDetailAndPreview(t *testing.T) {
 
 func TestAgentManagementEquipTopBottomLayout(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 	screen.currentTab = TabEquip
 	screen.width = 120
 	screen.height = 40
@@ -456,7 +456,7 @@ func TestAgentManagementEquipTopBottomLayout(t *testing.T) {
 
 func TestAgentManagementEquipSlotSwitch(t *testing.T) {
 	inventory := createTestInventory()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 	screen.currentTab = TabEquip
 	screen.width = 120
 	screen.height = 40
@@ -548,7 +548,7 @@ func createTestInventoryWithPassiveAndChain() *TestInventory {
 // TestAgentManagementScreen_RenderCorePreviewWithPassiveSkill はコアプレビューのパッシブスキル表示テストです。
 func TestAgentManagementScreen_RenderCorePreviewWithPassiveSkill(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// コアタブを選択
 	screen.currentTab = TabCoreList
@@ -566,7 +566,7 @@ func TestAgentManagementScreen_RenderCorePreviewWithPassiveSkill(t *testing.T) {
 // TestAgentManagementScreen_RenderModulePreviewWithChainEffect はモジュールプレビューのチェイン効果表示テストです。
 func TestAgentManagementScreen_RenderModulePreviewWithChainEffect(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// モジュールタブを選択
 	screen.currentTab = TabModuleList
@@ -588,7 +588,7 @@ func TestAgentManagementScreen_RenderModulePreviewWithChainEffect(t *testing.T) 
 // TestAgentManagementScreen_RenderSynthesisPreviewWithPassiveSkill は合成プレビューのパッシブスキル表示テストです。
 func TestAgentManagementScreen_RenderSynthesisPreviewWithPassiveSkill(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 合成タブを選択してコアを選択した状態にする
 	screen.currentTab = TabSynthesis
@@ -607,7 +607,7 @@ func TestAgentManagementScreen_RenderSynthesisPreviewWithPassiveSkill(t *testing
 // TestAgentManagementScreen_RenderSynthesisPreviewWithChainEffect は合成プレビューのチェイン効果表示テストです。
 func TestAgentManagementScreen_RenderSynthesisPreviewWithChainEffect(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 合成タブを選択してコアとモジュールを選択した状態にする
 	screen.currentTab = TabSynthesis
@@ -627,7 +627,7 @@ func TestAgentManagementScreen_RenderSynthesisPreviewWithChainEffect(t *testing.
 // TestAgentManagementScreen_CorePreviewShowsPassiveSkillEffects はコアプレビューのパッシブスキル効果詳細表示テストです。
 func TestAgentManagementScreen_CorePreviewShowsPassiveSkillEffects(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// コアタブを選択
 	screen.currentTab = TabCoreList
@@ -645,7 +645,7 @@ func TestAgentManagementScreen_CorePreviewShowsPassiveSkillEffects(t *testing.T)
 // TestAgentManagementScreen_ModulePreviewShowsChainEffectDetails はモジュールプレビューのチェイン効果詳細表示テストです。
 func TestAgentManagementScreen_ModulePreviewShowsChainEffectDetails(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// モジュールタブを選択（チェイン効果付きモジュール）
 	screen.currentTab = TabModuleList
@@ -663,7 +663,7 @@ func TestAgentManagementScreen_ModulePreviewShowsChainEffectDetails(t *testing.T
 // TestAgentManagementScreen_SynthesisShowsAllModules は合成プレビューで全モジュールを表示するテストです。
 func TestAgentManagementScreen_SynthesisShowsAllModules(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// 2つのモジュールを追加
 	screen.currentTab = TabSynthesis
@@ -683,7 +683,7 @@ func TestAgentManagementScreen_SynthesisShowsAllModules(t *testing.T) {
 // TestAgentManagementScreen_PassiveSkillDisplayWithLevel はパッシブスキルがレベルに応じて表示されるテストです。
 func TestAgentManagementScreen_PassiveSkillDisplayWithLevel(t *testing.T) {
 	inventory := createTestInventoryWithPassiveAndChain()
-	screen := NewAgentManagementScreen(inventory)
+	screen := NewAgentManagementScreen(inventory, false, nil)
 
 	// コアタブを選択
 	screen.currentTab = TabCoreList

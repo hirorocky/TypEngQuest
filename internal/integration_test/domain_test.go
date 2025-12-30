@@ -220,40 +220,28 @@ func TestEnemyModel_PhaseChange(t *testing.T) {
 	}
 }
 
-func TestEffectTable_Calculate(t *testing.T) {
-
+func TestEffectTable_Aggregate(t *testing.T) {
 	table := domain.NewEffectTable()
 
 	// バフを追加
-	duration := 5.0
-	table.AddRow(domain.EffectRow{
-		ID:         "buff_1",
-		SourceType: domain.SourceBuff,
-		Name:       "攻撃UP",
-		Duration:   &duration,
-		Modifiers: domain.StatModifiers{
-			STR_Add: 10,
-		},
+	table.AddBuff("攻撃UP", 5.0, map[domain.EffectColumn]float64{
+		domain.ColDamageBonus: 10,
 	})
 
 	// 乗算バフを追加
-	duration2 := 5.0
-	table.AddRow(domain.EffectRow{
-		ID:         "buff_2",
-		SourceType: domain.SourceBuff,
-		Name:       "攻撃UP×",
-		Duration:   &duration2,
-		Modifiers: domain.StatModifiers{
-			STR_Mult: 1.2,
-		},
+	table.AddBuff("攻撃UP×", 5.0, map[domain.EffectColumn]float64{
+		domain.ColDamageMultiplier: 1.2,
 	})
 
-	baseStats := domain.Stats{STR: 100, MAG: 50, SPD: 50, LUK: 50}
-	finalStats := table.Calculate(baseStats)
+	ctx := domain.NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
 
-	// 計算: (100 + 10) × 1.2 = 132
-	if finalStats.STR != 132 {
-		t.Errorf("Final STR expected 132, got %d", finalStats.STR)
+	// DamageBonus: 10, DamageMultiplier: 1.2
+	if result.DamageBonus != 10 {
+		t.Errorf("DamageBonus expected 10, got %d", result.DamageBonus)
+	}
+	if result.DamageMultiplier != 1.2 {
+		t.Errorf("DamageMultiplier expected 1.2, got %f", result.DamageMultiplier)
 	}
 }
 
@@ -261,44 +249,41 @@ func TestEffectTable_UpdateDurations(t *testing.T) {
 	// 効果テーブルの時間経過テスト
 	table := domain.NewEffectTable()
 
-	duration := 3.0
-	table.AddRow(domain.EffectRow{
-		ID:         "buff_1",
-		SourceType: domain.SourceBuff,
-		Name:       "短時間バフ",
-		Duration:   &duration,
-		Modifiers:  domain.StatModifiers{STR_Add: 10},
+	table.AddBuff("短時間バフ", 3.0, map[domain.EffectColumn]float64{
+		domain.ColDamageBonus: 10,
 	})
 
 	// 時間経過
 	table.UpdateDurations(2.0)
-	if len(table.Rows) != 1 {
+	if len(table.Entries) != 1 {
 		t.Error("Buff should still exist after 2 seconds")
 	}
 
 	// さらに時間経過で削除
 	table.UpdateDurations(2.0)
-	if len(table.Rows) != 0 {
+	if len(table.Entries) != 0 {
 		t.Error("Buff should be removed after duration expires")
 	}
 }
 
 func TestEffectTable_PermanentEffects(t *testing.T) {
-	// 永続効果のテスト（コア/モジュールパッシブ）
+	// 永続効果のテスト（パッシブスキル）
 	table := domain.NewEffectTable()
 
 	// 永続効果（Duration = nil）
-	table.AddRow(domain.EffectRow{
-		ID:         "core_passive",
-		SourceType: domain.SourceCore,
+	table.AddEntry(domain.EffectEntry{
+		SourceType: domain.SourcePassive,
+		SourceID:   "core_passive",
 		Name:       "コア特性",
 		Duration:   nil, // 永続
-		Modifiers:  domain.StatModifiers{STR_Add: 20},
+		Values: map[domain.EffectColumn]float64{
+			domain.ColDamageBonus: 20,
+		},
 	})
 
 	// 時間経過しても削除されない
 	table.UpdateDurations(100.0)
-	if len(table.Rows) != 1 {
+	if len(table.Entries) != 1 {
 		t.Error("Permanent effects should not be removed")
 	}
 }

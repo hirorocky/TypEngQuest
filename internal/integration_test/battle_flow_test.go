@@ -297,13 +297,8 @@ func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
 	state, _ := engine.InitializeBattle(1, agents)
 
 	// プレイヤーに防御バフを付与
-	duration := 10.0
-	state.Player.EffectTable.AddRow(domain.EffectRow{
-		ID:         "def_buff",
-		SourceType: domain.SourceBuff,
-		Name:       "防御UP",
-		Duration:   &duration,
-		Modifiers:  domain.StatModifiers{DamageReduction: 0.5}, // 50%軽減
+	state.Player.EffectTable.AddBuff("防御UP", 10.0, map[domain.EffectColumn]float64{
+		domain.ColDamageCut: 0.5, // 50%軽減
 	})
 
 	// 敵攻撃

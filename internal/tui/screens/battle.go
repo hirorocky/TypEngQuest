@@ -4,6 +4,7 @@
 package screens
 
 import (
+	"fmt"
 	"time"
 
 	"hirorocky/type-battle/internal/config"
@@ -54,6 +55,14 @@ func (s *ModuleSlot) IsReady() bool {
 	return s.CooldownRemaining <= 0
 }
 
+// SetPassiveSkillDefinitions はパッシブスキル定義を設定します。
+// これにより、RegisterPassiveSkills で条件付きパッシブスキルが EffectTable に登録されます。
+func (s *BattleScreen) SetPassiveSkillDefinitions(defs map[string]domain.PassiveSkillDefinition) {
+	if s.battleEngine != nil {
+		s.battleEngine.SetPassiveSkillDefinitions(defs)
+	}
+}
+
 // ==================== BattleScreen構造体 ====================
 
 // BattleScreen はバトル画面を表します。
@@ -73,13 +82,14 @@ type BattleScreen struct {
 	selectedAgentIdx int
 
 	// タイピング状態
-	isTyping          bool
-	typingText        string
-	typingIndex       int
-	typingMistakes    []int
-	typingStartTime   time.Time
-	typingTimeLimit   time.Duration
-	selectedModuleIdx int
+	isTyping             bool
+	typingText           string
+	typingIndex          int
+	typingMistakes       []int
+	typingStartTime      time.Time
+	typingTimeLimit      time.Duration
+	selectedModuleIdx    int
+	autoCorrectRemaining int // AutoCorrectによるミス無視残り回数
 
 	// タイピングシステム
 	challengeGenerator *typing.ChallengeGenerator
@@ -93,6 +103,12 @@ type BattleScreen struct {
 	// リキャスト・チェイン効果管理
 	recastManager      *recast.RecastManager
 	chainEffectManager *chain.ChainEffectManager
+
+	// パッシブスキル関連
+	comboCount            int  // ミスなし連続タイピング回数
+	typoRecoveryUsed      bool // ps_typo_recovery使用済みフラグ（チャレンジ毎にリセット）
+	secondChanceUsed      bool // ps_second_chance使用済みフラグ（チャレンジ毎にリセット）
+	firstStrikeAgentIndex int  // ps_first_strike発動エージェント（-1は無効）
 
 	// 敵攻撃
 	nextEnemyAttack time.Time
@@ -118,9 +134,12 @@ type BattleScreen struct {
 // ==================== コンストラクタ ====================
 
 // NewBattleScreen は新しいBattleScreenを作成します。
-func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agents []*domain.AgentModel) *BattleScreen {
-	// デフォルト辞書を作成
-	dictionary := createDefaultDictionary()
+// dictionaryがnilの場合はデフォルト辞書を使用します。
+func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agents []*domain.AgentModel, dictionary *typing.Dictionary) *BattleScreen {
+	// 辞書がnilの場合はデフォルト辞書を使用
+	if dictionary == nil {
+		dictionary = createDefaultDictionary()
+	}
 
 	// 敵タイプリストを作成（BattleEngine用）
 	enemyTypes := []domain.EnemyType{enemy.Type}
@@ -140,10 +159,12 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		// リキャスト・チェイン効果管理を初期化
 		recastManager:      recast.NewRecastManager(),
 		chainEffectManager: chain.NewChainEffectManager(),
-		styles:             gs,
-		winLoseRenderer:    ascii.NewWinLoseRenderer(gs),
-		width:              140,
-		height:             40,
+		// パッシブスキル関連
+		firstStrikeAgentIndex: -1, // 無効値で初期化
+		styles:                gs,
+		winLoseRenderer:       ascii.NewWinLoseRenderer(gs),
+		width:                 140,
+		height:                40,
 		// UI改善: アニメーション初期化
 		floatingDamageManager: styles.NewFloatingDamageManager(),
 		playerHPBar:           styles.NewAnimatedHPBar(player.MaxHP),
@@ -214,7 +235,26 @@ func createDefaultDictionary() *typing.Dictionary {
 // Init は画面の初期化を行います。
 func (s *BattleScreen) Init() tea.Cmd {
 	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+
+	// ps_first_strike: バトル開始時に最初のスキル即発動を評価
+	s.evaluateFirstStrike()
+
 	return s.tick()
+}
+
+// evaluateFirstStrike はps_first_strikeの発動を評価します。
+func (s *BattleScreen) evaluateFirstStrike() {
+	if s.battleEngine == nil || s.battleState == nil {
+		return
+	}
+
+	for agentIdx, agent := range s.battleState.EquippedAgents {
+		if s.battleEngine.EvaluateFirstStrike(s.battleState, agent) {
+			s.firstStrikeAgentIndex = agentIdx
+			s.message = fmt.Sprintf("[ファーストストライク！ %sが即発動可能！]", agent.Core.Name)
+			return
+		}
+	}
 }
 
 // tick は次のtickコマンドを返します。
@@ -289,6 +329,20 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 	if s.isTyping {
 		elapsed := time.Since(s.typingStartTime)
 		if elapsed >= s.typingTimeLimit {
+			// ps_second_chance: タイムアウト時に再挑戦（1回/チャレンジ）
+			if !s.secondChanceUsed && s.battleEngine != nil && s.battleState != nil {
+				slot := s.moduleSlots[s.selectedModuleIdx]
+				agent := slot.Agent
+				if s.battleEngine.EvaluateSecondChance(s.battleState, agent) {
+					s.secondChanceUsed = true
+					// タイピング状態をリセットして再挑戦
+					s.typingIndex = 0
+					s.typingMistakes = nil
+					s.typingStartTime = time.Now()
+					s.message = "[セカンドチャンス発動！ 再挑戦！]"
+					return s, s.tick()
+				}
+			}
 			s.CancelTyping()
 			s.message = "タイムアップ！"
 		}
