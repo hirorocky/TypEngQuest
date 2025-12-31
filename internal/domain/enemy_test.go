@@ -636,3 +636,160 @@ func TestEnemyPassiveSkill_EffectTableとの連携(t *testing.T) {
 		t.Error("SourceIDで検索できませんでした")
 	}
 }
+
+// ========== タスク1.3: 敵タイプ新規フィールドのテスト ==========
+
+// TestEnemyType_拡張フィールドの確認 はEnemyType拡張フィールドが正しく設定されることを確認します。
+func TestEnemyType_拡張フィールドの確認(t *testing.T) {
+	normalPassive := &EnemyPassiveSkill{
+		ID:   "slime_normal",
+		Name: "ぷるぷるボディ",
+	}
+	enhancedPassive := &EnemyPassiveSkill{
+		ID:   "slime_enhanced",
+		Name: "怒りのスライム",
+	}
+	normalAction := EnemyAction{
+		ActionType: EnemyActionAttack,
+		AttackType: "physical",
+	}
+	enhancedAction := EnemyAction{
+		ActionType:  EnemyActionSelfBuff,
+		EffectType:  "attackUp",
+		EffectValue: 0.3,
+		Duration:    10.0,
+	}
+
+	enemyType := EnemyType{
+		ID:                    "slime",
+		Name:                  "スライム",
+		BaseHP:                50,
+		BaseAttackPower:       5,
+		BaseAttackInterval:    3 * time.Second,
+		AttackType:            "physical",
+		DefaultLevel:          1,
+		NormalActionPattern:   []EnemyAction{normalAction},
+		EnhancedActionPattern: []EnemyAction{normalAction, enhancedAction},
+		NormalPassive:         normalPassive,
+		EnhancedPassive:       enhancedPassive,
+		DropItemCategory:      "core",
+		DropItemTypeID:        "fire",
+	}
+
+	// デフォルトレベル
+	if enemyType.DefaultLevel != 1 {
+		t.Errorf("DefaultLevelが期待値と異なります: got %d, want 1", enemyType.DefaultLevel)
+	}
+
+	// 通常行動パターン
+	if len(enemyType.NormalActionPattern) != 1 {
+		t.Errorf("NormalActionPatternの長さが期待値と異なります: got %d, want 1", len(enemyType.NormalActionPattern))
+	}
+	if enemyType.NormalActionPattern[0].ActionType != EnemyActionAttack {
+		t.Error("NormalActionPattern[0]のActionTypeがAttackであるべきです")
+	}
+
+	// 強化行動パターン
+	if len(enemyType.EnhancedActionPattern) != 2 {
+		t.Errorf("EnhancedActionPatternの長さが期待値と異なります: got %d, want 2", len(enemyType.EnhancedActionPattern))
+	}
+
+	// 通常パッシブ
+	if enemyType.NormalPassive == nil {
+		t.Error("NormalPassiveがnilです")
+	}
+	if enemyType.NormalPassive.ID != "slime_normal" {
+		t.Errorf("NormalPassive.IDが期待値と異なります: got %s, want slime_normal", enemyType.NormalPassive.ID)
+	}
+
+	// 強化パッシブ
+	if enemyType.EnhancedPassive == nil {
+		t.Error("EnhancedPassiveがnilです")
+	}
+	if enemyType.EnhancedPassive.ID != "slime_enhanced" {
+		t.Errorf("EnhancedPassive.IDが期待値と異なります: got %s, want slime_enhanced", enemyType.EnhancedPassive.ID)
+	}
+
+	// ドロップアイテム設定
+	if enemyType.DropItemCategory != "core" {
+		t.Errorf("DropItemCategoryが期待値と異なります: got %s, want core", enemyType.DropItemCategory)
+	}
+	if enemyType.DropItemTypeID != "fire" {
+		t.Errorf("DropItemTypeIDが期待値と異なります: got %s, want fire", enemyType.DropItemTypeID)
+	}
+}
+
+// TestEnemyType_デフォルトレベル範囲 はデフォルトレベルの範囲を確認します。
+func TestEnemyType_デフォルトレベル範囲(t *testing.T) {
+	tests := []struct {
+		name     string
+		level    int
+		expected bool // true = 有効、false = 無効
+	}{
+		{"レベル0（無効）", 0, false},
+		{"レベル1（最小有効値）", 1, true},
+		{"レベル50（中間値）", 50, true},
+		{"レベル100（最大有効値）", 100, true},
+		{"レベル101（無効）", 101, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enemyType := EnemyType{DefaultLevel: tt.level}
+			result := enemyType.IsValidDefaultLevel()
+			if result != tt.expected {
+				t.Errorf("IsValidDefaultLevel()が期待値と異なります: got %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyType_行動パターンバリデーション は行動パターンの最低1つの行動を保証するバリデーションを確認します。
+func TestEnemyType_行動パターンバリデーション(t *testing.T) {
+	tests := []struct {
+		name     string
+		pattern  []EnemyAction
+		expected bool // true = 有効、false = 無効
+	}{
+		{"空パターン（無効）", []EnemyAction{}, false},
+		{"1つの行動（有効）", []EnemyAction{{ActionType: EnemyActionAttack}}, true},
+		{"複数の行動（有効）", []EnemyAction{
+			{ActionType: EnemyActionAttack},
+			{ActionType: EnemyActionSelfBuff},
+		}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enemyType := EnemyType{NormalActionPattern: tt.pattern}
+			result := enemyType.HasValidNormalActionPattern()
+			if result != tt.expected {
+				t.Errorf("HasValidNormalActionPattern()が期待値と異なります: got %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyType_ドロップカテゴリバリデーション はドロップカテゴリの有効値を確認します。
+func TestEnemyType_ドロップカテゴリバリデーション(t *testing.T) {
+	tests := []struct {
+		name     string
+		category string
+		expected bool // true = 有効、false = 無効
+	}{
+		{"core（有効）", "core", true},
+		{"module（有効）", "module", true},
+		{"空文字（無効）", "", false},
+		{"不正な値（無効）", "invalid", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enemyType := EnemyType{DropItemCategory: tt.category}
+			result := enemyType.IsValidDropItemCategory()
+			if result != tt.expected {
+				t.Errorf("IsValidDropItemCategory()が期待値と異なります: got %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

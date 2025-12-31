@@ -54,6 +54,44 @@ type EnemyType struct {
 
 	// ASCIIArt は敵の外観（ASCIIアート）です。
 	ASCIIArt string
+
+	// ========== 拡張フィールド ==========
+
+	// DefaultLevel はデフォルトレベル（1〜100）です。未撃破時はこのレベルのみ選択可能。
+	DefaultLevel int
+
+	// NormalActionPattern は通常状態での行動パターン（最低1つの行動を持つ配列）です。
+	NormalActionPattern []EnemyAction
+
+	// EnhancedActionPattern は強化状態での行動パターンです。空の場合は通常パターンを継続。
+	EnhancedActionPattern []EnemyAction
+
+	// NormalPassive は通常状態で適用されるパッシブスキルです。
+	NormalPassive *EnemyPassiveSkill
+
+	// EnhancedPassive は強化状態で適用されるパッシブスキルです。
+	EnhancedPassive *EnemyPassiveSkill
+
+	// DropItemCategory はドロップアイテムのカテゴリ（"core" または "module"）です。
+	DropItemCategory string
+
+	// DropItemTypeID はドロップアイテムのTypeIDです。
+	DropItemTypeID string
+}
+
+// IsValidDefaultLevel はデフォルトレベルが有効範囲（1〜100）かどうかを判定します。
+func (e EnemyType) IsValidDefaultLevel() bool {
+	return e.DefaultLevel >= 1 && e.DefaultLevel <= 100
+}
+
+// HasValidNormalActionPattern は通常行動パターンが有効（最低1つの行動を持つ）かどうかを判定します。
+func (e EnemyType) HasValidNormalActionPattern() bool {
+	return len(e.NormalActionPattern) > 0
+}
+
+// IsValidDropItemCategory はドロップカテゴリが有効かどうかを判定します。
+func (e EnemyType) IsValidDropItemCategory() bool {
+	return e.DropItemCategory == "core" || e.DropItemCategory == "module"
 }
 
 // EnemyModel はゲーム内の敵エンティティを表す構造体です。
