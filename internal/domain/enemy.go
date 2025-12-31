@@ -226,3 +226,39 @@ func (a EnemyAction) IsBuff() bool {
 func (a EnemyAction) IsDebuff() bool {
 	return a.ActionType == EnemyActionDebuff
 }
+
+// ========== 敵パッシブスキルデータ構造 ==========
+
+// EnemyPassiveSkill は敵用パッシブスキルを定義する構造体です。
+// 敵の状態（通常/強化）に紐づき、EffectTableを通じて効果を適用します。
+type EnemyPassiveSkill struct {
+	// ID はパッシブスキルの一意識別子です。
+	ID string
+
+	// Name はパッシブスキルの表示名です。
+	Name string
+
+	// Description はパッシブスキルの説明文です。
+	Description string
+
+	// Effects は効果値のマップです（EffectColumnをキー、float64を値）。
+	Effects map[EffectColumn]float64
+}
+
+// ToEntry はEnemyPassiveSkillをEffectTableに登録可能なEffectEntryに変換します。
+// パッシブスキルは永続効果（Duration=nil）として登録されます。
+func (p *EnemyPassiveSkill) ToEntry() EffectEntry {
+	// 効果値をコピーして新しいマップを作成
+	values := make(map[EffectColumn]float64)
+	for k, v := range p.Effects {
+		values[k] = v
+	}
+
+	return EffectEntry{
+		SourceType: SourcePassive,
+		SourceID:   p.ID,
+		Name:       p.Name,
+		Duration:   nil, // 永続効果
+		Values:     values,
+	}
+}

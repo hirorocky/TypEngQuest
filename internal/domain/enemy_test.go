@@ -492,3 +492,147 @@ func TestEnemyAction_IsDebuff(t *testing.T) {
 		t.Error("Debuff行動でIsDebuff()がtrueを返すべきです")
 	}
 }
+
+// ========== タスク1.2: 敵パッシブスキルのデータ構造のテスト ==========
+
+// TestEnemyPassiveSkill_フィールドの確認 はEnemyPassiveSkill構造体のフィールドが正しく設定されることを確認します。
+func TestEnemyPassiveSkill_フィールドの確認(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[EffectColumn]float64{
+			ColDamageCut: 0.1,
+		},
+	}
+
+	if passive.ID != "slime_normal" {
+		t.Errorf("IDが期待値と異なります: got %s, want slime_normal", passive.ID)
+	}
+	if passive.Name != "ぷるぷるボディ" {
+		t.Errorf("Nameが期待値と異なります: got %s, want ぷるぷるボディ", passive.Name)
+	}
+	expectedDesc := "物理ダメージを10%軽減"
+	if passive.Description != expectedDesc {
+		t.Errorf("Descriptionが期待値と異なります: got %s, want %s", passive.Description, expectedDesc)
+	}
+	if len(passive.Effects) != 1 {
+		t.Errorf("Effectsの要素数が期待値と異なります: got %d, want 1", len(passive.Effects))
+	}
+	if passive.Effects[ColDamageCut] != 0.1 {
+		t.Errorf("Effects[ColDamageCut]が期待値と異なります: got %f, want 0.1", passive.Effects[ColDamageCut])
+	}
+}
+
+// TestEnemyPassiveSkill_複数効果 は複数の効果を持つパッシブスキルを確認します。
+func TestEnemyPassiveSkill_複数効果(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:          "boss_enhanced",
+		Name:        "狂戦士の怒り",
+		Description: "攻撃力20%上昇、ライフスティール10%",
+		Effects: map[EffectColumn]float64{
+			ColDamageMultiplier: 1.2,
+			ColLifeSteal:        0.1,
+		},
+	}
+
+	if len(passive.Effects) != 2 {
+		t.Errorf("Effectsの要素数が期待値と異なります: got %d, want 2", len(passive.Effects))
+	}
+	if passive.Effects[ColDamageMultiplier] != 1.2 {
+		t.Errorf("Effects[ColDamageMultiplier]が期待値と異なります: got %f, want 1.2", passive.Effects[ColDamageMultiplier])
+	}
+	if passive.Effects[ColLifeSteal] != 0.1 {
+		t.Errorf("Effects[ColLifeSteal]が期待値と異なります: got %f, want 0.1", passive.Effects[ColLifeSteal])
+	}
+}
+
+// TestEnemyPassiveSkill_ToEntry はEffectEntryへの変換を確認します。
+func TestEnemyPassiveSkill_ToEntry(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[EffectColumn]float64{
+			ColDamageCut: 0.1,
+		},
+	}
+
+	entry := passive.ToEntry()
+
+	// ソースタイプはパッシブであること
+	if entry.SourceType != SourcePassive {
+		t.Errorf("SourceTypeが期待値と異なります: got %s, want %s", entry.SourceType, SourcePassive)
+	}
+	// ソースIDはパッシブのIDと一致すること
+	if entry.SourceID != passive.ID {
+		t.Errorf("SourceIDが期待値と異なります: got %s, want %s", entry.SourceID, passive.ID)
+	}
+	// 表示名はパッシブの名前と一致すること
+	if entry.Name != passive.Name {
+		t.Errorf("Nameが期待値と異なります: got %s, want %s", entry.Name, passive.Name)
+	}
+	// 永続効果であること（Durationがnil）
+	if entry.Duration != nil {
+		t.Error("パッシブスキルは永続効果（Duration=nil）であるべきです")
+	}
+	// 効果値が正しく変換されていること
+	if entry.Values[ColDamageCut] != 0.1 {
+		t.Errorf("Values[ColDamageCut]が期待値と異なります: got %f, want 0.1", entry.Values[ColDamageCut])
+	}
+}
+
+// TestEnemyPassiveSkill_ToEntry_複数効果 は複数効果のEffectEntry変換を確認します。
+func TestEnemyPassiveSkill_ToEntry_複数効果(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:   "boss_enhanced",
+		Name: "狂戦士の怒り",
+		Effects: map[EffectColumn]float64{
+			ColDamageMultiplier: 1.2,
+			ColLifeSteal:        0.1,
+		},
+	}
+
+	entry := passive.ToEntry()
+
+	if len(entry.Values) != 2 {
+		t.Errorf("Valuesの要素数が期待値と異なります: got %d, want 2", len(entry.Values))
+	}
+	if entry.Values[ColDamageMultiplier] != 1.2 {
+		t.Errorf("Values[ColDamageMultiplier]が期待値と異なります: got %f, want 1.2", entry.Values[ColDamageMultiplier])
+	}
+	if entry.Values[ColLifeSteal] != 0.1 {
+		t.Errorf("Values[ColLifeSteal]が期待値と異なります: got %f, want 0.1", entry.Values[ColLifeSteal])
+	}
+}
+
+// TestEnemyPassiveSkill_EffectTableとの連携 はEffectTableにパッシブスキルを登録できることを確認します。
+func TestEnemyPassiveSkill_EffectTableとの連携(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:   "slime_normal",
+		Name: "ぷるぷるボディ",
+		Effects: map[EffectColumn]float64{
+			ColDamageCut: 0.1,
+		},
+	}
+
+	table := NewEffectTable()
+	table.AddEntry(passive.ToEntry())
+
+	// エントリが追加されていること
+	if len(table.Entries) != 1 {
+		t.Errorf("エントリ数が期待値と異なります: got %d, want 1", len(table.Entries))
+	}
+
+	// パッシブを検索できること
+	passives := table.FindBySourceType(SourcePassive)
+	if len(passives) != 1 {
+		t.Errorf("パッシブスキル数が期待値と異なります: got %d, want 1", len(passives))
+	}
+
+	// SourceIDで検索できること
+	found := table.FindBySourceID("slime_normal")
+	if found == nil {
+		t.Error("SourceIDで検索できませんでした")
+	}
+}
