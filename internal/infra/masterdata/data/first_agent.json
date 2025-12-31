@@ -7,7 +7,7 @@
       {
         "type_id": "physical_strike_lv1",
         "chain_effect_type": "damage_amp",
-        "chain_effect_value": 1.2
+        "chain_effect_value": 20.0
       },
       {
         "type_id": "fireball_lv1"

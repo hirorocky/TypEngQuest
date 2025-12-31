@@ -1507,13 +1507,20 @@ func (s *AgentManagementScreen) handleDebugLevelInput(msg tea.KeyMsg) (tea.Model
 		}
 	case "enter":
 		// レベルを確定
-		level, _ := strconv.Atoi(s.debugSynthesisState.levelInput)
-		if level >= 1 && level <= 99 {
-			s.debugSynthesisState.coreLevel = level
-			s.debugSynthesisState.step = 2 // モジュール選択へ
-			s.debugSynthesisState.currentModuleIdx = 0
-			s.selectedIndex = 0
+		level, err := strconv.Atoi(s.debugSynthesisState.levelInput)
+		if err != nil {
+			s.errorMessage = "レベルには数値を入力してください"
+			return s, nil
 		}
+		if level < 1 || level > 99 {
+			s.errorMessage = "レベルは1〜99の範囲で入力してください"
+			return s, nil
+		}
+		s.debugSynthesisState.coreLevel = level
+		s.debugSynthesisState.step = 2 // モジュール選択へ
+		s.debugSynthesisState.currentModuleIdx = 0
+		s.selectedIndex = 0
+		s.errorMessage = ""
 	case "esc":
 		// コアタイプ選択に戻る
 		s.debugSynthesisState.step = 0

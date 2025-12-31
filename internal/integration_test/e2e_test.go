@@ -90,7 +90,7 @@ func createTestExternalData() *masterdata.ExternalData {
 			CoreTypeID: "all_rounder",
 			CoreLevel:  1,
 			Modules: []masterdata.FirstAgentModuleData{
-				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 1.2},
+				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
 				{TypeID: "fireball_lv1"},
 				{TypeID: "heal_lv1"},
 				{TypeID: "attack_buff_lv1"},
