@@ -334,3 +334,161 @@ func TestEnhanceThreshold(t *testing.T) {
 		t.Errorf("EnhanceThresholdが期待値と異なります: got %f, want 0.5", EnhanceThreshold)
 	}
 }
+
+// ========== タスク1.1: 敵の行動データ構造のテスト ==========
+
+// TestEnemyActionType_定数の確認 はEnemyActionType定数が正しく定義されていることを確認します。
+func TestEnemyActionType_定数の確認(t *testing.T) {
+	// 行動タイプは Attack, SelfBuff, Debuff の3種類
+	if EnemyActionAttack != 0 {
+		t.Errorf("EnemyActionAttackが期待値と異なります: got %d, want 0", EnemyActionAttack)
+	}
+	if EnemyActionSelfBuff != 1 {
+		t.Errorf("EnemyActionSelfBuffが期待値と異なります: got %d, want 1", EnemyActionSelfBuff)
+	}
+	if EnemyActionDebuff != 2 {
+		t.Errorf("EnemyActionDebuffが期待値と異なります: got %d, want 2", EnemyActionDebuff)
+	}
+}
+
+// TestEnemyActionType_String はEnemyActionTypeのString()メソッドが正しい表示名を返すことを確認します。
+func TestEnemyActionType_String(t *testing.T) {
+	tests := []struct {
+		actionType EnemyActionType
+		expected   string
+	}{
+		{EnemyActionAttack, "攻撃"},
+		{EnemyActionSelfBuff, "自己バフ"},
+		{EnemyActionDebuff, "デバフ"},
+		{EnemyActionType(99), "不明"}, // 未定義値
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			if tt.actionType.String() != tt.expected {
+				t.Errorf("String()が期待値と異なります: got %s, want %s", tt.actionType.String(), tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyAction_攻撃行動のフィールド は攻撃行動のフィールドが正しく設定されることを確認します。
+func TestEnemyAction_攻撃行動のフィールド(t *testing.T) {
+	// 物理攻撃
+	physicalAttack := EnemyAction{
+		ActionType: EnemyActionAttack,
+		AttackType: "physical",
+	}
+	if physicalAttack.ActionType != EnemyActionAttack {
+		t.Error("ActionTypeがAttackであるべきです")
+	}
+	if physicalAttack.AttackType != "physical" {
+		t.Errorf("AttackTypeが期待値と異なります: got %s, want physical", physicalAttack.AttackType)
+	}
+
+	// 魔法攻撃
+	magicAttack := EnemyAction{
+		ActionType: EnemyActionAttack,
+		AttackType: "magic",
+	}
+	if magicAttack.AttackType != "magic" {
+		t.Errorf("AttackTypeが期待値と異なります: got %s, want magic", magicAttack.AttackType)
+	}
+}
+
+// TestEnemyAction_バフ行動のフィールド は自己バフ行動のフィールドが正しく設定されることを確認します。
+func TestEnemyAction_バフ行動のフィールド(t *testing.T) {
+	buff := EnemyAction{
+		ActionType:  EnemyActionSelfBuff,
+		EffectType:  "attackUp",
+		EffectValue: 0.3,
+		Duration:    10.0,
+	}
+
+	if buff.ActionType != EnemyActionSelfBuff {
+		t.Error("ActionTypeがSelfBuffであるべきです")
+	}
+	if buff.EffectType != "attackUp" {
+		t.Errorf("EffectTypeが期待値と異なります: got %s, want attackUp", buff.EffectType)
+	}
+	if buff.EffectValue != 0.3 {
+		t.Errorf("EffectValueが期待値と異なります: got %f, want 0.3", buff.EffectValue)
+	}
+	if buff.Duration != 10.0 {
+		t.Errorf("Durationが期待値と異なります: got %f, want 10.0", buff.Duration)
+	}
+}
+
+// TestEnemyAction_デバフ行動のフィールド はデバフ行動のフィールドが正しく設定されることを確認します。
+func TestEnemyAction_デバフ行動のフィールド(t *testing.T) {
+	debuff := EnemyAction{
+		ActionType:  EnemyActionDebuff,
+		EffectType:  "defenseDown",
+		EffectValue: 0.2,
+		Duration:    5.0,
+	}
+
+	if debuff.ActionType != EnemyActionDebuff {
+		t.Error("ActionTypeがDebuffであるべきです")
+	}
+	if debuff.EffectType != "defenseDown" {
+		t.Errorf("EffectTypeが期待値と異なります: got %s, want defenseDown", debuff.EffectType)
+	}
+	if debuff.EffectValue != 0.2 {
+		t.Errorf("EffectValueが期待値と異なります: got %f, want 0.2", debuff.EffectValue)
+	}
+	if debuff.Duration != 5.0 {
+		t.Errorf("Durationが期待値と異なります: got %f, want 5.0", debuff.Duration)
+	}
+}
+
+// TestEnemyAction_IsAttack は攻撃行動かどうかを判定するヘルパーメソッドを確認します。
+func TestEnemyAction_IsAttack(t *testing.T) {
+	attack := EnemyAction{ActionType: EnemyActionAttack}
+	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	debuff := EnemyAction{ActionType: EnemyActionDebuff}
+
+	if !attack.IsAttack() {
+		t.Error("Attack行動でIsAttack()がtrueを返すべきです")
+	}
+	if buff.IsAttack() {
+		t.Error("SelfBuff行動でIsAttack()がfalseを返すべきです")
+	}
+	if debuff.IsAttack() {
+		t.Error("Debuff行動でIsAttack()がfalseを返すべきです")
+	}
+}
+
+// TestEnemyAction_IsBuff はバフ行動かどうかを判定するヘルパーメソッドを確認します。
+func TestEnemyAction_IsBuff(t *testing.T) {
+	attack := EnemyAction{ActionType: EnemyActionAttack}
+	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	debuff := EnemyAction{ActionType: EnemyActionDebuff}
+
+	if attack.IsBuff() {
+		t.Error("Attack行動でIsBuff()がfalseを返すべきです")
+	}
+	if !buff.IsBuff() {
+		t.Error("SelfBuff行動でIsBuff()がtrueを返すべきです")
+	}
+	if debuff.IsBuff() {
+		t.Error("Debuff行動でIsBuff()がfalseを返すべきです")
+	}
+}
+
+// TestEnemyAction_IsDebuff はデバフ行動かどうかを判定するヘルパーメソッドを確認します。
+func TestEnemyAction_IsDebuff(t *testing.T) {
+	attack := EnemyAction{ActionType: EnemyActionAttack}
+	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	debuff := EnemyAction{ActionType: EnemyActionDebuff}
+
+	if attack.IsDebuff() {
+		t.Error("Attack行動でIsDebuff()がfalseを返すべきです")
+	}
+	if buff.IsDebuff() {
+		t.Error("SelfBuff行動でIsDebuff()がfalseを返すべきです")
+	}
+	if !debuff.IsDebuff() {
+		t.Error("Debuff行動でIsDebuff()がtrueを返すべきです")
+	}
+}

@@ -163,3 +163,66 @@ func (e *EnemyModel) IsEnhanced() bool {
 func (e *EnemyModel) GetPhaseString() string {
 	return e.Phase.String()
 }
+
+// ========== 敵行動データ構造 ==========
+
+// EnemyActionType は敵の行動タイプを表す列挙型です。
+type EnemyActionType int
+
+const (
+	// EnemyActionAttack は攻撃行動です。
+	EnemyActionAttack EnemyActionType = iota
+
+	// EnemyActionSelfBuff は自己バフ行動です。
+	EnemyActionSelfBuff
+
+	// EnemyActionDebuff はプレイヤーへのデバフ行動です。
+	EnemyActionDebuff
+)
+
+// String はEnemyActionTypeの日本語表示名を返します。
+func (t EnemyActionType) String() string {
+	switch t {
+	case EnemyActionAttack:
+		return "攻撃"
+	case EnemyActionSelfBuff:
+		return "自己バフ"
+	case EnemyActionDebuff:
+		return "デバフ"
+	default:
+		return "不明"
+	}
+}
+
+// EnemyAction は敵の個別行動を定義する値オブジェクトです。
+type EnemyAction struct {
+	// ActionType は行動タイプ（攻撃、自己バフ、プレイヤーデバフ）です。
+	ActionType EnemyActionType
+
+	// AttackType は攻撃行動時の攻撃属性（"physical" または "magic"）です。
+	AttackType string
+
+	// EffectType はバフ/デバフ行動時の効果種別です（例: "attackUp", "defenseDown"）。
+	EffectType string
+
+	// EffectValue はバフ/デバフ行動時の効果値です。
+	EffectValue float64
+
+	// Duration はバフ/デバフの持続時間（秒）です。
+	Duration float64
+}
+
+// IsAttack は攻撃行動かどうかを判定します。
+func (a EnemyAction) IsAttack() bool {
+	return a.ActionType == EnemyActionAttack
+}
+
+// IsBuff は自己バフ行動かどうかを判定します。
+func (a EnemyAction) IsBuff() bool {
+	return a.ActionType == EnemyActionSelfBuff
+}
+
+// IsDebuff はデバフ行動かどうかを判定します。
+func (a EnemyAction) IsDebuff() bool {
+	return a.ActionType == EnemyActionDebuff
+}
