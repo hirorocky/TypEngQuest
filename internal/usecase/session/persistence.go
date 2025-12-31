@@ -56,15 +56,16 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 	}
 	saveData.Inventory.ModuleInstances = moduleInstances
 
-	// エージェントを保存（コア情報を直接埋め込み、チェイン効果対応）
+	// エージェントを保存（コア情報を直接埋め込み、モジュールはオブジェクト配列）
 	agentInstances := make([]savedata.AgentInstanceSave, 0)
 	for _, ag := range g.agentManager.GetAgents() {
-		moduleIDs := make([]string, len(ag.Modules))
-		moduleChainEffects := make([]*savedata.ChainEffectSave, len(ag.Modules))
+		modules := make([]savedata.ModuleInstanceSave, len(ag.Modules))
 		for i, m := range ag.Modules {
-			moduleIDs[i] = m.TypeID
+			modules[i] = savedata.ModuleInstanceSave{
+				TypeID: m.TypeID,
+			}
 			if m.ChainEffect != nil {
-				moduleChainEffects[i] = &savedata.ChainEffectSave{
+				modules[i].ChainEffect = &savedata.ChainEffectSave{
 					Type:  string(m.ChainEffect.Type),
 					Value: m.ChainEffect.Value,
 				}
@@ -76,8 +77,7 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 				CoreTypeID: ag.Core.TypeID,
 				Level:      ag.Core.Level,
 			},
-			ModuleIDs:          moduleIDs,
-			ModuleChainEffects: moduleChainEffects,
+			Modules: modules,
 		})
 	}
 	saveData.Inventory.AgentInstances = agentInstances
@@ -217,17 +217,17 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 				passiveSkill,
 			)
 
-			// モジュールを再構築（チェイン効果対応）
-			modules := make([]*domain.ModuleModel, 0, len(agentSave.ModuleIDs))
-			for i, moduleID := range agentSave.ModuleIDs {
-				moduleDropInfo := findModuleDropInfo(moduleTypes, moduleID)
+			// モジュールを再構築（オブジェクト配列形式）
+			modules := make([]*domain.ModuleModel, 0, len(agentSave.Modules))
+			for _, modSave := range agentSave.Modules {
+				moduleDropInfo := findModuleDropInfo(moduleTypes, modSave.TypeID)
 				if moduleDropInfo != nil {
 					// チェイン効果を復元
 					var chainEffect *domain.ChainEffect
-					if len(agentSave.ModuleChainEffects) > i && agentSave.ModuleChainEffects[i] != nil {
+					if modSave.ChainEffect != nil {
 						ce := domain.NewChainEffect(
-							domain.ChainEffectType(agentSave.ModuleChainEffects[i].Type),
-							agentSave.ModuleChainEffects[i].Value,
+							domain.ChainEffectType(modSave.ChainEffect.Type),
+							modSave.ChainEffect.Value,
 						)
 						chainEffect = &ce
 					}

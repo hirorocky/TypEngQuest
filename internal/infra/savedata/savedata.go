@@ -115,14 +115,9 @@ type AgentInstanceSave struct {
 	// エージェント合成時にコアは消費されるため、インベントリとは別に保持します。
 	Core CoreInstanceSave `json:"core"`
 
-	// ModuleIDs はモジュール定義IDリストです（4つ）。
-	// マスタデータ（modules.json）から参照します。
-	ModuleIDs []string `json:"module_ids"`
-
-	// ModuleChainEffects はモジュールごとのチェイン効果リストです（4つ、nullを含む）。
-	// ModuleIDsと同じ順序で、対応するモジュールのチェイン効果を保持します。
-	// チェイン効果なしの場合はnilが格納されます。
-	ModuleChainEffects []*ChainEffectSave `json:"module_chain_effects,omitempty"`
+	// Modules はモジュールインスタンスのリストです（4つ）。
+	// 各モジュールのTypeIDとChainEffectをペアで保持し、データの整合性を保証します。
+	Modules []ModuleInstanceSave `json:"modules"`
 }
 
 // InventorySaveData はインベントリのセーブデータです。

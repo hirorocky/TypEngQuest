@@ -899,12 +899,11 @@ erDiagram
       {
         "id": "agent-uuid-123",
         "core": { "core_type_id": "attack_balance", "level": 3 },
-        "module_ids": ["physical_lv1", "heal_lv1", "buff_lv1", "debuff_lv1"],
-        "module_chain_effects": [
-          { "type": "damage_bonus", "value": 15 },
-          null,
-          { "type": "buff_extend", "value": 2.0 },
-          null
+        "modules": [
+          { "type_id": "physical_lv1", "chain_effect": { "type": "damage_bonus", "value": 15 } },
+          { "type_id": "heal_lv1" },
+          { "type_id": "buff_lv1", "chain_effect": { "type": "buff_extend", "value": 2.0 } },
+          { "type_id": "debuff_lv1" }
         ]
       }
     ]

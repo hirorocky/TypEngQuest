@@ -158,13 +158,14 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	initialAgent := i.CreateInitialAgent()
 
 	// インベントリにエージェントを追加（コア情報を直接埋め込み）
-	moduleIDs := make([]string, len(initialAgent.Modules))
-	moduleChainEffects := make([]*savedata.ChainEffectSave, len(initialAgent.Modules))
+	modules := make([]savedata.ModuleInstanceSave, len(initialAgent.Modules))
 	for idx, m := range initialAgent.Modules {
-		moduleIDs[idx] = m.TypeID
+		modules[idx] = savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
 		// チェイン効果があれば変換
 		if m.ChainEffect != nil {
-			moduleChainEffects[idx] = &savedata.ChainEffectSave{
+			modules[idx].ChainEffect = &savedata.ChainEffectSave{
 				Type:  string(m.ChainEffect.Type),
 				Value: m.ChainEffect.Value,
 			}
@@ -177,8 +178,7 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 				CoreTypeID: initialAgent.Core.TypeID,
 				Level:      initialAgent.Core.Level,
 			},
-			ModuleIDs:          moduleIDs,
-			ModuleChainEffects: moduleChainEffects,
+			Modules: modules,
 		},
 	}
 

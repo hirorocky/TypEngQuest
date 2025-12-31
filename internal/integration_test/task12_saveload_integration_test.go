@@ -59,12 +59,11 @@ func TestSaveLoad_NewFormatPersistence(t *testing.T) {
 				CoreTypeID: "attack_balance",
 				Level:      5,
 			},
-			ModuleIDs: []string{"physical_lv1", "magic_lv1", "heal_lv1", "buff_lv1"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{
-				{Type: "damage_amp", Value: 25.0},
-				nil,
-				{Type: "buff_extend", Value: 3.0},
-				nil,
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "physical_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "damage_amp", Value: 25.0}},
+				{TypeID: "magic_lv1"},
+				{TypeID: "heal_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "buff_extend", Value: 3.0}},
+				{TypeID: "buff_lv1"},
 			},
 		},
 	}
@@ -129,13 +128,13 @@ func TestSaveLoad_NewFormatPersistence(t *testing.T) {
 	if agent.Core.CoreTypeID != "attack_balance" {
 		t.Error("エージェントのコアTypeIDが正しく復元されていません")
 	}
-	if len(agent.ModuleChainEffects) != 4 {
-		t.Fatalf("ModuleChainEffects数 expected 4, got %d", len(agent.ModuleChainEffects))
+	if len(agent.Modules) != 4 {
+		t.Fatalf("Modules数 expected 4, got %d", len(agent.Modules))
 	}
-	if agent.ModuleChainEffects[0] == nil || agent.ModuleChainEffects[0].Type != "damage_amp" {
+	if agent.Modules[0].ChainEffect == nil || agent.Modules[0].ChainEffect.Type != "damage_amp" {
 		t.Error("エージェントのモジュール1のチェイン効果が正しく復元されていません")
 	}
-	if agent.ModuleChainEffects[1] != nil {
+	if agent.Modules[1].ChainEffect != nil {
 		t.Error("エージェントのモジュール2はチェイン効果なしであるべきです")
 	}
 }
@@ -227,8 +226,12 @@ func TestSaveLoad_PassiveSkillDataIntegrity(t *testing.T) {
 				CoreTypeID: "attack_balance",
 				Level:      10,
 			},
-			ModuleIDs:          []string{"m1", "m2", "m3", "m4"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{nil, nil, nil, nil},
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "m1"},
+				{TypeID: "m2"},
+				{TypeID: "m3"},
+				{TypeID: "m4"},
+			},
 		},
 	}
 
@@ -369,12 +372,11 @@ func TestSaveLoad_ComplexAgentData(t *testing.T) {
 				CoreTypeID: "attack_balance",
 				Level:      5,
 			},
-			ModuleIDs: []string{"physical_lv1", "magic_lv1", "heal_lv1", "buff_lv1"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{
-				{Type: "damage_amp", Value: 25.0},
-				{Type: "armor_pierce", Value: 1.0},
-				nil,
-				{Type: "buff_duration", Value: 5.0},
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "physical_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "damage_amp", Value: 25.0}},
+				{TypeID: "magic_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "armor_pierce", Value: 1.0}},
+				{TypeID: "heal_lv1"},
+				{TypeID: "buff_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "buff_duration", Value: 5.0}},
 			},
 		},
 		{
@@ -383,12 +385,11 @@ func TestSaveLoad_ComplexAgentData(t *testing.T) {
 				CoreTypeID: "healer",
 				Level:      3,
 			},
-			ModuleIDs: []string{"heal_lv2", "buff_lv2", "debuff_lv1", "magic_lv2"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{
-				{Type: "heal_amp", Value: 30.0},
-				{Type: "regen", Value: 2.0},
-				{Type: "debuff_duration", Value: 4.0},
-				nil,
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "heal_lv2", ChainEffect: &savedata.ChainEffectSave{Type: "heal_amp", Value: 30.0}},
+				{TypeID: "buff_lv2", ChainEffect: &savedata.ChainEffectSave{Type: "regen", Value: 2.0}},
+				{TypeID: "debuff_lv1", ChainEffect: &savedata.ChainEffectSave{Type: "debuff_duration", Value: 4.0}},
+				{TypeID: "magic_lv2"},
 			},
 		},
 		{
@@ -397,12 +398,11 @@ func TestSaveLoad_ComplexAgentData(t *testing.T) {
 				CoreTypeID: "speedster",
 				Level:      7,
 			},
-			ModuleIDs: []string{"physical_lv3", "buff_lv3", "debuff_lv2", "heal_lv3"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{
-				{Type: "life_steal", Value: 15.0},
-				{Type: "cooldown_reduce", Value: 20.0},
-				{Type: "double_cast", Value: 10.0},
-				{Type: "overheal", Value: 1.0},
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "physical_lv3", ChainEffect: &savedata.ChainEffectSave{Type: "life_steal", Value: 15.0}},
+				{TypeID: "buff_lv3", ChainEffect: &savedata.ChainEffectSave{Type: "cooldown_reduce", Value: 20.0}},
+				{TypeID: "debuff_lv2", ChainEffect: &savedata.ChainEffectSave{Type: "double_cast", Value: 10.0}},
+				{TypeID: "heal_lv3", ChainEffect: &savedata.ChainEffectSave{Type: "overheal", Value: 1.0}},
 			},
 		},
 	}
@@ -434,9 +434,9 @@ func TestSaveLoad_ComplexAgentData(t *testing.T) {
 			t.Errorf("エージェント %d のID expected %s, got %s", i, expectedID, agent.ID)
 		}
 
-		// モジュールチェイン効果の確認
-		if len(agent.ModuleChainEffects) != 4 {
-			t.Errorf("エージェント %d のModuleChainEffects数 expected 4, got %d", i, len(agent.ModuleChainEffects))
+		// モジュール数の確認
+		if len(agent.Modules) != 4 {
+			t.Errorf("エージェント %d のModules数 expected 4, got %d", i, len(agent.Modules))
 		}
 	}
 

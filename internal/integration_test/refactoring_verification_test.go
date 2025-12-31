@@ -117,8 +117,12 @@ func TestRefactoring_SaveDataBackwardCompatibility(t *testing.T) {
 				CoreTypeID: "all_rounder",
 				Level:      5,
 			},
-			ModuleIDs:          []string{"physical_strike_lv1", "fireball_lv1", "heal_lv1", "attack_buff_lv1"},
-			ModuleChainEffects: []*savedata.ChainEffectSave{nil, nil, nil, nil},
+			Modules: []savedata.ModuleInstanceSave{
+				{TypeID: "physical_strike_lv1"},
+				{TypeID: "fireball_lv1"},
+				{TypeID: "heal_lv1"},
+				{TypeID: "attack_buff_lv1"},
+			},
 		},
 	}
 

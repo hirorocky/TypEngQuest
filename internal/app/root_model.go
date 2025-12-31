@@ -405,13 +405,14 @@ func (m *RootModel) handleSaveRequest() {
 			if ag == nil || ag.Core == nil {
 				continue
 			}
-			moduleIDs := make([]string, len(ag.Modules))
-			moduleChainEffects := make([]*savedata.ChainEffectSave, len(ag.Modules))
+			modules := make([]savedata.ModuleInstanceSave, len(ag.Modules))
 			for i, mod := range ag.Modules {
 				if mod != nil {
-					moduleIDs[i] = mod.TypeID
+					modules[i] = savedata.ModuleInstanceSave{
+						TypeID: mod.TypeID,
+					}
 					if mod.ChainEffect != nil {
-						moduleChainEffects[i] = &savedata.ChainEffectSave{
+						modules[i].ChainEffect = &savedata.ChainEffectSave{
 							Type:  string(mod.ChainEffect.Type),
 							Value: mod.ChainEffect.Value,
 						}
@@ -424,8 +425,7 @@ func (m *RootModel) handleSaveRequest() {
 					CoreTypeID: ag.Core.TypeID,
 					Level:      ag.Core.Level,
 				},
-				ModuleIDs:          moduleIDs,
-				ModuleChainEffects: moduleChainEffects,
+				Modules: modules,
 			})
 		}
 		saveData.Inventory.AgentInstances = agentInstances

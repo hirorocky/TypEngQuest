@@ -91,8 +91,12 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 					CoreTypeID: "all_rounder",
 					Level:      1,
 				},
-				ModuleIDs:          []string{"mod_slash", "mod_slash", "mod_slash", "mod_slash"},
-				ModuleChainEffects: []*savedata.ChainEffectSave{nil, nil, nil, nil},
+				Modules: []savedata.ModuleInstanceSave{
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+				},
 			},
 		},
 	}

@@ -257,7 +257,12 @@ func TestSaveDataWithAgents(t *testing.T) {
 			CoreTypeID: "test_core",
 			Level:      5,
 		},
-		ModuleIDs: []string{"mod_1", "mod_2", "mod_3", "mod_4"},
+		Modules: []ModuleInstanceSave{
+			{TypeID: "mod_1"},
+			{TypeID: "mod_2"},
+			{TypeID: "mod_3"},
+			{TypeID: "mod_4"},
+		},
 	})
 
 	// セーブ
@@ -284,8 +289,8 @@ func TestSaveDataWithAgents(t *testing.T) {
 	if loadedData.Inventory.AgentInstances[0].Core.Level != 5 {
 		t.Errorf("Agent Core.Level: got %d, want 5", loadedData.Inventory.AgentInstances[0].Core.Level)
 	}
-	if len(loadedData.Inventory.AgentInstances[0].ModuleIDs) != 4 {
-		t.Errorf("Agent ModuleIDs count: got %d, want 4", len(loadedData.Inventory.AgentInstances[0].ModuleIDs))
+	if len(loadedData.Inventory.AgentInstances[0].Modules) != 4 {
+		t.Errorf("Agent Modules count: got %d, want 4", len(loadedData.Inventory.AgentInstances[0].Modules))
 	}
 }
 
@@ -477,12 +482,11 @@ func TestAgentInstanceSaveWithChainEffects(t *testing.T) {
 			CoreTypeID: "attack_balance",
 			Level:      3,
 		},
-		ModuleIDs: []string{"physical_lv1", "heal_lv1", "buff_lv1", "debuff_lv1"},
-		ModuleChainEffects: []*ChainEffectSave{
-			{Type: "damage_bonus", Value: 15.0},
-			nil, // 2番目のモジュールはチェイン効果なし
-			{Type: "buff_extend", Value: 2.0},
-			nil, // 4番目のモジュールはチェイン効果なし
+		Modules: []ModuleInstanceSave{
+			{TypeID: "physical_lv1", ChainEffect: &ChainEffectSave{Type: "damage_bonus", Value: 15.0}},
+			{TypeID: "heal_lv1"}, // チェイン効果なし
+			{TypeID: "buff_lv1", ChainEffect: &ChainEffectSave{Type: "buff_extend", Value: 2.0}},
+			{TypeID: "debuff_lv1"}, // チェイン効果なし
 		},
 	})
 
@@ -512,31 +516,28 @@ func TestAgentInstanceSaveWithChainEffects(t *testing.T) {
 	if agent.Core.Level != 3 {
 		t.Errorf("Core.Level: got %d, want 3", agent.Core.Level)
 	}
-	if len(agent.ModuleIDs) != 4 {
-		t.Errorf("ModuleIDs count: got %d, want 4", len(agent.ModuleIDs))
-	}
-	if len(agent.ModuleChainEffects) != 4 {
-		t.Fatalf("ModuleChainEffects count: got %d, want 4", len(agent.ModuleChainEffects))
+	if len(agent.Modules) != 4 {
+		t.Fatalf("Modules count: got %d, want 4", len(agent.Modules))
 	}
 
 	// チェイン効果の検証
-	if agent.ModuleChainEffects[0] == nil {
-		t.Fatal("ModuleChainEffects[0]がnilです")
+	if agent.Modules[0].ChainEffect == nil {
+		t.Fatal("Modules[0].ChainEffectがnilです")
 	}
-	if agent.ModuleChainEffects[0].Type != "damage_bonus" {
-		t.Errorf("ModuleChainEffects[0].Type: got %s, want damage_bonus", agent.ModuleChainEffects[0].Type)
+	if agent.Modules[0].ChainEffect.Type != "damage_bonus" {
+		t.Errorf("Modules[0].ChainEffect.Type: got %s, want damage_bonus", agent.Modules[0].ChainEffect.Type)
 	}
-	if agent.ModuleChainEffects[1] != nil {
-		t.Error("ModuleChainEffects[1]はnilであるべき")
+	if agent.Modules[1].ChainEffect != nil {
+		t.Error("Modules[1].ChainEffectはnilであるべき")
 	}
-	if agent.ModuleChainEffects[2] == nil {
-		t.Fatal("ModuleChainEffects[2]がnilです")
+	if agent.Modules[2].ChainEffect == nil {
+		t.Fatal("Modules[2].ChainEffectがnilです")
 	}
-	if agent.ModuleChainEffects[2].Type != "buff_extend" {
-		t.Errorf("ModuleChainEffects[2].Type: got %s, want buff_extend", agent.ModuleChainEffects[2].Type)
+	if agent.Modules[2].ChainEffect.Type != "buff_extend" {
+		t.Errorf("Modules[2].ChainEffect.Type: got %s, want buff_extend", agent.Modules[2].ChainEffect.Type)
 	}
-	if agent.ModuleChainEffects[3] != nil {
-		t.Error("ModuleChainEffects[3]はnilであるべき")
+	if agent.Modules[3].ChainEffect != nil {
+		t.Error("Modules[3].ChainEffectはnilであるべき")
 	}
 }
 

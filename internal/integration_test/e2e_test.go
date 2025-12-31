@@ -347,12 +347,13 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	}
 
 	// インベントリに追加（v1.0.0形式: コア情報とチェイン効果を埋め込み）
-	moduleIDs := make([]string, len(newAgent.Modules))
-	moduleChainEffects := make([]*savedata.ChainEffectSave, len(newAgent.Modules))
+	modules := make([]savedata.ModuleInstanceSave, len(newAgent.Modules))
 	for i, m := range newAgent.Modules {
-		moduleIDs[i] = m.TypeID
+		modules[i] = savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
 		if m.ChainEffect != nil {
-			moduleChainEffects[i] = &savedata.ChainEffectSave{
+			modules[i].ChainEffect = &savedata.ChainEffectSave{
 				Type:  string(m.ChainEffect.Type),
 				Value: m.ChainEffect.Value,
 			}
@@ -364,8 +365,7 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 			CoreTypeID: newAgent.Core.TypeID,
 			Level:      newAgent.Core.Level,
 		},
-		ModuleIDs:          moduleIDs,
-		ModuleChainEffects: moduleChainEffects,
+		Modules: modules,
 	})
 
 	// エージェント装備（空きスロットを探して装備）
