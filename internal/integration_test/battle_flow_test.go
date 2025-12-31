@@ -11,6 +11,19 @@ import (
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
+// newTestModuleBattle はテスト用モジュールを作成するヘルパー関数です。
+func newTestModuleBattle(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
 // ==================================================
 // Task 15.2: バトルフロー統合テスト
 // ==================================================
@@ -29,10 +42,10 @@ func createTestAgents() []*domain.AgentModel {
 	core := domain.NewCore("core_1", "テストコア", 5, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		domain.NewModule("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		domain.NewModule("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		domain.NewModule("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		domain.NewModule("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestModuleBattle("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleBattle("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
+		newTestModuleBattle("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
+		newTestModuleBattle("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	return []*domain.AgentModel{
@@ -284,13 +297,8 @@ func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
 	state, _ := engine.InitializeBattle(1, agents)
 
 	// プレイヤーに防御バフを付与
-	duration := 10.0
-	state.Player.EffectTable.AddRow(domain.EffectRow{
-		ID:         "def_buff",
-		SourceType: domain.SourceBuff,
-		Name:       "防御UP",
-		Duration:   &duration,
-		Modifiers:  domain.StatModifiers{DamageReduction: 0.5}, // 50%軽減
+	state.Player.EffectTable.AddBuff("防御UP", 10.0, map[domain.EffectColumn]float64{
+		domain.ColDamageCut: 0.5, // 50%軽減
 	})
 
 	// 敵攻撃

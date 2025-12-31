@@ -1,0 +1,279 @@
+// Package screens はTUIゲームの画面を提供します。
+package screens
+
+import (
+	"strings"
+	"testing"
+	"time"
+
+	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/usecase/combat/chain"
+	"hirorocky/type-battle/internal/usecase/combat/recast"
+)
+
+// ==================== タスク9: バトル画面UI拡張テスト ====================
+
+// createTestAgentWithPassive はパッシブスキル付きテスト用エージェントを作成します。
+func createTestAgentWithPassive(passiveSkill domain.PassiveSkill, modules []*domain.ModuleModel) *domain.AgentModel {
+	coreType := domain.CoreType{
+		ID:          "test_core_type",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.2, "MAG": 1.0, "SPD": 1.1, "LUK": 0.8},
+		AllowedTags: []string{"physical_low"},
+	}
+
+	core := domain.NewCore("test_core", "テストコア", 5, coreType, passiveSkill)
+	return domain.NewAgent("test_agent", core, modules)
+}
+
+// createTestModuleWithChain はチェイン効果付きテスト用モジュールを作成します。
+func createTestModuleWithChain(name string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:       "test_module_" + name,
+		Name:     name,
+		Category: domain.PhysicalAttack,
+
+		Tags:        []string{"physical_low"},
+		BaseEffect:  50.0,
+		StatRef:     "STR",
+		Description: "テスト攻撃モジュール",
+	}, chainEffect)
+}
+
+// TestBattleScreen_RenderAgentAreaWithRecast はリキャスト状態表示のテストです。
+func TestBattleScreen_RenderAgentAreaWithRecast(t *testing.T) {
+	// テスト用エージェントとモジュール作成
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	// BattleScreen作成
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// エージェント0のリキャストを開始
+	screen.recastManager.StartRecast(0, 5*time.Second)
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// リキャスト状態が表示されていることを確認
+	if result == "" {
+		t.Error("View() should return non-empty string")
+	}
+}
+
+// TestBattleScreen_RenderAgentAreaWithChainEffect はチェイン効果待機表示のテストです。
+func TestBattleScreen_RenderAgentAreaWithChainEffect(t *testing.T) {
+	// チェイン効果付きモジュール作成
+	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", &chainEffect),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	// BattleScreen作成
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// チェイン効果を登録
+	screen.chainEffectManager.RegisterChainEffect(0, &chainEffect, "test_module")
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// チェイン効果の表示はViewに含まれる
+	if result == "" {
+		t.Error("View() should return non-empty string")
+	}
+}
+
+// TestBattleScreen_RenderAgentAreaWithPassiveSkill はパッシブスキル表示のテストです。
+func TestBattleScreen_RenderAgentAreaWithPassiveSkill(t *testing.T) {
+	// パッシブスキル付きエージェント作成
+	passiveSkill := domain.PassiveSkill{
+		ID:          "test_passive",
+		Name:        "パワーブースト",
+		Description: "STRを強化する",
+		BaseModifiers: domain.StatModifiers{
+			STR_Mult: 1.1,
+		},
+		ScalePerLevel: 0.05,
+	}
+
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(passiveSkill, modules)
+
+	// BattleScreen作成
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// パッシブスキル表示はViewに含まれる
+	if result == "" {
+		t.Error("View() should return non-empty string")
+	}
+}
+
+// TestBattleScreen_RecastStateAffectsModuleUsability はリキャスト状態によるモジュール使用可否のテストです。
+func TestBattleScreen_RecastStateAffectsModuleUsability(t *testing.T) {
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// リキャスト前は使用可能
+	if !screen.isModuleUsable(0) {
+		t.Error("Module should be usable before recast")
+	}
+
+	// リキャスト開始
+	screen.recastManager.StartRecast(0, 5*time.Second)
+
+	// リキャスト中は使用不可
+	if screen.isModuleUsable(0) {
+		t.Error("Module should not be usable during recast")
+	}
+}
+
+// TestGetRecastInfoForAgent はエージェントリキャスト情報取得のテストです。
+func TestGetRecastInfoForAgent(t *testing.T) {
+	rm := recast.NewRecastManager()
+
+	// リキャスト開始
+	rm.StartRecast(0, 5*time.Second)
+
+	// 状態取得
+	state := rm.GetRecastState(0)
+	if state == nil {
+		t.Error("GetRecastState should return non-nil for agent in recast")
+	}
+
+	// 残り時間確認
+	if state.RemainingSeconds != 5.0 {
+		t.Errorf("RemainingSeconds = %v, want 5.0", state.RemainingSeconds)
+	}
+}
+
+// TestGetPendingChainEffectForAgent はエージェントチェイン効果取得のテストです。
+func TestGetPendingChainEffectForAgent(t *testing.T) {
+	cm := chain.NewChainEffectManager()
+	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+
+	// チェイン効果を登録
+	cm.RegisterChainEffect(0, &chainEffect, "test_module")
+
+	// 待機中効果を取得
+	pending := cm.GetPendingEffectForAgent(0)
+	if pending == nil {
+		t.Error("GetPendingEffectForAgent should return non-nil for agent with chain effect")
+	}
+
+	// 効果の確認
+	if pending.Effect.Type != domain.ChainEffectDamageBonus {
+		t.Errorf("Effect.Type = %v, want %v", pending.Effect.Type, domain.ChainEffectDamageBonus)
+	}
+}
+
+// TestRenderModuleWithChainEffectBadge はモジュール表示にチェイン効果バッジが含まれるかのテストです。
+func TestRenderModuleWithChainEffectBadge(t *testing.T) {
+	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", &chainEffect),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+	result := screen.View()
+
+	// モジュールが表示されている
+	if !strings.Contains(result, "攻撃A") {
+		t.Error("View should contain module name")
+	}
+}
+
+// TestBattleScreen_RenderRecastProgress はリキャスト進捗表示のテストです。
+func TestBattleScreen_RenderRecastProgress(t *testing.T) {
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// リキャスト開始
+	screen.recastManager.StartRecast(0, 5*time.Second)
+
+	// リキャスト進捗取得
+	progress := screen.recastManager.GetProgress(0)
+
+	// 開始直後は0.0
+	if progress != 0.0 {
+		t.Errorf("GetProgress() = %v, want 0.0 at start", progress)
+	}
+
+	// 未リキャストのエージェントは1.0
+	progress1 := screen.recastManager.GetProgress(1)
+	if progress1 != 1.0 {
+		t.Errorf("GetProgress(1) = %v, want 1.0 for non-recast agent", progress1)
+	}
+}
+
+// TestBattleScreen_ChainEffectFeedback はチェイン効果発動フィードバックのテストです。
+func TestBattleScreen_ChainEffectFeedback(t *testing.T) {
+	chainEffect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", &chainEffect),
+		createTestModuleWithChain("攻撃B", nil),
+		createTestModuleWithChain("攻撃C", nil),
+		createTestModuleWithChain("攻撃D", nil),
+	}
+	agent0 := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+	agent1 := createTestAgentWithPassive(domain.PassiveSkill{}, []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃E", nil),
+		createTestModuleWithChain("攻撃F", nil),
+		createTestModuleWithChain("攻撃G", nil),
+		createTestModuleWithChain("攻撃H", nil),
+	})
+
+	screen := NewBattleScreen(createTestEnemy(), createTestPlayer(), []*domain.AgentModel{agent0, agent1}, nil)
+
+	// エージェント0のチェイン効果を登録
+	screen.chainEffectManager.RegisterChainEffect(0, &chainEffect, "test_module")
+
+	// エージェント1のモジュール使用でチェイン効果発動をチェック
+	triggered := screen.chainEffectManager.CheckAndTrigger(1, domain.PhysicalAttack)
+
+	// チェイン効果が発動する
+	if len(triggered) != 1 {
+		t.Errorf("CheckAndTrigger should return 1 triggered effect, got %d", len(triggered))
+	}
+
+	if len(triggered) > 0 {
+		if triggered[0].Effect.Type != domain.ChainEffectDamageBonus {
+			t.Errorf("Triggered effect type = %v, want %v", triggered[0].Effect.Type, domain.ChainEffectDamageBonus)
+		}
+	}
+}

@@ -2,6 +2,8 @@
 // コア、モジュール、エージェント、敵、プレイヤーなどのエンティティとそのビジネスルールを含みます。
 package domain
 
+import "fmt"
+
 // BaseStatValue はステータス計算で使用する基礎値です。
 // ステータス = 基礎値 × レベル × 重み
 const BaseStatValue = 10
@@ -33,6 +35,7 @@ func (s Stats) Total() int {
 
 // PassiveSkill はコア特性に紐づくパッシブスキルを表す構造体です。
 // 各コア特性は1つの固有パッシブスキルを持ちます。
+// 効果量はコアレベルに応じてスケーリングされます。
 type PassiveSkill struct {
 	// ID はパッシブスキルの一意識別子です。
 	ID string
@@ -42,6 +45,61 @@ type PassiveSkill struct {
 
 	// Description はパッシブスキルの効果説明です。
 	Description string
+
+	// ShortDescription はパッシブスキルの短い効果説明です（最大16文字程度）。
+	// UI上でコンパクトに表示する際に使用します。
+	ShortDescription string
+
+	// BaseModifiers はレベル1時点の基礎効果です。
+	BaseModifiers StatModifiers
+
+	// ScalePerLevel はレベルごとのスケール係数です。
+	// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
+	ScalePerLevel float64
+}
+
+// CalculateModifiers はコアレベルに応じた効果量を計算します。
+// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
+// レベルが0以下の場合はレベル1として扱います。
+func (p PassiveSkill) CalculateModifiers(coreLevel int) StatModifiers {
+	// レベル0以下はレベル1として扱う
+	if coreLevel < 1 {
+		coreLevel = 1
+	}
+
+	// スケール計算: 1 + ScalePerLevel × (Level - 1)
+	scale := 1.0 + p.ScalePerLevel*float64(coreLevel-1)
+
+	// 乗算フィールドはオフセット（1.0からの差分）をスケールする
+	scaleMultiplier := func(baseMult float64) float64 {
+		if baseMult == 0 {
+			return 0
+		}
+		offset := baseMult - 1.0
+		return 1.0 + (offset * scale)
+	}
+
+	return StatModifiers{
+		// 加算フィールドはそのままスケール
+		STR_Add: int(float64(p.BaseModifiers.STR_Add) * scale),
+		MAG_Add: int(float64(p.BaseModifiers.MAG_Add) * scale),
+		SPD_Add: int(float64(p.BaseModifiers.SPD_Add) * scale),
+		LUK_Add: int(float64(p.BaseModifiers.LUK_Add) * scale),
+
+		// 乗算フィールドはオフセットをスケール
+		STR_Mult: scaleMultiplier(p.BaseModifiers.STR_Mult),
+		MAG_Mult: scaleMultiplier(p.BaseModifiers.MAG_Mult),
+		SPD_Mult: scaleMultiplier(p.BaseModifiers.SPD_Mult),
+		LUK_Mult: scaleMultiplier(p.BaseModifiers.LUK_Mult),
+
+		// 特殊効果フィールドはそのままスケール
+		CDReduction:     p.BaseModifiers.CDReduction * scale,
+		TypingTimeExt:   p.BaseModifiers.TypingTimeExt * scale,
+		DamageReduction: p.BaseModifiers.DamageReduction * scale,
+		CritRate:        p.BaseModifiers.CritRate * scale,
+		PhysicalEvade:   p.BaseModifiers.PhysicalEvade * scale,
+		MagicEvade:      p.BaseModifiers.MagicEvade * scale,
+	}
 }
 
 // CoreType はコアの特性（タイプ）を定義する構造体です。
@@ -73,9 +131,15 @@ type CoreType struct {
 // CoreModel はゲーム内のコアエンティティを表す構造体です。
 // コアはエージェント合成時の中核となる素材で、レベルとステータスを持ちます。
 // コアのレベルはドロップ時に固定され、成長/アップグレードはできません。
+// TypeIDとLevelの組み合わせで同一性が判定されます。
 type CoreModel struct {
 	// ID はコアインスタンスの一意識別子です。
+	// 後方互換性のために残されています。新規コードではTypeIDを使用してください。
 	ID string
+
+	// TypeID はコア特性ID（マスタデータ参照用）です。
+	// セーブデータにはTypeIDとLevelのみが保存されます。
+	TypeID string
 
 	// Name はコアの表示名です。
 	Name string
@@ -97,6 +161,15 @@ type CoreModel struct {
 	// AllowedTags はこのコアに装備可能なモジュールタグのリストです。
 	// 通常はType.AllowedTagsと同じですが、直接参照用にコピーされます。
 	AllowedTags []string
+}
+
+// Equals はコアの同一性を判定します。
+// TypeIDとLevelの組み合わせが同じ場合に等価とみなします。
+func (c *CoreModel) Equals(other *CoreModel) bool {
+	if other == nil {
+		return false
+	}
+	return c.TypeID == other.TypeID && c.Level == other.Level
 }
 
 // CalculateStats はコアレベルとコア特性からステータス値を計算します。
@@ -151,4 +224,36 @@ func (c *CoreModel) IsTagAllowed(tag string) bool {
 		}
 	}
 	return false
+}
+
+// NewCoreWithTypeID はTypeIDとLevelベースでCoreModelを作成します。
+// ステータスはTypeIDから取得したCoreTypeとLevelから自動計算されます。
+// Nameは "Type.Name Lv.Level" 形式で自動生成されます。
+// IDは後方互換性のためにTypeIDと同じ値が設定されますが、新規コードでは使用しないでください。
+func NewCoreWithTypeID(typeID string, level int, coreType CoreType, passiveSkill PassiveSkill) *CoreModel {
+	// ステータスを自動計算
+	stats := CalculateStats(level, coreType)
+
+	// AllowedTagsをコピー（スライスの参照共有を避ける）
+	allowedTags := make([]string, len(coreType.AllowedTags))
+	copy(allowedTags, coreType.AllowedTags)
+
+	// Nameを自動生成
+	name := coreType.Name + " Lv." + formatLevel(level)
+
+	return &CoreModel{
+		ID:           typeID, // 後方互換性のため
+		TypeID:       typeID,
+		Name:         name,
+		Level:        level,
+		Type:         coreType,
+		Stats:        stats,
+		PassiveSkill: passiveSkill,
+		AllowedTags:  allowedTags,
+	}
+}
+
+// formatLevel はレベルを文字列にフォーマットします。
+func formatLevel(level int) string {
+	return fmt.Sprintf("%d", level)
 }

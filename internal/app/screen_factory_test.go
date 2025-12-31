@@ -49,7 +49,7 @@ func (m *mockInventoryProvider) UnequipAgent(slot int) error {
 
 // TestNewScreenFactory は新しいScreenFactoryが正しく初期化されることを検証します
 func TestNewScreenFactory(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 	if factory == nil {
 		t.Fatal("NewScreenFactory() returned nil")
@@ -58,7 +58,7 @@ func TestNewScreenFactory(t *testing.T) {
 
 // TestScreenFactory_CreateHomeScreen はホーム画面の生成を検証します
 func TestScreenFactory_CreateHomeScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	mockProvider := &mockInventoryProvider{}
@@ -70,7 +70,7 @@ func TestScreenFactory_CreateHomeScreen(t *testing.T) {
 
 // TestScreenFactory_CreateBattleSelectScreen はバトル選択画面の生成を検証します
 func TestScreenFactory_CreateBattleSelectScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	mockProvider := &mockInventoryProvider{}
@@ -82,11 +82,11 @@ func TestScreenFactory_CreateBattleSelectScreen(t *testing.T) {
 
 // TestScreenFactory_CreateAgentManagementScreen はエージェント管理画面の生成を検証します
 func TestScreenFactory_CreateAgentManagementScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	mockProvider := &mockInventoryProvider{}
-	screen := factory.CreateAgentManagementScreen(mockProvider)
+	screen := factory.CreateAgentManagementScreen(mockProvider, false, nil)
 	if screen == nil {
 		t.Fatal("CreateAgentManagementScreen() returned nil")
 	}
@@ -94,7 +94,7 @@ func TestScreenFactory_CreateAgentManagementScreen(t *testing.T) {
 
 // TestScreenFactory_CreateEncyclopediaScreen は図鑑画面の生成を検証します
 func TestScreenFactory_CreateEncyclopediaScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	screen := factory.CreateEncyclopediaScreen()
@@ -105,7 +105,7 @@ func TestScreenFactory_CreateEncyclopediaScreen(t *testing.T) {
 
 // TestScreenFactory_CreateStatsAchievementsScreen は統計・実績画面の生成を検証します
 func TestScreenFactory_CreateStatsAchievementsScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	screen := factory.CreateStatsAchievementsScreen()
@@ -116,7 +116,7 @@ func TestScreenFactory_CreateStatsAchievementsScreen(t *testing.T) {
 
 // TestScreenFactory_CreateSettingsScreen は設定画面の生成を検証します
 func TestScreenFactory_CreateSettingsScreen(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	screen := factory.CreateSettingsScreen()
@@ -127,7 +127,7 @@ func TestScreenFactory_CreateSettingsScreen(t *testing.T) {
 
 // TestScreenFactory_GameStateReference はGameState参照を保持することを検証します
 func TestScreenFactory_GameStateReference(t *testing.T) {
-	model := NewRootModel("", masterdata.EmbeddedData)
+	model := NewRootModel("", masterdata.EmbeddedData, false)
 	factory := NewScreenFactory(model.GameState())
 
 	if factory.gameState == nil {

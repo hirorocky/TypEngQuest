@@ -36,12 +36,18 @@ type HomeScreen struct {
 	// UI改善: ASCIIアートレンダラー
 	logoRenderer   ascii.ASCIILogoRenderer
 	numberRenderer ascii.ASCIINumberRenderer
+	// セーブ確認ダイアログ
+	confirmDialog  *components.ConfirmDialog
+	showingConfirm bool
 }
 
 // ChangeSceneMsg はシーン遷移を要求するメッセージです。
 type ChangeSceneMsg struct {
 	Scene string
 }
+
+// SaveRequestMsg はセーブ実行を要求するメッセージです。
+type SaveRequestMsg struct{}
 
 // NewHomeScreen は新しいHomeScreenを作成します。
 
@@ -60,6 +66,7 @@ func NewHomeScreen(maxLevelReached int, agentProvider AgentProvider) *HomeScreen
 		{Label: "バトル選択", Value: "battle_select", Disabled: !hasEquippedAgents},
 		{Label: "図鑑", Value: "encyclopedia"},
 		{Label: "統計/実績", Value: "stats_achievements"},
+		{Label: "セーブ", Value: "save"},
 		{Label: "設定", Value: "settings"},
 	}
 
@@ -73,6 +80,11 @@ func NewHomeScreen(maxLevelReached int, agentProvider AgentProvider) *HomeScreen
 		// UI改善: ASCIIアートレンダラーを初期化
 		logoRenderer:   ascii.NewASCIILogo(),
 		numberRenderer: ascii.NewASCIINumbers(),
+		// セーブ確認ダイアログを初期化
+		confirmDialog: components.NewConfirmDialog(
+			"セーブ確認",
+			"ゲームの進行状況をセーブしますか？",
+		),
 	}
 }
 
@@ -99,6 +111,20 @@ func (s *HomeScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // handleKeyMsg はキーボード入力を処理します。
 
 func (s *HomeScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// セーブ確認ダイアログ表示中
+	if s.showingConfirm {
+		result := s.confirmDialog.HandleKey(msg.String())
+		switch result {
+		case components.ConfirmResultYes:
+			s.showingConfirm = false
+			return s, func() tea.Msg { return SaveRequestMsg{} }
+		case components.ConfirmResultNo, components.ConfirmResultCancelled:
+			s.showingConfirm = false
+		}
+		return s, nil
+	}
+
+	// 通常のメニュー操作
 	switch msg.String() {
 	case "up", "k":
 		s.menu.MoveUp()
@@ -117,6 +143,13 @@ func (s *HomeScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // handleMenuSelection はメニュー選択を処理します。
 
 func (s *HomeScreen) handleMenuSelection(value string) tea.Cmd {
+	// セーブ選択時は確認ダイアログを表示
+	if value == "save" {
+		s.showingConfirm = true
+		s.confirmDialog.Show()
+		return nil
+	}
+
 	return func() tea.Msg {
 		return ChangeSceneMsg{Scene: value}
 	}
@@ -205,6 +238,13 @@ func (s *HomeScreen) View() string {
 
 	hint := hintStyle.Render("↑/k: 上  ↓/j: 下  Enter: 選択  q: 終了")
 	builder.WriteString(hint)
+
+	// セーブ確認ダイアログのオーバーレイ
+	if s.showingConfirm {
+		baseView := builder.String()
+		dialog := s.confirmDialog.Render(s.width, s.height)
+		return baseView + "\n\n" + dialog
+	}
 
 	return builder.String()
 }
@@ -297,6 +337,23 @@ func (s *HomeScreen) renderStatusPanel() string {
 // SetMaxLevelReached は到達最高レベルを設定します。
 func (s *HomeScreen) SetMaxLevelReached(level int) {
 	s.maxLevelReached = level
+}
+
+// RefreshMenuState はメニューの有効/無効状態を最新の装備状態に基づいて更新します。
+func (s *HomeScreen) RefreshMenuState() {
+	hasEquippedAgents := false
+	if s.agentProvider != nil {
+		equippedAgents := s.agentProvider.GetEquippedAgents()
+		hasEquippedAgents = len(equippedAgents) > 0
+	}
+
+	// "バトル選択"メニュー項目の無効状態を更新
+	for i := range s.menu.Items {
+		if s.menu.Items[i].Value == "battle_select" {
+			s.menu.Items[i].Disabled = !hasEquippedAgents
+			break
+		}
+	}
 }
 
 // SetStatusMessage はステータスメッセージを設定します。

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
 	"hirorocky/type-battle/internal/infra/startup"
@@ -17,6 +18,7 @@ import (
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/usecase/rewarding"
 	gamestate "hirorocky/type-battle/internal/usecase/session"
+	"hirorocky/type-battle/internal/usecase/typing"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -76,6 +78,24 @@ type RootModel struct {
 	statsAchievementsScreen *screens.StatsAchievementsScreen
 	settingsScreen          *screens.SettingsScreen
 	rewardScreen            *screens.RewardScreen
+
+	// パッシブスキル定義（バトル開始時に BattleEngine へ渡す）
+	passiveSkillDefs map[string]domain.PassiveSkillDefinition
+
+	// タイピング辞書（words.jsonからロード）
+	typingDictionary *typing.Dictionary
+
+	// デバッグモードフラグ
+	debugMode bool
+
+	// インベントリプロバイダー（装備エージェント取得用）
+	invProvider screens.InventoryProvider
+
+	// 外部データ（デバッグモードで使用）
+	externalData *masterdata.ExternalData
+
+	// チェイン効果データ（デバッグモードで使用）
+	chainEffects []masterdata.ChainEffectData
 }
 
 // NewRootModel はデフォルトの初期状態で新しいRootModelを作成します。
@@ -85,11 +105,12 @@ type RootModel struct {
 //
 // dataDir: 外部データディレクトリのパス（空の場合は埋め込みデータを使用）
 // embeddedFS: 埋め込みファイルシステム（dataDir が空の場合に使用）
-func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
-	// セーブディレクトリを決定
+// debugMode: デバッグモードを有効化（全コア・モジュール・チェイン効果を選択可能）
+func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
+	// セーブディレクトリを決定（デバッグモードでは専用のセーブファイルを使用）
 	homeDir, _ := os.UserHomeDir()
 	saveDir := filepath.Join(homeDir, ".BlitzTypingOperator")
-	saveDataIO := savedata.NewSaveDataIO(saveDir)
+	saveDataIO := savedata.NewSaveDataIO(saveDir, debugMode)
 
 	// 外部データをロード
 	var dataLoader *masterdata.DataLoader
@@ -102,15 +123,34 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 	}
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 
+	// チェイン効果データをロード（デバッグモードで使用）
+	var chainEffects []masterdata.ChainEffectData
+	if debugMode {
+		chainEffects, _ = dataLoader.LoadChainEffects()
+	}
+
 	// masterdata → domain型への変換（app層で変換を行う）
 	var domainSources *gamestate.DomainDataSources
+	var passiveSkillDefs map[string]domain.PassiveSkillDefinition
+	var typingDict *typing.Dictionary
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
+		passiveSkills := ConvertPassiveSkills(externalData.PassiveSkills)
+		passiveSkillDefs = ConvertPassiveSkillDefinitions(externalData.PassiveSkills)
 		domainSources = &gamestate.DomainDataSources{
-			CoreTypes:     coreTypes,
-			ModuleTypes:   moduleTypes,
-			EnemyTypes:    enemyTypes,
-			PassiveSkills: gamestate.GetDefaultPassiveSkills(),
+			CoreTypes:               coreTypes,
+			ModuleTypes:             moduleTypes,
+			EnemyTypes:              enemyTypes,
+			PassiveSkills:           passiveSkills,
+			PassiveSkillDefinitions: passiveSkillDefs,
+		}
+		// タイピング辞書を変換
+		if externalData.TypingDictionary != nil {
+			typingDict = &typing.Dictionary{
+				Easy:   externalData.TypingDictionary.Easy,
+				Medium: externalData.TypingDictionary.Medium,
+				Hard:   externalData.TypingDictionary.Hard,
+			}
 		}
 	}
 
@@ -144,25 +184,52 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		gs.UpdateRewardCalculator(domainSources.CoreTypes, domainSources.ModuleTypes, domainSources.PassiveSkills)
 	}
 
-	// インベントリプロバイダーアダプターを作成（複数画面で共有）
-	invAdapter := presenter.NewInventoryProviderAdapter(
-		gs.Inventory(),
-		gs.AgentManager(),
-		gs.Player(),
-	)
+	// インベントリプロバイダーを作成（デバッグモードに応じて切り替え）
+	var invProvider screens.InventoryProvider
+	var debugInvProvider *presenter.DebugInventoryProvider
+	if debugMode && externalData != nil {
+		// デバッグモード: 全CoreType/ModuleType/ChainEffectを選択可能
+		passiveSkills := ConvertPassiveSkills(externalData.PassiveSkills)
+		debugInvProvider = presenter.NewDebugInventoryProvider(
+			externalData.CoreTypes,
+			externalData.ModuleDefinitions,
+			chainEffects,
+			passiveSkills,
+		)
+
+		// セーブデータからロードしたエージェントをDebugInventoryProviderに復元
+		for _, agent := range gs.AgentManager().GetAgents() {
+			_ = debugInvProvider.AddAgent(agent)
+		}
+		// 装備状態も復元
+		for slot := 0; slot < 3; slot++ {
+			if equippedAgent := gs.AgentManager().GetEquippedAgentAt(slot); equippedAgent != nil {
+				_ = debugInvProvider.EquipAgent(slot, equippedAgent)
+			}
+		}
+
+		invProvider = debugInvProvider
+	} else {
+		// 通常モード: セーブデータのインベントリを使用
+		invProvider = presenter.NewInventoryProviderAdapter(
+			gs.Inventory(),
+			gs.AgentManager(),
+			gs.Player(),
+		)
+	}
 
 	// ScreenFactoryを作成
 	screenFactory := NewScreenFactory(gs)
 
 	// ホーム画面を初期化
-	homeScreen := screenFactory.CreateHomeScreen(gs.MaxLevelReached, invAdapter)
+	homeScreen := screenFactory.CreateHomeScreen(gs.MaxLevelReached, invProvider)
 	homeScreen.SetStatusMessage(statusMessage)
 
 	// バトル選択画面を初期化
-	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gs.MaxLevelReached, invAdapter)
+	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gs.MaxLevelReached, invProvider)
 
 	// エージェント管理画面を初期化
-	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invAdapter)
+	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invProvider, debugMode, debugInvProvider)
 
 	// 図鑑画面を初期化
 	encyclopediaScreen := screenFactory.CreateEncyclopediaScreen()
@@ -188,6 +255,12 @@ func NewRootModel(dataDir string, embeddedFS fs.FS) *RootModel {
 		encyclopediaScreen:      encyclopediaScreen,
 		statsAchievementsScreen: statsAchievementsScreen,
 		settingsScreen:          settingsScreen,
+		passiveSkillDefs:        passiveSkillDefs,
+		typingDictionary:        typingDict,
+		debugMode:               debugMode,
+		invProvider:             invProvider,
+		externalData:            externalData,
+		chainEffects:            chainEffects,
 	}
 
 	// メッセージハンドラーと画面マップを初期化
@@ -312,18 +385,88 @@ func (m *RootModel) performAutoSave() {
 	m.homeScreen.SetStatusMessage(m.statusMessage)
 }
 
+// handleSaveRequest はメニューからのセーブ要求を処理します。
+func (m *RootModel) handleSaveRequest() {
+	if m.saveDataIO == nil {
+		m.homeScreen.SetStatusMessage("セーブ機能が無効です")
+		return
+	}
+
+	saveData := m.gameState.ToSaveData()
+
+	// デバッグモードの場合、invProviderからエージェント情報をオーバーライド
+	if m.debugMode && m.invProvider != nil {
+		agents := m.invProvider.GetAgents()
+		equippedAgents := m.invProvider.GetEquippedAgents()
+
+		// エージェントインスタンスを構築
+		agentInstances := make([]savedata.AgentInstanceSave, 0, len(agents))
+		for _, ag := range agents {
+			if ag == nil || ag.Core == nil {
+				continue
+			}
+			modules := make([]savedata.ModuleInstanceSave, len(ag.Modules))
+			for i, mod := range ag.Modules {
+				if mod != nil {
+					modules[i] = savedata.ModuleInstanceSave{
+						TypeID: mod.TypeID,
+					}
+					if mod.ChainEffect != nil {
+						modules[i].ChainEffect = &savedata.ChainEffectSave{
+							Type:  string(mod.ChainEffect.Type),
+							Value: mod.ChainEffect.Value,
+						}
+					}
+				}
+			}
+			agentInstances = append(agentInstances, savedata.AgentInstanceSave{
+				ID: ag.ID,
+				Core: savedata.CoreInstanceSave{
+					CoreTypeID: ag.Core.TypeID,
+					Level:      ag.Core.Level,
+				},
+				Modules: modules,
+			})
+		}
+		saveData.Inventory.AgentInstances = agentInstances
+
+		// 装備エージェントIDを構築
+		var equippedIDs [3]string
+		for i, ag := range equippedAgents {
+			if ag != nil && i < 3 {
+				equippedIDs[i] = ag.ID
+			}
+		}
+		saveData.Player.EquippedAgentIDs = equippedIDs
+	}
+
+	if err := m.saveDataIO.SaveGame(saveData); err != nil {
+		slog.Error("セーブに失敗",
+			slog.Any("error", err),
+		)
+		m.homeScreen.SetStatusMessage("セーブに失敗しました")
+	} else {
+		m.homeScreen.SetStatusMessage("セーブしました")
+	}
+}
+
 // startBattle はバトルを開始します。
 func (m *RootModel) startBattle(level int) tea.Cmd {
 	// 敵を生成
 	enemy := m.gameState.EnemyGenerator().Generate(level)
 
-	// GameStateからプレイヤーとエージェントを取得
+	// プレイヤーを準備し、インベントリプロバイダーから装備エージェントを取得
 	m.gameState.PreparePlayerForBattle()
 	player := m.gameState.Player()
-	agents := m.gameState.GetEquippedAgents()
+	agents := m.invProvider.GetEquippedAgents()
 
-	// バトル画面を作成
-	m.battleScreen = screens.NewBattleScreen(enemy, player, agents)
+	// バトル画面を作成（JSONからロードした辞書を渡す）
+	m.battleScreen = screens.NewBattleScreen(enemy, player, agents, m.typingDictionary)
+
+	// パッシブスキル定義を設定（EffectTable登録に使用）
+	if m.passiveSkillDefs != nil {
+		m.battleScreen.SetPassiveSkillDefinitions(m.passiveSkillDefs)
+	}
 
 	// シーンを切り替え
 	m.currentScene = SceneBattle

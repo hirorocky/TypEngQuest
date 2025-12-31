@@ -4,10 +4,12 @@ package screens
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 
@@ -44,11 +46,37 @@ type InventoryProvider interface {
 	UnequipAgent(slot int) error
 }
 
+// DebugInventoryProvider はデバッグモード用のインベントリプロバイダーインターフェースです。
+type DebugInventoryProvider interface {
+	InventoryProvider
+	GetCoreTypes() []masterdata.CoreTypeData
+	GetModuleTypes() []masterdata.ModuleDefinitionData
+	GetChainEffects() []masterdata.ChainEffectData
+	CreateCoreFromType(typeID string, level int) *domain.CoreModel
+	CreateModuleFromType(typeID string, chainEffect *domain.ChainEffect) *domain.ModuleModel
+}
+
 // SynthesisState は合成状態を表します。
 type SynthesisState struct {
 	selectedCore    *domain.CoreModel
 	selectedModules []*domain.ModuleModel
 	step            int // 0: コア選択, 1: モジュール選択, 2: 確認
+}
+
+// DebugSynthesisState はデバッグモード専用の合成状態です。
+type DebugSynthesisState struct {
+	step             int // 0:コアタイプ, 1:レベル入力, 2:モジュール, 3:チェイン, 4:確認
+	selectedCoreType *masterdata.CoreTypeData
+	coreLevel        int
+	levelInput       string
+	selectedModules  []*DebugModuleSelection
+	currentModuleIdx int
+}
+
+// DebugModuleSelection はデバッグモードでのモジュール選択状態です。
+type DebugModuleSelection struct {
+	ModuleType  *masterdata.ModuleDefinitionData
+	ChainEffect *domain.ChainEffect
 }
 
 // AgentManagementScreen はエージェント管理画面を表します。
@@ -74,10 +102,16 @@ type AgentManagementScreen struct {
 	// エラー/ステータスメッセージ
 	errorMessage  string
 	statusMessage string
+	// デバッグモード
+	debugMode           bool
+	debugProvider       DebugInventoryProvider
+	debugSynthesisState DebugSynthesisState
 }
 
 // NewAgentManagementScreen は新しいAgentManagementScreenを作成します。
-func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScreen {
+// debugMode: デバッグモードを有効化
+// debugProvider: デバッグモード用のプロバイダー（nilの場合は通常モード）
+func NewAgentManagementScreen(inventory InventoryProvider, debugMode bool, debugProvider DebugInventoryProvider) *AgentManagementScreen {
 	screen := &AgentManagementScreen{
 		inventory:     inventory,
 		currentTab:    TabCoreList,
@@ -86,9 +120,14 @@ func NewAgentManagementScreen(inventory InventoryProvider) *AgentManagementScree
 		synthesisState: SynthesisState{
 			selectedModules: []*domain.ModuleModel{},
 		},
-		styles: styles.NewGameStyles(),
-		width:  140,
-		height: 40,
+		styles:        styles.NewGameStyles(),
+		width:         140,
+		height:        40,
+		debugMode:     debugMode,
+		debugProvider: debugProvider,
+		debugSynthesisState: DebugSynthesisState{
+			selectedModules: make([]*DebugModuleSelection, 0),
+		},
 	}
 	screen.updateCurrentList()
 	return screen
@@ -130,6 +169,11 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 			return s, nil
 		}
 		return s, nil
+	}
+
+	// デバッグモードで合成タブの場合は専用処理
+	if s.debugMode && s.currentTab == TabSynthesis {
+		return s.handleDebugSynthesisKeyMsg(msg)
 	}
 
 	// 装備タブの場合は専用の処理
@@ -418,7 +462,7 @@ func (s *AgentManagementScreen) handleDelete() (tea.Model, tea.Cmd) {
 			module := s.moduleList[s.selectedIndex]
 			s.confirmDialog = components.NewConfirmDialog(
 				"モジュールの削除",
-				fmt.Sprintf("「%s」を削除しますか？", module.Name),
+				fmt.Sprintf("「%s」を削除しますか？", module.Name()),
 			)
 			s.confirmDialog.Show()
 			s.pendingDeleteIdx = s.selectedIndex
@@ -453,9 +497,9 @@ func (s *AgentManagementScreen) executeDelete() {
 		}
 	case TabModuleList:
 		if s.pendingDeleteIdx < len(s.moduleList) {
-			if err := s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].ID); err != nil {
+			if err := s.inventory.RemoveModule(s.moduleList[s.pendingDeleteIdx].TypeID); err != nil {
 				slog.Error("モジュール削除に失敗",
-					slog.String("module_id", s.moduleList[s.pendingDeleteIdx].ID),
+					slog.String("module_type_id", s.moduleList[s.pendingDeleteIdx].TypeID),
 					slog.Any("error", err),
 				)
 			}
@@ -471,7 +515,7 @@ func (s *AgentManagementScreen) executeDelete() {
 // isModuleAlreadySelected は指定されたモジュールが既に選択済みかをチェックします。
 func (s *AgentManagementScreen) isModuleAlreadySelected(module *domain.ModuleModel) bool {
 	for _, selected := range s.synthesisState.selectedModules {
-		if selected.ID == module.ID {
+		if selected.TypeID == module.TypeID {
 			return true
 		}
 	}
@@ -484,7 +528,7 @@ func (s *AgentManagementScreen) isModuleCompatible(module *domain.ModuleModel) b
 		return false
 	}
 	allowedTags := s.synthesisState.selectedCore.Type.AllowedTags
-	for _, moduleTag := range module.Tags {
+	for _, moduleTag := range module.Tags() {
 		for _, allowedTag := range allowedTags {
 			if moduleTag == allowedTag {
 				return true
@@ -532,9 +576,9 @@ func (s *AgentManagementScreen) executeSynthesis() {
 		)
 	}
 	for _, m := range s.synthesisState.selectedModules {
-		if err := s.inventory.RemoveModule(m.ID); err != nil {
+		if err := s.inventory.RemoveModule(m.TypeID); err != nil {
 			slog.Error("合成素材のモジュール削除に失敗",
-				slog.String("module_id", m.ID),
+				slog.String("module_type_id", m.TypeID),
 				slog.Any("error", err),
 			)
 		}
@@ -666,6 +710,10 @@ func (s *AgentManagementScreen) renderMainContent() string {
 	case TabModuleList:
 		return s.renderModuleList()
 	case TabSynthesis:
+		// デバッグモードでは専用のUIを使用
+		if s.debugMode {
+			return s.renderDebugSynthesis()
+		}
 		return s.renderSynthesis()
 	case TabEquip:
 		return s.renderEquip()
@@ -731,6 +779,7 @@ func (s *AgentManagementScreen) renderCoreListItems() string {
 }
 
 // renderCorePreview はコアのプレビューをレンダリングします。
+// タスク 10.1: パッシブスキル情報を表示
 func (s *AgentManagementScreen) renderCorePreview() string {
 	core := s.getSelectedCoreDetail()
 	if core == nil {
@@ -744,6 +793,20 @@ func (s *AgentManagementScreen) renderCorePreview() string {
 	panel.AddItem("MAG", fmt.Sprintf("%d", core.Stats.MAG))
 	panel.AddItem("SPD", fmt.Sprintf("%d", core.Stats.SPD))
 	panel.AddItem("LUK", fmt.Sprintf("%d", core.Stats.LUK))
+
+	// パッシブスキル情報を追加
+	if core.PassiveSkill.ID != "" {
+		passiveNotification := components.NewPassiveSkillNotification(&core.PassiveSkill, core.Level)
+		panel.AddItem("パッシブ", core.PassiveSkill.Name)
+		if core.PassiveSkill.Description != "" {
+			panel.AddItem("効果", core.PassiveSkill.Description)
+		}
+		// 効果リスト
+		effects := passiveNotification.RenderEffectsList()
+		for _, effect := range effects {
+			panel.AddItem("", effect)
+		}
+	}
 
 	return panel.Render(45)
 }
@@ -794,25 +857,31 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s [%s] Lv.%d", module.Name, module.Category.String(), module.Level)
+		item := fmt.Sprintf("%s [%s]", module.Name(), module.Category().String())
 		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
 }
 
 // renderModulePreview はモジュールのプレビューをレンダリングします。
+// タスク 10.2: チェイン効果情報を表示
 func (s *AgentManagementScreen) renderModulePreview() string {
 	module := s.getSelectedModuleDetail()
 	if module == nil {
 		return "モジュールを選択してください"
 	}
 
-	panel := components.NewInfoPanel(module.Name)
-	panel.AddItem("カテゴリ", module.Category.String())
-	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", module.Level))
-	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect))
-	panel.AddItem("参照ステータス", module.StatRef)
-	panel.AddItem("説明", module.Description)
+	panel := components.NewInfoPanel(module.Name())
+	panel.AddItem("カテゴリ", module.Category().String())
+	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect()))
+	panel.AddItem("参照ステータス", module.StatRef())
+	panel.AddItem("説明", module.Description())
+
+	// チェイン効果情報を追加
+	if module.HasChainEffect() {
+		chainBadge := components.NewChainEffectBadge(module.ChainEffect)
+		panel.AddItem("チェイン効果", chainBadge.GetCategoryIcon()+" "+chainBadge.GetDescription())
+	}
 
 	return panel.Render(45)
 }
@@ -914,7 +983,7 @@ func (s *AgentManagementScreen) renderSynthesisRightPanel() string {
 	for i := 0; i < 4; i++ {
 		builder.WriteString(labelStyle.Render(fmt.Sprintf("モジュール%d: ", i+1)))
 		if i < len(s.synthesisState.selectedModules) {
-			builder.WriteString(valueStyle.Render(s.synthesisState.selectedModules[i].Name))
+			builder.WriteString(valueStyle.Render(s.synthesisState.selectedModules[i].Name()))
 		} else {
 			builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(未選択)"))
 		}
@@ -982,21 +1051,22 @@ func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) s
 	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
 	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 
-	builder.WriteString(nameStyle.Render(module.Name))
+	builder.WriteString(nameStyle.Render(module.Name()))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("カテゴリ: "))
-	builder.WriteString(s.getModuleIcon(module.Category) + " " + module.Category.String())
+	builder.WriteString(module.Icon() + " " + module.Category().String())
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("基礎効果: "))
-	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect))
+	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect()))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("説明: "))
-	builder.WriteString(module.Description)
+	builder.WriteString(module.Description())
 
 	return builder.String()
 }
 
 // renderSynthesisPreview は合成後の予測ステータスをレンダリングします。
+// タスク 10.3: パッシブスキルとチェイン効果を表示
 func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	if s.synthesisState.selectedCore == nil {
 		return lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("コアを選択すると\n予測ステータスが表示されます")
@@ -1006,6 +1076,7 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	core := s.synthesisState.selectedCore
 	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
+	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 
 	// 名前
 	builder.WriteString(labelStyle.Render("名前: "))
@@ -1022,16 +1093,38 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d\n", stats.STR, stats.MAG))
 	builder.WriteString(fmt.Sprintf("SPD: %-3d  LUK: %-3d\n", stats.SPD, stats.LUK))
 
+	// パッシブスキル情報
+	if core.PassiveSkill.ID != "" {
+		builder.WriteString("\n")
+		passiveNotification := components.NewPassiveSkillNotification(&core.PassiveSkill, core.Level)
+		builder.WriteString(labelStyle.Render("パッシブ: "))
+		builder.WriteString(passiveStyle.Render(core.PassiveSkill.Name))
+		builder.WriteString("\n")
+		// 効果リスト（最初の2つまで）
+		effects := passiveNotification.RenderEffectsList()
+		for i, effect := range effects {
+			if i >= 2 {
+				break
+			}
+			builder.WriteString("  " + effect + "\n")
+		}
+	}
+
 	// モジュール情報
 	if len(s.synthesisState.selectedModules) > 0 {
 		builder.WriteString("\n")
-		builder.WriteString(labelStyle.Render("攻撃: "))
-		var attacks []string
+		builder.WriteString(labelStyle.Render("モジュール:"))
+		builder.WriteString("\n")
 		for _, m := range s.synthesisState.selectedModules {
-			icon := s.getModuleIcon(m.Category)
-			attacks = append(attacks, fmt.Sprintf("%s(%s+%.0f)", m.Name, icon, m.BaseEffect))
+			icon := m.Icon()
+			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name()))
+			// チェイン効果があれば表示
+			if m.HasChainEffect() {
+				chainBadge := components.NewChainEffectBadge(m.ChainEffect)
+				builder.WriteString(" " + chainBadge.Render())
+			}
+			builder.WriteString("\n")
 		}
-		builder.WriteString(strings.Join(attacks, ", "))
 	}
 
 	return builder.String()
@@ -1081,8 +1174,8 @@ func (s *AgentManagementScreen) renderSynthesisModuleListItems() string {
 			style = style.Foreground(styles.ColorSubtle)
 		}
 
-		icon := s.getModuleIcon(module.Category)
-		item := fmt.Sprintf("%s %s", icon, module.Name)
+		icon := module.Icon()
+		item := fmt.Sprintf("%s %s", icon, module.Name())
 		if !compatible {
 			item += " (互換性なし)"
 		} else if alreadySelected {
@@ -1117,18 +1210,13 @@ func (s *AgentManagementScreen) renderEquip() string {
 
 	// 下部エリア: 装備中エージェント（3スロット横並び）
 	bottomSection := s.renderEquipBottomSection()
-	bottomBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1, 2).
-		Width(s.width - 10)
 
 	bottomTitle := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
 		Render("────────────────────────  装備中エージェント  ────────────────────────")
 
 	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(
-		lipgloss.JoinVertical(lipgloss.Center, bottomTitle, bottomBox.Render(bottomSection)),
+		lipgloss.JoinVertical(lipgloss.Center, bottomTitle, bottomSection),
 	))
 
 	return builder.String()
@@ -1221,17 +1309,19 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 		return builder.String()
 	}
 
-	// エージェント名とレベル
-	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	// エージェント名とレベル（白色で表示）
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
 	builder.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", selectedAgent.GetCoreTypeName(), selectedAgent.Level)))
 	builder.WriteString("\n")
 
-	// コアタイプ
-	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
-	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
-	builder.WriteString(labelStyle.Render("コアタイプ: "))
-	builder.WriteString(valueStyle.Render(selectedAgent.Core.Type.Name))
-	builder.WriteString("\n")
+	// パッシブスキル効果（短い説明を表示）
+	passiveNotification := components.NewPassiveSkillNotification(&selectedAgent.Core.PassiveSkill, selectedAgent.Core.Level)
+	if passiveNotification.HasActiveEffects() {
+		passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
+		shortDesc := passiveNotification.GetShortDescription()
+		builder.WriteString(passiveStyle.Render(fmt.Sprintf("★ %s: %s", passiveNotification.GetName(), shortDesc)))
+		builder.WriteString("\n")
+	}
 
 	// 区切り線
 	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
@@ -1246,12 +1336,18 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
 	builder.WriteString("\n")
 
-	// モジュール
+	// モジュール（チェイン効果付き）
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 	builder.WriteString(labelStyle.Render("モジュール:"))
 	builder.WriteString("\n")
 	for _, module := range selectedAgent.Modules {
-		icon := s.getModuleIcon(module.Category)
-		builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name))
+		icon := module.Icon()
+		if module.HasChainEffect() {
+			chainBadge := components.NewChainEffectBadge(module.ChainEffect)
+			builder.WriteString(fmt.Sprintf("  %s %s + %s\n", icon, module.Name(), chainBadge.GetDescription()))
+		} else {
+			builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name()))
+		}
 	}
 
 	return builder.String()
@@ -1260,33 +1356,65 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 // renderEquipBottomSection は装備タブの下部セクション（装備スロット）をレンダリングします。
 func (s *AgentManagementScreen) renderEquipBottomSection() string {
 	var cards []string
-	cardWidth := 30
+	// 画面幅を3等分してカード幅を計算（枠線とパディングを考慮）
+	cardWidth := (s.width - 20) / 3
 
 	for i := 0; i < 3; i++ {
 		var cardContent strings.Builder
 		isSelected := i == s.selectedEquipSlot
 
-		// スロットタイトル
-		slotTitle := fmt.Sprintf("スロット%d", i+1)
-		if isSelected {
-			slotTitle = "*" + slotTitle + "*"
-		}
-		cardContent.WriteString(lipgloss.NewStyle().Bold(true).Render(slotTitle))
-		cardContent.WriteString("\n\n")
-
 		if s.equipSlots[i] != nil {
 			agent := s.equipSlots[i]
-			cardContent.WriteString(fmt.Sprintf("%s Lv.%d\n", agent.GetCoreTypeName(), agent.Level))
 
-			// モジュールアイコン
-			var icons []string
-			for _, module := range agent.Modules {
-				icons = append(icons, s.getModuleIcon(module.Category))
+			// コアタイプ+レベル行（選択中は▶を表示、非選択は白色）
+			if isSelected {
+				coreNameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+				cardContent.WriteString(coreNameStyle.Render(fmt.Sprintf("▶ %s Lv.%d", agent.Core.Type.Name, agent.Level)))
+			} else {
+				coreNameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+				cardContent.WriteString(coreNameStyle.Render(fmt.Sprintf("  %s Lv.%d", agent.Core.Type.Name, agent.Level)))
 			}
-			cardContent.WriteString(strings.Join(icons, ""))
+			cardContent.WriteString("\n")
+
+			// モジュールを2列×2行で表示
+			modules := agent.Modules
+			moduleWidth := (cardWidth - 4) / 2
+			for row := 0; row < 2; row++ {
+				var rowModules []string
+				for col := 0; col < 2; col++ {
+					idx := row*2 + col
+					if idx < len(modules) {
+						module := modules[idx]
+						icon := module.Icon()
+						name := module.Name()
+						// 名前が長すぎる場合は切り詰め
+						maxLen := moduleWidth - 3
+						if len([]rune(name)) > maxLen {
+							name = string([]rune(name)[:maxLen-1]) + ".."
+						}
+						rowModules = append(rowModules, fmt.Sprintf("%s %s", icon, name))
+					}
+				}
+				if len(rowModules) > 0 {
+					// 2列を均等幅で表示
+					cell1 := lipgloss.NewStyle().Width(moduleWidth).Render(rowModules[0])
+					cell2 := ""
+					if len(rowModules) > 1 {
+						cell2 = lipgloss.NewStyle().Width(moduleWidth).Render(rowModules[1])
+					}
+					cardContent.WriteString(lipgloss.JoinHorizontal(lipgloss.Left, cell1, cell2))
+					cardContent.WriteString("\n")
+				}
+			}
 		} else {
-			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)\n\n"))
-			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("Enterで装備"))
+			// 空スロットの表示（選択中は▶を表示）
+			if isSelected {
+				cardContent.WriteString(lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSubtle).Render("▶ (空)"))
+			} else {
+				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("  (空)"))
+			}
+			cardContent.WriteString("\n\n")
+			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("  Enterで装備"))
 		}
 
 		// カードスタイル
@@ -1300,28 +1428,432 @@ func (s *AgentManagementScreen) renderEquipBottomSection() string {
 			BorderForeground(borderColor).
 			Padding(0, 1).
 			Width(cardWidth).
-			Height(6)
+			Height(5)
 
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, cards[0], "  ", cards[1], "  ", cards[2])
+	return lipgloss.JoinHorizontal(lipgloss.Center, cards[0], " ", cards[1], " ", cards[2])
 }
 
-// getModuleIcon はモジュールカテゴリのアイコンを返します。
-func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) string {
-	switch category {
-	case domain.PhysicalAttack:
-		return "⚔"
-	case domain.MagicAttack:
-		return "✦"
-	case domain.Heal:
-		return "♥"
-	case domain.Buff:
-		return "▲"
-	case domain.Debuff:
-		return "▼"
-	default:
-		return "•"
+// ==================== デバッグモード専用の関数群 ====================
+
+// handleDebugSynthesisKeyMsg はデバッグモード合成画面のキー処理です。
+func (s *AgentManagementScreen) handleDebugSynthesisKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch s.debugSynthesisState.step {
+	case 0: // コアタイプ選択
+		return s.handleDebugCoreTypeSelection(msg)
+	case 1: // レベル入力
+		return s.handleDebugLevelInput(msg)
+	case 2: // モジュールタイプ選択
+		return s.handleDebugModuleTypeSelection(msg)
+	case 3: // チェイン効果選択
+		return s.handleDebugChainEffectSelection(msg)
+	case 4: // 確認
+		return s.handleDebugConfirmation(msg)
 	}
+	return s, nil
+}
+
+// handleDebugCoreTypeSelection はコアタイプ選択を処理します。
+func (s *AgentManagementScreen) handleDebugCoreTypeSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	coreTypes := s.debugProvider.GetCoreTypes()
+
+	switch msg.String() {
+	case "esc":
+		return s, func() tea.Msg {
+			return ChangeSceneMsg{Scene: "home"}
+		}
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < len(coreTypes)-1 {
+			s.selectedIndex++
+		}
+	case "enter":
+		if s.selectedIndex < len(coreTypes) {
+			ct := coreTypes[s.selectedIndex]
+			s.debugSynthesisState.selectedCoreType = &ct
+			s.debugSynthesisState.step = 1 // レベル入力へ
+			s.debugSynthesisState.levelInput = ""
+			s.selectedIndex = 0
+		}
+	case "left", "h":
+		s.prevTab()
+	case "right", "l":
+		s.nextTab()
+	}
+	return s, nil
+}
+
+// handleDebugLevelInput はレベル入力を処理します。
+func (s *AgentManagementScreen) handleDebugLevelInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		// 数字を追加（最大2桁）
+		if len(s.debugSynthesisState.levelInput) < 2 {
+			s.debugSynthesisState.levelInput += msg.String()
+		}
+	case "backspace":
+		// 数字を削除
+		if len(s.debugSynthesisState.levelInput) > 0 {
+			s.debugSynthesisState.levelInput = s.debugSynthesisState.levelInput[:len(s.debugSynthesisState.levelInput)-1]
+		} else {
+			// コアタイプ選択に戻る
+			s.debugSynthesisState.step = 0
+			s.selectedIndex = 0
+		}
+	case "enter":
+		// レベルを確定
+		level, err := strconv.Atoi(s.debugSynthesisState.levelInput)
+		if err != nil {
+			s.errorMessage = "レベルには数値を入力してください"
+			return s, nil
+		}
+		if level < 1 || level > 99 {
+			s.errorMessage = "レベルは1〜99の範囲で入力してください"
+			return s, nil
+		}
+		s.debugSynthesisState.coreLevel = level
+		s.debugSynthesisState.step = 2 // モジュール選択へ
+		s.debugSynthesisState.currentModuleIdx = 0
+		s.selectedIndex = 0
+		s.errorMessage = ""
+	case "esc":
+		// コアタイプ選択に戻る
+		s.debugSynthesisState.step = 0
+		s.debugSynthesisState.levelInput = ""
+		s.selectedIndex = 0
+	}
+	return s, nil
+}
+
+// handleDebugModuleTypeSelection はモジュールタイプ選択を処理します。
+func (s *AgentManagementScreen) handleDebugModuleTypeSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	moduleTypes := s.debugProvider.GetModuleTypes()
+
+	switch msg.String() {
+	case "esc":
+		// 前のモジュールに戻る、または レベル入力に戻る
+		if s.debugSynthesisState.currentModuleIdx > 0 {
+			s.debugSynthesisState.currentModuleIdx--
+			s.debugSynthesisState.selectedModules = s.debugSynthesisState.selectedModules[:len(s.debugSynthesisState.selectedModules)-1]
+		} else {
+			s.debugSynthesisState.step = 1
+		}
+		s.selectedIndex = 0
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < len(moduleTypes)-1 {
+			s.selectedIndex++
+		}
+	case "enter":
+		if s.selectedIndex < len(moduleTypes) {
+			mt := moduleTypes[s.selectedIndex]
+			s.debugSynthesisState.selectedModules = append(s.debugSynthesisState.selectedModules, &DebugModuleSelection{
+				ModuleType:  &mt,
+				ChainEffect: nil,
+			})
+			s.debugSynthesisState.step = 3 // チェイン効果選択へ
+			s.selectedIndex = 0
+		}
+	}
+	return s, nil
+}
+
+// handleDebugChainEffectSelection はチェイン効果選択を処理します。
+func (s *AgentManagementScreen) handleDebugChainEffectSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	chainEffects := s.debugProvider.GetChainEffects()
+	// +1 は「なし」オプション用
+	maxIndex := len(chainEffects)
+
+	switch msg.String() {
+	case "esc":
+		// モジュール選択に戻る（最後のモジュールを削除）
+		s.debugSynthesisState.selectedModules = s.debugSynthesisState.selectedModules[:len(s.debugSynthesisState.selectedModules)-1]
+		s.debugSynthesisState.step = 2
+		s.selectedIndex = 0
+	case "up", "k":
+		if s.selectedIndex > 0 {
+			s.selectedIndex--
+		}
+	case "down", "j":
+		if s.selectedIndex < maxIndex {
+			s.selectedIndex++
+		}
+	case "enter":
+		// チェイン効果を選択
+		moduleIdx := s.debugSynthesisState.currentModuleIdx
+		if s.selectedIndex == 0 {
+			// 「なし」を選択
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = nil
+		} else {
+			ce := chainEffects[s.selectedIndex-1]
+			// 効果値はmax_valueを使用（デバッグモードなので最大値）
+			chainEffect := domain.NewChainEffect(ce.ToDomainEffectType(), ce.MaxValue)
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = &chainEffect
+		}
+
+		// 次のモジュールスロットへ、または確認画面へ
+		if s.debugSynthesisState.currentModuleIdx < 3 {
+			s.debugSynthesisState.currentModuleIdx++
+			s.debugSynthesisState.step = 2 // モジュール選択に戻る
+		} else {
+			s.debugSynthesisState.step = 4 // 確認画面へ
+		}
+		s.selectedIndex = 0
+	}
+	return s, nil
+}
+
+// handleDebugConfirmation は確認画面を処理します。
+func (s *AgentManagementScreen) handleDebugConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "backspace":
+		// 最後のチェイン効果選択に戻る
+		s.debugSynthesisState.step = 3
+		s.debugSynthesisState.currentModuleIdx = 3
+		s.selectedIndex = 0
+	case "enter":
+		// 合成を実行
+		s.executeDebugSynthesis()
+	}
+	return s, nil
+}
+
+// executeDebugSynthesis はデバッグモードの合成を実行します。
+func (s *AgentManagementScreen) executeDebugSynthesis() {
+	state := s.debugSynthesisState
+
+	// コアを作成
+	core := s.debugProvider.CreateCoreFromType(
+		state.selectedCoreType.ID,
+		state.coreLevel,
+	)
+	if core == nil {
+		s.errorMessage = "コアの作成に失敗しました"
+		return
+	}
+
+	// モジュールを作成
+	var modules []*domain.ModuleModel
+	for _, sel := range state.selectedModules {
+		module := s.debugProvider.CreateModuleFromType(
+			sel.ModuleType.ID,
+			sel.ChainEffect,
+		)
+		if module == nil {
+			s.errorMessage = fmt.Sprintf("モジュール %s の作成に失敗しました", sel.ModuleType.ID)
+			return
+		}
+		modules = append(modules, module)
+	}
+
+	// エージェントを作成
+	agentID := fmt.Sprintf("debug_agent_%d", len(s.debugProvider.GetAgents())+1)
+	agent := domain.NewAgent(agentID, core, modules)
+
+	// インベントリに追加
+	if err := s.inventory.AddAgent(agent); err != nil {
+		s.errorMessage = fmt.Sprintf("エージェント作成に失敗: %v", err)
+		return
+	}
+
+	s.statusMessage = fmt.Sprintf("デバッグエージェント「%s」を作成しました", agent.GetCoreTypeName())
+	s.errorMessage = ""
+	s.resetDebugSynthesisState()
+	s.updateCurrentList()
+}
+
+// resetDebugSynthesisState はデバッグ合成状態をリセットします。
+func (s *AgentManagementScreen) resetDebugSynthesisState() {
+	s.debugSynthesisState = DebugSynthesisState{
+		selectedModules: make([]*DebugModuleSelection, 0),
+	}
+	s.selectedIndex = 0
+}
+
+// renderDebugSynthesis はデバッグ合成画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugSynthesis() string {
+	var b strings.Builder
+
+	// ヘッダー
+	b.WriteString(s.styles.Text.Title.Render("[DEBUG] エージェント合成"))
+	b.WriteString("\n\n")
+
+	switch s.debugSynthesisState.step {
+	case 0:
+		b.WriteString(s.renderDebugCoreTypeList())
+	case 1:
+		b.WriteString(s.renderDebugLevelInput())
+	case 2:
+		b.WriteString(s.renderDebugModuleTypeList())
+	case 3:
+		b.WriteString(s.renderDebugChainEffectList())
+	case 4:
+		b.WriteString(s.renderDebugConfirmation())
+	}
+
+	// エラー/ステータスメッセージ
+	if s.errorMessage != "" {
+		b.WriteString("\n")
+		b.WriteString(s.styles.Text.Error.Render(s.errorMessage))
+	}
+	if s.statusMessage != "" {
+		b.WriteString("\n")
+		b.WriteString(s.styles.Text.Success.Render(s.statusMessage))
+	}
+
+	return b.String()
+}
+
+// renderDebugCoreTypeList はコアタイプ選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugCoreTypeList() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("コアタイプ選択"))
+	b.WriteString("\n\n")
+
+	coreTypes := s.debugProvider.GetCoreTypes()
+	for i, ct := range coreTypes {
+		prefix := "  "
+		if i == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s", prefix, ct.Name)
+		if i == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  ←/→: タブ切替  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugLevelInput はレベル入力画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugLevelInput() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("レベル入力"))
+	b.WriteString("\n\n")
+
+	b.WriteString(fmt.Sprintf("選択中コア: %s\n\n", s.debugSynthesisState.selectedCoreType.Name))
+	b.WriteString(fmt.Sprintf("レベル (1-99): [%s]\n", s.debugSynthesisState.levelInput))
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("数字キー: 入力  Enter: 確定  Backspace: 削除/戻る  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugModuleTypeList はモジュールタイプ選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugModuleTypeList() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render(fmt.Sprintf("モジュール選択 (%d/4)", s.debugSynthesisState.currentModuleIdx+1)))
+	b.WriteString("\n\n")
+
+	// 選択済みモジュール表示
+	if len(s.debugSynthesisState.selectedModules) > 0 {
+		b.WriteString("選択済み: ")
+		for i, sel := range s.debugSynthesisState.selectedModules {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(sel.ModuleType.Name)
+		}
+		b.WriteString("\n\n")
+	}
+
+	moduleTypes := s.debugProvider.GetModuleTypes()
+	for i, mt := range moduleTypes {
+		prefix := "  "
+		if i == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s [%s]", prefix, mt.Name, mt.Category)
+		if i == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugChainEffectList はチェイン効果選択リストをレンダリングします。
+func (s *AgentManagementScreen) renderDebugChainEffectList() string {
+	var b strings.Builder
+	moduleIdx := s.debugSynthesisState.currentModuleIdx
+	moduleName := s.debugSynthesisState.selectedModules[moduleIdx].ModuleType.Name
+	b.WriteString(s.styles.Text.Subtitle.Render(fmt.Sprintf("チェイン効果選択 - %s", moduleName)))
+	b.WriteString("\n\n")
+
+	// 「なし」オプション
+	prefix := "  "
+	if s.selectedIndex == 0 {
+		prefix = "> "
+	}
+	item := prefix + "なし"
+	if s.selectedIndex == 0 {
+		b.WriteString(s.styles.Text.Bold.Render(item))
+	} else {
+		b.WriteString(item)
+	}
+	b.WriteString("\n")
+
+	// チェイン効果リスト
+	chainEffects := s.debugProvider.GetChainEffects()
+	for i, ce := range chainEffects {
+		prefix := "  "
+		if i+1 == s.selectedIndex {
+			prefix = "> "
+		}
+		item := fmt.Sprintf("%s%s (最大値: %.0f)", prefix, ce.Name, ce.MaxValue)
+		if i+1 == s.selectedIndex {
+			b.WriteString(s.styles.Text.Bold.Render(item))
+		} else {
+			b.WriteString(item)
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("↑/↓: 選択  Enter: 決定  Esc: 戻る"))
+	return b.String()
+}
+
+// renderDebugConfirmation は確認画面をレンダリングします。
+func (s *AgentManagementScreen) renderDebugConfirmation() string {
+	var b strings.Builder
+	b.WriteString(s.styles.Text.Subtitle.Render("合成確認"))
+	b.WriteString("\n\n")
+
+	state := s.debugSynthesisState
+
+	// コア情報
+	b.WriteString(fmt.Sprintf("コア: %s Lv.%d\n\n", state.selectedCoreType.Name, state.coreLevel))
+
+	// モジュール情報
+	for i, sel := range state.selectedModules {
+		b.WriteString(fmt.Sprintf("モジュール%d: %s\n", i+1, sel.ModuleType.Name))
+		if sel.ChainEffect != nil {
+			b.WriteString(fmt.Sprintf("  チェイン: %s\n", sel.ChainEffect.Description))
+		} else {
+			b.WriteString("  チェイン: なし\n")
+		}
+	}
+
+	b.WriteString("\n")
+	b.WriteString(s.styles.Text.Subtle.Render("Enter: 合成実行  Backspace/Esc: 戻る"))
+	return b.String()
 }

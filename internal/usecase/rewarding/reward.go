@@ -12,6 +12,94 @@ import (
 	"github.com/google/uuid"
 )
 
+// ==================== チェイン効果プール ====================
+
+// デフォルトのチェイン効果なし確率（30%）
+const DefaultNoEffectProbability = 0.3
+
+// ChainEffectDefinition はチェイン効果定義の構造体です。
+// マスタデータからロードされたチェイン効果情報を保持します。
+type ChainEffectDefinition struct {
+	// ID はチェイン効果の一意識別子です。
+	ID string
+
+	// Name は表示名です。
+	Name string
+
+	// Category はカテゴリです（attack, defense, heal等）。
+	Category string
+
+	// EffectType はドメインモデルのChainEffectTypeです。
+	EffectType domain.ChainEffectType
+
+	// MinValue は効果値の最小値です。
+	MinValue float64
+
+	// MaxValue は効果値の最大値です。
+	MaxValue float64
+}
+
+// ChainEffectPool はチェイン効果のプール管理を担当する構造体です。
+// モジュール入手時にランダムなチェイン効果を生成します。
+type ChainEffectPool struct {
+	// Effects は利用可能なチェイン効果定義のリストです。
+	Effects []ChainEffectDefinition
+
+	// rng は乱数生成器です。
+	rng *rand.Rand
+
+	// noEffectProbability はチェイン効果なしの確率です。
+	noEffectProbability float64
+}
+
+// NewChainEffectPool は新しいChainEffectPoolを作成します。
+func NewChainEffectPool(effects []ChainEffectDefinition) *ChainEffectPool {
+	return &ChainEffectPool{
+		Effects:             effects,
+		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
+		noEffectProbability: DefaultNoEffectProbability,
+	}
+}
+
+// SetNoEffectProbability はチェイン効果なしの確率を設定します。
+// 値は0.0から1.0の範囲で指定します。
+func (p *ChainEffectPool) SetNoEffectProbability(probability float64) {
+	if probability < 0.0 {
+		probability = 0.0
+	} else if probability > 1.0 {
+		probability = 1.0
+	}
+	p.noEffectProbability = probability
+}
+
+// GenerateRandomEffect はランダムなチェイン効果を生成します。
+// noEffectProbabilityの確率でnilを返します。
+func (p *ChainEffectPool) GenerateRandomEffect() *domain.ChainEffect {
+	// チェイン効果がない場合
+	if len(p.Effects) == 0 {
+		return nil
+	}
+
+	// チェイン効果なしの確率判定
+	if p.rng.Float64() < p.noEffectProbability {
+		return nil
+	}
+
+	// ランダムにチェイン効果を選択
+	selected := p.Effects[p.rng.Intn(len(p.Effects))]
+
+	// 効果値をmin-max範囲内でランダムに決定
+	value := selected.MinValue
+	if selected.MaxValue > selected.MinValue {
+		value = selected.MinValue + p.rng.Float64()*(selected.MaxValue-selected.MinValue)
+		// 整数に丸める（効果値は通常整数で表現される）
+		value = float64(int(value + 0.5))
+	}
+
+	effect := domain.NewChainEffect(selected.EffectType, value)
+	return &effect
+}
+
 // ドロップ関連の定数
 const (
 	// DefaultCoreDropRate はコアのデフォルトドロップ率（70%）です。
@@ -149,11 +237,11 @@ type ModuleDropInfo struct {
 	// Name はモジュールの表示名です。
 	Name string
 
+	// Icon はモジュールのアイコン（絵文字）です。
+	Icon string
+
 	// Category はモジュールのカテゴリです。
 	Category domain.ModuleCategory
-
-	// Level はモジュールのレベルです。
-	Level int
 
 	// Tags はモジュールのタグリストです。
 	Tags []string
@@ -167,22 +255,47 @@ type ModuleDropInfo struct {
 	// Description はモジュールの効果説明です。
 	Description string
 
+	// CooldownSeconds はモジュールのクールダウン時間（秒）です。
+	CooldownSeconds float64
+
+	// Difficulty はタイピングの難易度レベルです。
+	Difficulty int
+
 	// MinDropLevel はこのモジュールがドロップする最低敵レベルです。
 	MinDropLevel int
 }
 
+// ToModuleType はModuleDropInfoをドメインモデルのModuleTypeに変換します。
+func (m *ModuleDropInfo) ToModuleType() domain.ModuleType {
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(m.Tags))
+	copy(tagsCopy, m.Tags)
+
+	return domain.ModuleType{
+		ID:              m.ID,
+		Name:            m.Name,
+		Icon:            m.Icon,
+		Category:        m.Category,
+		Tags:            tagsCopy,
+		BaseEffect:      m.BaseEffect,
+		StatRef:         m.StatRef,
+		Description:     m.Description,
+		CooldownSeconds: m.CooldownSeconds,
+		Difficulty:      m.Difficulty,
+		MinDropLevel:    m.MinDropLevel,
+	}
+}
+
 // ToDomain はModuleDropInfoをドメインモデルのModuleModelに変換します。
 func (m *ModuleDropInfo) ToDomain() *domain.ModuleModel {
-	return domain.NewModule(
-		m.ID,
-		m.Name,
-		m.Category,
-		m.Level,
-		m.Tags,
-		m.BaseEffect,
-		m.StatRef,
-		m.Description,
-	)
+	moduleType := m.ToModuleType()
+	return domain.NewModuleFromType(moduleType, nil)
+}
+
+// ToDomainWithChainEffect はチェイン効果付きでドメインモデルに変換します。
+func (m *ModuleDropInfo) ToDomainWithChainEffect(chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	moduleType := m.ToModuleType()
+	return domain.NewModuleFromType(moduleType, chainEffect)
 }
 
 // RewardCalculator はドメイン型を使用した報酬計算を担当する構造体です。
@@ -195,6 +308,9 @@ type RewardCalculator struct {
 
 	// passiveSkills はパッシブスキル定義マップです。
 	passiveSkills map[string]domain.PassiveSkill
+
+	// chainEffectPool はチェイン効果プールです。
+	chainEffectPool *ChainEffectPool
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
@@ -230,6 +346,16 @@ func (c *RewardCalculator) SetCoreDropRate(rate float64) {
 // SetModuleDropRate はモジュールのドロップ率を設定します（テスト用）。
 func (c *RewardCalculator) SetModuleDropRate(rate float64) {
 	c.moduleDropRate = rate
+}
+
+// SetChainEffectPool はチェイン効果プールを設定します。
+func (c *RewardCalculator) SetChainEffectPool(pool *ChainEffectPool) {
+	c.chainEffectPool = pool
+}
+
+// GetChainEffectPool はチェイン効果プールを取得します。
+func (c *RewardCalculator) GetChainEffectPool() *ChainEffectPool {
+	return c.chainEffectPool
 }
 
 // GetCoreLevelRange はコアレベルの変動範囲を返します。
@@ -320,6 +446,7 @@ func (c *RewardCalculator) RollCoreDrop(enemyLevel int) *domain.CoreModel {
 }
 
 // RollModuleDrop はモジュールドロップ判定を実行します。
+// チェイン効果プールが設定されている場合、ランダムなチェイン効果を付与します。
 func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domain.ModuleModel {
 	dropped := make([]*domain.ModuleModel, 0)
 
@@ -338,8 +465,14 @@ func (c *RewardCalculator) RollModuleDrop(enemyLevel int, maxCount int) []*domai
 		// ランダムにモジュールを選択
 		selectedType := eligibleTypes[c.rng.Intn(len(eligibleTypes))]
 
-		// モジュールをインスタンス化
-		module := selectedType.ToDomain()
+		// チェイン効果を生成（プールが設定されている場合）
+		var chainEffect *domain.ChainEffect
+		if c.chainEffectPool != nil {
+			chainEffect = c.chainEffectPool.GenerateRandomEffect()
+		}
+
+		// モジュールをインスタンス化（チェイン効果付き）
+		module := selectedType.ToDomainWithChainEffect(chainEffect)
 		dropped = append(dropped, module)
 	}
 
@@ -430,8 +563,8 @@ func AddRewardsToInventory(
 		} else {
 			if err := moduleInv.Add(module); err != nil {
 				slog.Error("報酬モジュールのインベントリ追加に失敗",
-					slog.String("module_id", module.ID),
-					slog.String("module_name", module.Name),
+					slog.String("module_type_id", module.TypeID),
+					slog.String("module_name", module.Name()),
 					slog.Any("error", err),
 				)
 			}

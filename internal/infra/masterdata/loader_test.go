@@ -77,12 +77,11 @@ func TestLoadModuleDefinitions(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",
@@ -95,7 +94,6 @@ func TestLoadModuleDefinitions(t *testing.T) {
 				"id": "fireball_lv2",
 				"name": "ファイアボールLv2",
 				"category": "magic_attack",
-				"level": 2,
 				"tags": ["magic_mid"],
 				"base_effect": 20.0,
 				"stat_reference": "MAG",
@@ -128,9 +126,6 @@ func TestLoadModuleDefinitions(t *testing.T) {
 	}
 	if modules[0].Category != "physical_attack" {
 		t.Errorf("Category: got %s, want physical_attack", modules[0].Category)
-	}
-	if modules[0].Level != 1 {
-		t.Errorf("Level: got %d, want 1", modules[0].Level)
 	}
 	if modules[0].BaseEffect != 10.0 {
 		t.Errorf("BaseEffect: got %f, want 10.0", modules[0].BaseEffect)
@@ -286,12 +281,11 @@ func TestLoadAllExternalData(t *testing.T) {
 
 	// modules.json
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",
@@ -320,6 +314,18 @@ func TestLoadAllExternalData(t *testing.T) {
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "enemies.json"), []byte(enemiesJSON), 0644)
 
+	// passive_skills.json
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "balanced_stance",
+				"name": "バランススタンス",
+				"description": "バランスの取れた姿勢"
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "passive_skills.json"), []byte(passiveSkillsJSON), 0644)
+
 	// words.json
 	wordsJSON := `{
 		"words": {
@@ -329,6 +335,19 @@ func TestLoadAllExternalData(t *testing.T) {
 		}
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "words.json"), []byte(wordsJSON), 0644)
+
+	// first_agent.json
+	firstAgentJSON := `{
+		"first_agent": {
+			"id": "agent_first",
+			"core_type_id": "attack_balance",
+			"core_level": 1,
+			"modules": [
+				{"type_id": "physical_strike_lv1"}
+			]
+		}
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "first_agent.json"), []byte(firstAgentJSON), 0644)
 
 	loader := NewDataLoader(tmpDir)
 	externalData, err := loader.LoadAllExternalData()
@@ -345,8 +364,14 @@ func TestLoadAllExternalData(t *testing.T) {
 	if len(externalData.EnemyTypes) != 1 {
 		t.Errorf("EnemyTypes: got %d, want 1", len(externalData.EnemyTypes))
 	}
+	if len(externalData.PassiveSkills) != 1 {
+		t.Errorf("PassiveSkills: got %d, want 1", len(externalData.PassiveSkills))
+	}
 	if externalData.TypingDictionary == nil {
 		t.Error("TypingDictionary should not be nil")
+	}
+	if externalData.FirstAgent == nil {
+		t.Error("FirstAgent should not be nil")
 	}
 }
 
@@ -390,12 +415,11 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	modulesJSON := `{
-		"modules": [
+		"module_types": [
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
 				"category": "physical_attack",
-				"level": 1,
 				"tags": ["physical_low"],
 				"base_effect": 10.0,
 				"stat_reference": "STR",
@@ -417,10 +441,340 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 	// ドメインモデルに変換
 	domainModule := modules[0].ToDomain()
 
-	if domainModule.ID != "physical_strike_lv1" {
-		t.Errorf("ID: got %s, want physical_strike_lv1", domainModule.ID)
+	if domainModule.TypeID != "physical_strike_lv1" {
+		t.Errorf("TypeID: got %s, want physical_strike_lv1", domainModule.TypeID)
 	}
-	if domainModule.Category != domain.PhysicalAttack {
-		t.Errorf("Category: got %v, want %v", domainModule.Category, domain.PhysicalAttack)
+	if domainModule.Category() != domain.PhysicalAttack {
+		t.Errorf("Category: got %v, want %v", domainModule.Category(), domain.PhysicalAttack)
+	}
+}
+
+// TestLoadPassiveSkills はパッシブスキル定義のロードをテストします。
+func TestLoadPassiveSkills(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "ps_buff_extender",
+				"name": "バフエクステンダー",
+				"description": "バフ効果時間+50%",
+				"trigger_type": "permanent",
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			},
+			{
+				"id": "ps_perfect_rhythm",
+				"name": "パーフェクトリズム",
+				"description": "正確性100%でスキル効果1.5倍",
+				"trigger_type": "conditional",
+				"trigger_condition": {
+					"type": "accuracy_equals",
+					"value": 100
+				},
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			},
+			{
+				"id": "ps_last_stand",
+				"name": "ラストスタンド",
+				"description": "HP25%以下で30%の確率で被ダメージ1",
+				"trigger_type": "probability",
+				"trigger_condition": {
+					"type": "hp_below_percent",
+					"value": 25
+				},
+				"effect_type": "special",
+				"effect_value": 1,
+				"probability": 0.3
+			},
+			{
+				"id": "ps_combo_master",
+				"name": "コンボマスター",
+				"description": "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
+				"trigger_type": "stack",
+				"trigger_condition": {
+					"type": "no_miss_streak"
+				},
+				"effect_type": "modifier",
+				"effect_value": 0.1,
+				"max_stacks": 5,
+				"stack_increment": 0.1
+			},
+			{
+				"id": "ps_first_strike",
+				"name": "ファーストストライク",
+				"description": "戦闘開始時、最初のスキルが即発動",
+				"trigger_type": "reactive",
+				"trigger_condition": {
+					"type": "on_battle_start"
+				},
+				"effect_type": "special",
+				"uses_per_battle": 1
+			}
+		]
+	}`
+
+	passiveSkillsPath := filepath.Join(tmpDir, "passive_skills.json")
+	if err := os.WriteFile(passiveSkillsPath, []byte(passiveSkillsJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	passiveSkills, err := loader.LoadPassiveSkills()
+	if err != nil {
+		t.Fatalf("パッシブスキルのロードに失敗: %v", err)
+	}
+
+	if len(passiveSkills) != 5 {
+		t.Errorf("パッシブスキル数: got %d, want 5", len(passiveSkills))
+	}
+
+	// バフエクステンダー（永続効果）の検証
+	if passiveSkills[0].ID != "ps_buff_extender" {
+		t.Errorf("ID: got %s, want ps_buff_extender", passiveSkills[0].ID)
+	}
+	if passiveSkills[0].TriggerType != "permanent" {
+		t.Errorf("TriggerType: got %s, want permanent", passiveSkills[0].TriggerType)
+	}
+	if passiveSkills[0].EffectValue != 1.5 {
+		t.Errorf("EffectValue: got %f, want 1.5", passiveSkills[0].EffectValue)
+	}
+
+	// パーフェクトリズム（条件付き）の検証
+	if passiveSkills[1].TriggerCondition == nil {
+		t.Error("TriggerCondition should not be nil")
+	} else {
+		if passiveSkills[1].TriggerCondition.Type != "accuracy_equals" {
+			t.Errorf("TriggerCondition.Type: got %s, want accuracy_equals", passiveSkills[1].TriggerCondition.Type)
+		}
+	}
+
+	// ラストスタンド（確率トリガー）の検証
+	if passiveSkills[2].Probability != 0.3 {
+		t.Errorf("Probability: got %f, want 0.3", passiveSkills[2].Probability)
+	}
+
+	// コンボマスター（スタック型）の検証
+	if passiveSkills[3].MaxStacks != 5 {
+		t.Errorf("MaxStacks: got %d, want 5", passiveSkills[3].MaxStacks)
+	}
+	if passiveSkills[3].StackIncrement != 0.1 {
+		t.Errorf("StackIncrement: got %f, want 0.1", passiveSkills[3].StackIncrement)
+	}
+
+	// ファーストストライク（反応型）の検証
+	if passiveSkills[4].UsesPerBattle != 1 {
+		t.Errorf("UsesPerBattle: got %d, want 1", passiveSkills[4].UsesPerBattle)
+	}
+}
+
+// TestConvertToDomainPassiveSkillDefinition はパッシブスキルデータからドメインモデルへの変換をテストします。
+func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	passiveSkillsJSON := `{
+		"passive_skills": [
+			{
+				"id": "ps_perfect_rhythm",
+				"name": "パーフェクトリズム",
+				"description": "正確性100%でスキル効果1.5倍",
+				"trigger_type": "conditional",
+				"trigger_condition": {
+					"type": "accuracy_equals",
+					"value": 100
+				},
+				"effect_type": "multiplier",
+				"effect_value": 1.5
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "passive_skills.json"), []byte(passiveSkillsJSON), 0644)
+
+	loader := NewDataLoader(tmpDir)
+	passiveSkills, err := loader.LoadPassiveSkills()
+	if err != nil {
+		t.Fatalf("パッシブスキルのロードに失敗: %v", err)
+	}
+
+	// ドメインモデルに変換
+	domainPassiveSkill := passiveSkills[0].ToDomain()
+
+	if domainPassiveSkill.ID != "ps_perfect_rhythm" {
+		t.Errorf("ID: got %s, want ps_perfect_rhythm", domainPassiveSkill.ID)
+	}
+	if domainPassiveSkill.TriggerType != domain.PassiveTriggerConditional {
+		t.Errorf("TriggerType: got %s, want %s", domainPassiveSkill.TriggerType, domain.PassiveTriggerConditional)
+	}
+	if domainPassiveSkill.TriggerCondition == nil {
+		t.Error("TriggerCondition should not be nil")
+	} else {
+		if domainPassiveSkill.TriggerCondition.Type != domain.TriggerConditionAccuracyEquals {
+			t.Errorf("TriggerCondition.Type: got %s, want %s", domainPassiveSkill.TriggerCondition.Type, domain.TriggerConditionAccuracyEquals)
+		}
+	}
+	if domainPassiveSkill.EffectType != domain.PassiveEffectMultiplier {
+		t.Errorf("EffectType: got %s, want %s", domainPassiveSkill.EffectType, domain.PassiveEffectMultiplier)
+	}
+}
+
+// TestLoadChainEffects はチェイン効果定義のロードをテストします。
+func TestLoadChainEffects(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	chainEffectsJSON := `{
+		"chain_effects": [
+			{
+				"id": "damage_bonus",
+				"name": "ダメージボーナス",
+				"description": "次の攻撃のダメージにボーナスを付与",
+				"category": "attack",
+				"effect_type": "damage_bonus",
+				"min_value": 10,
+				"max_value": 50
+			},
+			{
+				"id": "heal_bonus",
+				"name": "ヒールボーナス",
+				"description": "次の回復量にボーナスを付与",
+				"category": "heal",
+				"effect_type": "heal_bonus",
+				"min_value": 15,
+				"max_value": 40
+			},
+			{
+				"id": "damage_cut",
+				"name": "ダメージカット",
+				"description": "効果中の被ダメージを軽減",
+				"category": "defense",
+				"effect_type": "damage_cut",
+				"min_value": 10,
+				"max_value": 30
+			},
+			{
+				"id": "time_extend",
+				"name": "タイムエクステンド",
+				"description": "効果中のタイピング制限時間を延長",
+				"category": "typing",
+				"effect_type": "time_extend",
+				"min_value": 1,
+				"max_value": 3
+			},
+			{
+				"id": "cooldown_reduce",
+				"name": "クールダウンリデュース",
+				"description": "他エージェントのリキャスト時間を短縮",
+				"category": "recast",
+				"effect_type": "cooldown_reduce",
+				"min_value": 10,
+				"max_value": 30
+			},
+			{
+				"id": "buff_duration",
+				"name": "バフデュレーション",
+				"description": "バフスキルの効果時間を延長",
+				"category": "effect_extend",
+				"effect_type": "buff_duration",
+				"min_value": 1,
+				"max_value": 5
+			},
+			{
+				"id": "double_cast",
+				"name": "ダブルキャスト",
+				"description": "一定確率でスキルを2回発動",
+				"category": "special",
+				"effect_type": "double_cast",
+				"min_value": 10,
+				"max_value": 25
+			}
+		]
+	}`
+
+	chainEffectsPath := filepath.Join(tmpDir, "chain_effects.json")
+	if err := os.WriteFile(chainEffectsPath, []byte(chainEffectsJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	chainEffects, err := loader.LoadChainEffects()
+	if err != nil {
+		t.Fatalf("チェイン効果のロードに失敗: %v", err)
+	}
+
+	if len(chainEffects) != 7 {
+		t.Errorf("チェイン効果数: got %d, want 7", len(chainEffects))
+	}
+
+	// ダメージボーナス（攻撃カテゴリ）の検証
+	if chainEffects[0].ID != "damage_bonus" {
+		t.Errorf("ID: got %s, want damage_bonus", chainEffects[0].ID)
+	}
+	if chainEffects[0].Category != "attack" {
+		t.Errorf("Category: got %s, want attack", chainEffects[0].Category)
+	}
+	if chainEffects[0].EffectType != "damage_bonus" {
+		t.Errorf("EffectType: got %s, want damage_bonus", chainEffects[0].EffectType)
+	}
+	if chainEffects[0].MinValue != 10 {
+		t.Errorf("MinValue: got %f, want 10", chainEffects[0].MinValue)
+	}
+	if chainEffects[0].MaxValue != 50 {
+		t.Errorf("MaxValue: got %f, want 50", chainEffects[0].MaxValue)
+	}
+
+	// 各カテゴリの検証
+	categories := map[string]bool{
+		"attack":        false,
+		"heal":          false,
+		"defense":       false,
+		"typing":        false,
+		"recast":        false,
+		"effect_extend": false,
+		"special":       false,
+	}
+	for _, effect := range chainEffects {
+		categories[effect.Category] = true
+	}
+	for cat, found := range categories {
+		if !found {
+			t.Errorf("カテゴリ %s が見つからない", cat)
+		}
+	}
+}
+
+// TestConvertToDomainChainEffectType はチェイン効果データからドメインモデルへの変換をテストします。
+func TestConvertToDomainChainEffectType(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	chainEffectsJSON := `{
+		"chain_effects": [
+			{
+				"id": "damage_amp",
+				"name": "ダメージアンプ",
+				"description": "効果中の攻撃ダメージを増加",
+				"category": "attack",
+				"effect_type": "damage_amp",
+				"min_value": 10,
+				"max_value": 30
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "chain_effects.json"), []byte(chainEffectsJSON), 0644)
+
+	loader := NewDataLoader(tmpDir)
+	chainEffects, err := loader.LoadChainEffects()
+	if err != nil {
+		t.Fatalf("チェイン効果のロードに失敗: %v", err)
+	}
+
+	// ドメインモデルに変換
+	domainEffectType := chainEffects[0].ToDomainEffectType()
+	domainCategory := chainEffects[0].ToDomainCategory()
+
+	if domainEffectType != domain.ChainEffectDamageAmp {
+		t.Errorf("EffectType: got %s, want %s", domainEffectType, domain.ChainEffectDamageAmp)
+	}
+	if domainCategory != domain.ChainEffectCategoryAttack {
+		t.Errorf("Category: got %s, want %s", domainCategory, domain.ChainEffectCategoryAttack)
 	}
 }

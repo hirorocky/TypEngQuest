@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
 	"hirorocky/type-battle/internal/usecase/rewarding"
 
@@ -189,7 +190,15 @@ func (s *RewardScreen) renderDrops() string {
 		items = append(items, moduleStyle.Render("【モジュール】"))
 
 		for _, module := range s.result.DroppedModules {
-			moduleInfo := fmt.Sprintf("  %s (%s)", module.Name, module.Category.String())
+			// モジュール基本情報
+			moduleInfo := fmt.Sprintf("  %s (%s)", module.Name(), module.Category().String())
+
+			// チェイン効果がある場合はバッジを追加
+			if module.HasChainEffect() {
+				badge := components.NewChainEffectBadge(module.ChainEffect)
+				moduleInfo = fmt.Sprintf("%s %s", moduleInfo, badge.RenderWithValue())
+			}
+
 			items = append(items, lipgloss.NewStyle().
 				Foreground(styles.ColorSecondary).
 				Render(moduleInfo))

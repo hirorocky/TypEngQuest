@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
+	"hirorocky/type-battle/internal/usecase/combat/recast"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -119,7 +121,7 @@ func (s *BattleScreen) renderEnemyArea() string {
 	builder.WriteString("\n")
 
 	// 敵のバフ表示
-	buffs := s.enemy.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs := s.enemy.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) > 0 {
 		for _, buff := range buffs {
 			if buff.Duration != nil {
@@ -165,7 +167,7 @@ func (s *BattleScreen) renderEnemyArea() string {
 }
 
 // renderAgentArea はエージェントエリア（3体横並びカード）をレンダリングします。
-// UI-Improvement Requirement 3.2: エージェント横並びカード表示
+// タスク 9: リキャスト状態、チェイン効果、パッシブスキル表示を追加
 func (s *BattleScreen) renderAgentArea() string {
 	// 画面幅に基づいてカード幅を計算（余白を最小限に）
 	// 外枠: border(2) + padding(4) = 6
@@ -182,6 +184,12 @@ func (s *BattleScreen) renderAgentArea() string {
 		var cardContent strings.Builder
 		isSelected := i == s.selectedAgentIdx
 
+		// リキャスト状態を取得（枠色判定にも使用）
+		var recastState *recast.RecastState
+		if i < len(s.equippedAgents) {
+			recastState = s.recastManager.GetRecastState(i)
+		}
+
 		if i < len(s.equippedAgents) {
 			agent := s.equippedAgents[i]
 
@@ -193,24 +201,48 @@ func (s *BattleScreen) renderAgentArea() string {
 					Background(styles.ColorSelectedBg)
 			}
 			cardContent.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)))
-			cardContent.WriteString("\n\n")
+			cardContent.WriteString("\n")
 
-			// エージェントのモジュール一覧
+			// パッシブスキル表示（コア特性から）- ShortDescriptionを使用
+			if agent.Core != nil && agent.Core.PassiveSkill.ID != "" {
+				passiveNotification := components.NewPassiveSkillNotification(&agent.Core.PassiveSkill, agent.Level)
+				shortDesc := passiveNotification.GetShortDescription()
+				passiveStyle := lipgloss.NewStyle().
+					Foreground(styles.ColorBuff).
+					Bold(true)
+				cardContent.WriteString(passiveStyle.Render(fmt.Sprintf("★ %s", shortDesc)))
+				cardContent.WriteString("\n")
+			}
+
+			// リキャスト状態表示
+			if recastState != nil {
+				recastBar := components.NewRecastProgressBar()
+				recastBar.SetProgress(recastState.RemainingSeconds, recastState.TotalSeconds)
+				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorWarning).Render("⏳ "))
+				cardContent.WriteString(recastBar.RenderCompact(10))
+				cardContent.WriteString("\n")
+			}
+
+			// エージェントのモジュール一覧（2行表示）
+			// 待機中チェイン効果を取得（発動中の強調表示判定用）
+			pendingChain := s.chainEffectManager.GetPendingEffectForAgent(i)
+
 			agentModules := s.getModulesForAgent(i)
 			for j, slot := range agentModules {
 				isModuleSelected := isSelected && j == s.getSelectedModuleInAgent(i)
 
 				// モジュールアイコン
-				icon := s.getModuleIcon(slot.Module.Category)
+				icon := slot.Module.Icon()
 
-				// モジュール名とクールダウン
+				// モジュール名のスタイル
 				var moduleStyle lipgloss.Style
 				if isModuleSelected {
 					moduleStyle = lipgloss.NewStyle().
 						Bold(true).
 						Foreground(styles.ColorSelectedFg).
 						Background(styles.ColorSelectedBg)
-				} else if !slot.IsReady() {
+				} else if !slot.IsReady() || recastState != nil {
+					// クールダウン中またはリキャスト中は淡い色
 					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 				} else {
 					moduleStyle = lipgloss.NewStyle().Foreground(styles.ColorSecondary)
@@ -221,24 +253,40 @@ func (s *BattleScreen) renderAgentArea() string {
 					prefix = "> "
 				}
 
-				if !slot.IsReady() {
-					cdBar := s.styles.RenderCooldownBarWithTime(slot.CooldownRemaining, slot.CooldownTotal, 8)
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s ", prefix, icon, slot.Module.Name)))
-					cardContent.WriteString(cdBar)
-				} else {
-					cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s", prefix, icon, slot.Module.Name)))
-					cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorHPHigh).Render(" [READY]"))
-				}
+				// 1行目: プレフィックス + アイコン + モジュール名
+				cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s", prefix, icon, slot.Module.Name())))
 				cardContent.WriteString("\n")
+
+				// 2行目: チェイン効果（あれば）または空行
+				if slot.Module.HasChainEffect() {
+					chainBadge := components.NewChainEffectBadge(slot.Module.ChainEffect)
+					// このモジュールのチェイン効果が発動中かチェック
+					// リキャスト中 かつ 待機中チェイン効果がこのモジュールのものなら発動中
+					isChainActive := pendingChain != nil &&
+						pendingChain.Effect.Type == slot.Module.ChainEffect.Type
+					cardContent.WriteString("    ") // インデント（prefixと同じ幅 + アイコン分）
+					if isChainActive {
+						cardContent.WriteString(chainBadge.RenderActive())
+					} else {
+						cardContent.WriteString(chainBadge.RenderWithValue())
+					}
+					cardContent.WriteString("\n")
+				} else {
+					// チェイン効果がなくても空行を出力（高さを揃えるため）
+					cardContent.WriteString("\n")
+				}
 			}
 		} else {
 			// 空スロット
 			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)"))
 		}
 
-		// カードボックス
+		// カードボックス - リキャスト状態で枠色を変更
 		borderColor := styles.ColorSubtle
-		if isSelected {
+		if recastState != nil {
+			// リキャスト中（クールダウン中）は黄色枠
+			borderColor = styles.ColorWarning
+		} else if isSelected {
 			borderColor = styles.ColorPrimary
 		}
 
@@ -247,7 +295,7 @@ func (s *BattleScreen) renderAgentArea() string {
 			BorderForeground(borderColor).
 			Padding(0, 1).
 			Width(cardWidth).
-			Height(10)
+			Height(10) // 高さを詰める（待機中チェイン効果表示削除分）
 
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
@@ -255,20 +303,21 @@ func (s *BattleScreen) renderAgentArea() string {
 	// カードを横に並べる（スペースを最小限に）
 	agentCards := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], " ", cards[1], " ", cards[2])
 
-	// エリアボックス
-	areaStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1, 2).
-		Width(s.width - 4)
-
+	// タイトル（枠なし）
 	title := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
 		Render("────────────────────────────────  PLAYER  ────────────────────────────────")
 
+	// エリア枠を削除し、カードのみを表示
+	areaContent := lipgloss.NewStyle().
+		Padding(1, 2).
+		Width(s.width - 4).
+		Align(lipgloss.Center).
+		Render(agentCards)
+
 	return lipgloss.JoinVertical(lipgloss.Center,
 		title,
-		areaStyle.Render(agentCards),
+		areaContent,
 	)
 }
 
@@ -307,7 +356,7 @@ func (s *BattleScreen) renderPlayerArea() string {
 	builder.WriteString("\n")
 
 	// バフ表示
-	buffs := s.player.EffectTable.GetRowsBySource(domain.SourceBuff)
+	buffs := s.player.EffectTable.FindBySourceType(domain.SourceBuff)
 	if len(buffs) > 0 {
 		builder.WriteString("バフ: ")
 		for _, buff := range buffs {
@@ -320,7 +369,7 @@ func (s *BattleScreen) renderPlayerArea() string {
 	}
 
 	// デバフ表示
-	debuffs := s.player.EffectTable.GetRowsBySource(domain.SourceDebuff)
+	debuffs := s.player.EffectTable.FindBySourceType(domain.SourceDebuff)
 	if len(debuffs) > 0 {
 		builder.WriteString("デバフ: ")
 		for _, debuff := range debuffs {
@@ -329,6 +378,31 @@ func (s *BattleScreen) renderPlayerArea() string {
 				builder.WriteString(" ")
 			}
 		}
+		builder.WriteString("\n")
+	}
+
+	// パッシブスキル表示（スタック型パッシブのダメージ倍率）
+	passives := s.player.EffectTable.FindBySourceType(domain.SourcePassive)
+	hasStackPassive := false
+	for _, passive := range passives {
+		if passive.MaxStacks > 0 {
+			if !hasStackPassive {
+				builder.WriteString("パッシブ: ")
+				hasStackPassive = true
+			}
+			// スタック数を計算（コンボ数を使用、最大スタックでキャップ）
+			stacks := s.comboCount
+			if stacks > passive.MaxStacks {
+				stacks = passive.MaxStacks
+			}
+			// ダメージ倍率を計算（スタック数 × 効果増分）
+			bonusPercent := float64(stacks) * passive.StackIncrement * 100
+			builder.WriteString(s.styles.RenderPassive(passive.Name, bonusPercent))
+			builder.WriteString(" ")
+		}
+	}
+	if hasStackPassive {
+		builder.WriteString("\n")
 	}
 
 	// エリアボックス
@@ -550,11 +624,4 @@ func (s *BattleScreen) getSelectedModuleInAgent(agentIdx int) int {
 		}
 	}
 	return 0
-}
-
-// getModuleIcon はモジュールカテゴリのアイコンを返します。
-// UI-Improvement Requirement 3.6: モジュールカテゴリアイコン
-// 要件 7.3: domain.ModuleCategory.Icon()に委譲
-func (s *BattleScreen) getModuleIcon(category domain.ModuleCategory) string {
-	return category.Icon()
 }

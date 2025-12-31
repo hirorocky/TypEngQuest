@@ -243,7 +243,15 @@ func createTestAgents(levels []int) []*AgentModel {
 
 	modules := make([]*ModuleModel, 4)
 	for i := 0; i < 4; i++ {
-		modules[i] = NewModule("mod", "テスト", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "テスト")
+		modules[i] = NewModuleFromType(ModuleType{
+			ID:          "mod",
+			Name:        "テスト",
+			Category:    PhysicalAttack,
+			Tags:        []string{"physical_low"},
+			BaseEffect:  10.0,
+			StatRef:     "STR",
+			Description: "テスト",
+		}, nil)
 	}
 
 	for i, level := range levels {

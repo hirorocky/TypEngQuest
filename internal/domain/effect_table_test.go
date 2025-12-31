@@ -5,22 +5,22 @@ import (
 	"testing"
 )
 
-// TestSourceType_定数の確認 はSourceType定数が正しく定義されていることを確認します。
-func TestSourceType_定数の確認(t *testing.T) {
+// TestEffectSourceType_定数の確認 はEffectSourceType定数が正しく定義されていることを確認します。
+func TestEffectSourceType_定数の確認(t *testing.T) {
 	tests := []struct {
-		sourceType SourceType
+		sourceType EffectSourceType
 		expected   string
 	}{
-		{SourceCore, "Core"},
-		{SourceModule, "Module"},
-		{SourceBuff, "Buff"},
-		{SourceDebuff, "Debuff"},
+		{SourcePassive, "passive"},
+		{SourceChain, "chain"},
+		{SourceBuff, "buff"},
+		{SourceDebuff, "debuff"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
 			if string(tt.sourceType) != tt.expected {
-				t.Errorf("SourceTypeが期待値と異なります: got %s, want %s", tt.sourceType, tt.expected)
+				t.Errorf("EffectSourceTypeが期待値と異なります: got %s, want %s", tt.sourceType, tt.expected)
 			}
 		})
 	}
@@ -76,50 +76,85 @@ func TestStatModifiers_値設定(t *testing.T) {
 	}
 }
 
-// TestEffectRow_フィールドの確認 はEffectRow構造体のフィールドが正しく設定されることを確認します。
-func TestEffectRow_フィールドの確認(t *testing.T) {
-	duration := 5.0
-	row := EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Name:       "攻撃UP",
-		Duration:   &duration,
-		Modifiers: StatModifiers{
-			STR_Add: 10,
-		},
+// TestStatModifiers_ToEffectValues はStatModifiersがEffectColumnのmapに変換できることを確認します。
+func TestStatModifiers_ToEffectValues(t *testing.T) {
+	m := StatModifiers{
+		STR_Add:         10,
+		MAG_Add:         5,
+		DamageReduction: 0.2,
+		TypingTimeExt:   3.0,
+		CDReduction:     0.15,
 	}
 
-	if row.ID != "buff_001" {
-		t.Errorf("IDが期待値と異なります: got %s, want buff_001", row.ID)
+	values := m.ToEffectValues()
+
+	// DamageBonus: STR_Add + MAG_Add = 15
+	if values[ColDamageBonus] != 15 {
+		t.Errorf("DamageBonusが期待値と異なります: got %f, want 15", values[ColDamageBonus])
 	}
-	if row.SourceType != SourceBuff {
-		t.Errorf("SourceTypeが期待値と異なります: got %s, want Buff", row.SourceType)
+	// DamageCut: DamageReduction = 0.2
+	if values[ColDamageCut] != 0.2 {
+		t.Errorf("DamageCutが期待値と異なります: got %f, want 0.2", values[ColDamageCut])
 	}
-	if row.Name != "攻撃UP" {
-		t.Errorf("Nameが期待値と異なります: got %s, want 攻撃UP", row.Name)
+	// TimeExtend: TypingTimeExt = 3.0
+	if values[ColTimeExtend] != 3.0 {
+		t.Errorf("TimeExtendが期待値と異なります: got %f, want 3.0", values[ColTimeExtend])
 	}
-	if *row.Duration != 5.0 {
-		t.Errorf("Durationが期待値と異なります: got %f, want 5.0", *row.Duration)
-	}
-	if row.Modifiers.STR_Add != 10 {
-		t.Errorf("Modifiers.STR_Addが期待値と異なります: got %d, want 10", row.Modifiers.STR_Add)
+	// CooldownReduce: CDReduction = 0.15
+	if values[ColCooldownReduce] != 0.15 {
+		t.Errorf("CooldownReduceが期待値と異なります: got %f, want 0.15", values[ColCooldownReduce])
 	}
 }
 
-// TestEffectRow_永続効果 はCore/Moduleの永続効果（Duration=nil）を確認します。
-func TestEffectRow_永続効果(t *testing.T) {
-	row := EffectRow{
-		ID:         "core_001",
-		SourceType: SourceCore,
-		Name:       "攻撃特化",
-		Duration:   nil, // 永続効果
-		Modifiers: StatModifiers{
-			STR_Add: 15,
+// TestEffectEntry_フィールドの確認 はEffectEntry構造体のフィールドが正しく設定されることを確認します。
+func TestEffectEntry_フィールドの確認(t *testing.T) {
+	duration := 5.0
+	entry := EffectEntry{
+		SourceType:  SourceBuff,
+		SourceID:    "buff_001",
+		SourceIndex: 0,
+		Name:        "攻撃UP",
+		Duration:    &duration,
+		Values: map[EffectColumn]float64{
+			ColDamageBonus: 10,
 		},
 	}
 
-	if row.Duration != nil {
+	if entry.SourceID != "buff_001" {
+		t.Errorf("SourceIDが期待値と異なります: got %s, want buff_001", entry.SourceID)
+	}
+	if entry.SourceType != SourceBuff {
+		t.Errorf("SourceTypeが期待値と異なります: got %s, want buff", entry.SourceType)
+	}
+	if entry.Name != "攻撃UP" {
+		t.Errorf("Nameが期待値と異なります: got %s, want 攻撃UP", entry.Name)
+	}
+	if *entry.Duration != 5.0 {
+		t.Errorf("Durationが期待値と異なります: got %f, want 5.0", *entry.Duration)
+	}
+	if entry.Values[ColDamageBonus] != 10 {
+		t.Errorf("Values[ColDamageBonus]が期待値と異なります: got %f, want 10", entry.Values[ColDamageBonus])
+	}
+}
+
+// TestEffectEntry_永続効果 はパッシブスキルの永続効果（Duration=nil）を確認します。
+func TestEffectEntry_永続効果(t *testing.T) {
+	entry := EffectEntry{
+		SourceType:  SourcePassive,
+		SourceID:    "passive_001",
+		SourceIndex: 0,
+		Name:        "攻撃特化",
+		Duration:    nil, // 永続効果
+		Values: map[EffectColumn]float64{
+			ColDamageBonus: 15,
+		},
+	}
+
+	if entry.Duration != nil {
 		t.Error("永続効果のDurationはnilであるべきです")
+	}
+	if !entry.IsPermanent() {
+		t.Error("IsPermanent()がtrueを返すべきです")
 	}
 }
 
@@ -130,261 +165,311 @@ func TestEffectTable_新規作成(t *testing.T) {
 	if table == nil {
 		t.Error("NewEffectTableがnilを返しました")
 	}
-	if len(table.Rows) != 0 {
-		t.Errorf("新規テーブルの行数が0ではありません: got %d", len(table.Rows))
+	if len(table.Entries) != 0 {
+		t.Errorf("新規テーブルのエントリ数が0ではありません: got %d", len(table.Entries))
 	}
 }
 
-// TestEffectTable_行の追加 はAddRowで行を追加できることを確認します。
-
-func TestEffectTable_行の追加(t *testing.T) {
+// TestEffectTable_エントリの追加 はAddEntryでエントリを追加できることを確認します。
+func TestEffectTable_エントリの追加(t *testing.T) {
 	table := NewEffectTable()
 
 	duration := 5.0
-	row := EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Name:       "攻撃UP",
-		Duration:   &duration,
-		Modifiers: StatModifiers{
-			STR_Add: 10,
+	entry := EffectEntry{
+		SourceType:  SourceBuff,
+		SourceID:    "buff_001",
+		SourceIndex: 0,
+		Name:        "攻撃UP",
+		Duration:    &duration,
+		Values: map[EffectColumn]float64{
+			ColDamageBonus: 10,
 		},
 	}
 
-	table.AddRow(row)
+	table.AddEntry(entry)
 
-	if len(table.Rows) != 1 {
-		t.Errorf("行の追加後の行数が1ではありません: got %d", len(table.Rows))
+	if len(table.Entries) != 1 {
+		t.Errorf("エントリ追加後のエントリ数が1ではありません: got %d", len(table.Entries))
 	}
-	if table.Rows[0].ID != "buff_001" {
-		t.Errorf("追加された行のIDが異なります: got %s, want buff_001", table.Rows[0].ID)
+	if table.Entries[0].SourceID != "buff_001" {
+		t.Errorf("追加されたエントリのSourceIDが異なります: got %s, want buff_001", table.Entries[0].SourceID)
 	}
 }
 
-// TestEffectTable_行の削除 はRemoveRowで行を削除できることを確認します。
-
-func TestEffectTable_行の削除(t *testing.T) {
+// TestEffectTable_AddBuff はAddBuffでバフを追加できることを確認します。
+func TestEffectTable_AddBuff(t *testing.T) {
 	table := NewEffectTable()
 
-	duration1 := 5.0
-	duration2 := 3.0
-	table.AddRow(EffectRow{ID: "buff_001", SourceType: SourceBuff, Duration: &duration1})
-	table.AddRow(EffectRow{ID: "buff_002", SourceType: SourceBuff, Duration: &duration2})
-
-	if len(table.Rows) != 2 {
-		t.Errorf("行の追加後の行数が2ではありません: got %d", len(table.Rows))
+	values := map[EffectColumn]float64{
+		ColDamageMultiplier: 1.2,
 	}
+	table.AddBuff("攻撃力UP", 10.0, values)
 
-	table.RemoveRow("buff_001")
-
-	if len(table.Rows) != 1 {
-		t.Errorf("行の削除後の行数が1ではありません: got %d", len(table.Rows))
+	if len(table.Entries) != 1 {
+		t.Errorf("バフ追加後のエントリ数が1ではありません: got %d", len(table.Entries))
 	}
-	if table.Rows[0].ID != "buff_002" {
-		t.Errorf("残っている行のIDが異なります: got %s, want buff_002", table.Rows[0].ID)
+	if table.Entries[0].SourceType != SourceBuff {
+		t.Errorf("SourceTypeがSourceBuffではありません: got %s", table.Entries[0].SourceType)
+	}
+	if table.Entries[0].Name != "攻撃力UP" {
+		t.Errorf("Nameが期待値と異なります: got %s", table.Entries[0].Name)
 	}
 }
 
-// TestEffectTable_時限更新 はUpdateDurationsで時限効果の残り時間を更新できることを確認します。
+// TestEffectTable_AddDebuff はAddDebuffでデバフを追加できることを確認します。
+func TestEffectTable_AddDebuff(t *testing.T) {
+	table := NewEffectTable()
+
+	values := map[EffectColumn]float64{
+		ColTimeExtend: -2.0,
+	}
+	table.AddDebuff("タイピング時間短縮", 8.0, values)
+
+	if len(table.Entries) != 1 {
+		t.Errorf("デバフ追加後のエントリ数が1ではありません: got %d", len(table.Entries))
+	}
+	if table.Entries[0].SourceType != SourceDebuff {
+		t.Errorf("SourceTypeがSourceDebuffではありません: got %s", table.Entries[0].SourceType)
+	}
+}
+
+// TestEffectTable_エントリの削除 はRemoveBySourceIDでエントリを削除できることを確認します。
+func TestEffectTable_エントリの削除(t *testing.T) {
+	table := NewEffectTable()
+
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddBuff("buff_002", 3.0, map[EffectColumn]float64{ColDamageBonus: 5})
+
+	if len(table.Entries) != 2 {
+		t.Errorf("エントリ追加後のエントリ数が2ではありません: got %d", len(table.Entries))
+	}
+
+	table.RemoveBySourceID("buff_001")
+
+	if len(table.Entries) != 1 {
+		t.Errorf("エントリ削除後のエントリ数が1ではありません: got %d", len(table.Entries))
+	}
+	if table.Entries[0].SourceID != "buff_002" {
+		t.Errorf("残っているエントリのSourceIDが異なります: got %s, want buff_002", table.Entries[0].SourceID)
+	}
+}
+
+// TestEffectTable_時限更新 はTickで時限効果の残り時間を更新できることを確認します。
 func TestEffectTable_時限更新(t *testing.T) {
 	table := NewEffectTable()
 
-	duration1 := 5.0
-	duration2 := 2.0
-	table.AddRow(EffectRow{ID: "buff_001", SourceType: SourceBuff, Duration: &duration1})
-	table.AddRow(EffectRow{ID: "buff_002", SourceType: SourceBuff, Duration: &duration2})
-	table.AddRow(EffectRow{ID: "core_001", SourceType: SourceCore, Duration: nil}) // 永続効果
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddBuff("buff_002", 2.0, map[EffectColumn]float64{ColDamageBonus: 5})
+	table.AddEntry(EffectEntry{
+		SourceType: SourcePassive,
+		SourceID:   "passive_001",
+		Name:       "パッシブ",
+		Duration:   nil, // 永続効果
+	})
 
 	// 1秒経過
-	table.UpdateDurations(1.0)
+	table.Tick(1.0)
 
 	// buff_001は4秒残り
-	if *table.Rows[0].Duration != 4.0 {
-		t.Errorf("buff_001のDurationが期待値と異なります: got %f, want 4.0", *table.Rows[0].Duration)
+	if *table.Entries[0].Duration != 4.0 {
+		t.Errorf("buff_001のDurationが期待値と異なります: got %f, want 4.0", *table.Entries[0].Duration)
 	}
 	// buff_002は1秒残り
-	if *table.Rows[1].Duration != 1.0 {
-		t.Errorf("buff_002のDurationが期待値と異なります: got %f, want 1.0", *table.Rows[1].Duration)
+	if *table.Entries[1].Duration != 1.0 {
+		t.Errorf("buff_002のDurationが期待値と異なります: got %f, want 1.0", *table.Entries[1].Duration)
 	}
-	// core_001は永続（変化なし）
-	if table.Rows[2].Duration != nil {
+	// passive_001は永続（変化なし）
+	if table.Entries[2].Duration != nil {
 		t.Error("永続効果のDurationが変化しています")
 	}
 }
 
-// TestEffectTable_期限切れ削除 はUpdateDurationsで期限切れの効果が削除されることを確認します。
+// TestEffectTable_期限切れ削除 はTickで期限切れの効果が削除されることを確認します。
 func TestEffectTable_期限切れ削除(t *testing.T) {
 	table := NewEffectTable()
 
-	duration1 := 5.0
-	duration2 := 1.0
-	table.AddRow(EffectRow{ID: "buff_001", SourceType: SourceBuff, Duration: &duration1})
-	table.AddRow(EffectRow{ID: "buff_002", SourceType: SourceBuff, Duration: &duration2})
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddBuff("buff_002", 1.0, map[EffectColumn]float64{ColDamageBonus: 5})
 
 	// 2秒経過（buff_002は期限切れ）
-	table.UpdateDurations(2.0)
+	table.Tick(2.0)
 
-	if len(table.Rows) != 1 {
-		t.Errorf("期限切れ後の行数が1ではありません: got %d", len(table.Rows))
+	if len(table.Entries) != 1 {
+		t.Errorf("期限切れ後のエントリ数が1ではありません: got %d", len(table.Entries))
 	}
-	if table.Rows[0].ID != "buff_001" {
-		t.Errorf("残っている行のIDが異なります: got %s, want buff_001", table.Rows[0].ID)
-	}
-}
-
-// TestEffectTable_最終ステータス計算_加算のみ は加算のみの効果でステータスが正しく計算されることを確認します。
-func TestEffectTable_最終ステータス計算_加算のみ(t *testing.T) {
-	table := NewEffectTable()
-
-	duration := 5.0
-	table.AddRow(EffectRow{
-		ID:         "core_001",
-		SourceType: SourceCore,
-		Duration:   nil,
-		Modifiers:  StatModifiers{STR_Add: 10, MAG_Add: 5},
-	})
-	table.AddRow(EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Add: 5},
-	})
-
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
-
-	// STR: 100 + 10 + 5 = 115
-	if finalStats.STR != 115 {
-		t.Errorf("STRが期待値と異なります: got %d, want 115", finalStats.STR)
-	}
-	// MAG: 100 + 5 = 105
-	if finalStats.MAG != 105 {
-		t.Errorf("MAGが期待値と異なります: got %d, want 105", finalStats.MAG)
-	}
-	// SPD, LUK: 変化なし
-	if finalStats.SPD != 100 {
-		t.Errorf("SPDが期待値と異なります: got %d, want 100", finalStats.SPD)
-	}
-	if finalStats.LUK != 100 {
-		t.Errorf("LUKが期待値と異なります: got %d, want 100", finalStats.LUK)
+	if table.Entries[0].SourceID != "buff_001" {
+		t.Errorf("残っているエントリのSourceIDが異なります: got %s, want buff_001", table.Entries[0].SourceID)
 	}
 }
 
-// TestEffectTable_最終ステータス計算_乗算のみ は乗算のみの効果でステータスが正しく計算されることを確認します。
-func TestEffectTable_最終ステータス計算_乗算のみ(t *testing.T) {
-	table := NewEffectTable()
+// TestEffectTable_Aggregate_加算効果 は加算効果が正しく集計されることを確認します。
+func TestEffectTable_Aggregate_加算効果(t *testing.T) {
+	table := NewEffectTableWithSeed(42)
 
-	duration := 5.0
-	table.AddRow(EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Mult: 1.2}, // 20%増加
-	})
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddBuff("buff_002", 5.0, map[EffectColumn]float64{ColDamageBonus: 5})
 
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
+	ctx := NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
 
-	// STR: 100 × 1.2 = 120
-	if finalStats.STR != 120 {
-		t.Errorf("STRが期待値と異なります: got %d, want 120", finalStats.STR)
+	// DamageBonus: 10 + 5 = 15
+	if result.DamageBonus != 15 {
+		t.Errorf("DamageBonusが期待値と異なります: got %d, want 15", result.DamageBonus)
 	}
 }
 
-// TestEffectTable_最終ステータス計算_加算乗算順序 は加算→乗算の順序で計算されることを確認します。
-func TestEffectTable_最終ステータス計算_加算乗算順序(t *testing.T) {
-	table := NewEffectTable()
+// TestEffectTable_Aggregate_乗算効果 は乗算効果が正しく集計されることを確認します。
+func TestEffectTable_Aggregate_乗算効果(t *testing.T) {
+	table := NewEffectTableWithSeed(42)
 
-	duration1 := 5.0
-	duration2 := 5.0
-	table.AddRow(EffectRow{
-		ID:         "core_001",
-		SourceType: SourceCore,
-		Duration:   nil,
-		Modifiers:  StatModifiers{STR_Add: 18},
-	})
-	table.AddRow(EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Duration:   &duration1,
-		Modifiers:  StatModifiers{STR_Mult: 1.2}, // 20%増加
-	})
-	table.AddRow(EffectRow{
-		ID:         "buff_002",
-		SourceType: SourceBuff,
-		Duration:   &duration2,
-		Modifiers:  StatModifiers{STR_Add: 0, STR_Mult: 1.0}, // 効果なし
-	})
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageMultiplier: 1.2})
+	table.AddBuff("buff_002", 5.0, map[EffectColumn]float64{ColDamageMultiplier: 1.5})
 
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
+	ctx := NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
 
-	// STR: (100 + 18) × 1.2 × 1.0 = 118 × 1.2 = 141（切り捨て）
-	if finalStats.STR != 141 {
-		t.Errorf("STRが期待値と異なります: got %d, want 141", finalStats.STR)
-	}
-}
-
-// TestEffectTable_複数乗算の積 は複数の乗算効果が掛け合わされることを確認します。
-func TestEffectTable_複数乗算の積(t *testing.T) {
-	table := NewEffectTable()
-
-	duration := 5.0
-	table.AddRow(EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Mult: 1.2}, // 20%増加
-	})
-	table.AddRow(EffectRow{
-		ID:         "buff_002",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Mult: 1.5}, // 50%増加
-	})
-
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
-
-	// STR: 100 × 1.2 × 1.5 = 179 (浮動小数点計算で1.7999...となり切り捨てで179)
-	if finalStats.STR != 179 {
-		t.Errorf("STRが期待値と異なります: got %d, want 179", finalStats.STR)
-	}
-}
-
-// TestEffectTable_特殊効果の集計 は特殊効果が正しく集計されることを確認します。
-func TestEffectTable_特殊効果の集計(t *testing.T) {
-	table := NewEffectTable()
-
-	duration := 5.0
-	table.AddRow(EffectRow{
-		ID:         "buff_001",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{CDReduction: 0.1, DamageReduction: 0.1},
-	})
-	table.AddRow(EffectRow{
-		ID:         "buff_002",
-		SourceType: SourceBuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{CDReduction: 0.05, CritRate: 0.03},
-	})
-
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
-
-	// CDReduction: 0.1 + 0.05 = 0.15 (浮動小数点の比較は許容誤差を使用)
+	// DamageMultiplier: 1.0 * 1.2 * 1.5 = 1.8
 	epsilon := 0.0001
-	if abs(finalStats.CDReduction-0.15) > epsilon {
-		t.Errorf("CDReductionが期待値と異なります: got %f, want 0.15", finalStats.CDReduction)
+	if abs(result.DamageMultiplier-1.8) > epsilon {
+		t.Errorf("DamageMultiplierが期待値と異なります: got %f, want 1.8", result.DamageMultiplier)
 	}
-	// DamageReduction: 0.1
-	if abs(finalStats.DamageReduction-0.1) > epsilon {
-		t.Errorf("DamageReductionが期待値と異なります: got %f, want 0.1", finalStats.DamageReduction)
+}
+
+// TestEffectTable_Aggregate_最大値効果 は最大値効果が正しく集計されることを確認します。
+func TestEffectTable_Aggregate_最大値効果(t *testing.T) {
+	table := NewEffectTableWithSeed(42)
+
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageCut: 0.2})
+	table.AddBuff("buff_002", 5.0, map[EffectColumn]float64{ColDamageCut: 0.3})
+
+	ctx := NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
+
+	// DamageCut: max(0.2, 0.3) = 0.3
+	epsilon := 0.0001
+	if abs(result.DamageCut-0.3) > epsilon {
+		t.Errorf("DamageCutが期待値と異なります: got %f, want 0.3", result.DamageCut)
 	}
-	// CritRate: 0.03
-	if abs(finalStats.CritRate-0.03) > epsilon {
-		t.Errorf("CritRateが期待値と異なります: got %f, want 0.03", finalStats.CritRate)
+}
+
+// TestEffectTable_Aggregate_複合効果 は複合効果が正しく集計されることを確認します。
+func TestEffectTable_Aggregate_複合効果(t *testing.T) {
+	table := NewEffectTableWithSeed(42)
+
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{
+		ColDamageBonus:      10,
+		ColDamageMultiplier: 1.2,
+		ColDamageCut:        0.2,
+	})
+	table.AddBuff("buff_002", 5.0, map[EffectColumn]float64{
+		ColDamageBonus:    5,
+		ColCooldownReduce: 0.1,
+	})
+
+	ctx := NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
+
+	// DamageBonus: 10 + 5 = 15
+	if result.DamageBonus != 15 {
+		t.Errorf("DamageBonusが期待値と異なります: got %d, want 15", result.DamageBonus)
+	}
+	// DamageMultiplier: 1.0 * 1.2 = 1.2
+	epsilon := 0.0001
+	if abs(result.DamageMultiplier-1.2) > epsilon {
+		t.Errorf("DamageMultiplierが期待値と異なります: got %f, want 1.2", result.DamageMultiplier)
+	}
+	// DamageCut: 0.2
+	if abs(result.DamageCut-0.2) > epsilon {
+		t.Errorf("DamageCutが期待値と異なります: got %f, want 0.2", result.DamageCut)
+	}
+	// CooldownReduce: 0.1
+	if abs(result.CooldownReduce-0.1) > epsilon {
+		t.Errorf("CooldownReduceが期待値と異なります: got %f, want 0.1", result.CooldownReduce)
+	}
+}
+
+// TestEffectTable_空テーブル集計 は空のテーブルでも正しく集計されることを確認します。
+func TestEffectTable_空テーブル集計(t *testing.T) {
+	table := NewEffectTable()
+
+	ctx := NewEffectContext(100, 100, 50, 100)
+	result := table.Aggregate(ctx)
+
+	// 効果なしなのでデフォルト値
+	if result.DamageBonus != 0 {
+		t.Errorf("DamageBonusが期待値と異なります: got %d, want 0", result.DamageBonus)
+	}
+	if result.DamageMultiplier != 1.0 {
+		t.Errorf("DamageMultiplierが期待値と異なります: got %f, want 1.0", result.DamageMultiplier)
+	}
+}
+
+// TestEffectTable_ソース種別でフィルタ はFindBySourceTypeでソース種別でフィルタできることを確認します。
+func TestEffectTable_ソース種別でフィルタ(t *testing.T) {
+	table := NewEffectTable()
+
+	table.AddEntry(EffectEntry{SourceType: SourcePassive, SourceID: "passive_001", Duration: nil})
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddBuff("buff_002", 5.0, map[EffectColumn]float64{ColDamageBonus: 5})
+	table.AddDebuff("debuff_001", 5.0, map[EffectColumn]float64{ColTimeExtend: -2})
+
+	buffs := table.FindBySourceType(SourceBuff)
+	if len(buffs) != 2 {
+		t.Errorf("Buffのエントリ数が期待値と異なります: got %d, want 2", len(buffs))
+	}
+
+	passives := table.FindBySourceType(SourcePassive)
+	if len(passives) != 1 {
+		t.Errorf("Passiveのエントリ数が期待値と異なります: got %d, want 1", len(passives))
+	}
+}
+
+// TestEffectResult_CalculateFinalDamage はダメージ計算が正しく行われることを確認します。
+func TestEffectResult_CalculateFinalDamage(t *testing.T) {
+	result := NewEffectResult()
+	result.DamageBonus = 10
+	result.DamageMultiplier = 1.2
+
+	// baseDamage: 100, bonus: 10, multiplier: 1.2
+	// (100 + 10) * 1.2 = 132
+	finalDamage := result.CalculateFinalDamage(100)
+	if finalDamage != 132 {
+		t.Errorf("最終ダメージが期待値と異なります: got %d, want 132", finalDamage)
+	}
+}
+
+// TestEffectResult_CalculateDamageReceived は被ダメージ計算が正しく行われることを確認します。
+func TestEffectResult_CalculateDamageReceived(t *testing.T) {
+	result := NewEffectResult()
+	result.DamageCut = 0.3
+
+	// rawDamage: 100, cut: 0.3
+	// 100 * (1 - 0.3) = 70
+	received := result.CalculateDamageReceived(100)
+	if received != 70 {
+		t.Errorf("被ダメージが期待値と異なります: got %d, want 70", received)
+	}
+}
+
+// TestEffectTable_ExtendBuffs はバフの持続時間が延長されることを確認します。
+func TestEffectTable_ExtendBuffs(t *testing.T) {
+	table := NewEffectTable()
+
+	table.AddBuff("buff_001", 5.0, map[EffectColumn]float64{ColDamageBonus: 10})
+	table.AddDebuff("debuff_001", 5.0, map[EffectColumn]float64{ColTimeExtend: -2})
+
+	table.ExtendBuffs(3.0)
+
+	// バフは8秒になる
+	buffEntry := table.FindBySourceType(SourceBuff)[0]
+	if *buffEntry.Duration != 8.0 {
+		t.Errorf("バフのDurationが期待値と異なります: got %f, want 8.0", *buffEntry.Duration)
+	}
+
+	// デバフは変化なし
+	debuffEntry := table.FindBySourceType(SourceDebuff)[0]
+	if *debuffEntry.Duration != 5.0 {
+		t.Errorf("デバフのDurationが変化しています: got %f, want 5.0", *debuffEntry.Duration)
 	}
 }
 
@@ -394,92 +479,4 @@ func abs(x float64) float64 {
 		return -x
 	}
 	return x
-}
-
-// TestEffectTable_空テーブル計算 は空のテーブルでも正しく計算されることを確認します。
-func TestEffectTable_空テーブル計算(t *testing.T) {
-	table := NewEffectTable()
-
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
-
-	// 効果なしなのでベースステータスと同じ
-	if finalStats.STR != 100 {
-		t.Errorf("STRが期待値と異なります: got %d, want 100", finalStats.STR)
-	}
-	if finalStats.MAG != 100 {
-		t.Errorf("MAGが期待値と異なります: got %d, want 100", finalStats.MAG)
-	}
-}
-
-// TestEffectTable_ソース種別でフィルタ はGetRowsBySourceでソース種別でフィルタできることを確認します。
-func TestEffectTable_ソース種別でフィルタ(t *testing.T) {
-	table := NewEffectTable()
-
-	duration := 5.0
-	table.AddRow(EffectRow{ID: "core_001", SourceType: SourceCore, Duration: nil})
-	table.AddRow(EffectRow{ID: "buff_001", SourceType: SourceBuff, Duration: &duration})
-	table.AddRow(EffectRow{ID: "buff_002", SourceType: SourceBuff, Duration: &duration})
-	table.AddRow(EffectRow{ID: "debuff_001", SourceType: SourceDebuff, Duration: &duration})
-
-	buffs := table.GetRowsBySource(SourceBuff)
-	if len(buffs) != 2 {
-		t.Errorf("Buffの行数が期待値と異なります: got %d, want 2", len(buffs))
-	}
-
-	cores := table.GetRowsBySource(SourceCore)
-	if len(cores) != 1 {
-		t.Errorf("Coreの行数が期待値と異なります: got %d, want 1", len(cores))
-	}
-}
-
-// TestEffectTable_デバフの効果 はデバフがステータスを減少させることを確認します。
-
-func TestEffectTable_デバフの効果(t *testing.T) {
-	table := NewEffectTable()
-
-	duration := 5.0
-	table.AddRow(EffectRow{
-		ID:         "debuff_001",
-		SourceType: SourceDebuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Add: -10}, // STR減少
-	})
-	table.AddRow(EffectRow{
-		ID:         "debuff_002",
-		SourceType: SourceDebuff,
-		Duration:   &duration,
-		Modifiers:  StatModifiers{STR_Mult: 0.8}, // 20%減少
-	})
-
-	baseStats := Stats{STR: 100, MAG: 100, SPD: 100, LUK: 100}
-	finalStats := table.Calculate(baseStats)
-
-	// STR: (100 - 10) × 0.8 = 90 × 0.8 = 72
-	if finalStats.STR != 72 {
-		t.Errorf("STRが期待値と異なります: got %d, want 72", finalStats.STR)
-	}
-}
-
-// TestFinalStats_フィールドの確認 はFinalStats構造体のフィールドが正しく設定されることを確認します。
-func TestFinalStats_フィールドの確認(t *testing.T) {
-	fs := FinalStats{
-		STR:             100,
-		MAG:             80,
-		SPD:             70,
-		LUK:             60,
-		CDReduction:     0.1,
-		TypingTimeExt:   2.0,
-		DamageReduction: 0.15,
-		CritRate:        0.05,
-		PhysicalEvade:   0.1,
-		MagicEvade:      0.08,
-	}
-
-	if fs.STR != 100 {
-		t.Errorf("STRが期待値と異なります: got %d, want 100", fs.STR)
-	}
-	if fs.CDReduction != 0.1 {
-		t.Errorf("CDReductionが期待値と異なります: got %f, want 0.1", fs.CDReduction)
-	}
 }

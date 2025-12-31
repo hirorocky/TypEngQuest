@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+// newTestModuleForInv はテスト用モジュールを作成するヘルパー関数です。
+func newTestModuleForInv(id, name string, category ModuleCategory, tags []string, baseEffect float64, statRef, description string) *ModuleModel {
+	return NewModuleFromType(ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
 // ==================== コアインベントリテスト ====================
 
 // TestCoreInventory_Add はコアの追加処理をテストします。
@@ -191,8 +204,8 @@ func TestCoreInventory_SortByLevel(t *testing.T) {
 
 func TestModuleInventory_Add(t *testing.T) {
 	inv := NewModuleInventory(20)
-	module := NewModule(
-		"module_001", "物理打撃Lv1", PhysicalAttack, 1,
+	module := newTestModuleForInv(
+		"module_001", "物理打撃Lv1", PhysicalAttack,
 		[]string{"physical_low"}, 10.0, "STR", "基本的な物理攻撃",
 	)
 
@@ -209,8 +222,8 @@ func TestModuleInventory_Add(t *testing.T) {
 // TestModuleInventory_AddOverCapacity はモジュールインベントリ上限チェックをテストします。
 func TestModuleInventory_AddOverCapacity(t *testing.T) {
 	inv := NewModuleInventory(1)
-	module1 := NewModule("module_001", "モジュール1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "説明")
-	module2 := NewModule("module_002", "モジュール2", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "説明")
+	module1 := newTestModuleForInv("module_001", "モジュール1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "説明")
+	module2 := newTestModuleForInv("module_002", "モジュール2", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "説明")
 
 	inv.Add(module1)
 	err := inv.Add(module2)
@@ -223,10 +236,10 @@ func TestModuleInventory_AddOverCapacity(t *testing.T) {
 
 func TestModuleInventory_Remove(t *testing.T) {
 	inv := NewModuleInventory(20)
-	module := NewModule("module_001", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "説明")
+	module := newTestModuleForInv("module_001", "物理打撃Lv1", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", "説明")
 
 	inv.Add(module)
-	removed := inv.Remove("module_001")
+	removed := inv.RemoveByTypeID("module_001")
 
 	if removed == nil {
 		t.Error("モジュールの削除に失敗")
@@ -240,47 +253,16 @@ func TestModuleInventory_Remove(t *testing.T) {
 
 func TestModuleInventory_FilterByCategory(t *testing.T) {
 	inv := NewModuleInventory(20)
-	inv.Add(NewModule("m1", "物理打撃", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
-	inv.Add(NewModule("m2", "ファイアボール", MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", ""))
-	inv.Add(NewModule("m3", "ヒール", Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""))
+	inv.Add(newTestModuleForInv("m1", "物理打撃", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""))
+	inv.Add(newTestModuleForInv("m2", "ファイアボール", MagicAttack, []string{"magic_low"}, 12.0, "MAG", ""))
+	inv.Add(newTestModuleForInv("m3", "ヒール", Heal, []string{"heal_low"}, 8.0, "MAG", ""))
 
 	filtered := inv.FilterByCategory(MagicAttack)
 	if len(filtered) != 1 {
 		t.Errorf("フィルタ後のモジュール数: 期待 1, 実際 %d", len(filtered))
 	}
-	if filtered[0].Category != MagicAttack {
+	if filtered[0].Category() != MagicAttack {
 		t.Error("フィルタされたモジュールのカテゴリが正しくない")
-	}
-}
-
-// TestModuleInventory_FilterByLevel はレベルによるフィルタリングをテストします。
-
-func TestModuleInventory_FilterByLevel(t *testing.T) {
-	inv := NewModuleInventory(20)
-	inv.Add(NewModule("m1", "物理打撃Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
-	inv.Add(NewModule("m2", "物理打撃Lv2", PhysicalAttack, 2, []string{"physical_mid"}, 20.0, "STR", ""))
-	inv.Add(NewModule("m3", "物理打撃Lv3", PhysicalAttack, 3, []string{"physical_high"}, 35.0, "STR", ""))
-
-	filtered := inv.FilterByLevel(2)
-	if len(filtered) != 1 {
-		t.Errorf("フィルタ後のモジュール数: 期待 1, 実際 %d", len(filtered))
-	}
-	if filtered[0].Level != 2 {
-		t.Error("フィルタされたモジュールのレベルが正しくない")
-	}
-}
-
-// TestModuleInventory_SortByLevel はレベルによるソートをテストします。
-
-func TestModuleInventory_SortByLevel(t *testing.T) {
-	inv := NewModuleInventory(20)
-	inv.Add(NewModule("m1", "Lv3", PhysicalAttack, 3, []string{"physical_high"}, 35.0, "STR", ""))
-	inv.Add(NewModule("m2", "Lv1", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
-	inv.Add(NewModule("m3", "Lv2", PhysicalAttack, 2, []string{"physical_mid"}, 20.0, "STR", ""))
-
-	sorted := inv.SortByLevel(true) // 昇順
-	if sorted[0].Level != 1 || sorted[1].Level != 2 || sorted[2].Level != 3 {
-		t.Error("レベル昇順ソートが正しくない")
 	}
 }
 
@@ -299,10 +281,10 @@ func TestAgentInventory_Add(t *testing.T) {
 	core := NewCore("core_001", "オールラウンダーコア", 5, coreType, passiveSkill)
 
 	modules := []*ModuleModel{
-		NewModule("m1", "物理打撃", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		NewModule("m2", "ファイアボール", MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", ""),
-		NewModule("m3", "ヒール", Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		NewModule("m4", "攻撃バフ", Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestModuleForInv("m1", "物理打撃", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleForInv("m2", "ファイアボール", MagicAttack, []string{"magic_low"}, 12.0, "MAG", ""),
+		newTestModuleForInv("m3", "ヒール", Heal, []string{"heal_low"}, 8.0, "MAG", ""),
+		newTestModuleForInv("m4", "攻撃バフ", Buff, []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	agent := NewAgent("agent_001", core, modules)
@@ -329,10 +311,10 @@ func TestAgentInventory_AddOverCapacity(t *testing.T) {
 	passiveSkill := PassiveSkill{ID: "test", Name: "テスト"}
 	core := NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	modules := []*ModuleModel{
-		NewModule("m1", "モジュール", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		NewModule("m2", "モジュール", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		NewModule("m3", "モジュール", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		NewModule("m4", "モジュール", PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleForInv("m1", "モジュール", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleForInv("m2", "モジュール", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleForInv("m3", "モジュール", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModuleForInv("m4", "モジュール", PhysicalAttack, []string{"physical_low"}, 10.0, "STR", ""),
 	}
 
 	agent1 := NewAgent("agent_001", core, modules)

@@ -1,28 +1,15 @@
 // Package startup は初回起動時の初期化処理を担当します。
-// 新規ゲーム開始時の初期コア、モジュール、エージェントの提供を行います。
+// 新規ゲーム開始時の初期エージェントの提供を行います。
 
 package startup
 
 import (
-	"fmt"
-
-	"github.com/google/uuid"
+	"log/slog"
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
 	"hirorocky/type-battle/internal/infra/savedata"
 )
-
-// 初期モジュールID定義（マスタデータのmodules.jsonと一致させる）
-var initialModuleIDs = []string{
-	"physical_strike_lv1",
-	"fireball_lv1",
-	"heal_lv1",
-	"attack_buff_lv1",
-}
-
-// 初期コア特性ID（マスタデータのcores.jsonと一致させる）
-const initialCoreTypeID = "all_rounder"
 
 // NewGameInitializer は新規ゲーム初期化を担当する構造体です。
 type NewGameInitializer struct {
@@ -38,107 +25,126 @@ func NewNewGameInitializer(externalData *masterdata.ExternalData) *NewGameInitia
 	}
 }
 
-// generateUUID は一意のUUIDを生成します。
-func generateUUID() string {
-	return uuid.New().String()
-}
+// CreateInitialAgent は初期エージェントを作成します。
+// マスタデータから初期エージェントを構築します。
+func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
+	if i.externalData == nil || i.externalData.FirstAgent == nil {
+		slog.Error("初期エージェントデータがありません")
+		return nil
+	}
 
-// CreateInitialCore は初期コアを作成します。
+	firstAgentData := i.externalData.FirstAgent
 
-func (i *NewGameInitializer) CreateInitialCore() *domain.CoreModel {
-	// マスタデータから"all_rounder"コア特性を検索
+	// コア特性を検索
 	var coreType domain.CoreType
-	if i.externalData != nil {
-		for _, ct := range i.externalData.CoreTypes {
-			if ct.ID == initialCoreTypeID {
-				coreType = ct.ToDomain()
-				break
+	for _, ct := range i.externalData.CoreTypes {
+		if ct.ID == firstAgentData.CoreTypeID {
+			coreType = ct.ToDomain()
+			break
+		}
+	}
+
+	// パッシブスキルを検索
+	var passiveSkill domain.PassiveSkill
+	for _, ps := range i.externalData.PassiveSkills {
+		if ps.ID == coreType.PassiveSkillID {
+			passiveSkill = domain.PassiveSkill{
+				ID:          ps.ID,
+				Name:        ps.Name,
+				Description: ps.Description,
 			}
+			break
 		}
 	}
 
-	// 見つからない場合のフォールバック（外部データがない場合も含む）
-	if coreType.ID == "" {
-		coreType = domain.CoreType{
-			ID:   initialCoreTypeID,
-			Name: "オールラウンダー",
-			StatWeights: map[string]float64{
-				"STR": 1.0,
-				"MAG": 1.0,
-				"SPD": 1.0,
-				"LUK": 1.0,
-			},
-			PassiveSkillID: "adaptability",
-			AllowedTags: []string{
-				"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low",
-			},
-			MinDropLevel: 1,
-		}
-	}
-
-	// パッシブスキルの定義（マスタデータのpassive_skill_idに基づく）
-	passiveSkill := domain.PassiveSkill{
-		ID:          coreType.PassiveSkillID,
-		Name:        "適応力",
-		Description: "全ステータスがバランス良く成長",
-	}
-
-	// レベル1のコアを作成
-	return domain.NewCore(
-		generateUUID(),
-		"初期コア",
-		1, // レベル1
+	// コアを作成
+	core := domain.NewCoreWithTypeID(
+		firstAgentData.CoreTypeID,
+		firstAgentData.CoreLevel,
 		coreType,
 		passiveSkill,
 	)
-}
 
-// CreateInitialModules は初期モジュールを作成します。
-
-func (i *NewGameInitializer) CreateInitialModules() []*domain.ModuleModel {
-	modules := make([]*domain.ModuleModel, 0, len(initialModuleIDs))
-
-	// マスタデータから初期モジュールを検索
-	if i.externalData != nil {
-		for _, moduleID := range initialModuleIDs {
-			for _, md := range i.externalData.ModuleDefinitions {
-				if md.ID == moduleID {
-					modules = append(modules, md.ToDomain())
-					break
-				}
+	// モジュールを作成
+	modules := make([]*domain.ModuleModel, 0, len(firstAgentData.Modules))
+	for _, modData := range firstAgentData.Modules {
+		// モジュール定義を検索
+		var moduleDef *masterdata.ModuleDefinitionData
+		for j := range i.externalData.ModuleDefinitions {
+			if i.externalData.ModuleDefinitions[j].ID == modData.TypeID {
+				moduleDef = &i.externalData.ModuleDefinitions[j]
+				break
 			}
 		}
-	}
-
-	// 外部データがない場合やモジュールが見つからない場合のフォールバック
-	if len(modules) == 0 {
-		// デフォルトのモジュールを作成
-		modules = []*domain.ModuleModel{
-			domain.NewModule("physical_strike_lv1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", "物理ダメージを与える基本攻撃"),
-			domain.NewModule("fireball_lv1", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", "魔法ダメージを与える基本魔法"),
-			domain.NewModule("heal_lv1", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", "HPを回復する基本回復魔法"),
-			domain.NewModule("attack_buff_lv1", "攻撃バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", "一時的に攻撃力を上昇させる"),
+		if moduleDef == nil {
+			slog.Warn("モジュール定義が見つかりません",
+				slog.String("type_id", modData.TypeID),
+			)
+			continue
 		}
-	} else if len(modules) < len(initialModuleIDs) {
-		// ログを出力（デバッグ用）
-		fmt.Printf("警告: 一部の初期モジュールがマスタデータに見つかりませんでした (%d/%d)\n",
-			len(modules), len(initialModuleIDs))
+
+		// チェイン効果を作成
+		var chainEffect *domain.ChainEffect
+		if modData.HasChainEffect() {
+			ce := domain.NewChainEffect(
+				convertChainEffectType(modData.ChainEffectType),
+				modData.ChainEffectValue,
+			)
+			chainEffect = &ce
+		}
+
+		// モジュールを作成
+		module := domain.NewModuleFromType(moduleDef.ToDomainType(), chainEffect)
+		modules = append(modules, module)
 	}
 
-	return modules
+	return domain.NewAgent(firstAgentData.ID, core, modules)
 }
 
-// CreateInitialAgent は初期エージェントを作成します。
-
-func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
-	core := i.CreateInitialCore()
-	modules := i.CreateInitialModules()
-
-	return domain.NewAgent(
-		generateUUID(),
-		core,
-		modules,
-	)
+// convertChainEffectType は文字列をChainEffectTypeに変換します。
+func convertChainEffectType(s string) domain.ChainEffectType {
+	switch s {
+	case "damage_bonus":
+		return domain.ChainEffectDamageBonus
+	case "heal_bonus":
+		return domain.ChainEffectHealBonus
+	case "buff_extend":
+		return domain.ChainEffectBuffExtend
+	case "debuff_extend":
+		return domain.ChainEffectDebuffExtend
+	case "damage_amp":
+		return domain.ChainEffectDamageAmp
+	case "armor_pierce":
+		return domain.ChainEffectArmorPierce
+	case "life_steal":
+		return domain.ChainEffectLifeSteal
+	case "damage_cut":
+		return domain.ChainEffectDamageCut
+	case "evasion":
+		return domain.ChainEffectEvasion
+	case "reflect":
+		return domain.ChainEffectReflect
+	case "regen":
+		return domain.ChainEffectRegen
+	case "heal_amp":
+		return domain.ChainEffectHealAmp
+	case "overheal":
+		return domain.ChainEffectOverheal
+	case "time_extend":
+		return domain.ChainEffectTimeExtend
+	case "auto_correct":
+		return domain.ChainEffectAutoCorrect
+	case "cooldown_reduce":
+		return domain.ChainEffectCooldownReduce
+	case "buff_duration":
+		return domain.ChainEffectBuffDuration
+	case "debuff_duration":
+		return domain.ChainEffectDebuffDuration
+	case "double_cast":
+		return domain.ChainEffectDoubleCast
+	default:
+		return domain.ChainEffectDamageBonus
+	}
 }
 
 // InitializeNewGame は新規ゲームを初期化してセーブデータを作成します。
@@ -152,19 +158,27 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	initialAgent := i.CreateInitialAgent()
 
 	// インベントリにエージェントを追加（コア情報を直接埋め込み）
-	moduleIDs := make([]string, len(initialAgent.Modules))
+	modules := make([]savedata.ModuleInstanceSave, len(initialAgent.Modules))
 	for idx, m := range initialAgent.Modules {
-		moduleIDs[idx] = m.ID
+		modules[idx] = savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
+		// チェイン効果があれば変換
+		if m.ChainEffect != nil {
+			modules[idx].ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
 	}
 	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
 		{
 			ID: initialAgent.ID,
 			Core: savedata.CoreInstanceSave{
-				ID:         initialAgent.Core.ID,
-				CoreTypeID: initialAgent.Core.Type.ID,
+				CoreTypeID: initialAgent.Core.TypeID,
 				Level:      initialAgent.Core.Level,
 			},
-			ModuleIDs: moduleIDs,
+			Modules: modules,
 		},
 	}
 
@@ -182,22 +196,35 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 
 // CreateNewGameWithExtraItems は追加アイテム付きで新規ゲームを初期化します。
 // デバッグや特殊条件での開始用
-// ID化最適化に対応：フルオブジェクトではなくID参照を保存
+// v1.0.0形式に対応：TypeIDとLevelのみを保存
 func (i *NewGameInitializer) CreateNewGameWithExtraItems() *savedata.SaveData {
 	saveData := i.InitializeNewGame()
 
-	// 追加のコアを作成してインベントリにID化して追加
-	extraCore := i.CreateInitialCore()
+	// 追加のエージェントから情報を取得（初期エージェントと同じ構成を使用）
+	extraAgent := i.CreateInitialAgent()
+	if extraAgent == nil {
+		return saveData
+	}
+
+	// 追加のコアをインベントリに追加
 	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
-		ID:         extraCore.ID,
-		CoreTypeID: extraCore.Type.ID,
-		Level:      extraCore.Level,
+		CoreTypeID: extraAgent.Core.TypeID,
+		Level:      extraAgent.Core.Level,
 	})
 
-	// 追加のモジュールを作成してインベントリにカウント追加
-	extraModules := i.CreateInitialModules()
-	for _, module := range extraModules {
-		saveData.Inventory.ModuleCounts[module.ID]++
+	// 追加のモジュールをインベントリにModuleInstancesとして追加
+	for _, module := range extraAgent.Modules {
+		modSave := savedata.ModuleInstanceSave{
+			TypeID: module.TypeID,
+		}
+		// チェイン効果があれば変換
+		if module.ChainEffect != nil {
+			modSave.ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(module.ChainEffect.Type),
+				Value: module.ChainEffect.Value,
+			}
+		}
+		saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, modSave)
 	}
 
 	return saveData

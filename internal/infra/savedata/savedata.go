@@ -19,8 +19,14 @@ const CurrentSaveDataVersion = "2.0.0"
 // SaveFileName はセーブファイル名です。
 const SaveFileName = "save.json"
 
+// DebugSaveFileName はデバッグモード用セーブファイル名です。
+const DebugSaveFileName = "debug_save.json"
+
 // TempSaveFileName は一時セーブファイル名です（原子的書き込み用）。
 const TempSaveFileName = "save.json.tmp"
+
+// DebugTempSaveFileName はデバッグモード用一時セーブファイル名です。
+const DebugTempSaveFileName = "debug_save.json.tmp"
 
 // MaxBackupCount はバックアップの最大世代数です。
 
@@ -66,12 +72,9 @@ type PlayerSaveData struct {
 }
 
 // CoreInstanceSave はコアインスタンスの軽量セーブデータです。
-// フルオブジェクト保存ではなく、ID+Type+Levelのみ保存し、
+// v1.0.0ではIDフィールドを削除し、CoreTypeIDとLevelのみを保存します。
 // ロード時にマスタデータからステータスを再計算します。
 type CoreInstanceSave struct {
-	// ID はコアインスタンスの一意識別子です。
-	ID string `json:"id"`
-
 	// CoreTypeID はコア特性ID（例: "all_rounder"）です。
 	// マスタデータ（cores.json）から参照します。
 	CoreTypeID string `json:"core_type_id"`
@@ -79,6 +82,27 @@ type CoreInstanceSave struct {
 	// Level はコアのレベルです。
 	// ステータスはレベルとコア特性から再計算されます。
 	Level int `json:"level"`
+}
+
+// ChainEffectSave はチェイン効果のセーブデータです。
+type ChainEffectSave struct {
+	// Type はチェイン効果の種別（damage_bonus, heal_bonus等）です。
+	Type string `json:"type"`
+
+	// Value は効果量です。
+	Value float64 `json:"value"`
+}
+
+// ModuleInstanceSave はモジュールインスタンスのセーブデータです。
+// v1.0.0ではTypeIDとChainEffectのペアとして永続化します。
+// 同一TypeIDでも異なるChainEffectを持つことを許容します。
+type ModuleInstanceSave struct {
+	// TypeID はモジュール種別ID（マスタデータ参照用）です。
+	TypeID string `json:"type_id"`
+
+	// ChainEffect はこのモジュールインスタンスのチェイン効果です。
+	// nilの場合はチェイン効果なしとしてomitemptyで省略されます。
+	ChainEffect *ChainEffectSave `json:"chain_effect,omitempty"`
 }
 
 // AgentInstanceSave はエージェントインスタンスの軽量セーブデータです。
@@ -91,20 +115,24 @@ type AgentInstanceSave struct {
 	// エージェント合成時にコアは消費されるため、インベントリとは別に保持します。
 	Core CoreInstanceSave `json:"core"`
 
-	// ModuleIDs はモジュール定義IDリストです（4つ）。
-	// マスタデータ（modules.json）から参照します。
-	ModuleIDs []string `json:"module_ids"`
+	// Modules はモジュールインスタンスのリストです（4つ）。
+	// 各モジュールのTypeIDとChainEffectをペアで保持し、データの整合性を保証します。
+	Modules []ModuleInstanceSave `json:"modules"`
 }
 
 // InventorySaveData はインベントリのセーブデータです。
-// ID化最適化により、フルオブジェクトではなくID参照を保存します。
+// v1.0.0ではModuleCountsをModuleInstancesに置き換え、チェイン効果を管理します。
 type InventorySaveData struct {
-	// CoreInstances は所持コアのID+Type+Levelリストです。
+	// CoreInstances は所持コアのTypeID+Levelリストです。
 	CoreInstances []CoreInstanceSave `json:"core_instances"`
 
-	// ModuleCounts は所持モジュールの個数マップです（モジュールID → 個数）。
-	// モジュールにはインスタンス固有データがないため、IDとカウントで十分です。
-	ModuleCounts map[string]int `json:"module_counts"`
+	// ModuleCounts は所持モジュールの個数マップです（後方互換性のため保持）。
+	// v1.0.0ではModuleInstancesを使用しますが、旧データ読み込み時に参照されます。
+	ModuleCounts map[string]int `json:"module_counts,omitempty"`
+
+	// ModuleInstances は所持モジュールのインスタンスリストです（v1.0.0で追加）。
+	// 同一TypeIDでも異なるChainEffectを持つモジュールを個別に管理します。
+	ModuleInstances []ModuleInstanceSave `json:"module_instances,omitempty"`
 
 	// AgentInstances は所持エージェントの参照リストです。
 	AgentInstances []AgentInstanceSave `json:"agent_instances"`
@@ -116,7 +144,6 @@ type InventorySaveData struct {
 	MaxModuleSlots int `json:"max_module_slots"`
 
 	// MaxAgentSlots はエージェントの最大所持数です。
-
 	MaxAgentSlots int `json:"max_agent_slots"`
 }
 
@@ -175,12 +202,13 @@ func NewSaveData() *SaveData {
 			EquippedAgentIDs: [3]string{},
 		},
 		Inventory: &InventorySaveData{
-			CoreInstances:  make([]CoreInstanceSave, 0),
-			ModuleCounts:   make(map[string]int),
-			AgentInstances: make([]AgentInstanceSave, 0),
-			MaxCoreSlots:   100,
-			MaxModuleSlots: 200,
-			MaxAgentSlots:  20,
+			CoreInstances:   make([]CoreInstanceSave, 0),
+			ModuleCounts:    make(map[string]int),
+			ModuleInstances: make([]ModuleInstanceSave, 0),
+			AgentInstances:  make([]AgentInstanceSave, 0),
+			MaxCoreSlots:    100,
+			MaxModuleSlots:  200,
+			MaxAgentSlots:   20,
 		},
 		Statistics: &StatisticsSaveData{
 			TotalBattles:         0,
@@ -206,12 +234,25 @@ func NewSaveData() *SaveData {
 type SaveDataIO struct {
 	// saveDir はセーブファイルを保存するディレクトリパスです。
 	saveDir string
+	// saveFileName はセーブファイル名です（通常: save.json、デバッグ: debug_save.json）。
+	saveFileName string
+	// tempSaveFileName は一時セーブファイル名です。
+	tempSaveFileName string
 }
 
 // NewSaveDataIO は新しいSaveDataIOを作成します。
-func NewSaveDataIO(saveDir string) *SaveDataIO {
+// debugModeがtrueの場合、デバッグ専用のセーブファイル（debug_save.json）を使用します。
+func NewSaveDataIO(saveDir string, debugMode bool) *SaveDataIO {
+	saveFileName := SaveFileName
+	tempFileName := TempSaveFileName
+	if debugMode {
+		saveFileName = DebugSaveFileName
+		tempFileName = DebugTempSaveFileName
+	}
 	return &SaveDataIO{
-		saveDir: saveDir,
+		saveDir:          saveDir,
+		saveFileName:     saveFileName,
+		tempSaveFileName: tempFileName,
 	}
 }
 
@@ -233,7 +274,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	}
 
 	// 一時ファイルに書き込み
-	tmpPath := filepath.Join(io.saveDir, TempSaveFileName)
+	tmpPath := filepath.Join(io.saveDir, io.tempSaveFileName)
 	if err := os.WriteFile(tmpPath, jsonData, 0644); err != nil {
 		return fmt.Errorf("一時ファイルへの書き込みに失敗: %w", err)
 	}
@@ -254,7 +295,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 	_ = io.RotateBackups()
 
 	// 原子的リネーム
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	if err := os.Rename(tmpPath, savePath); err != nil {
 		return fmt.Errorf("セーブファイルのリネームに失敗: %w", err)
 	}
@@ -265,7 +306,7 @@ func (io *SaveDataIO) SaveGame(data *SaveData) error {
 // LoadGame はセーブデータをファイルから読み込みます。
 
 func (io *SaveDataIO) LoadGame() (*SaveData, error) {
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 
 	// メインのセーブファイルを読み込み
 	data, err := io.loadFromFile(savePath)
@@ -275,7 +316,7 @@ func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 
 	// メインファイルの読み込みに失敗した場合、バックアップから復元を試みる
 	for i := 1; i <= MaxBackupCount; i++ {
-		backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
+		backupPath := filepath.Join(io.saveDir, io.backupFileName(i))
 		data, err := io.loadFromFile(backupPath)
 		if err == nil {
 			// バックアップからの復元に成功
@@ -288,6 +329,11 @@ func (io *SaveDataIO) LoadGame() (*SaveData, error) {
 	}
 
 	return nil, fmt.Errorf("セーブデータのロードに失敗: %w", err)
+}
+
+// backupFileName はバックアップファイル名を生成します。
+func (io *SaveDataIO) backupFileName(index int) string {
+	return fmt.Sprintf("%s.bak%d", io.saveFileName, index)
 }
 
 // loadFromFile は指定されたファイルからセーブデータを読み込みます。
@@ -318,30 +364,29 @@ func (io *SaveDataIO) LoadFromBackup(backupIndex int) (*SaveData, error) {
 		return nil, fmt.Errorf("不正なバックアップインデックス: %d", backupIndex)
 	}
 
-	backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", backupIndex))
+	backupPath := filepath.Join(io.saveDir, io.backupFileName(backupIndex))
 	return io.loadFromFile(backupPath)
 }
 
 // RotateBackups はバックアップファイルをローテーションします。
-
-// save.json → save.json.bak1 → save.json.bak2 → save.json.bak3 (削除)
+// {saveFileName} → {saveFileName}.bak1 → {saveFileName}.bak2 → {saveFileName}.bak3 (削除)
 func (io *SaveDataIO) RotateBackups() error {
 	// 古いバックアップを削除（存在しない場合は無視）
-	bak3 := filepath.Join(io.saveDir, "save.json.bak3")
+	bak3 := filepath.Join(io.saveDir, io.backupFileName(MaxBackupCount))
 	_ = os.Remove(bak3)
 
 	// バックアップをシフト
 	for i := MaxBackupCount - 1; i >= 1; i-- {
-		oldPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
-		newPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i+1))
+		oldPath := filepath.Join(io.saveDir, io.backupFileName(i))
+		newPath := filepath.Join(io.saveDir, io.backupFileName(i+1))
 		if _, err := os.Stat(oldPath); err == nil {
 			_ = os.Rename(oldPath, newPath)
 		}
 	}
 
 	// 現在のセーブファイルをbak1にコピー
-	savePath := filepath.Join(io.saveDir, SaveFileName)
-	bak1 := filepath.Join(io.saveDir, "save.json.bak1")
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
+	bak1 := filepath.Join(io.saveDir, io.backupFileName(1))
 	if _, err := os.Stat(savePath); err == nil {
 		data, err := os.ReadFile(savePath)
 		if err == nil {
@@ -356,12 +401,12 @@ func (io *SaveDataIO) RotateBackups() error {
 
 func (io *SaveDataIO) ResetSaveData() error {
 	// メインセーブファイルを削除
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	_ = os.Remove(savePath)
 
 	// バックアップファイルも削除
 	for i := 1; i <= MaxBackupCount; i++ {
-		backupPath := filepath.Join(io.saveDir, fmt.Sprintf("save.json.bak%d", i))
+		backupPath := filepath.Join(io.saveDir, io.backupFileName(i))
 		_ = os.Remove(backupPath)
 	}
 
@@ -394,7 +439,7 @@ func ValidateSaveData(data *SaveData) error {
 
 // Exists はセーブファイルが存在するかどうかを確認します。
 func (io *SaveDataIO) Exists() bool {
-	savePath := filepath.Join(io.saveDir, SaveFileName)
+	savePath := filepath.Join(io.saveDir, io.saveFileName)
 	_, err := os.Stat(savePath)
 	return err == nil
 }

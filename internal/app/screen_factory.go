@@ -45,8 +45,10 @@ func (f *ScreenFactory) CreateBattleSelectScreen(maxLevelReached int, invProvide
 }
 
 // CreateAgentManagementScreen はエージェント管理画面を作成します。
-func (f *ScreenFactory) CreateAgentManagementScreen(invProvider InventoryProvider) *screens.AgentManagementScreen {
-	return screens.NewAgentManagementScreen(invProvider)
+// debugMode: デバッグモードを有効化
+// debugProvider: デバッグモード用のプロバイダー（nilの場合は通常モード）
+func (f *ScreenFactory) CreateAgentManagementScreen(invProvider InventoryProvider, debugMode bool, debugProvider screens.DebugInventoryProvider) *screens.AgentManagementScreen {
+	return screens.NewAgentManagementScreen(invProvider, debugMode, debugProvider)
 }
 
 // CreateEncyclopediaScreen は図鑑画面を作成します。

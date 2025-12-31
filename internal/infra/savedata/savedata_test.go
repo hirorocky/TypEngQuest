@@ -38,7 +38,7 @@ func TestNewSaveData(t *testing.T) {
 // TestSaveAndLoadGame はセーブとロードの基本動作をテストします。
 func TestSaveAndLoadGame(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// テスト用のセーブデータを作成
 	saveData := NewSaveData()
@@ -73,7 +73,7 @@ func TestSaveAndLoadGame(t *testing.T) {
 
 func TestAtomicWrite(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	saveData := NewSaveData()
 
@@ -99,7 +99,7 @@ func TestAtomicWrite(t *testing.T) {
 
 func TestBackupRotation(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 4回セーブして、バックアップローテーションを確認
 	for i := 0; i < 4; i++ {
@@ -130,7 +130,7 @@ func TestBackupRotation(t *testing.T) {
 
 func TestLoadFromBackup(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 1回目のセーブ（これがバックアップになる）
 	saveData1 := NewSaveData()
@@ -169,7 +169,7 @@ func TestLoadFromBackup(t *testing.T) {
 
 func TestVersionCheck(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	saveData := NewSaveData()
 	if err := io.SaveGame(saveData); err != nil {
@@ -190,7 +190,7 @@ func TestVersionCheck(t *testing.T) {
 // TestLoadGameFileNotFound はセーブファイルが存在しない場合のエラーをテストします。
 func TestLoadGameFileNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	_, err := io.LoadGame()
 	if err == nil {
@@ -199,19 +199,22 @@ func TestLoadGameFileNotFound(t *testing.T) {
 }
 
 // TestSaveDataWithInventory はインベントリを含むセーブデータをテストします。
-// ID化されたセーブデータ構造をテスト
+// v1.0.0形式のセーブデータ構造をテスト
 func TestSaveDataWithInventory(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
-	// セーブデータを作成（ID化された構造）
+	// セーブデータを作成（v1.0.0形式: IDなし）
 	saveData := NewSaveData()
 	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, CoreInstanceSave{
-		ID:         "core_001",
 		CoreTypeID: "test_core",
 		Level:      5,
 	})
-	saveData.Inventory.ModuleCounts["module_001"] = 1
+	// v1.0.0ではModuleInstancesを使用
+	saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, ModuleInstanceSave{
+		TypeID:      "module_001",
+		ChainEffect: nil,
+	})
 
 	// セーブ
 	if err := io.SaveGame(saveData); err != nil {
@@ -228,11 +231,11 @@ func TestSaveDataWithInventory(t *testing.T) {
 	if len(loadedData.Inventory.CoreInstances) != 1 {
 		t.Errorf("CoreInstances: got %d, want 1", len(loadedData.Inventory.CoreInstances))
 	}
-	if loadedData.Inventory.ModuleCounts["module_001"] != 1 {
-		t.Errorf("ModuleCounts[module_001]: got %d, want 1", loadedData.Inventory.ModuleCounts["module_001"])
+	if len(loadedData.Inventory.ModuleInstances) != 1 {
+		t.Errorf("ModuleInstances: got %d, want 1", len(loadedData.Inventory.ModuleInstances))
 	}
-	if loadedData.Inventory.CoreInstances[0].ID != "core_001" {
-		t.Errorf("Core ID: got %s, want core_001", loadedData.Inventory.CoreInstances[0].ID)
+	if loadedData.Inventory.CoreInstances[0].CoreTypeID != "test_core" {
+		t.Errorf("Core CoreTypeID: got %s, want test_core", loadedData.Inventory.CoreInstances[0].CoreTypeID)
 	}
 	if loadedData.Inventory.CoreInstances[0].Level != 5 {
 		t.Errorf("Core Level: got %d, want 5", loadedData.Inventory.CoreInstances[0].Level)
@@ -240,22 +243,26 @@ func TestSaveDataWithInventory(t *testing.T) {
 }
 
 // TestSaveDataWithAgents はエージェントを含むセーブデータをテストします。
-// ID化されたセーブデータ構造をテスト
+// v1.0.0形式のセーブデータ構造をテスト
 func TestSaveDataWithAgents(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
-	// セーブデータを作成（コア情報を直接埋め込み）
+	// セーブデータを作成（v1.0.0形式: Core.IDなし）
 	saveData := NewSaveData()
 	// エージェントインスタンスを追加（コア情報を埋め込み）
 	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, AgentInstanceSave{
 		ID: "agent_001",
 		Core: CoreInstanceSave{
-			ID:         "core_001",
 			CoreTypeID: "test_core",
 			Level:      5,
 		},
-		ModuleIDs: []string{"mod_1", "mod_2", "mod_3", "mod_4"},
+		Modules: []ModuleInstanceSave{
+			{TypeID: "mod_1"},
+			{TypeID: "mod_2"},
+			{TypeID: "mod_3"},
+			{TypeID: "mod_4"},
+		},
 	})
 
 	// セーブ
@@ -276,14 +283,14 @@ func TestSaveDataWithAgents(t *testing.T) {
 	if loadedData.Inventory.AgentInstances[0].ID != "agent_001" {
 		t.Errorf("Agent ID: got %s, want agent_001", loadedData.Inventory.AgentInstances[0].ID)
 	}
-	if loadedData.Inventory.AgentInstances[0].Core.ID != "core_001" {
-		t.Errorf("Agent Core.ID: got %s, want core_001", loadedData.Inventory.AgentInstances[0].Core.ID)
+	if loadedData.Inventory.AgentInstances[0].Core.CoreTypeID != "test_core" {
+		t.Errorf("Agent Core.CoreTypeID: got %s, want test_core", loadedData.Inventory.AgentInstances[0].Core.CoreTypeID)
 	}
 	if loadedData.Inventory.AgentInstances[0].Core.Level != 5 {
 		t.Errorf("Agent Core.Level: got %d, want 5", loadedData.Inventory.AgentInstances[0].Core.Level)
 	}
-	if len(loadedData.Inventory.AgentInstances[0].ModuleIDs) != 4 {
-		t.Errorf("Agent ModuleIDs count: got %d, want 4", len(loadedData.Inventory.AgentInstances[0].ModuleIDs))
+	if len(loadedData.Inventory.AgentInstances[0].Modules) != 4 {
+		t.Errorf("Agent Modules count: got %d, want 4", len(loadedData.Inventory.AgentInstances[0].Modules))
 	}
 }
 
@@ -291,7 +298,7 @@ func TestSaveDataWithAgents(t *testing.T) {
 
 func TestSaveDataTimestamp(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// 1回目のセーブ
 	saveData1 := NewSaveData()
@@ -325,7 +332,7 @@ func TestSaveDataTimestamp(t *testing.T) {
 
 func TestResetSaveData(t *testing.T) {
 	tmpDir := t.TempDir()
-	io := NewSaveDataIO(tmpDir)
+	io := NewSaveDataIO(tmpDir, false)
 
 	// セーブデータを作成
 	saveData := NewSaveData()
@@ -359,5 +366,245 @@ func TestValidateSaveData(t *testing.T) {
 	invalidData.Version = ""
 	if err := ValidateSaveData(invalidData); err == nil {
 		t.Error("Versionが空でもエラーにならない")
+	}
+}
+
+// ==================== タスク3: 永続化層リファクタリングのテスト ====================
+
+// TestCoreInstanceSaveWithoutID はIDフィールドを削除したCoreInstanceSaveをテストします。
+// CoreInstanceSaveはcore_type_idとlevelのみを保持する。
+func TestCoreInstanceSaveWithoutID(t *testing.T) {
+	tmpDir := t.TempDir()
+	io := NewSaveDataIO(tmpDir, false)
+
+	// セーブデータを作成（新形式: IDなし）
+	saveData := NewSaveData()
+	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, CoreInstanceSave{
+		CoreTypeID: "all_rounder",
+		Level:      5,
+	})
+
+	// セーブ
+	if err := io.SaveGame(saveData); err != nil {
+		t.Fatalf("セーブに失敗: %v", err)
+	}
+
+	// ロード
+	loadedData, err := io.LoadGame()
+	if err != nil {
+		t.Fatalf("ロードに失敗: %v", err)
+	}
+
+	// 検証
+	if len(loadedData.Inventory.CoreInstances) != 1 {
+		t.Fatalf("CoreInstances: got %d, want 1", len(loadedData.Inventory.CoreInstances))
+	}
+	core := loadedData.Inventory.CoreInstances[0]
+	if core.CoreTypeID != "all_rounder" {
+		t.Errorf("CoreTypeID: got %s, want all_rounder", core.CoreTypeID)
+	}
+	if core.Level != 5 {
+		t.Errorf("Level: got %d, want 5", core.Level)
+	}
+}
+
+// TestModuleInstanceSaveWithChainEffect はチェイン効果付きModuleInstanceSaveをテストします。
+func TestModuleInstanceSaveWithChainEffect(t *testing.T) {
+	tmpDir := t.TempDir()
+	io := NewSaveDataIO(tmpDir, false)
+
+	// セーブデータを作成（新形式: ModuleInstances）
+	saveData := NewSaveData()
+	saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, ModuleInstanceSave{
+		TypeID: "physical_lv1",
+		ChainEffect: &ChainEffectSave{
+			Type:  "damage_bonus",
+			Value: 15.0,
+		},
+	})
+	// チェイン効果なしのモジュールも追加
+	saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, ModuleInstanceSave{
+		TypeID:      "heal_lv1",
+		ChainEffect: nil,
+	})
+
+	// セーブ
+	if err := io.SaveGame(saveData); err != nil {
+		t.Fatalf("セーブに失敗: %v", err)
+	}
+
+	// ロード
+	loadedData, err := io.LoadGame()
+	if err != nil {
+		t.Fatalf("ロードに失敗: %v", err)
+	}
+
+	// 検証
+	if len(loadedData.Inventory.ModuleInstances) != 2 {
+		t.Fatalf("ModuleInstances: got %d, want 2", len(loadedData.Inventory.ModuleInstances))
+	}
+
+	// チェイン効果ありのモジュール
+	mod1 := loadedData.Inventory.ModuleInstances[0]
+	if mod1.TypeID != "physical_lv1" {
+		t.Errorf("TypeID: got %s, want physical_lv1", mod1.TypeID)
+	}
+	if mod1.ChainEffect == nil {
+		t.Fatal("ChainEffectがnilです")
+	}
+	if mod1.ChainEffect.Type != "damage_bonus" {
+		t.Errorf("ChainEffect.Type: got %s, want damage_bonus", mod1.ChainEffect.Type)
+	}
+	if mod1.ChainEffect.Value != 15.0 {
+		t.Errorf("ChainEffect.Value: got %f, want 15.0", mod1.ChainEffect.Value)
+	}
+
+	// チェイン効果なしのモジュール
+	mod2 := loadedData.Inventory.ModuleInstances[1]
+	if mod2.TypeID != "heal_lv1" {
+		t.Errorf("TypeID: got %s, want heal_lv1", mod2.TypeID)
+	}
+	if mod2.ChainEffect != nil {
+		t.Error("ChainEffectがnilであるべき")
+	}
+}
+
+// TestAgentInstanceSaveWithChainEffects はチェイン効果付きAgentInstanceSaveをテストします。
+func TestAgentInstanceSaveWithChainEffects(t *testing.T) {
+	tmpDir := t.TempDir()
+	io := NewSaveDataIO(tmpDir, false)
+
+	// セーブデータを作成
+	saveData := NewSaveData()
+	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, AgentInstanceSave{
+		ID: "agent_001",
+		Core: CoreInstanceSave{
+			CoreTypeID: "attack_balance",
+			Level:      3,
+		},
+		Modules: []ModuleInstanceSave{
+			{TypeID: "physical_lv1", ChainEffect: &ChainEffectSave{Type: "damage_bonus", Value: 15.0}},
+			{TypeID: "heal_lv1"}, // チェイン効果なし
+			{TypeID: "buff_lv1", ChainEffect: &ChainEffectSave{Type: "buff_extend", Value: 2.0}},
+			{TypeID: "debuff_lv1"}, // チェイン効果なし
+		},
+	})
+
+	// セーブ
+	if err := io.SaveGame(saveData); err != nil {
+		t.Fatalf("セーブに失敗: %v", err)
+	}
+
+	// ロード
+	loadedData, err := io.LoadGame()
+	if err != nil {
+		t.Fatalf("ロードに失敗: %v", err)
+	}
+
+	// 検証
+	if len(loadedData.Inventory.AgentInstances) != 1 {
+		t.Fatalf("AgentInstances: got %d, want 1", len(loadedData.Inventory.AgentInstances))
+	}
+
+	agent := loadedData.Inventory.AgentInstances[0]
+	if agent.ID != "agent_001" {
+		t.Errorf("Agent ID: got %s, want agent_001", agent.ID)
+	}
+	if agent.Core.CoreTypeID != "attack_balance" {
+		t.Errorf("Core.CoreTypeID: got %s, want attack_balance", agent.Core.CoreTypeID)
+	}
+	if agent.Core.Level != 3 {
+		t.Errorf("Core.Level: got %d, want 3", agent.Core.Level)
+	}
+	if len(agent.Modules) != 4 {
+		t.Fatalf("Modules count: got %d, want 4", len(agent.Modules))
+	}
+
+	// チェイン効果の検証
+	if agent.Modules[0].ChainEffect == nil {
+		t.Fatal("Modules[0].ChainEffectがnilです")
+	}
+	if agent.Modules[0].ChainEffect.Type != "damage_bonus" {
+		t.Errorf("Modules[0].ChainEffect.Type: got %s, want damage_bonus", agent.Modules[0].ChainEffect.Type)
+	}
+	if agent.Modules[1].ChainEffect != nil {
+		t.Error("Modules[1].ChainEffectはnilであるべき")
+	}
+	if agent.Modules[2].ChainEffect == nil {
+		t.Fatal("Modules[2].ChainEffectがnilです")
+	}
+	if agent.Modules[2].ChainEffect.Type != "buff_extend" {
+		t.Errorf("Modules[2].ChainEffect.Type: got %s, want buff_extend", agent.Modules[2].ChainEffect.Type)
+	}
+	if agent.Modules[3].ChainEffect != nil {
+		t.Error("Modules[3].ChainEffectはnilであるべき")
+	}
+}
+
+// TestSaveDataVersionV1 はv1.0.0形式のセーブデータをテストします。
+func TestSaveDataVersionV1(t *testing.T) {
+	tmpDir := t.TempDir()
+	io := NewSaveDataIO(tmpDir, false)
+
+	// セーブデータを作成
+	saveData := NewSaveData()
+
+	// セーブ
+	if err := io.SaveGame(saveData); err != nil {
+		t.Fatalf("セーブに失敗: %v", err)
+	}
+
+	// ロード
+	loadedData, err := io.LoadGame()
+	if err != nil {
+		t.Fatalf("ロードに失敗: %v", err)
+	}
+
+	// バージョンを検証
+	if loadedData.Version != CurrentSaveDataVersion {
+		t.Errorf("Version: got %s, want %s", loadedData.Version, CurrentSaveDataVersion)
+	}
+}
+
+// TestModuleInstancesReplacesModuleCounts はModuleCountsがModuleInstancesに置き換わることをテストします。
+func TestModuleInstancesReplacesModuleCounts(t *testing.T) {
+	tmpDir := t.TempDir()
+	io := NewSaveDataIO(tmpDir, false)
+
+	// 新形式のセーブデータを作成
+	saveData := NewSaveData()
+	// ModuleCountsは空のまま
+	// ModuleInstancesに追加
+	saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances,
+		ModuleInstanceSave{TypeID: "physical_lv1", ChainEffect: &ChainEffectSave{Type: "damage_amp", Value: 20.0}},
+		ModuleInstanceSave{TypeID: "physical_lv1", ChainEffect: &ChainEffectSave{Type: "life_steal", Value: 10.0}},
+		ModuleInstanceSave{TypeID: "heal_lv1", ChainEffect: nil},
+	)
+
+	// セーブ
+	if err := io.SaveGame(saveData); err != nil {
+		t.Fatalf("セーブに失敗: %v", err)
+	}
+
+	// ロード
+	loadedData, err := io.LoadGame()
+	if err != nil {
+		t.Fatalf("ロードに失敗: %v", err)
+	}
+
+	// 検証: 同一TypeIDでも異なるChainEffectで別インスタンスとして保持される
+	if len(loadedData.Inventory.ModuleInstances) != 3 {
+		t.Errorf("ModuleInstances count: got %d, want 3", len(loadedData.Inventory.ModuleInstances))
+	}
+
+	// 同じTypeIDでも異なるChainEffectを持つことを確認
+	physicalCount := 0
+	for _, m := range loadedData.Inventory.ModuleInstances {
+		if m.TypeID == "physical_lv1" {
+			physicalCount++
+		}
+	}
+	if physicalCount != 2 {
+		t.Errorf("physical_lv1 count: got %d, want 2", physicalCount)
 	}
 }

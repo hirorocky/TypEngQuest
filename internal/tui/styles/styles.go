@@ -103,6 +103,7 @@ type BattleStyles struct {
 	Heal      lipgloss.Style
 	Buff      lipgloss.Style
 	Debuff    lipgloss.Style
+	Passive   lipgloss.Style
 	Cooldown  lipgloss.Style
 	Available lipgloss.Style
 }
@@ -198,6 +199,8 @@ func createStyles(noColor bool) *GameStyles {
 			Foreground(ColorBuff),
 		Debuff: lipgloss.NewStyle().
 			Foreground(ColorDebuff),
+		Passive: lipgloss.NewStyle().
+			Foreground(ColorSecondary),
 		Cooldown: lipgloss.NewStyle().
 			Foreground(ColorSubtle),
 		Available: lipgloss.NewStyle().
@@ -348,6 +351,14 @@ func (gs *GameStyles) RenderDebuff(name string, remainingSeconds float64) string
 		return gs.Battle.Debuff.Render(fmt.Sprintf("[%s %.1fs]", name, remainingSeconds))
 	}
 	return gs.Battle.Debuff.Render(fmt.Sprintf("[%s]", name))
+}
+
+// RenderPassive はパッシブスキル表示を描画します。
+func (gs *GameStyles) RenderPassive(name string, bonusPercent float64) string {
+	if bonusPercent > 0 {
+		return gs.Battle.Passive.Render(fmt.Sprintf("[%s +%.0f%%]", name, bonusPercent))
+	}
+	return gs.Battle.Passive.Render(fmt.Sprintf("[%s]", name))
 }
 
 // RenderCooldown はクールダウン表示を描画します。

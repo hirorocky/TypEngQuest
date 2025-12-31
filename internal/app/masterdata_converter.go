@@ -31,15 +31,17 @@ func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.Mod
 	result := make([]rewarding.ModuleDropInfo, len(types))
 	for i, t := range types {
 		result[i] = rewarding.ModuleDropInfo{
-			ID:           t.ID,
-			Name:         t.Name,
-			Category:     convertCategory(t.Category),
-			Level:        t.Level,
-			Tags:         t.Tags,
-			BaseEffect:   t.BaseEffect,
-			StatRef:      t.StatReference,
-			Description:  t.Description,
-			MinDropLevel: t.MinDropLevel,
+			ID:              t.ID,
+			Name:            t.Name,
+			Icon:            t.Icon,
+			Category:        convertCategory(t.Category),
+			Tags:            t.Tags,
+			BaseEffect:      t.BaseEffect,
+			StatRef:         t.StatReference,
+			Description:     t.Description,
+			CooldownSeconds: t.CooldownSeconds,
+			MinDropLevel:    t.MinDropLevel,
+			Difficulty:      t.Difficulty,
 		}
 	}
 	return result
@@ -78,4 +80,46 @@ func ConvertExternalDataToDomain(ext *masterdata.ExternalData) (
 	moduleTypes := ConvertModuleTypes(ext.ModuleDefinitions)
 
 	return enemyTypes, coreTypes, moduleTypes
+}
+
+// ConvertChainEffects はmasterdata.ChainEffectDataのスライスをrewarding.ChainEffectDefinitionのスライスに変換します。
+func ConvertChainEffects(effects []masterdata.ChainEffectData) []rewarding.ChainEffectDefinition {
+	result := make([]rewarding.ChainEffectDefinition, len(effects))
+	for i, e := range effects {
+		result[i] = rewarding.ChainEffectDefinition{
+			ID:         e.ID,
+			Name:       e.Name,
+			Category:   e.Category,
+			EffectType: e.ToDomainEffectType(),
+			MinValue:   e.MinValue,
+			MaxValue:   e.MaxValue,
+		}
+	}
+	return result
+}
+
+// ConvertPassiveSkills はmasterdata.PassiveSkillDataのスライスをdomain.PassiveSkillのマップに変換します。
+// キーはパッシブスキルのIDです。
+func ConvertPassiveSkills(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkill {
+	result := make(map[string]domain.PassiveSkill, len(skills))
+	for _, s := range skills {
+		result[s.ID] = domain.PassiveSkill{
+			ID:               s.ID,
+			Name:             s.Name,
+			Description:      s.Description,
+			ShortDescription: s.ShortDescription,
+		}
+	}
+	return result
+}
+
+// ConvertPassiveSkillDefinitions はmasterdata.PassiveSkillDataのスライスを
+// domain.PassiveSkillDefinitionのマップに変換します。
+// キーはパッシブスキルのIDです。
+func ConvertPassiveSkillDefinitions(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkillDefinition {
+	result := make(map[string]domain.PassiveSkillDefinition, len(skills))
+	for _, s := range skills {
+		result[s.ID] = s.ToDomain()
+	}
+	return result
 }

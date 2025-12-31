@@ -173,6 +173,12 @@ type BattleState struct {
 	// NextAction は敵の次回行動です。
 
 	NextAction NextEnemyAction
+
+	// LastAttackType は直前の攻撃属性です。
+	LastAttackType string
+
+	// SameAttackCount は同じ属性の攻撃の連続回数です。
+	SameAttackCount int
 }
 
 // BattleResult はバトル結果を表す構造体です。
@@ -185,10 +191,12 @@ type BattleResult struct {
 }
 
 // BattleEngine はバトルロジックを担当する構造体です。
-
 type BattleEngine struct {
 	// enemyTypes は敵タイプの定義リストです。
 	enemyTypes []domain.EnemyType
+
+	// passiveSkillDefs はパッシブスキル定義のマップです。
+	passiveSkillDefs map[string]domain.PassiveSkillDefinition
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
@@ -200,6 +208,17 @@ func NewBattleEngine(enemyTypes []domain.EnemyType) *BattleEngine {
 		enemyTypes: enemyTypes,
 		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
+}
+
+// SetPassiveSkillDefinitions はパッシブスキル定義を設定します。
+// これにより、RegisterPassiveSkills で条件付きパッシブスキルが EffectTable に登録されます。
+func (e *BattleEngine) SetPassiveSkillDefinitions(defs map[string]domain.PassiveSkillDefinition) {
+	e.passiveSkillDefs = defs
+}
+
+// SetRng は乱数生成器を設定します（テスト用）。
+func (e *BattleEngine) SetRng(rng *rand.Rand) {
+	e.rng = rng
 }
 
 // ==================== バトル初期化（Task 7.1） ====================
@@ -277,27 +296,216 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 // ==================== 敵攻撃システム（Task 7.2） ====================
 
 // ProcessEnemyAttack は敵の攻撃を処理します。
-
+// 回避、反射、ダメージカットなどの効果を適用します。
 func (e *BattleEngine) ProcessEnemyAttack(state *BattleState) int {
 	// 敵の攻撃力を取得
 	attackPower := state.Enemy.AttackPower
 
-	// プレイヤーの防御効果を計算
+	// プレイヤーの防御効果を計算（新しい効果システム）
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Player.EffectTable.Aggregate(ctx)
 
-	finalStats := state.Player.EffectTable.Calculate(domain.Stats{})
-	damageReduction := finalStats.DamageReduction
+	// 回避判定
+	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
+		// 回避成功 - ダメージなし
+		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
+		return 0
+	}
 
 	// ダメージ計算（軽減率を適用）
-	damage := calculateDamage(attackPower, damageReduction)
+	damage := calculateDamage(attackPower, effects.DamageCut)
 
 	// プレイヤーにダメージを与える
 	state.Player.TakeDamage(damage)
 	state.Stats.TotalDamageTaken += damage
 
+	// 反射処理
+	if effects.Reflect > 0 && damage > 0 {
+		reflectDamage := int(float64(damage) * effects.Reflect)
+		if reflectDamage > 0 {
+			state.Enemy.TakeDamage(reflectDamage)
+			state.Stats.TotalDamageDealt += reflectDamage
+		}
+	}
+
 	// 次回攻撃時刻を更新
 	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
 
 	return damage
+}
+
+// ProcessEnemyAttackWithPassive は被ダメージ時パッシブを考慮して敵の攻撃を処理します。
+// ps_last_stand（ダメージ固定）、ps_counter_charge（次攻撃バフ）などを評価します。
+func (e *BattleEngine) ProcessEnemyAttackWithPassive(state *BattleState) int {
+	// 敵の攻撃力を取得
+	attackPower := state.Enemy.AttackPower
+
+	// プレイヤーの防御効果を計算
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	ctx.SetEvent(domain.EventOnDamageRecv)
+	effects := state.Player.EffectTable.Aggregate(ctx)
+
+	// 回避判定
+	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
+		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
+		return 0
+	}
+
+	// ダメージ計算（軽減率を適用）
+	damage := calculateDamage(attackPower, effects.DamageCut)
+
+	// 被ダメージ時パッシブの評価
+	damage = e.evaluateDamageRecvPassives(state, damage)
+
+	// プレイヤーにダメージを与える
+	state.Player.TakeDamage(damage)
+	state.Stats.TotalDamageTaken += damage
+
+	// 反射処理
+	if effects.Reflect > 0 && damage > 0 {
+		reflectDamage := int(float64(damage) * effects.Reflect)
+		if reflectDamage > 0 {
+			state.Enemy.TakeDamage(reflectDamage)
+			state.Stats.TotalDamageDealt += reflectDamage
+		}
+	}
+
+	// 被ダメージ後のパッシブ効果（バフ付与など）
+	e.applyPostDamagePassives(state)
+
+	// 次回攻撃時刻を更新
+	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
+
+	return damage
+}
+
+// evaluateDamageRecvPassives は被ダメージ時のパッシブ効果を評価します。
+// ps_last_stand（ダメージ固定）などを処理します。
+func (e *BattleEngine) evaluateDamageRecvPassives(state *BattleState, damage int) int {
+	for _, agent := range state.EquippedAgents {
+		passiveID := agent.Core.PassiveSkill.ID
+		if def, ok := e.passiveSkillDefs[passiveID]; ok {
+			// ps_last_stand: HP条件 + 確率でダメージ固定
+			if def.ID == "ps_last_stand" {
+				// HP条件チェック
+				hpPercent := float64(state.Player.HP) / float64(state.Player.MaxHP)
+				threshold := def.TriggerCondition.Value / 100.0
+				if hpPercent <= threshold {
+					// 確率判定
+					if e.rng.Float64() < def.Probability {
+						return int(def.EffectValue) // ダメージを固定値に
+					}
+				}
+			}
+		}
+	}
+	return damage
+}
+
+// applyPostDamagePassives は被ダメージ後のパッシブ効果を適用します。
+// ps_counter_charge（次攻撃バフ）などを処理します。
+func (e *BattleEngine) applyPostDamagePassives(state *BattleState) {
+	for _, agent := range state.EquippedAgents {
+		passiveID := agent.Core.PassiveSkill.ID
+		if def, ok := e.passiveSkillDefs[passiveID]; ok {
+			// ps_counter_charge: 被ダメージ時に確率で次攻撃バフ
+			if def.ID == "ps_counter_charge" {
+				// 確率判定
+				if e.rng.Float64() < def.Probability {
+					// 次攻撃2倍バフを付与（5秒間）
+					duration := 5.0
+					state.Player.EffectTable.AddBuff(
+						"カウンターチャージ",
+						duration,
+						map[domain.EffectColumn]float64{
+							domain.ColDamageMultiplier: def.EffectValue,
+						},
+					)
+				}
+			}
+		}
+	}
+}
+
+// RecordAttackType は攻撃タイプを記録し、連続回数を更新します。
+func (e *BattleEngine) RecordAttackType(state *BattleState, attackType string) {
+	if state.LastAttackType == attackType {
+		state.SameAttackCount++
+	} else {
+		state.LastAttackType = attackType
+		state.SameAttackCount = 1
+	}
+}
+
+// ProcessEnemyAttackWithPassiveAndPattern は攻撃パターンを考慮してダメージを処理します。
+// ps_adaptive_shield（同種攻撃連続時の軽減）などを評価します。
+func (e *BattleEngine) ProcessEnemyAttackWithPassiveAndPattern(state *BattleState, attackType string) int {
+	// 攻撃タイプを記録
+	e.RecordAttackType(state, attackType)
+
+	// 敵の攻撃力を取得
+	attackPower := state.Enemy.AttackPower
+
+	// プレイヤーの防御効果を計算
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	ctx.SetEvent(domain.EventOnDamageRecv)
+	effects := state.Player.EffectTable.Aggregate(ctx)
+
+	// 回避判定
+	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
+		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
+		return 0
+	}
+
+	// ps_adaptive_shield: 同種攻撃連続時の軽減
+	adaptiveShieldCut := e.evaluateAdaptiveShield(state)
+
+	// ダメージ計算（軽減率を適用）
+	totalDamageCut := effects.DamageCut + adaptiveShieldCut
+	if totalDamageCut > 1.0 {
+		totalDamageCut = 1.0 // 最大100%軽減
+	}
+	damage := calculateDamage(attackPower, totalDamageCut)
+
+	// 被ダメージ時パッシブの評価
+	damage = e.evaluateDamageRecvPassives(state, damage)
+
+	// プレイヤーにダメージを与える
+	state.Player.TakeDamage(damage)
+	state.Stats.TotalDamageTaken += damage
+
+	// 反射処理
+	if effects.Reflect > 0 && damage > 0 {
+		reflectDamage := int(float64(damage) * effects.Reflect)
+		if reflectDamage > 0 {
+			state.Enemy.TakeDamage(reflectDamage)
+			state.Stats.TotalDamageDealt += reflectDamage
+		}
+	}
+
+	// 被ダメージ後のパッシブ効果（バフ付与など）
+	e.applyPostDamagePassives(state)
+
+	// 次回攻撃時刻を更新
+	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
+
+	return damage
+}
+
+// evaluateAdaptiveShield はps_adaptive_shieldの軽減効果を評価します。
+func (e *BattleEngine) evaluateAdaptiveShield(state *BattleState) float64 {
+	for _, agent := range state.EquippedAgents {
+		passiveID := agent.Core.PassiveSkill.ID
+		if def, ok := e.passiveSkillDefs[passiveID]; ok {
+			if def.ID == "ps_adaptive_shield" && def.TriggerCondition != nil {
+				threshold := int(def.TriggerCondition.Value)
+				if state.SameAttackCount >= threshold {
+					return def.EffectValue
+				}
+			}
+		}
+	}
+	return 0.0
 }
 
 // IsAttackReady は敵の攻撃準備が完了しているかを返します。
@@ -319,8 +527,9 @@ func (e *BattleEngine) GetTimeUntilNextAttack(state *BattleState) time.Duration 
 // GetExpectedDamage は次の攻撃の予測ダメージを返します。
 func (e *BattleEngine) GetExpectedDamage(state *BattleState) int {
 	attackPower := state.Enemy.AttackPower
-	finalStats := state.Player.EffectTable.Calculate(domain.Stats{})
-	return calculateDamage(attackPower, finalStats.DamageReduction)
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Player.EffectTable.Aggregate(ctx)
+	return calculateDamage(attackPower, effects.DamageCut)
 }
 
 // GetAttackType は敵の攻撃タイプを返します。
@@ -433,78 +642,65 @@ func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
 }
 
 // ApplyEnemySelfBuff は敵に自己バフを付与します。
-
 func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuffType) {
-	duration := config.BuffDuration
-
-	var modifiers domain.StatModifiers
+	values := make(map[domain.EffectColumn]float64)
 	var name string
 
 	switch buffType {
 	case EnemyBuffAttackUp:
-
 		name = "攻撃力UP"
-		modifiers.STR_Mult = 1.3 // 30%攻撃力上昇
+		values[domain.ColDamageMultiplier] = 1.3 // 30%攻撃力上昇
 	case EnemyBuffPhysicalDamageDown:
-
 		name = "物理防御UP"
-		modifiers.DamageReduction = 0.3 // 30%軽減
+		values[domain.ColDamageCut] = 0.3 // 30%軽減
 	case EnemyBuffMagicDamageDown:
-
 		name = "魔法防御UP"
-		modifiers.DamageReduction = 0.3 // 30%軽減
+		values[domain.ColDamageCut] = 0.3 // 30%軽減
 	}
 
-	state.Enemy.EffectTable.AddRow(domain.EffectRow{
-		ID:         uuid.New().String(),
-		SourceType: domain.SourceBuff,
-		Name:       name,
-		Duration:   &duration,
-		Modifiers:  modifiers,
-	})
+	state.Enemy.EffectTable.AddBuff(name, config.BuffDuration, values)
 }
 
 // ApplyPlayerDebuff はプレイヤーにデバフを付与します。
-
 func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDebuffType) {
-	duration := config.DebuffDuration
-
-	var modifiers domain.StatModifiers
+	values := make(map[domain.EffectColumn]float64)
 	var name string
 
 	switch debuffType {
 	case PlayerDebuffTypingTimeDown:
-
 		name = "タイピング時間短縮"
-		modifiers.TypingTimeExt = -2.0 // 2秒短縮
+		values[domain.ColTimeExtend] = -2.0 // 2秒短縮
 	case PlayerDebuffTextShuffle:
-
 		name = "テキストシャッフル"
 		// 実際のシャッフル処理はUI側で行う
 	case PlayerDebuffDifficultyUp:
-
 		name = "難易度上昇"
 		// 実際の難易度変更はチャレンジ生成時に行う
 	case PlayerDebuffCooldownExtend:
-
 		name = "クールダウン延長"
-		modifiers.CDReduction = -0.3 // 30%延長（マイナス値 = 延長）
+		values[domain.ColCooldownReduce] = -0.3 // 30%延長（マイナス値 = 延長）
 	}
 
-	state.Player.EffectTable.AddRow(domain.EffectRow{
-		ID:         uuid.New().String(),
-		SourceType: domain.SourceDebuff,
-		Name:       name,
-		Duration:   &duration,
-		Modifiers:  modifiers,
-	})
+	state.Player.EffectTable.AddDebuff(name, config.DebuffDuration, values)
 }
 
-// UpdateEffects はバフ・デバフの時間を更新します。
-
+// UpdateEffects はバフ・デバフの時間を更新し、継続効果（Regen等）を適用します。
 func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
+	// 持続時間の更新
 	state.Player.EffectTable.UpdateDurations(deltaSeconds)
 	state.Enemy.EffectTable.UpdateDurations(deltaSeconds)
+
+	// Regen 処理（プレイヤー）
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Player.EffectTable.Aggregate(ctx)
+	if effects.Regen > 0 {
+		// 毎秒 effects.Regen% のHP回復
+		regenAmount := int(float64(state.Player.MaxHP) * effects.Regen / 100.0 * deltaSeconds)
+		if regenAmount > 0 {
+			state.Player.Heal(regenAmount)
+			state.Stats.TotalHealAmount += regenAmount
+		}
+	}
 }
 
 // getEnemyBuffMessage は敵自己バフのメッセージを返します。
@@ -548,7 +744,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 ) int {
 
 	var statValue int
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
 		statValue = agent.BaseStats.STR
 	case "MAG":
@@ -562,7 +758,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 	}
 
 	// 基礎効果 × ステータス値 × スケール係数
-	baseEffect := module.BaseEffect * float64(statValue) * EffectScaleFactor
+	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
 
 	// 速度係数と正確性係数を適用
 	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
@@ -575,7 +771,7 @@ func (e *BattleEngine) CalculateModuleEffect(
 }
 
 // ApplyModuleEffect はモジュール効果を適用します。
-
+// プレイヤーの EffectTable から DamageMultiplier、ArmorPierce、LifeSteal、HealMultiplier を参照します。
 func (e *BattleEngine) ApplyModuleEffect(
 	state *BattleState,
 	agent *domain.AgentModel,
@@ -584,28 +780,73 @@ func (e *BattleEngine) ApplyModuleEffect(
 ) int {
 	effectAmount := e.CalculateModuleEffect(agent, module, typingResult)
 
-	switch module.Category {
+	// プレイヤーの効果を取得
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+
+	// タイピング結果をコンテキストに設定（パッシブスキル評価用）
+	if typingResult != nil {
+		ctx.SetTypingResult(typingResult.Accuracy, typingResult.WPM, 0)
+		ctx.SetEvent(domain.EventOnTypingDone)
+	}
+
+	playerEffects := state.Player.EffectTable.Aggregate(ctx)
+
+	switch module.Category() {
 	case domain.PhysicalAttack, domain.MagicAttack:
-		// 攻撃系モジュール - 敵にダメージ（敵のダメージ軽減を考慮）
-		enemyStats := state.Enemy.EffectTable.Calculate(domain.Stats{})
-		damage := calculateDamage(effectAmount, enemyStats.DamageReduction)
+		// 攻撃系モジュール - 敵にダメージ
+		damage := effectAmount
+
+		// ダメージ乗算を適用
+		if playerEffects.DamageMultiplier != 1.0 {
+			damage = int(float64(damage) * playerEffects.DamageMultiplier)
+		}
+
+		// 敵の防御効果を取得
+		enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
+
+		// ArmorPierce が有効なら敵の DamageCut を無視
+		if !playerEffects.ArmorPierce {
+			damage = calculateDamage(damage, enemyEffects.DamageCut)
+		}
+
 		state.Enemy.TakeDamage(damage)
 		state.Stats.TotalDamageDealt += damage
+
+		// ライフスティール処理
+		if playerEffects.LifeSteal > 0 && damage > 0 {
+			healAmount := int(float64(damage) * playerEffects.LifeSteal)
+			if healAmount > 0 {
+				state.Player.Heal(healAmount)
+				state.Stats.TotalHealAmount += healAmount
+			}
+		}
+
 		return damage
 
 	case domain.Heal:
 		// 回復系モジュール - プレイヤーHP回復
-		state.Player.Heal(effectAmount)
-		state.Stats.TotalHealAmount += effectAmount
-		return effectAmount
+		healAmount := effectAmount
+
+		// 回復量乗算を適用
+		if playerEffects.HealMultiplier != 1.0 {
+			healAmount = int(float64(healAmount) * playerEffects.HealMultiplier)
+		}
+
+		// オーバーヒール処理
+		// Overhealが有効な場合は超過分をTempHPに変換
+		if playerEffects.Overheal {
+			state.Player.HealWithOverheal(healAmount)
+		} else {
+			state.Player.Heal(healAmount)
+		}
+		state.Stats.TotalHealAmount += healAmount
+		return healAmount
 
 	case domain.Buff:
-
 		e.applyPlayerBuff(state, module, effectAmount)
 		return effectAmount
 
 	case domain.Debuff:
-
 		e.applyEnemyDebuff(state, module, effectAmount)
 		return effectAmount
 	}
@@ -613,54 +854,152 @@ func (e *BattleEngine) ApplyModuleEffect(
 	return 0
 }
 
-// applyPlayerBuff はプレイヤーにバフを付与します。
-func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	duration := config.BuffDuration
+// ApplyModuleEffectWithCombo はコンボカウントを考慮してモジュール効果を適用します。
+// スタック型パッシブスキル（ps_combo_master等）の効果を正しく計算します。
+func (e *BattleEngine) ApplyModuleEffectWithCombo(
+	state *BattleState,
+	agent *domain.AgentModel,
+	module *domain.ModuleModel,
+	typingResult *typing.TypingResult,
+	comboCount int,
+) int {
+	effectAmount := e.CalculateModuleEffect(agent, module, typingResult)
 
-	modifiers := domain.StatModifiers{}
-	switch module.StatRef {
-	case "STR":
-		modifiers.STR_Add = effectAmount
-	case "MAG":
-		modifiers.MAG_Add = effectAmount
-	case "SPD":
-		modifiers.SPD_Add = effectAmount
-		modifiers.CDReduction = float64(effectAmount) * 0.01 // SPDに応じたCD短縮
-	case "LUK":
-		modifiers.LUK_Add = effectAmount
-		modifiers.CritRate = float64(effectAmount) * 0.01 // LUKに応じたクリティカル率
+	// プレイヤーの効果を取得
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+
+	// タイピング結果とコンボカウントをコンテキストに設定
+	if typingResult != nil {
+		ctx.SetTypingResult(typingResult.Accuracy, typingResult.WPM, comboCount)
+		ctx.SetEvent(domain.EventOnTypingDone)
 	}
 
-	state.Player.EffectTable.AddRow(domain.EffectRow{
-		ID:         uuid.New().String(),
-		SourceType: domain.SourceBuff,
-		Name:       module.Name,
-		Duration:   &duration,
-		Modifiers:  modifiers,
-	})
+	playerEffects := state.Player.EffectTable.Aggregate(ctx)
+
+	// スタック型パッシブの追加効果を計算
+	stackMultiplier := e.calculateStackMultiplier(state, comboCount)
+
+	switch module.Category() {
+	case domain.PhysicalAttack, domain.MagicAttack:
+		damage := effectAmount
+
+		// ダメージ乗算を適用（通常パッシブ + スタック型パッシブ）
+		totalMultiplier := playerEffects.DamageMultiplier * stackMultiplier
+		if totalMultiplier != 1.0 {
+			damage = int(float64(damage) * totalMultiplier)
+		}
+
+		// 敵の防御効果を取得
+		enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
+
+		// ArmorPierce が有効なら敵の DamageCut を無視
+		if !playerEffects.ArmorPierce {
+			damage = calculateDamage(damage, enemyEffects.DamageCut)
+		}
+
+		state.Enemy.TakeDamage(damage)
+		state.Stats.TotalDamageDealt += damage
+
+		// ライフスティール処理
+		if playerEffects.LifeSteal > 0 && damage > 0 {
+			healAmount := int(float64(damage) * playerEffects.LifeSteal)
+			if healAmount > 0 {
+				state.Player.Heal(healAmount)
+				state.Stats.TotalHealAmount += healAmount
+			}
+		}
+
+		return damage
+
+	case domain.Heal:
+		healAmount := effectAmount
+		if playerEffects.HealMultiplier != 1.0 {
+			healAmount = int(float64(healAmount) * playerEffects.HealMultiplier)
+		}
+		if playerEffects.Overheal {
+			state.Player.HealWithOverheal(healAmount)
+		} else {
+			state.Player.Heal(healAmount)
+		}
+		state.Stats.TotalHealAmount += healAmount
+		return healAmount
+
+	case domain.Buff:
+		e.applyPlayerBuff(state, module, effectAmount)
+		return effectAmount
+
+	case domain.Debuff:
+		e.applyEnemyDebuff(state, module, effectAmount)
+		return effectAmount
+	}
+
+	return 0
+}
+
+// calculateStackMultiplier はスタック型パッシブの効果倍率を計算します。
+func (e *BattleEngine) calculateStackMultiplier(state *BattleState, comboCount int) float64 {
+	multiplier := 1.0
+
+	// 装備中のエージェントのパッシブスキルをチェック
+	for _, agent := range state.EquippedAgents {
+		passiveID := agent.Core.PassiveSkill.ID
+		if def, ok := e.passiveSkillDefs[passiveID]; ok {
+			// スタック型パッシブかつコンボ条件のみ処理
+			if def.TriggerType == domain.PassiveTriggerStack &&
+				def.TriggerCondition != nil &&
+				def.TriggerCondition.Type == domain.TriggerConditionNoMissStreak {
+
+				// コンボ数が閾値以上の場合、スタック効果を計算
+				threshold := int(def.TriggerCondition.Value)
+				if comboCount >= threshold {
+					// スタック数を計算（コンボ数をスタックとして扱う）
+					stacks := comboCount
+					if def.MaxStacks > 0 && stacks > def.MaxStacks {
+						stacks = def.MaxStacks
+					}
+					// 効果倍率を計算: ベース + (スタック数 × 増分)
+					stackEffect := def.EffectValue + float64(stacks)*def.StackIncrement
+					multiplier *= stackEffect
+				}
+			}
+		}
+	}
+
+	return multiplier
+}
+
+// applyPlayerBuff はプレイヤーにバフを付与します。
+func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
+	values := make(map[domain.EffectColumn]float64)
+
+	switch module.StatRef() {
+	case "STR":
+		values[domain.ColDamageBonus] = float64(effectAmount)
+	case "MAG":
+		values[domain.ColDamageBonus] = float64(effectAmount)
+	case "SPD":
+		values[domain.ColCooldownReduce] = float64(effectAmount) * 0.01 // SPDに応じたCD短縮
+	case "LUK":
+		values[domain.ColDoubleCast] = float64(effectAmount) * 0.01 // LUKに応じた二重発動率
+	}
+
+	state.Player.EffectTable.AddBuff(module.Name(), config.BuffDuration, values)
 }
 
 // applyEnemyDebuff は敵にデバフを付与します。
 func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	duration := config.DebuffDuration
+	values := make(map[domain.EffectColumn]float64)
 
-	modifiers := domain.StatModifiers{}
-	switch module.StatRef {
+	switch module.StatRef() {
 	case "STR":
-		modifiers.STR_Add = -effectAmount // 攻撃力低下
+		values[domain.ColDamageBonus] = float64(-effectAmount) // 攻撃力低下
 	case "MAG":
-		modifiers.MAG_Add = -effectAmount
+		values[domain.ColDamageBonus] = float64(-effectAmount)
 	case "SPD":
-		modifiers.SPD_Add = -effectAmount // 速度低下
+		values[domain.ColCooldownReduce] = float64(-effectAmount) * 0.01 // 速度低下
 	}
 
-	state.Enemy.EffectTable.AddRow(domain.EffectRow{
-		ID:         uuid.New().String(),
-		SourceType: domain.SourceDebuff,
-		Name:       module.Name,
-		Duration:   &duration,
-		Modifiers:  modifiers,
-	})
+	state.Enemy.EffectTable.AddDebuff(module.Name(), config.DebuffDuration, values)
 }
 
 // ==================== バトル勝敗判定（Task 7.5） ====================
@@ -698,4 +1037,234 @@ func (e *BattleEngine) RecordTypingResult(state *BattleState, result *typing.Typ
 
 func (e *BattleEngine) ShouldUpdateMaxLevel(battleLevel, currentMaxLevel int) bool {
 	return battleLevel > currentMaxLevel
+}
+
+// ==================== パッシブスキル統合（Task 6） ====================
+
+// RegisterPassiveSkills は装備エージェントのパッシブスキルをEffectTableに登録します。
+// 各エージェントのコアに紐づくパッシブスキルを永続効果として登録します。
+// PassiveSkillDefinition が設定されている場合は、条件付き効果も登録されます。
+func (e *BattleEngine) RegisterPassiveSkills(
+	state *BattleState,
+	agents []*domain.AgentModel,
+) {
+	for i, agent := range agents {
+		if agent == nil || agent.Core == nil {
+			continue
+		}
+
+		passiveSkill := agent.Core.PassiveSkill
+
+		// パッシブスキルIDが空の場合はスキップ
+		if passiveSkill.ID == "" {
+			continue
+		}
+
+		// PassiveSkillDefinition がある場合は ToEntry() を使用
+		if def, ok := e.passiveSkillDefs[passiveSkill.ID]; ok {
+			entry := def.ToEntry()
+			entry.SourceID = fmt.Sprintf("passive_%d_%s", i, passiveSkill.ID)
+			entry.SourceIndex = i
+			state.Player.EffectTable.AddEntry(entry)
+			continue
+		}
+
+		// フォールバック: 従来の StatModifiers を使用
+		scaledModifiers := passiveSkill.CalculateModifiers(agent.Core.Level)
+
+		// 一意なIDを生成
+		effectID := fmt.Sprintf("passive_%d_%s", i, passiveSkill.ID)
+
+		// StatModifiers を EffectColumn の map に変換
+		values := scaledModifiers.ToEffectValues()
+
+		// 永続効果としてEffectTableに登録（Duration == nil）
+		state.Player.EffectTable.AddEntry(domain.EffectEntry{
+			SourceType:  domain.SourcePassive,
+			SourceID:    effectID,
+			SourceIndex: i,
+			Name:        passiveSkill.Name,
+			Duration:    nil, // 永続効果
+			Values:      values,
+		})
+	}
+}
+
+// GetPlayerFinalStats はパッシブスキルを含む全ての効果を適用したプレイヤーステータスを返します。
+func (e *BattleEngine) GetPlayerFinalStats(state *BattleState) domain.EffectResult {
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, 0, 0)
+	return state.Player.EffectTable.Aggregate(ctx)
+}
+
+// CalculateModuleEffectWithPassive はパッシブスキル効果を適用したモジュール効果を計算します。
+// パッシブスキルによるステータス補正を考慮してダメージ/回復量を計算します。
+func (e *BattleEngine) CalculateModuleEffectWithPassive(
+	agent *domain.AgentModel,
+	module *domain.ModuleModel,
+	typingResult *typing.TypingResult,
+) int {
+	// パッシブスキルによるステータス補正を計算
+	passiveModifiers := agent.Core.PassiveSkill.CalculateModifiers(agent.Core.Level)
+
+	// 基礎ステータスにパッシブスキル効果を適用
+	var statValue int
+	switch module.StatRef() {
+	case "STR":
+		// 加算と乗算を適用
+		base := agent.BaseStats.STR + passiveModifiers.STR_Add
+		mult := 1.0
+		if passiveModifiers.STR_Mult != 0 {
+			mult = passiveModifiers.STR_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "MAG":
+		base := agent.BaseStats.MAG + passiveModifiers.MAG_Add
+		mult := 1.0
+		if passiveModifiers.MAG_Mult != 0 {
+			mult = passiveModifiers.MAG_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "SPD":
+		base := agent.BaseStats.SPD + passiveModifiers.SPD_Add
+		mult := 1.0
+		if passiveModifiers.SPD_Mult != 0 {
+			mult = passiveModifiers.SPD_Mult
+		}
+		statValue = int(float64(base) * mult)
+	case "LUK":
+		base := agent.BaseStats.LUK + passiveModifiers.LUK_Add
+		mult := 1.0
+		if passiveModifiers.LUK_Mult != 0 {
+			mult = passiveModifiers.LUK_Mult
+		}
+		statValue = int(float64(base) * mult)
+	default:
+		statValue = agent.BaseStats.STR
+	}
+
+	// 基礎効果 × ステータス値 × スケール係数
+	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
+
+	// 速度係数と正確性係数を適用
+	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
+
+	if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
+		effect *= 0.5
+	}
+
+	return int(effect)
+}
+
+// EvaluateEchoSkill はps_echo_skillの発動を評価し、繰り返し回数を返します。
+// 発動しない場合は1を返します。
+func (e *BattleEngine) EvaluateEchoSkill(state *BattleState, agent *domain.AgentModel) int {
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_echo_skill" {
+			// 確率判定
+			if e.rng.Float64() < def.Probability {
+				return int(def.EffectValue) // 2回発動
+			}
+		}
+	}
+	return 1 // 通常は1回
+}
+
+// ApplyModuleEffectWithEcho はエコースキルを考慮してモジュール効果を適用します。
+func (e *BattleEngine) ApplyModuleEffectWithEcho(
+	state *BattleState,
+	agent *domain.AgentModel,
+	module *domain.ModuleModel,
+	typingResult *typing.TypingResult,
+	repeatCount int,
+) int {
+	totalEffect := 0
+	for i := 0; i < repeatCount; i++ {
+		effect := e.ApplyModuleEffect(state, agent, module, typingResult)
+		totalEffect += effect
+	}
+	return totalEffect
+}
+
+// EvaluateMiracleHeal はps_miracle_healの発動を評価します。
+// 回復スキル使用時のみ確率で発動します。
+func (e *BattleEngine) EvaluateMiracleHeal(state *BattleState, agent *domain.AgentModel, module *domain.ModuleModel) bool {
+	// 回復スキル以外では発動しない
+	if module.Category() != domain.Heal {
+		return false
+	}
+
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_miracle_heal" {
+			// 確率判定
+			if e.rng.Float64() < def.Probability {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// EvaluateFirstStrike はps_first_strikeの発動を評価します。
+// バトル開始時に最初のスキルを即発動するかどうかを返します。
+func (e *BattleEngine) EvaluateFirstStrike(state *BattleState, agent *domain.AgentModel) bool {
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_first_strike" {
+			return true
+		}
+	}
+	return false
+}
+
+// EvaluateTypoRecovery はps_typo_recoveryの発動を評価します。
+// ミス時の時間延長（秒）を返します。発動しない場合は0。
+func (e *BattleEngine) EvaluateTypoRecovery(state *BattleState, agent *domain.AgentModel) float64 {
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_typo_recovery" {
+			// 確率判定
+			if e.rng.Float64() < def.Probability {
+				return def.EffectValue // +1秒など
+			}
+		}
+	}
+	return 0.0
+}
+
+// EvaluateSecondChance はps_second_chanceの発動を評価します。
+// タイムアウト時に再挑戦できるかどうかを返します。
+func (e *BattleEngine) EvaluateSecondChance(state *BattleState, agent *domain.AgentModel) bool {
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_second_chance" {
+			// 確率判定
+			if e.rng.Float64() < def.Probability {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// GetPassiveSkillDef はパッシブスキル定義を取得します。
+func (e *BattleEngine) GetPassiveSkillDef(passiveID string) (domain.PassiveSkillDefinition, bool) {
+	def, ok := e.passiveSkillDefs[passiveID]
+	return def, ok
+}
+
+// EvaluateQuickRecovery はps_quick_recoveryの発動を評価します。
+// 被ダメージ時にリキャスト短縮効果が発動するかを判定し、短縮秒数を返します。
+func (e *BattleEngine) EvaluateQuickRecovery(state *BattleState, agent *domain.AgentModel) float64 {
+	passiveID := agent.Core.PassiveSkill.ID
+	if def, ok := e.passiveSkillDefs[passiveID]; ok {
+		if def.ID == "ps_quick_recovery" {
+			// 確率判定
+			if e.rng.Float64() < def.Probability {
+				return def.EffectValue // 短縮秒数（例: 2.0秒）
+			}
+		}
+	}
+	return 0.0
 }

@@ -71,28 +71,6 @@ func NewAgentManager(
 	}
 }
 
-// InitializeWithDefaults は初期エージェントをセットアップします。
-func (m *AgentManager) InitializeWithDefaults() {
-	// 初期エージェントを作成（コアとモジュールが存在する場合のみ）
-	cores := m.coreInventory.List()
-	modules := m.moduleInventory.List()
-
-	if len(cores) > 0 && len(modules) >= domain.ModuleSlotCount {
-		// 最初のコアと最初の4つのモジュールで初期エージェントを合成
-		core := cores[0]
-		moduleIDs := make([]string, domain.ModuleSlotCount)
-		for i := 0; i < domain.ModuleSlotCount; i++ {
-			moduleIDs[i] = modules[i].ID
-		}
-
-		agent, err := m.SynthesizeAgent(core.ID, moduleIDs)
-		if err == nil && agent != nil {
-			// 初期エージェントを装備（スロット0）
-			m.equippedAgents[0] = agent
-		}
-	}
-}
-
 // ==================== コア特性とモジュールタグ互換性検証（Task 5.1） ====================
 
 // GetAllowedTags はコア特性の許可タグリストを取得します。
@@ -135,13 +113,13 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 	// モジュールを取得し、互換性チェック
 	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
 	for _, moduleID := range moduleIDs {
-		module := m.moduleInventory.Get(moduleID)
+		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {
 			return nil, fmt.Errorf("モジュールが見つかりません: %s", moduleID)
 		}
 
 		if !m.ValidateModuleCompatibility(core, module) {
-			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name, core.Name)
+			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name(), core.Name)
 		}
 
 		modules = append(modules, module)
@@ -157,7 +135,7 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 
 	m.coreInventory.Remove(coreID)
 	for _, moduleID := range moduleIDs {
-		m.moduleInventory.Remove(moduleID)
+		m.moduleInventory.RemoveByTypeID(moduleID)
 	}
 
 	// エージェントをインベントリに追加
@@ -182,12 +160,12 @@ func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*
 
 	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
 	for _, moduleID := range moduleIDs {
-		module := m.moduleInventory.Get(moduleID)
+		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {
 			return nil, fmt.Errorf("モジュールが見つかりません: %s", moduleID)
 		}
 		if !m.ValidateModuleCompatibility(core, module) {
-			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name, core.Name)
+			return nil, fmt.Errorf("モジュール '%s' はコア '%s' に装備できません", module.Name(), core.Name)
 		}
 		modules = append(modules, module)
 	}

@@ -33,7 +33,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "physical_strike_lv1",
 				Name:          "物理打撃Lv1",
 				Category:      "physical_attack",
-				Level:         1,
 				Tags:          []string{"physical_low"},
 				BaseEffect:    10.0,
 				StatReference: "STR",
@@ -44,7 +43,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "fireball_lv1",
 				Name:          "ファイアボールLv1",
 				Category:      "magic_attack",
-				Level:         1,
 				Tags:          []string{"magic_low"},
 				BaseEffect:    12.0,
 				StatReference: "MAG",
@@ -55,7 +53,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "heal_lv1",
 				Name:          "ヒールLv1",
 				Category:      "heal",
-				Level:         1,
 				Tags:          []string{"heal_low"},
 				BaseEffect:    8.0,
 				StatReference: "MAG",
@@ -66,7 +63,6 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:            "attack_buff_lv1",
 				Name:          "攻撃バフLv1",
 				Category:      "buff",
-				Level:         1,
 				Tags:          []string{"buff_low"},
 				BaseEffect:    5.0,
 				StatReference: "SPD",
@@ -80,6 +76,24 @@ func createTestExternalData() *masterdata.ExternalData {
 				Name:            "スライム",
 				BaseHP:          50,
 				BaseAttackPower: 5,
+			},
+		},
+		PassiveSkills: []masterdata.PassiveSkillData{
+			{
+				ID:          "ps_combo_master",
+				Name:        "コンボマスター",
+				Description: "連続タイピングでダメージ増加",
+			},
+		},
+		FirstAgent: &masterdata.FirstAgentData{
+			ID:         "agent_first",
+			CoreTypeID: "all_rounder",
+			CoreLevel:  1,
+			Modules: []masterdata.FirstAgentModuleData{
+				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
+				{TypeID: "fireball_lv1"},
+				{TypeID: "heal_lv1"},
+				{TypeID: "attack_buff_lv1"},
 			},
 		},
 	}
@@ -105,7 +119,6 @@ func createTestRewardCalculator() *rewarding.RewardCalculator {
 			ID:           "physical_attack_1",
 			Name:         "物理打撃Lv1",
 			Category:     domain.PhysicalAttack,
-			Level:        1,
 			Tags:         []string{"physical_low"},
 			BaseEffect:   10.0,
 			StatRef:      "STR",
@@ -132,7 +145,7 @@ func createTestRewardCalculator() *rewarding.RewardCalculator {
 func TestE2E_NewGameFlow(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// セーブデータがない場合は新規ゲーム開始
@@ -171,7 +184,7 @@ func TestE2E_NewGameFlow(t *testing.T) {
 func TestE2E_BattleVictoryFlow(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 新規ゲーム開始
@@ -246,16 +259,24 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 		t.Error("平均WPMが計算されるべきです")
 	}
 
-	// 報酬をインベントリに追加（ID化された構造）
+	// 報酬をインベントリに追加（v1.0.0形式）
 	for _, c := range rewards.DroppedCores {
 		saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{
-			ID:         c.ID,
-			CoreTypeID: c.Type.ID,
+			CoreTypeID: c.TypeID,
 			Level:      c.Level,
 		})
 	}
 	for _, m := range rewards.DroppedModules {
-		saveData.Inventory.ModuleCounts[m.ID]++
+		modSave := savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
+		if m.ChainEffect != nil {
+			modSave.ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
+		saveData.Inventory.ModuleInstances = append(saveData.Inventory.ModuleInstances, modSave)
 	}
 
 	// 統計更新
@@ -288,37 +309,30 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	// エージェント合成フロー
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// 追加アイテム付きで新規ゲーム開始
 	saveData := initializer.CreateNewGameWithExtraItems()
 
-	// コアとモジュールがインベントリにある（ID化された構造）
+	// コアとモジュールがインベントリにある（v1.0.0形式）
 	if len(saveData.Inventory.CoreInstances) == 0 {
 		t.Fatal("コアがありません")
 	}
-	if len(saveData.Inventory.ModuleCounts) < 4 {
-		t.Fatal("モジュールが4種類未満です")
+	if len(saveData.Inventory.ModuleInstances) < 4 {
+		t.Fatalf("モジュールが4個未満です: got %d", len(saveData.Inventory.ModuleInstances))
 	}
 
-	// テスト用にドメインオブジェクトを直接作成
-	core := initializer.CreateInitialCore()
-	modules := initializer.CreateInitialModules()
-
-	// 互換性のあるモジュールを選択
-	selectedModules := make([]*domain.ModuleModel, 0, 4)
-	for _, m := range modules {
-		if m.IsCompatibleWithCore(core) {
-			selectedModules = append(selectedModules, m)
-			if len(selectedModules) >= 4 {
-				break
-			}
-		}
+	// テスト用にドメインオブジェクトを作成（マスタデータから初期エージェントを使用）
+	firstAgent := initializer.CreateInitialAgent()
+	if firstAgent == nil {
+		t.Fatal("初期エージェントの作成に失敗しました")
 	}
+	core := firstAgent.Core
+	selectedModules := firstAgent.Modules
 
 	if len(selectedModules) != 4 {
-		t.Fatalf("互換性のあるモジュールが4個見つかりません: got %d", len(selectedModules))
+		t.Fatalf("初期モジュールが4個必要です: got %d", len(selectedModules))
 	}
 
 	// エージェント合成
@@ -332,19 +346,26 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 		t.Error("エージェントは4つのモジュールを持つべきです")
 	}
 
-	// インベントリに追加（コア情報を直接埋め込み）
-	moduleIDs := make([]string, len(newAgent.Modules))
+	// インベントリに追加（v1.0.0形式: コア情報とチェイン効果を埋め込み）
+	modules := make([]savedata.ModuleInstanceSave, len(newAgent.Modules))
 	for i, m := range newAgent.Modules {
-		moduleIDs[i] = m.ID
+		modules[i] = savedata.ModuleInstanceSave{
+			TypeID: m.TypeID,
+		}
+		if m.ChainEffect != nil {
+			modules[i].ChainEffect = &savedata.ChainEffectSave{
+				Type:  string(m.ChainEffect.Type),
+				Value: m.ChainEffect.Value,
+			}
+		}
 	}
 	saveData.Inventory.AgentInstances = append(saveData.Inventory.AgentInstances, savedata.AgentInstanceSave{
 		ID: newAgent.ID,
 		Core: savedata.CoreInstanceSave{
-			ID:         newAgent.Core.ID,
-			CoreTypeID: newAgent.Core.Type.ID,
+			CoreTypeID: newAgent.Core.TypeID,
 			Level:      newAgent.Core.Level,
 		},
-		ModuleIDs: moduleIDs,
+		Modules: modules,
 	})
 
 	// エージェント装備（空きスロットを探して装備）
@@ -383,7 +404,7 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 func TestE2E_ProgressionFlow(t *testing.T) {
 	// ゲーム進行フロー：複数バトル→レベル上昇
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()
@@ -462,7 +483,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	// ゲーム開始（セッション1）
@@ -479,7 +500,7 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 	}
 
 	// 再起動シミュレート（新しいIOインスタンス）
-	io2 := savedata.NewSaveDataIO(tempDir)
+	io2 := savedata.NewSaveDataIO(tempDir, false)
 
 	// ロード
 	loadedData, err := io2.LoadGame()
@@ -510,7 +531,7 @@ func TestE2E_SaveQuitRestartLoad(t *testing.T) {
 func TestE2E_DefeatAndRetry(t *testing.T) {
 	// 敗北→リトライフロー
 	tempDir := t.TempDir()
-	io := savedata.NewSaveDataIO(tempDir)
+	io := savedata.NewSaveDataIO(tempDir, false)
 	initializer := startup.NewNewGameInitializer(createTestExternalData())
 
 	saveData := initializer.InitializeNewGame()

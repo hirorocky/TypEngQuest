@@ -1,0 +1,175 @@
+{
+  "chain_effects": [
+    {
+      "id": "damage_bonus",
+      "name": "ダメージボーナス",
+      "description": "次の攻撃のダメージにボーナスを付与",
+      "category": "attack",
+      "effect_type": "damage_bonus",
+      "min_value": 10,
+      "max_value": 50
+    },
+    {
+      "id": "damage_amp",
+      "name": "ダメージアンプ",
+      "description": "効果中の攻撃ダメージを増加",
+      "category": "attack",
+      "effect_type": "damage_amp",
+      "min_value": 10,
+      "max_value": 30
+    },
+    {
+      "id": "armor_pierce",
+      "name": "アーマーピアス",
+      "description": "効果中の攻撃が防御バフを無視",
+      "category": "attack",
+      "effect_type": "armor_pierce",
+      "min_value": 1,
+      "max_value": 1
+    },
+    {
+      "id": "life_steal",
+      "name": "ライフスティール",
+      "description": "効果中の攻撃ダメージの一部をHPとして回復",
+      "category": "attack",
+      "effect_type": "life_steal",
+      "min_value": 10,
+      "max_value": 25
+    },
+    {
+      "id": "damage_cut",
+      "name": "ダメージカット",
+      "description": "効果中の被ダメージを軽減",
+      "category": "defense",
+      "effect_type": "damage_cut",
+      "min_value": 10,
+      "max_value": 30
+    },
+    {
+      "id": "evasion",
+      "name": "イベイジョン",
+      "description": "効果中に一定確率で攻撃を回避",
+      "category": "defense",
+      "effect_type": "evasion",
+      "min_value": 15,
+      "max_value": 35
+    },
+    {
+      "id": "reflect",
+      "name": "リフレクト",
+      "description": "効果中の被ダメージを反射",
+      "category": "defense",
+      "effect_type": "reflect",
+      "min_value": 20,
+      "max_value": 50
+    },
+    {
+      "id": "regen",
+      "name": "リジェネ",
+      "description": "効果中毎秒HPを回復",
+      "category": "defense",
+      "effect_type": "regen",
+      "min_value": 1,
+      "max_value": 5
+    },
+    {
+      "id": "heal_bonus",
+      "name": "ヒールボーナス",
+      "description": "次の回復量にボーナスを付与",
+      "category": "heal",
+      "effect_type": "heal_bonus",
+      "min_value": 15,
+      "max_value": 40
+    },
+    {
+      "id": "heal_amp",
+      "name": "ヒールアンプ",
+      "description": "効果中の回復量を増加",
+      "category": "heal",
+      "effect_type": "heal_amp",
+      "min_value": 15,
+      "max_value": 35
+    },
+    {
+      "id": "overheal",
+      "name": "オーバーヒール",
+      "description": "効果中の超過回復を一時HPに変換",
+      "category": "heal",
+      "effect_type": "overheal",
+      "min_value": 1,
+      "max_value": 1
+    },
+    {
+      "id": "time_extend",
+      "name": "タイムエクステンド",
+      "description": "効果中のタイピング制限時間を延長",
+      "category": "typing",
+      "effect_type": "time_extend",
+      "min_value": 1,
+      "max_value": 3
+    },
+    {
+      "id": "auto_correct",
+      "name": "オートコレクト",
+      "description": "効果中に一定回数のミスを無視",
+      "category": "typing",
+      "effect_type": "auto_correct",
+      "min_value": 1,
+      "max_value": 3
+    },
+    {
+      "id": "cooldown_reduce",
+      "name": "クールダウンリデュース",
+      "description": "効果中に発生した他エージェントのリキャスト時間を短縮",
+      "category": "recast",
+      "effect_type": "cooldown_reduce",
+      "min_value": 10,
+      "max_value": 30
+    },
+    {
+      "id": "buff_extend",
+      "name": "バフエクステンド",
+      "description": "バフスキルの効果時間を延長",
+      "category": "effect_extend",
+      "effect_type": "buff_extend",
+      "min_value": 1,
+      "max_value": 5
+    },
+    {
+      "id": "debuff_extend",
+      "name": "デバフエクステンド",
+      "description": "デバフスキルの効果時間を延長",
+      "category": "effect_extend",
+      "effect_type": "debuff_extend",
+      "min_value": 1,
+      "max_value": 5
+    },
+    {
+      "id": "buff_duration",
+      "name": "バフデュレーション",
+      "description": "効果中のバフスキル効果時間を延長",
+      "category": "effect_extend",
+      "effect_type": "buff_duration",
+      "min_value": 1,
+      "max_value": 5
+    },
+    {
+      "id": "debuff_duration",
+      "name": "デバフデュレーション",
+      "description": "効果中のデバフスキル効果時間を延長",
+      "category": "effect_extend",
+      "effect_type": "debuff_duration",
+      "min_value": 1,
+      "max_value": 5
+    },
+    {
+      "id": "double_cast",
+      "name": "ダブルキャスト",
+      "description": "効果中に一定確率でスキルを2回発動",
+      "category": "special",
+      "effect_type": "double_cast",
+      "min_value": 10,
+      "max_value": 25
+    }
+  ]
+}

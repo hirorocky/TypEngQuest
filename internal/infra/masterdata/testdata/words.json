@@ -1,0 +1,7 @@
+{
+  "words": {
+    "easy": ["cat", "dog", "run", "jump"],
+    "medium": ["apple", "banana", "orange", "computer"],
+    "hard": ["programming", "development", "architecture", "implementation"]
+  }
+}

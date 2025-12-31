@@ -32,22 +32,38 @@ func TestGameStateFromSaveDataLogsAddCoreError(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()
 
-	// 正常なセーブデータを作成
+	// 正常なセーブデータを作成（v1.0.0形式）
 	saveData := savedata.NewSaveData()
 	saveData.Inventory = &savedata.InventorySaveData{
 		CoreInstances: []savedata.CoreInstanceSave{
 			{
-				ID:         "test_core_001",
 				CoreTypeID: "all_rounder",
 				Level:      1,
 			},
 		},
-		ModuleCounts: map[string]int{},
+		ModuleInstances: []savedata.ModuleInstanceSave{},
+	}
+
+	// テスト用のソースデータを作成
+	sources := &gamestate.DomainDataSources{
+		CoreTypes: []domain.CoreType{
+			{
+				ID:             "all_rounder",
+				Name:           "オールラウンダー",
+				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				PassiveSkillID: "test_skill",
+				AllowedTags:    []string{"physical_low"},
+				MinDropLevel:   1,
+			},
+		},
+		PassiveSkills: map[string]domain.PassiveSkill{
+			"test_skill": {ID: "test_skill", Name: "テストスキル", Description: "テスト用"},
+		},
 	}
 
 	// GameStateをセーブデータから作成
 	// 正常なケースではエラーは発生しないが、ログ機能自体が動作していることを確認
-	_ = gamestate.GameStateFromSaveData(saveData, nil)
+	_ = gamestate.GameStateFromSaveData(saveData, sources)
 
 	// ログ出力の検証（正常ケースではエラーログは出力されない）
 	logOutput := buf.String()
@@ -63,20 +79,24 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()
 
-	// エージェントを含むセーブデータを作成
+	// エージェントを含むセーブデータを作成（v1.0.0形式）
 	saveData := savedata.NewSaveData()
 	saveData.Inventory = &savedata.InventorySaveData{
-		CoreInstances: []savedata.CoreInstanceSave{},
-		ModuleCounts:  map[string]int{"mod_slash": 4},
+		CoreInstances:   []savedata.CoreInstanceSave{},
+		ModuleInstances: []savedata.ModuleInstanceSave{},
 		AgentInstances: []savedata.AgentInstanceSave{
 			{
 				ID: "test_agent_001",
 				Core: savedata.CoreInstanceSave{
-					ID:         "agent_core_001",
 					CoreTypeID: "all_rounder",
 					Level:      1,
 				},
-				ModuleIDs: []string{"mod_slash", "mod_slash", "mod_slash", "mod_slash"},
+				Modules: []savedata.ModuleInstanceSave{
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+					{TypeID: "mod_slash"},
+				},
 			},
 		},
 	}
@@ -84,8 +104,25 @@ func TestGameStateFromSaveDataLogsAgentErrors(t *testing.T) {
 		EquippedAgentIDs: [3]string{"test_agent_001", "", ""},
 	}
 
+	// テスト用のソースデータを作成
+	sources := &gamestate.DomainDataSources{
+		CoreTypes: []domain.CoreType{
+			{
+				ID:             "all_rounder",
+				Name:           "オールラウンダー",
+				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				PassiveSkillID: "test_skill",
+				AllowedTags:    []string{"physical_low"},
+				MinDropLevel:   1,
+			},
+		},
+		PassiveSkills: map[string]domain.PassiveSkill{
+			"test_skill": {ID: "test_skill", Name: "テストスキル", Description: "テスト用"},
+		},
+	}
+
 	// GameStateをセーブデータから作成
-	gs := gamestate.GameStateFromSaveData(saveData, nil)
+	gs := gamestate.GameStateFromSaveData(saveData, sources)
 
 	// ログ出力の検証（ログ機能自体が動作していることを確認）
 	logOutput := buf.String()
@@ -104,13 +141,30 @@ func TestInventoryManagerLogsErrors(t *testing.T) {
 	buf, cleanup := setupTestLogger()
 	defer cleanup()
 
-	// InventoryManagerを初期化（ログ付きでデフォルトデータを追加）
+	// InventoryManagerを初期化
 	invManager := gamestate.NewInventoryManager()
-	invManager.InitializeWithDefaults()
 
-	// ログ出力の検証
+	// 手動でコアを追加
+	coreType := domain.CoreType{
+		ID:             "all_rounder",
+		Name:           "オールラウンダー",
+		StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		PassiveSkillID: "balance_mastery",
+		AllowedTags:    []string{"physical_low"},
+		MinDropLevel:   1,
+	}
+	passiveSkill := domain.PassiveSkill{
+		ID:          "balance_mastery",
+		Name:        "バランスマスタリー",
+		Description: "全ステータスにバランスボーナスを得る",
+	}
+	core := domain.NewCore("core_001", "初期コア", 1, coreType, passiveSkill)
+	if err := invManager.AddCore(core); err != nil {
+		t.Errorf("コア追加に失敗: %v", err)
+	}
+
+	// ログ出力の検証（正常時はエラーログは出力されない）
 	logOutput := buf.String()
-	// InitializeWithDefaultsは正常に動作するはずなので、エラーログは出力されない
 	_ = logOutput
 
 	// コアが追加されていることを確認

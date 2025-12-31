@@ -9,6 +9,32 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// newTestModule はテスト用モジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, nil)
+}
+
+// newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
+func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Category:    category,
+		Tags:        tags,
+		BaseEffect:  baseEffect,
+		StatRef:     statRef,
+		Description: description,
+	}, chainEffect)
+}
+
 // TestBattleReward_Victory_ShowsRewardScreen は勝利時に報酬画面を表示することをテストします。
 func TestBattleReward_Victory_ShowsRewardScreen(t *testing.T) {
 	calculator := NewRewardCalculator(nil, nil, nil)
@@ -220,7 +246,6 @@ func TestModuleDrop_Judgment(t *testing.T) {
 			ID:           "test_module",
 			Name:         "テストモジュール",
 			Category:     domain.PhysicalAttack,
-			Level:        1,
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
 		},
@@ -244,7 +269,6 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
 			Category:     domain.PhysicalAttack,
-			Level:        1,
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
 		},
@@ -252,7 +276,6 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 			ID:           "physical_lv2",
 			Name:         "物理攻撃Lv2",
 			Category:     domain.PhysicalAttack,
-			Level:        2,
 			Tags:         []string{"physical_mid"},
 			MinDropLevel: 10,
 		},
@@ -260,7 +283,6 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 			ID:           "physical_lv3",
 			Name:         "物理攻撃Lv3",
 			Category:     domain.PhysicalAttack,
-			Level:        3,
 			Tags:         []string{"physical_high"},
 			MinDropLevel: 20,
 		},
@@ -348,7 +370,7 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 
 	// ドロップしたアイテムを一時保管
 	droppedCore := domain.NewCore("temp_core", "一時コア", 10, domain.CoreType{}, domain.PassiveSkill{})
-	droppedModule := domain.NewModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
+	droppedModule := newTestModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
 
 	storage := calculator.CreateTempStorage()
 	storage.AddCore(droppedCore)
@@ -387,5 +409,431 @@ func TestInventoryFull_PromptDiscard(t *testing.T) {
 
 	if !warning.SuggestDiscard {
 		t.Error("満杯時は破棄を促すべき")
+	}
+}
+
+// ==================== チェイン効果ランダム決定テスト ====================
+
+// TestChainEffectPool_CreateFromSkillEffects はチェイン効果プールの作成をテストします。
+func TestChainEffectPool_CreateFromSkillEffects(t *testing.T) {
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+		{
+			ID:         "damage_cut",
+			Name:       "ダメージカット",
+			Category:   "defense",
+			EffectType: domain.ChainEffectDamageCut,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+
+	if pool == nil {
+		t.Fatal("チェイン効果プールがnilであってはならない")
+	}
+	if len(pool.Effects) != 2 {
+		t.Errorf("チェイン効果数が期待と異なる: got %d, want 2", len(pool.Effects))
+	}
+}
+
+// TestChainEffectPool_GenerateRandomEffect はランダムなチェイン効果生成をテストします。
+func TestChainEffectPool_GenerateRandomEffect(t *testing.T) {
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+
+	// 複数回生成して値が範囲内であることを確認
+	for i := 0; i < 50; i++ {
+		effect := pool.GenerateRandomEffect()
+		if effect == nil {
+			continue // nilチェイン効果もあり得る
+		}
+		if effect.Value < 10 || effect.Value > 30 {
+			t.Errorf("効果値が範囲外: got %.0f, want 10-30", effect.Value)
+		}
+		if effect.Type != domain.ChainEffectDamageAmp {
+			t.Errorf("効果タイプが期待と異なる: got %s, want %s", effect.Type, domain.ChainEffectDamageAmp)
+		}
+	}
+}
+
+// TestChainEffectPool_GenerateWithNilProbability はチェイン効果なしの確率をテストします。
+func TestChainEffectPool_GenerateWithNilProbability(t *testing.T) {
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+
+	// nilチェイン効果確率を100%に設定
+	pool.SetNoEffectProbability(1.0)
+
+	for i := 0; i < 10; i++ {
+		effect := pool.GenerateRandomEffect()
+		if effect != nil {
+			t.Error("nil確率100%でチェイン効果がnilであるべき")
+		}
+	}
+
+	// nil確率を0%に設定
+	pool.SetNoEffectProbability(0.0)
+
+	foundNonNil := false
+	for i := 0; i < 10; i++ {
+		effect := pool.GenerateRandomEffect()
+		if effect != nil {
+			foundNonNil = true
+			break
+		}
+	}
+	if !foundNonNil {
+		t.Error("nil確率0%でチェイン効果が生成されるべき")
+	}
+}
+
+// TestModuleDrop_WithChainEffect はモジュールドロップ時にチェイン効果が付与されることをテストします。
+func TestModuleDrop_WithChainEffect(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0) // チェイン効果を必ず付与
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetModuleDropRate(1.0)
+	calculator.SetChainEffectPool(pool)
+
+	droppedModules := calculator.RollModuleDrop(10, 2)
+
+	if len(droppedModules) == 0 {
+		t.Fatal("モジュールがドロップすべき")
+	}
+
+	for _, module := range droppedModules {
+		if !module.HasChainEffect() {
+			t.Error("nil確率0%でモジュールにチェイン効果が付与されるべき")
+		}
+	}
+}
+
+// TestModuleDrop_ChainEffectValueInRange はチェイン効果の値が範囲内であることをテストします。
+func TestModuleDrop_ChainEffectValueInRange(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   15,
+			MaxValue:   25,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0)
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetModuleDropRate(1.0)
+	calculator.SetChainEffectPool(pool)
+
+	// 複数回テストして値が範囲内であることを確認
+	for i := 0; i < 50; i++ {
+		droppedModules := calculator.RollModuleDrop(10, 1)
+		if len(droppedModules) == 0 {
+			continue
+		}
+
+		for _, module := range droppedModules {
+			if module.ChainEffect == nil {
+				continue
+			}
+			if module.ChainEffect.Value < 15 || module.ChainEffect.Value > 25 {
+				t.Errorf("チェイン効果値が範囲外: got %.0f, want 15-25", module.ChainEffect.Value)
+			}
+		}
+	}
+}
+
+// TestModuleDropInfo_ToDomainWithRandomChainEffect はチェイン効果付きドメイン変換をテストします。
+func TestModuleDropInfo_ToDomainWithRandomChainEffect(t *testing.T) {
+	dropInfo := ModuleDropInfo{
+		ID:          "physical_lv1",
+		Name:        "物理攻撃Lv1",
+		Category:    domain.PhysicalAttack,
+		Tags:        []string{"physical_low"},
+		BaseEffect:  10.0,
+		StatRef:     "STR",
+		Description: "テスト",
+	}
+
+	effect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 20)
+
+	module := dropInfo.ToDomainWithChainEffect(&effect)
+
+	if module == nil {
+		t.Fatal("モジュールがnilであってはならない")
+	}
+	if module.ChainEffect == nil {
+		t.Error("チェイン効果が設定されるべき")
+	}
+	if module.ChainEffect.Type != domain.ChainEffectDamageAmp {
+		t.Errorf("チェイン効果タイプが期待と異なる: got %s, want %s", module.ChainEffect.Type, domain.ChainEffectDamageAmp)
+	}
+	if module.ChainEffect.Value != 20 {
+		t.Errorf("チェイン効果値が期待と異なる: got %.0f, want 20", module.ChainEffect.Value)
+	}
+}
+
+// ==================== タスク11.2: モジュール入手処理更新テスト ====================
+
+// TestCalculateRewards_WithChainEffectPool はCalculateRewardsがチェイン効果プールを使用することをテストします。
+func TestCalculateRewards_WithChainEffectPool(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0)
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetModuleDropRate(1.0)
+	calculator.SetChainEffectPool(pool)
+
+	stats := &BattleStatistics{
+		TotalWPM:         80.0,
+		TotalAccuracy:    0.95,
+		TotalTypingCount: 10,
+	}
+
+	result := calculator.CalculateRewards(true, stats, 10)
+
+	if result == nil {
+		t.Fatal("報酬結果がnilであってはならない")
+	}
+	if len(result.DroppedModules) == 0 {
+		t.Fatal("モジュールがドロップすべき")
+	}
+
+	// ドロップしたモジュールにチェイン効果が付与されていることを確認
+	for _, module := range result.DroppedModules {
+		if !module.HasChainEffect() {
+			t.Error("nil確率0%でモジュールにチェイン効果が付与されるべき")
+		}
+	}
+}
+
+// TestAddRewardsToInventory_WithChainEffect はチェイン効果付きモジュールがインベントリに追加されることをテストします。
+func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
+	// チェイン効果付きモジュールを作成
+	effect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 25)
+	module := newTestModuleWithChainEffect(
+		"physical_lv1",
+		"物理攻撃Lv1",
+		domain.PhysicalAttack,
+		1,
+		[]string{"physical_low"},
+		10.0,
+		"STR",
+		"テスト",
+		&effect,
+	)
+
+	// 報酬結果を作成
+	result := &RewardResult{
+		IsVictory:      true,
+		DroppedModules: []*domain.ModuleModel{module},
+	}
+
+	// インベントリを作成
+	moduleInv := domain.NewModuleInventory(10)
+	coreInv := domain.NewCoreInventory(10)
+	tempStorage := &TempStorage{}
+
+	// インベントリに追加
+	warning := AddRewardsToInventory(result, coreInv, moduleInv, tempStorage)
+
+	if warning.ModuleInventoryFull {
+		t.Error("インベントリは満杯でないはず")
+	}
+
+	// インベントリにモジュールが追加されたことを確認
+	if moduleInv.Count() != 1 {
+		t.Errorf("モジュール数が期待と異なる: got %d, want 1", moduleInv.Count())
+	}
+
+	// 追加されたモジュールのチェイン効果を確認
+	modules := moduleInv.List()
+	if len(modules) != 1 {
+		t.Fatal("モジュールがインベントリに追加されるべき")
+	}
+
+	addedModule := modules[0]
+	if !addedModule.HasChainEffect() {
+		t.Error("追加されたモジュールにチェイン効果が保持されるべき")
+	}
+	if addedModule.ChainEffect.Type != domain.ChainEffectDamageAmp {
+		t.Errorf("チェイン効果タイプが期待と異なる: got %s, want %s", addedModule.ChainEffect.Type, domain.ChainEffectDamageAmp)
+	}
+	if addedModule.ChainEffect.Value != 25 {
+		t.Errorf("チェイン効果値が期待と異なる: got %.0f, want 25", addedModule.ChainEffect.Value)
+	}
+}
+
+// TestChainEffectPool_MultipleEffectTypes は複数のチェイン効果タイプからランダム選択されることをテストします。
+func TestChainEffectPool_MultipleEffectTypes(t *testing.T) {
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+		{
+			ID:         "damage_cut",
+			Name:       "ダメージカット",
+			Category:   "defense",
+			EffectType: domain.ChainEffectDamageCut,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+		{
+			ID:         "heal_amp",
+			Name:       "ヒールアンプ",
+			Category:   "heal",
+			EffectType: domain.ChainEffectHealAmp,
+			MinValue:   15,
+			MaxValue:   35,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0)
+
+	// 複数回生成して複数タイプが選択されることを確認
+	typeCounts := make(map[domain.ChainEffectType]int)
+
+	for i := 0; i < 100; i++ {
+		effect := pool.GenerateRandomEffect()
+		if effect != nil {
+			typeCounts[effect.Type]++
+		}
+	}
+
+	// 最低2種類は選択されているはず（確率的に）
+	if len(typeCounts) < 2 {
+		t.Errorf("複数のチェイン効果タイプが選択されるべき: got %d types", len(typeCounts))
+	}
+}
+
+// TestChainEffectPool_EmptyEffects は空のチェイン効果プールでnilが返ることをテストします。
+func TestChainEffectPool_EmptyEffects(t *testing.T) {
+	pool := NewChainEffectPool(nil)
+
+	effect := pool.GenerateRandomEffect()
+
+	if effect != nil {
+		t.Error("空のプールではnilが返るべき")
+	}
+}
+
+// TestModuleDrop_NoChainEffectPool はチェイン効果プールなしでドロップした場合をテストします。
+func TestModuleDrop_NoChainEffectPool(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Category:     domain.PhysicalAttack,
+			Tags:         []string{"physical_low"},
+			MinDropLevel: 1,
+		},
+	}
+
+	// チェイン効果プールなしでCalculator作成
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetModuleDropRate(1.0)
+
+	droppedModules := calculator.RollModuleDrop(10, 2)
+
+	if len(droppedModules) == 0 {
+		t.Fatal("モジュールがドロップすべき")
+	}
+
+	// チェイン効果プールなしではチェイン効果なし
+	for _, module := range droppedModules {
+		if module.HasChainEffect() {
+			t.Error("チェイン効果プールなしではチェイン効果がnilであるべき")
+		}
 	}
 }

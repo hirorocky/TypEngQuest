@@ -12,6 +12,10 @@ const (
 	// DefaultModuleCooldown はモジュールのデフォルトクールダウン秒数です。
 	DefaultModuleCooldown = 5.0
 
+	// DefaultRecastDuration はエージェントのデフォルトリキャスト時間です。
+	// モジュール使用後、この期間中はエージェントの全モジュールが使用不可になります。
+	DefaultRecastDuration = 5 * time.Second
+
 	// AccuracyPenaltyThreshold は正確性ペナルティ発生閾値です。
 	// この値未満の正確性の場合、効果が半減します。
 	AccuracyPenaltyThreshold = 0.5

@@ -285,24 +285,16 @@ func TestEnemyModel_強化フェーズ判定(t *testing.T) {
 }
 
 // TestEnemyModel_EffectTable操作 は敵のEffectTableを操作できることを確認します。
-
 func TestEnemyModel_EffectTable操作(t *testing.T) {
 	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, EnemyType{ID: "test"})
 
 	// バフを追加
-	duration := 5.0
-	enemy.EffectTable.AddRow(EffectRow{
-		ID:         "enemy_buff_001",
-		SourceType: SourceBuff,
-		Name:       "攻撃力UP",
-		Duration:   &duration,
-		Modifiers: StatModifiers{
-			STR_Add: 10,
-		},
+	enemy.EffectTable.AddBuff("攻撃力UP", 5.0, map[EffectColumn]float64{
+		ColDamageBonus: 10,
 	})
 
-	if len(enemy.EffectTable.Rows) != 1 {
-		t.Errorf("EffectTableの行数が期待値と異なります: got %d, want 1", len(enemy.EffectTable.Rows))
+	if len(enemy.EffectTable.Entries) != 1 {
+		t.Errorf("EffectTableのエントリ数が期待値と異なります: got %d, want 1", len(enemy.EffectTable.Entries))
 	}
 }
 

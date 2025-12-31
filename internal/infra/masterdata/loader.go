@@ -70,7 +70,9 @@ type ExternalData struct {
 	CoreTypes         []CoreTypeData
 	ModuleDefinitions []ModuleDefinitionData
 	EnemyTypes        []EnemyTypeData
+	PassiveSkills     []PassiveSkillData
 	TypingDictionary  *TypingDictionary
+	FirstAgent        *FirstAgentData
 }
 
 // ==================== コア特性定義 ====================
@@ -134,8 +136,8 @@ func (c *CoreTypeData) ToDomain() domain.CoreType {
 type ModuleDefinitionData struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
+	Icon            string   `json:"icon"`
 	Category        string   `json:"category"`
-	Level           int      `json:"level"`
 	Tags            []string `json:"tags"`
 	BaseEffect      float64  `json:"base_effect"`
 	StatReference   string   `json:"stat_reference"`
@@ -147,7 +149,7 @@ type ModuleDefinitionData struct {
 
 // modulesFileData はmodules.jsonのルート構造です。
 type modulesFileData struct {
-	Modules []ModuleDefinitionData `json:"modules"`
+	ModuleTypes []ModuleDefinitionData `json:"module_types"`
 }
 
 // LoadModuleDefinitions はmodules.jsonからモジュール定義を読み込みます。
@@ -163,11 +165,11 @@ func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
 		return nil, fmt.Errorf("modules.jsonのパースに失敗: %w", err)
 	}
 
-	return fileData.Modules, nil
+	return fileData.ModuleTypes, nil
 }
 
-// ToDomain はModuleDefinitionDataをドメインモデルのModuleModelに変換します。
-func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
+// ToDomainType はModuleDefinitionDataをドメインモデルのModuleTypeに変換します。
+func (m *ModuleDefinitionData) ToDomainType() domain.ModuleType {
 	// カテゴリ文字列をModuleCategoryに変換
 	var category domain.ModuleCategory
 	switch m.Category {
@@ -185,16 +187,30 @@ func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
 		category = domain.PhysicalAttack // デフォルト
 	}
 
-	return domain.NewModule(
-		m.ID,
-		m.Name,
-		category,
-		m.Level,
-		m.Tags,
-		m.BaseEffect,
-		m.StatReference,
-		m.Description,
-	)
+	// Tagsをコピー（スライスの参照共有を避ける）
+	tagsCopy := make([]string, len(m.Tags))
+	copy(tagsCopy, m.Tags)
+
+	return domain.ModuleType{
+		ID:              m.ID,
+		Name:            m.Name,
+		Icon:            m.Icon,
+		Category:        category,
+		Tags:            tagsCopy,
+		BaseEffect:      m.BaseEffect,
+		StatRef:         m.StatReference,
+		Description:     m.Description,
+		CooldownSeconds: m.CooldownSeconds,
+		Difficulty:      m.Difficulty,
+		MinDropLevel:    m.MinDropLevel,
+	}
+}
+
+// ToDomain はModuleDefinitionDataをドメインモデルのModuleModelに変換します。
+// チェイン効果なしのモジュールを作成します。
+func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
+	moduleType := m.ToDomainType()
+	return domain.NewModuleFromType(moduleType, nil)
 }
 
 // ==================== 敵タイプ定義 ====================
@@ -251,6 +267,293 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 	}
 }
 
+// ==================== パッシブスキル定義 ====================
+
+// PassiveSkillData はpassive_skills.jsonから読み込むパッシブスキルデータの構造体です。
+type PassiveSkillData struct {
+	ID               string                `json:"id"`
+	Name             string                `json:"name"`
+	Description      string                `json:"description"`
+	ShortDescription string                `json:"short_description"`
+	TriggerType      string                `json:"trigger_type"`
+	TriggerCondition *TriggerConditionData `json:"trigger_condition"`
+	EffectType       string                `json:"effect_type"`
+	EffectValue      float64               `json:"effect_value"`
+	Probability      float64               `json:"probability"`
+	MaxStacks        int                   `json:"max_stacks"`
+	StackIncrement   float64               `json:"stack_increment"`
+	UsesPerBattle    int                   `json:"uses_per_battle"`
+}
+
+// TriggerConditionData はトリガー条件のJSONデータ構造体です。
+type TriggerConditionData struct {
+	Type  string  `json:"type"`
+	Value float64 `json:"value"`
+}
+
+// passiveSkillsFileData はpassive_skills.jsonのルート構造です。
+type passiveSkillsFileData struct {
+	PassiveSkills []PassiveSkillData `json:"passive_skills"`
+}
+
+// LoadPassiveSkills はpassive_skills.jsonからパッシブスキル定義を読み込みます。
+func (l *DataLoader) LoadPassiveSkills() ([]PassiveSkillData, error) {
+	data, err := l.readFile("passive_skills.json")
+	if err != nil {
+		return nil, fmt.Errorf("passive_skills.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData passiveSkillsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("passive_skills.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.PassiveSkills, nil
+}
+
+// ToDomain はPassiveSkillDataをドメインモデルのPassiveSkillDefinitionに変換します。
+func (p *PassiveSkillData) ToDomain() domain.PassiveSkillDefinition {
+	def := domain.PassiveSkillDefinition{
+		ID:             p.ID,
+		Name:           p.Name,
+		Description:    p.Description,
+		TriggerType:    convertTriggerType(p.TriggerType),
+		EffectType:     convertEffectType(p.EffectType),
+		EffectValue:    p.EffectValue,
+		Probability:    p.Probability,
+		MaxStacks:      p.MaxStacks,
+		StackIncrement: p.StackIncrement,
+		UsesPerBattle:  p.UsesPerBattle,
+	}
+
+	if p.TriggerCondition != nil {
+		def.TriggerCondition = &domain.TriggerCondition{
+			Type:  convertTriggerConditionType(p.TriggerCondition.Type),
+			Value: p.TriggerCondition.Value,
+		}
+	}
+
+	return def
+}
+
+// convertTriggerType は文字列をPassiveTriggerTypeに変換します。
+func convertTriggerType(s string) domain.PassiveTriggerType {
+	switch s {
+	case "permanent":
+		return domain.PassiveTriggerPermanent
+	case "conditional":
+		return domain.PassiveTriggerConditional
+	case "probability":
+		return domain.PassiveTriggerProbability
+	case "stack":
+		return domain.PassiveTriggerStack
+	case "reactive":
+		return domain.PassiveTriggerReactive
+	default:
+		return domain.PassiveTriggerPermanent
+	}
+}
+
+// convertEffectType は文字列をPassiveEffectTypeに変換します。
+func convertEffectType(s string) domain.PassiveEffectType {
+	switch s {
+	case "modifier":
+		return domain.PassiveEffectModifier
+	case "multiplier":
+		return domain.PassiveEffectMultiplier
+	case "special":
+		return domain.PassiveEffectSpecial
+	default:
+		return domain.PassiveEffectModifier
+	}
+}
+
+// convertTriggerConditionType は文字列をTriggerConditionTypeに変換します。
+func convertTriggerConditionType(s string) domain.TriggerConditionType {
+	switch s {
+	case "accuracy_equals":
+		return domain.TriggerConditionAccuracyEquals
+	case "wpm_above":
+		return domain.TriggerConditionWPMAbove
+	case "hp_below_percent":
+		return domain.TriggerConditionHPBelowPercent
+	case "enemy_hp_below_percent":
+		return domain.TriggerConditionEnemyHPBelowPercent
+	case "enemy_has_debuff":
+		return domain.TriggerConditionEnemyHasDebuff
+	case "on_skill_use":
+		return domain.TriggerConditionOnSkillUse
+	case "on_damage_received":
+		return domain.TriggerConditionOnDamageReceived
+	case "on_heal":
+		return domain.TriggerConditionOnHeal
+	case "on_buff_debuff_use":
+		return domain.TriggerConditionOnBuffDebuffUse
+	case "on_physical_attack":
+		return domain.TriggerConditionOnPhysicalAttack
+	case "on_typing_miss":
+		return domain.TriggerConditionOnTypingMiss
+	case "on_timeout":
+		return domain.TriggerConditionOnTimeout
+	case "on_debuff_received":
+		return domain.TriggerConditionOnDebuffReceived
+	case "on_battle_start":
+		return domain.TriggerConditionOnBattleStart
+	case "no_miss_streak":
+		return domain.TriggerConditionNoMissStreak
+	case "same_attack_count":
+		return domain.TriggerConditionSameAttackCount
+	default:
+		return domain.TriggerConditionAccuracyEquals
+	}
+}
+
+// ==================== チェイン効果定義 ====================
+
+// ChainEffectData はchain_effects.jsonから読み込むチェイン効果データの構造体です。
+type ChainEffectData struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Category    string  `json:"category"`
+	EffectType  string  `json:"effect_type"`
+	MinValue    float64 `json:"min_value"`
+	MaxValue    float64 `json:"max_value"`
+}
+
+// chainEffectsFileData はchain_effects.jsonのルート構造です。
+type chainEffectsFileData struct {
+	ChainEffects []ChainEffectData `json:"chain_effects"`
+}
+
+// LoadChainEffects はchain_effects.jsonからチェイン効果定義を読み込みます。
+func (l *DataLoader) LoadChainEffects() ([]ChainEffectData, error) {
+	data, err := l.readFile("chain_effects.json")
+	if err != nil {
+		return nil, fmt.Errorf("chain_effects.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData chainEffectsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("chain_effects.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.ChainEffects, nil
+}
+
+// ToDomainEffectType はChainEffectDataからドメインモデルのChainEffectTypeに変換します。
+func (s *ChainEffectData) ToDomainEffectType() domain.ChainEffectType {
+	return convertChainEffectType(s.EffectType)
+}
+
+// ToDomainCategory はChainEffectDataからドメインモデルのChainEffectCategoryに変換します。
+func (s *ChainEffectData) ToDomainCategory() domain.ChainEffectCategory {
+	return convertChainEffectCategory(s.Category)
+}
+
+// ToChainEffectDefinition はChainEffectDataをChainEffectDefinitionに変換します。
+// rewardingパッケージのChainEffectPoolで使用されます。
+func (s *ChainEffectData) ToChainEffectDefinition() ChainEffectDefinitionData {
+	return ChainEffectDefinitionData{
+		ID:         s.ID,
+		Name:       s.Name,
+		Category:   s.Category,
+		EffectType: convertChainEffectType(s.EffectType),
+		MinValue:   s.MinValue,
+		MaxValue:   s.MaxValue,
+	}
+}
+
+// ChainEffectDefinitionData はチェイン効果定義のデータ構造体です。
+// rewardingパッケージのChainEffectDefinitionと同等の構造を持ちます。
+type ChainEffectDefinitionData struct {
+	// ID はチェイン効果の一意識別子です。
+	ID string
+
+	// Name は表示名です。
+	Name string
+
+	// Category はカテゴリです（attack, defense, heal等）。
+	Category string
+
+	// EffectType はドメインモデルのChainEffectTypeです。
+	EffectType domain.ChainEffectType
+
+	// MinValue は効果値の最小値です。
+	MinValue float64
+
+	// MaxValue は効果値の最大値です。
+	MaxValue float64
+}
+
+// convertChainEffectType は文字列をChainEffectTypeに変換します。
+func convertChainEffectType(s string) domain.ChainEffectType {
+	switch s {
+	case "damage_bonus":
+		return domain.ChainEffectDamageBonus
+	case "heal_bonus":
+		return domain.ChainEffectHealBonus
+	case "buff_extend":
+		return domain.ChainEffectBuffExtend
+	case "debuff_extend":
+		return domain.ChainEffectDebuffExtend
+	case "damage_amp":
+		return domain.ChainEffectDamageAmp
+	case "armor_pierce":
+		return domain.ChainEffectArmorPierce
+	case "life_steal":
+		return domain.ChainEffectLifeSteal
+	case "damage_cut":
+		return domain.ChainEffectDamageCut
+	case "evasion":
+		return domain.ChainEffectEvasion
+	case "reflect":
+		return domain.ChainEffectReflect
+	case "regen":
+		return domain.ChainEffectRegen
+	case "heal_amp":
+		return domain.ChainEffectHealAmp
+	case "overheal":
+		return domain.ChainEffectOverheal
+	case "time_extend":
+		return domain.ChainEffectTimeExtend
+	case "auto_correct":
+		return domain.ChainEffectAutoCorrect
+	case "cooldown_reduce":
+		return domain.ChainEffectCooldownReduce
+	case "buff_duration":
+		return domain.ChainEffectBuffDuration
+	case "debuff_duration":
+		return domain.ChainEffectDebuffDuration
+	case "double_cast":
+		return domain.ChainEffectDoubleCast
+	default:
+		return domain.ChainEffectDamageBonus
+	}
+}
+
+// convertChainEffectCategory は文字列をChainEffectCategoryに変換します。
+func convertChainEffectCategory(s string) domain.ChainEffectCategory {
+	switch s {
+	case "attack":
+		return domain.ChainEffectCategoryAttack
+	case "defense":
+		return domain.ChainEffectCategoryDefense
+	case "heal":
+		return domain.ChainEffectCategoryHeal
+	case "typing":
+		return domain.ChainEffectCategoryTyping
+	case "recast":
+		return domain.ChainEffectCategoryRecast
+	case "effect_extend":
+		return domain.ChainEffectCategoryEffectExtend
+	case "special":
+		return domain.ChainEffectCategorySpecial
+	default:
+		return domain.ChainEffectCategorySpecial
+	}
+}
+
 // ==================== タイピング辞書 ====================
 
 // TypingDictionary はwords.jsonから読み込むタイピング辞書データの構造体です。
@@ -282,6 +585,49 @@ func (l *DataLoader) LoadTypingDictionary() (*TypingDictionary, error) {
 	return &fileData.Words, nil
 }
 
+// ==================== 初期エージェント定義 ====================
+
+// FirstAgentData はfirst_agent.jsonから読み込む初期エージェントデータの構造体です。
+type FirstAgentData struct {
+	ID         string                 `json:"id"`
+	CoreTypeID string                 `json:"core_type_id"`
+	CoreLevel  int                    `json:"core_level"`
+	Modules    []FirstAgentModuleData `json:"modules"`
+}
+
+// FirstAgentModuleData は初期エージェントのモジュールデータの構造体です。
+// ChainEffectはモジュールと密結合しているため、同じ構造体で定義します。
+type FirstAgentModuleData struct {
+	TypeID           string  `json:"type_id"`
+	ChainEffectType  string  `json:"chain_effect_type,omitempty"`
+	ChainEffectValue float64 `json:"chain_effect_value,omitempty"`
+}
+
+// HasChainEffect はチェイン効果を持つかどうかを返します。
+func (m *FirstAgentModuleData) HasChainEffect() bool {
+	return m.ChainEffectType != ""
+}
+
+// firstAgentFileData はfirst_agent.jsonのルート構造です。
+type firstAgentFileData struct {
+	FirstAgent FirstAgentData `json:"first_agent"`
+}
+
+// LoadFirstAgent はfirst_agent.jsonから初期エージェント定義を読み込みます。
+func (l *DataLoader) LoadFirstAgent() (*FirstAgentData, error) {
+	data, err := l.readFile("first_agent.json")
+	if err != nil {
+		return nil, fmt.Errorf("first_agent.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData firstAgentFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("first_agent.jsonのパースに失敗: %w", err)
+	}
+
+	return &fileData.FirstAgent, nil
+}
+
 // ==================== 全データ一括ロード ====================
 
 // LoadAllExternalData は全ての外部データファイルを一括でロードします。
@@ -302,16 +648,28 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		return nil, fmt.Errorf("敵タイプのロードに失敗: %w", err)
 	}
 
+	passiveSkills, err := l.LoadPassiveSkills()
+	if err != nil {
+		return nil, fmt.Errorf("パッシブスキルのロードに失敗: %w", err)
+	}
+
 	dictionary, err := l.LoadTypingDictionary()
 	if err != nil {
 		return nil, fmt.Errorf("タイピング辞書のロードに失敗: %w", err)
+	}
+
+	firstAgent, err := l.LoadFirstAgent()
+	if err != nil {
+		return nil, fmt.Errorf("初期エージェントのロードに失敗: %w", err)
 	}
 
 	return &ExternalData{
 		CoreTypes:         coreTypes,
 		ModuleDefinitions: modules,
 		EnemyTypes:        enemyTypes,
+		PassiveSkills:     passiveSkills,
 		TypingDictionary:  dictionary,
+		FirstAgent:        firstAgent,
 	}, nil
 }
 
@@ -344,9 +702,6 @@ func ValidateModuleDefinitionData(data ModuleDefinitionData) error {
 	}
 	if data.Category == "" {
 		return fmt.Errorf("モジュールカテゴリが空です: ID=%s", data.ID)
-	}
-	if data.Level < 1 {
-		return fmt.Errorf("モジュールレベルが不正です: ID=%s, Level=%d", data.ID, data.Level)
 	}
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 
 // TestCreateSettingsData は設定データ作成をテストします。
 func TestCreateSettingsData(t *testing.T) {
-	gs := session.NewGameState()
+	gs := session.NewGameStateForTest()
 
 	data := CreateSettingsData(gs)
 
@@ -30,7 +30,7 @@ func TestCreateSettingsData(t *testing.T) {
 
 // TestCreateSettingsData_ModifiedSettings は変更後の設定データ作成をテストします。
 func TestCreateSettingsData_ModifiedSettings(t *testing.T) {
-	gs := session.NewGameState()
+	gs := session.NewGameStateForTest()
 
 	// 設定を変更
 	gs.Settings().SetSoundVolume(50)

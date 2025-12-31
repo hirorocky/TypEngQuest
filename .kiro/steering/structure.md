@@ -51,12 +51,18 @@ config       ← 横断的関心事（全層から参照可能）
 **目的**: VO、エンティティ。UIやインフラに依存しない純粋なドメイン層
 **例**: `core.go`（コア特性）、`module.go`（モジュールスキル）、`agent.go`（エージェント）、`enemy.go`（敵）
 
+**主要なサブシステム**:
+- **エンティティ**: core.go, module.go, agent.go, enemy.go, player.go
+- **インベントリ**: inventory.go（コア、モジュール、エージェントの所持管理）
+- **効果システム**: effect_table.go, effect_column.go, effect_context.go, effect_entry.go
+  - EffectTableパターン: バフ、デバフ、パッシブ、チェイン効果を統一的に管理
+  - 列指向設計: 効果種別を EffectColumn として定義
+- **チェイン効果**: chain_effect.go（モジュール使用後のリキャスト中に発動する追加効果）
+- **パッシブスキル**: passive_evaluator.go, passive_skill_definition.go（条件付き自動発動効果）
+
 **サブパッケージ**:
 - `/internal/domain/service/` - ドメインサービス
   - `stats_service.go`: ステータス計算（CoreType×Level→Stats）
-
-**ドメイン直下のファイル**:
-- `inventory.go`: コア、モジュール、エージェントのインベントリ
 
 ### usecase層 - ユースケース
 **場所**: `/internal/usecase/`
@@ -85,7 +91,11 @@ config       ← 横断的関心事（全層から参照可能）
 **目的**: 各シーンの画面実装、コンポーネント、スタイル、プレゼンター
 **サブディレクトリ**:
 - `screens/`: 各シーンの画面実装（Bubbleteaの`tea.Model`実装）
+  - 画面タイプ: home, battle_select, battle, agent_management, reward, encyclopedia, settings, stats_achievements
+  - 大きな画面は分割: battle.go（状態）、battle_view.go（描画）、battle_logic.go（ロジック）
 - `components/`: 再利用可能なUIコンポーネント
+  - 基本コンポーネント: components.go
+  - 専用コンポーネント: hp_display.go, recast_progress_bar.go, chain_effect_badge.go, passive_skill_notification.go
 - `styles/`: lipglossスタイル定義（カラーパレット含む）
 - `presenter/`: UI向けデータ変換（GameState→ViewModel）
 - `ascii/`: ASCIIアート
@@ -161,4 +171,4 @@ import (
 
 ---
 _パターンを記述。新規ファイルがパターンに従えばsteeringの更新は不要_
-_updated_at: 2025-12-14_
+_updated_at: 2025-12-31_
