@@ -398,3 +398,108 @@ func createTestAgent() *domain.AgentModel {
 	}
 	return domain.NewAgent("agent1", core, modules)
 }
+
+// ==================== タスク2.3: 敵情報パネルのテスト ====================
+
+// TestBattleSelectCarouselEnemyInfoPanel は敵情報パネルの表示をテストします。
+func TestBattleSelectCarouselEnemyInfoPanel(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:           "slime",
+			Name:         "スライム",
+			DefaultLevel: 1,
+			BaseHP:       50,
+			AttackType:   "physical",
+			NormalPassive: &domain.EnemyPassiveSkill{
+				ID:   "slime_normal",
+				Name: "ぷるぷるボディ",
+			},
+			EnhancedPassive: &domain.EnemyPassiveSkill{
+				ID:   "slime_enhanced",
+				Name: "怒りのスライム",
+			},
+		},
+	}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	screen.width = 120
+	screen.height = 40
+
+	view := screen.View()
+
+	// 敵名が表示されていること
+	if !containsString(view, "スライム") {
+		t.Error("敵名が表示されていません")
+	}
+
+	// 攻撃属性が表示されていること
+	if !containsString(view, "物理") {
+		t.Error("攻撃属性が表示されていません")
+	}
+
+	// パッシブスキル名が表示されていること
+	if !containsString(view, "ぷるぷるボディ") {
+		t.Error("通常パッシブ名が表示されていません")
+	}
+
+	if !containsString(view, "怒りのスライム") {
+		t.Error("強化パッシブ名が表示されていません")
+	}
+}
+
+// TestBattleSelectCarouselUndefeatedIndicator は未撃破敵の視覚的表示をテストします。
+func TestBattleSelectCarouselUndefeatedIndicator(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	screen.width = 120
+	screen.height = 40
+
+	view := screen.View()
+
+	// 未撃破の表示があること
+	if !containsString(view, "未撃破") {
+		t.Error("未撃破の表示がありません")
+	}
+
+	// 固定レベルの表示があること
+	if !containsString(view, "固定") {
+		t.Error("固定レベルの表示がありません")
+	}
+}
+
+// TestBattleSelectCarouselDefeatedIndicator は撃破済み敵の視覚的表示をテストします。
+func TestBattleSelectCarouselDefeatedIndicator(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	defeated := map[string]int{"slime": 5}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	screen.width = 120
+	screen.height = 40
+
+	view := screen.View()
+
+	// 撃破済みの表示があること
+	if !containsString(view, "撃破済み") {
+		t.Error("撃破済みの表示がありません")
+	}
+
+	// 最高レベルの表示があること
+	if !containsString(view, "最高Lv.5") {
+		t.Error("最高レベルの表示がありません")
+	}
+}
+
+// containsString は既にagent_management_test.goで定義されているため、ここでは再利用します。
