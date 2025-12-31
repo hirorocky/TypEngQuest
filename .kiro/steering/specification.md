@@ -107,4 +107,4 @@ Game Loop ──orchestrates──> All Domains
 
 ---
 _ドメイン仕様はプロジェクトの設計意図を永続化するもの。実装の「なぜ」を記録する_
-_updated_at: 2025-12-01_
+_updated_at: 2025-12-31_

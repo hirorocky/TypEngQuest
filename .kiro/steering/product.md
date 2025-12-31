@@ -26,10 +26,12 @@ BlitzTypingOperator は、タイピング練習とRPGバトルシステムを融
 
 各機能の詳細な仕様は `.kiro/steering/specifications/` 配下を参照:
 - バトルシステム: `battle.md`
+- ゲームループ・状態遷移: `gameloop.md`
 - エージェント合成: `agent.md`
 - タイピング評価: `typing.md`
+- 敵・ステージ: `enemy.md`
 - 収集・実績: `collection.md`
 
 ---
 _パターンと目的にフォーカス。詳細な機能リストではなく、プロダクトの本質を記述_
-_updated_at: 2025-12-01_
+_updated_at: 2025-12-31_
