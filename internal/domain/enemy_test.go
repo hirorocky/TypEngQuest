@@ -793,3 +793,171 @@ func TestEnemyType_ドロップカテゴリバリデーション(t *testing.T) {
 		})
 	}
 }
+
+// ========== タスク1.4: 敵インスタンス行動管理機能のテスト ==========
+
+// TestEnemyModel_行動管理フィールドの確認 はEnemyModelの行動管理フィールドを確認します。
+func TestEnemyModel_行動管理フィールドの確認(t *testing.T) {
+	enemyType := EnemyType{
+		NormalActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack, AttackType: "physical"},
+			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
+		},
+		EnhancedActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack, AttackType: "magic"},
+		},
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// 行動インデックスは0で初期化
+	if enemy.ActionIndex != 0 {
+		t.Errorf("ActionIndexが期待値と異なります: got %d, want 0", enemy.ActionIndex)
+	}
+
+	// 適用中パッシブIDは空で初期化
+	if enemy.ActivePassiveID != "" {
+		t.Errorf("ActivePassiveIDが期待値と異なります: got %s, want empty", enemy.ActivePassiveID)
+	}
+}
+
+// TestEnemyModel_GetCurrentAction は現在実行すべき行動を取得するメソッドを確認します。
+func TestEnemyModel_GetCurrentAction(t *testing.T) {
+	enemyType := EnemyType{
+		NormalActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack, AttackType: "physical"},
+			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp"},
+		},
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// 初期状態では最初の行動
+	action := enemy.GetCurrentAction()
+	if action.ActionType != EnemyActionAttack {
+		t.Errorf("GetCurrentAction()が期待値と異なります: got %v, want Attack", action.ActionType)
+	}
+	if action.AttackType != "physical" {
+		t.Errorf("AttackTypeが期待値と異なります: got %s, want physical", action.AttackType)
+	}
+}
+
+// TestEnemyModel_AdvanceActionIndex は行動インデックスを進める（ループ対応）メソッドを確認します。
+func TestEnemyModel_AdvanceActionIndex(t *testing.T) {
+	enemyType := EnemyType{
+		NormalActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack},
+			{ActionType: EnemyActionSelfBuff},
+			{ActionType: EnemyActionDebuff},
+		},
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// 初期状態
+	if enemy.ActionIndex != 0 {
+		t.Errorf("初期ActionIndexが期待値と異なります: got %d, want 0", enemy.ActionIndex)
+	}
+
+	// 1回進める
+	enemy.AdvanceActionIndex()
+	if enemy.ActionIndex != 1 {
+		t.Errorf("1回目進めた後のActionIndexが期待値と異なります: got %d, want 1", enemy.ActionIndex)
+	}
+
+	// 2回進める
+	enemy.AdvanceActionIndex()
+	if enemy.ActionIndex != 2 {
+		t.Errorf("2回目進めた後のActionIndexが期待値と異なります: got %d, want 2", enemy.ActionIndex)
+	}
+
+	// 3回進める（ループして0に戻る）
+	enemy.AdvanceActionIndex()
+	if enemy.ActionIndex != 0 {
+		t.Errorf("ループ後のActionIndexが期待値と異なります: got %d, want 0", enemy.ActionIndex)
+	}
+}
+
+// TestEnemyModel_GetCurrentPattern はフェーズに応じた行動パターンを返すメソッドを確認します。
+func TestEnemyModel_GetCurrentPattern(t *testing.T) {
+	normalAction := EnemyAction{ActionType: EnemyActionAttack, AttackType: "physical"}
+	enhancedAction := EnemyAction{ActionType: EnemyActionAttack, AttackType: "magic"}
+
+	enemyType := EnemyType{
+		NormalActionPattern:   []EnemyAction{normalAction},
+		EnhancedActionPattern: []EnemyAction{enhancedAction},
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// 通常フェーズでは通常パターン
+	pattern := enemy.GetCurrentPattern()
+	if len(pattern) != 1 || pattern[0].AttackType != "physical" {
+		t.Error("通常フェーズでは通常パターンを返すべきです")
+	}
+
+	// 強化フェーズでは強化パターン
+	enemy.Phase = PhaseEnhanced
+	pattern = enemy.GetCurrentPattern()
+	if len(pattern) != 1 || pattern[0].AttackType != "magic" {
+		t.Error("強化フェーズでは強化パターンを返すべきです")
+	}
+}
+
+// TestEnemyModel_GetCurrentPattern_強化パターン空の場合 は強化パターンが空の場合に通常パターンを継続することを確認します。
+func TestEnemyModel_GetCurrentPattern_強化パターン空の場合(t *testing.T) {
+	normalAction := EnemyAction{ActionType: EnemyActionAttack, AttackType: "physical"}
+
+	enemyType := EnemyType{
+		NormalActionPattern:   []EnemyAction{normalAction},
+		EnhancedActionPattern: []EnemyAction{}, // 空
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy.Phase = PhaseEnhanced
+
+	// 強化パターンが空の場合は通常パターンを継続
+	pattern := enemy.GetCurrentPattern()
+	if len(pattern) != 1 || pattern[0].AttackType != "physical" {
+		t.Error("強化パターンが空の場合は通常パターンを継続すべきです")
+	}
+}
+
+// TestEnemyModel_ResetActionIndex はフェーズ遷移時に行動インデックスをリセットすることを確認します。
+func TestEnemyModel_ResetActionIndex(t *testing.T) {
+	enemyType := EnemyType{
+		NormalActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack},
+			{ActionType: EnemyActionSelfBuff},
+		},
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// インデックスを進める
+	enemy.AdvanceActionIndex()
+	if enemy.ActionIndex != 1 {
+		t.Errorf("AdvanceActionIndex後のActionIndexが期待値と異なります: got %d, want 1", enemy.ActionIndex)
+	}
+
+	// リセット
+	enemy.ResetActionIndex()
+	if enemy.ActionIndex != 0 {
+		t.Errorf("ResetActionIndex後のActionIndexが期待値と異なります: got %d, want 0", enemy.ActionIndex)
+	}
+}
+
+// TestEnemyModel_行動パターン空の場合のGetCurrentAction は行動パターンが空の場合のデフォルト動作を確認します。
+func TestEnemyModel_行動パターン空の場合のGetCurrentAction(t *testing.T) {
+	enemyType := EnemyType{
+		NormalActionPattern: []EnemyAction{}, // 空
+	}
+
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+
+	// 空パターンの場合はデフォルト攻撃を返す
+	action := enemy.GetCurrentAction()
+	if action.ActionType != EnemyActionAttack {
+		t.Error("空パターンの場合はデフォルトの攻撃行動を返すべきです")
+	}
+}

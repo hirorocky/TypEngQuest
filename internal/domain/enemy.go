@@ -126,22 +126,32 @@ type EnemyModel struct {
 	// EffectTable は敵に適用されているステータス効果テーブルです。
 	// 敵自身のバフやプレイヤーからのデバフを管理します。
 	EffectTable *EffectTable
+
+	// ========== 行動管理フィールド ==========
+
+	// ActionIndex は現在の行動パターンインデックスです。
+	ActionIndex int
+
+	// ActivePassiveID は現在適用中のパッシブスキルIDです（解除時に使用）。
+	ActivePassiveID string
 }
 
 // NewEnemy は新しいEnemyModelを作成します。
-// 初期状態は通常フェーズ（PhaseNormal）です。
+// 初期状態は通常フェーズ（PhaseNormal）で、行動インデックスは0です。
 func NewEnemy(id, name string, level, hp, attackPower int, attackInterval time.Duration, enemyType EnemyType) *EnemyModel {
 	return &EnemyModel{
-		ID:             id,
-		Name:           name,
-		Level:          level,
-		HP:             hp,
-		MaxHP:          hp,
-		AttackPower:    attackPower,
-		AttackInterval: attackInterval,
-		Type:           enemyType,
-		Phase:          PhaseNormal,
-		EffectTable:    NewEffectTable(),
+		ID:              id,
+		Name:            name,
+		Level:           level,
+		HP:              hp,
+		MaxHP:           hp,
+		AttackPower:     attackPower,
+		AttackInterval:  attackInterval,
+		Type:            enemyType,
+		Phase:           PhaseNormal,
+		EffectTable:     NewEffectTable(),
+		ActionIndex:     0,  // 行動インデックス初期化
+		ActivePassiveID: "", // パッシブID初期化
 	}
 }
 
@@ -200,6 +210,47 @@ func (e *EnemyModel) IsEnhanced() bool {
 // GetPhaseString は現在のフェーズの表示文字列を返します。
 func (e *EnemyModel) GetPhaseString() string {
 	return e.Phase.String()
+}
+
+// ========== 行動管理メソッド ==========
+
+// GetCurrentPattern は現在のフェーズに対応する行動パターンを返します。
+// 強化フェーズで強化パターンが空の場合は通常パターンを継続します。
+func (e *EnemyModel) GetCurrentPattern() []EnemyAction {
+	if e.Phase == PhaseEnhanced && len(e.Type.EnhancedActionPattern) > 0 {
+		return e.Type.EnhancedActionPattern
+	}
+	return e.Type.NormalActionPattern
+}
+
+// GetCurrentAction は現在実行すべき行動を返します。
+// 行動パターンが空の場合はデフォルトの攻撃行動を返します。
+func (e *EnemyModel) GetCurrentAction() EnemyAction {
+	pattern := e.GetCurrentPattern()
+	if len(pattern) == 0 {
+		// 行動パターンが空の場合はデフォルトの攻撃行動
+		return EnemyAction{
+			ActionType: EnemyActionAttack,
+			AttackType: e.Type.AttackType,
+		}
+	}
+	return pattern[e.ActionIndex]
+}
+
+// AdvanceActionIndex は行動インデックスを1つ進めます（ループ対応）。
+// 現在の行動パターンの長さに基づいてループします。
+func (e *EnemyModel) AdvanceActionIndex() {
+	pattern := e.GetCurrentPattern()
+	if len(pattern) == 0 {
+		return // 空パターンの場合は何もしない
+	}
+	e.ActionIndex = (e.ActionIndex + 1) % len(pattern)
+}
+
+// ResetActionIndex は行動インデックスを0にリセットします。
+// フェーズ遷移時に使用します。
+func (e *EnemyModel) ResetActionIndex() {
+	e.ActionIndex = 0
 }
 
 // ========== 敵行動データ構造 ==========
