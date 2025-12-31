@@ -2,6 +2,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -959,5 +960,153 @@ func TestEnemyModel_行動パターン空の場合のGetCurrentAction(t *testing
 	action := enemy.GetCurrentAction()
 	if action.ActionType != EnemyActionAttack {
 		t.Error("空パターンの場合はデフォルトの攻撃行動を返すべきです")
+	}
+}
+
+// ========== タスク1.5: JSONシリアライズ/デシリアライズの確認テスト ==========
+
+// TestEnemyAction_JSONシリアライズ はEnemyActionのJSONシリアライズを確認します。
+func TestEnemyAction_JSONシリアライズ(t *testing.T) {
+	action := EnemyAction{
+		ActionType:  EnemyActionSelfBuff,
+		EffectType:  "attackUp",
+		EffectValue: 0.3,
+		Duration:    10.0,
+	}
+
+	// シリアライズ
+	data, err := json.Marshal(action)
+	if err != nil {
+		t.Fatalf("JSONシリアライズに失敗: %v", err)
+	}
+
+	// デシリアライズ
+	var restored EnemyAction
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("JSONデシリアライズに失敗: %v", err)
+	}
+
+	// 検証
+	if restored.ActionType != action.ActionType {
+		t.Errorf("ActionTypeが一致しません: got %v, want %v", restored.ActionType, action.ActionType)
+	}
+	if restored.EffectType != action.EffectType {
+		t.Errorf("EffectTypeが一致しません: got %s, want %s", restored.EffectType, action.EffectType)
+	}
+	if restored.EffectValue != action.EffectValue {
+		t.Errorf("EffectValueが一致しません: got %f, want %f", restored.EffectValue, action.EffectValue)
+	}
+	if restored.Duration != action.Duration {
+		t.Errorf("Durationが一致しません: got %f, want %f", restored.Duration, action.Duration)
+	}
+}
+
+// TestEnemyPassiveSkill_JSONシリアライズ はEnemyPassiveSkillのJSONシリアライズを確認します。
+func TestEnemyPassiveSkill_JSONシリアライズ(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[EffectColumn]float64{
+			ColDamageCut: 0.1,
+		},
+	}
+
+	// シリアライズ
+	data, err := json.Marshal(passive)
+	if err != nil {
+		t.Fatalf("JSONシリアライズに失敗: %v", err)
+	}
+
+	// デシリアライズ
+	var restored EnemyPassiveSkill
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("JSONデシリアライズに失敗: %v", err)
+	}
+
+	// 検証
+	if restored.ID != passive.ID {
+		t.Errorf("IDが一致しません: got %s, want %s", restored.ID, passive.ID)
+	}
+	if restored.Name != passive.Name {
+		t.Errorf("Nameが一致しません: got %s, want %s", restored.Name, passive.Name)
+	}
+	if restored.Effects[ColDamageCut] != passive.Effects[ColDamageCut] {
+		t.Errorf("Effects[ColDamageCut]が一致しません: got %f, want %f", restored.Effects[ColDamageCut], passive.Effects[ColDamageCut])
+	}
+}
+
+// TestEnemyType拡張フィールド_JSONシリアライズ はEnemyType拡張フィールドのJSONシリアライズを確認します。
+func TestEnemyType拡張フィールド_JSONシリアライズ(t *testing.T) {
+	enemyType := EnemyType{
+		ID:                 "slime",
+		Name:               "スライム",
+		BaseHP:             50,
+		BaseAttackPower:    5,
+		BaseAttackInterval: 3 * time.Second,
+		AttackType:         "physical",
+		DefaultLevel:       1,
+		NormalActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack, AttackType: "physical"},
+		},
+		EnhancedActionPattern: []EnemyAction{
+			{ActionType: EnemyActionAttack, AttackType: "physical"},
+			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
+		},
+		NormalPassive: &EnemyPassiveSkill{
+			ID:   "slime_normal",
+			Name: "ぷるぷるボディ",
+			Effects: map[EffectColumn]float64{
+				ColDamageCut: 0.1,
+			},
+		},
+		EnhancedPassive: &EnemyPassiveSkill{
+			ID:   "slime_enhanced",
+			Name: "怒りのスライム",
+			Effects: map[EffectColumn]float64{
+				ColDamageMultiplier: 1.2,
+			},
+		},
+		DropItemCategory: "core",
+		DropItemTypeID:   "fire",
+	}
+
+	// シリアライズ
+	data, err := json.Marshal(enemyType)
+	if err != nil {
+		t.Fatalf("JSONシリアライズに失敗: %v", err)
+	}
+
+	// デシリアライズ
+	var restored EnemyType
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatalf("JSONデシリアライズに失敗: %v", err)
+	}
+
+	// 検証
+	if restored.DefaultLevel != enemyType.DefaultLevel {
+		t.Errorf("DefaultLevelが一致しません: got %d, want %d", restored.DefaultLevel, enemyType.DefaultLevel)
+	}
+	if len(restored.NormalActionPattern) != len(enemyType.NormalActionPattern) {
+		t.Errorf("NormalActionPatternの長さが一致しません: got %d, want %d", len(restored.NormalActionPattern), len(enemyType.NormalActionPattern))
+	}
+	if len(restored.EnhancedActionPattern) != len(enemyType.EnhancedActionPattern) {
+		t.Errorf("EnhancedActionPatternの長さが一致しません: got %d, want %d", len(restored.EnhancedActionPattern), len(enemyType.EnhancedActionPattern))
+	}
+	if restored.NormalPassive == nil {
+		t.Error("NormalPassiveがnilになっています")
+	} else if restored.NormalPassive.ID != enemyType.NormalPassive.ID {
+		t.Errorf("NormalPassive.IDが一致しません: got %s, want %s", restored.NormalPassive.ID, enemyType.NormalPassive.ID)
+	}
+	if restored.EnhancedPassive == nil {
+		t.Error("EnhancedPassiveがnilになっています")
+	} else if restored.EnhancedPassive.ID != enemyType.EnhancedPassive.ID {
+		t.Errorf("EnhancedPassive.IDが一致しません: got %s, want %s", restored.EnhancedPassive.ID, enemyType.EnhancedPassive.ID)
+	}
+	if restored.DropItemCategory != enemyType.DropItemCategory {
+		t.Errorf("DropItemCategoryが一致しません: got %s, want %s", restored.DropItemCategory, enemyType.DropItemCategory)
+	}
+	if restored.DropItemTypeID != enemyType.DropItemTypeID {
+		t.Errorf("DropItemTypeIDが一致しません: got %s, want %s", restored.DropItemTypeID, enemyType.DropItemTypeID)
 	}
 }
