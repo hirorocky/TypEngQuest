@@ -503,3 +503,112 @@ func TestBattleSelectCarouselDefeatedIndicator(t *testing.T) {
 }
 
 // containsString は既にagent_management_test.goで定義されているため、ここでは再利用します。
+
+// ==================== タスク2.4: レベル選択制約のテスト ====================
+
+// TestBattleSelectCarouselLevelConstraintUndefeated は未撃破敵のレベル制約をテストします。
+func TestBattleSelectCarouselLevelConstraintUndefeated(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	// goblinは未撃破（デフォルトレベル2）
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// goblin（インデックス1）を選択
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
+
+	// デフォルトレベルが設定されていること
+	if screen.selectedLevel != 2 {
+		t.Errorf("デフォルトレベル: got %d, want 2", screen.selectedLevel)
+	}
+
+	// min == max であること（固定）
+	if screen.minSelectableLevel != screen.maxSelectableLevel {
+		t.Errorf("未撃破敵のレベル範囲が固定でありません: min=%d, max=%d",
+			screen.minSelectableLevel, screen.maxSelectableLevel)
+	}
+}
+
+// TestBattleSelectCarouselLevelConstraintDefeated は撃破済み敵のレベル制約をテストします。
+func TestBattleSelectCarouselLevelConstraintDefeated(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	// slimeをレベル10で撃破済み（デフォルトレベル1）
+	defeated := map[string]int{"slime": 10}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// slime（インデックス0）が選択されている
+	// デフォルトレベル1、撃破最高レベル10なので、1〜11まで選択可能
+	if screen.minSelectableLevel != 1 {
+		t.Errorf("最小選択可能レベル: got %d, want 1", screen.minSelectableLevel)
+	}
+
+	if screen.maxSelectableLevel != 11 {
+		t.Errorf("最大選択可能レベル: got %d, want 11", screen.maxSelectableLevel)
+	}
+}
+
+// TestBattleSelectCarouselLevelConstraintMaxLevel は最大レベル100の制約をテストします。
+func TestBattleSelectCarouselLevelConstraintMaxLevel(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{ID: "boss", Name: "ボス", DefaultLevel: 50, BaseHP: 1000},
+	}
+	// レベル100で撃破済み
+	defeated := map[string]int{"boss": 100}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// 最大レベルは100を超えないこと
+	if screen.maxSelectableLevel > 100 {
+		t.Errorf("最大選択可能レベルが100を超えています: got %d", screen.maxSelectableLevel)
+	}
+}
+
+// TestBattleSelectCarouselStartBattleWithEnemyTypeID はバトル開始メッセージに敵タイプIDが含まれることをテストします。
+func TestBattleSelectCarouselStartBattleWithEnemyTypeID(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	agent := createTestAgent()
+	defeated := map[string]int{"goblin": 5}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{agents: []*domain.AgentModel{agent}},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// goblin（インデックス1）を選択
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
+
+	// レベルを3に設定
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyUp})
+
+	// Enterでバトル開始
+	_, cmd := screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if cmd == nil {
+		t.Fatal("コマンドがnilです")
+	}
+
+	msg := cmd()
+	startBattleMsg, ok := msg.(StartBattleMsg)
+	if !ok {
+		t.Fatalf("StartBattleMsgではありません: %T", msg)
+	}
+
+	// 敵タイプIDがgoblinであること
+	if startBattleMsg.EnemyTypeID != "goblin" {
+		t.Errorf("敵タイプID: got %s, want goblin", startBattleMsg.EnemyTypeID)
+	}
+
+	// レベルが3であること
+	if startBattleMsg.Level != 3 {
+		t.Errorf("レベル: got %d, want 3", startBattleMsg.Level)
+	}
+}
