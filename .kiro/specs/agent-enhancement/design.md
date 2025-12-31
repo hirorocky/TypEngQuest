@@ -1019,10 +1019,10 @@ erDiagram
 | 効果延長 | se_debuff_duration | デバフデュレーション | 効果中のデバフスキル効果時間+5秒 |
 | 特殊 | se_double_cast | ダブルキャスト | 効果中10%でスキル2回発動 |
 
-`skill_effects.json`（新規）:
+`chain_effects.json`（新規）:
 ```json
 {
-  "skill_effects": [
+  "chain_effects": [
     {
       "id": "se_damage_amp",
       "name": "ダメージアンプ",
