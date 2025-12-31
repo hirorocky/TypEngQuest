@@ -197,3 +197,204 @@ func TestBattleSelectBackNavigation(t *testing.T) {
 		t.Error("Escキーでコマンドが返されません")
 	}
 }
+
+// ==================== タスク2.2: カルーセル方式のテスト ====================
+
+// mockDefeatedEnemyProvider はテスト用のDefeatedEnemyProvider実装です。
+type mockDefeatedEnemyProvider struct {
+	defeated map[string]int
+}
+
+func (m *mockDefeatedEnemyProvider) GetDefeatedEnemies() map[string]int {
+	return m.defeated
+}
+
+func (m *mockDefeatedEnemyProvider) IsEnemyDefeated(enemyTypeID string) bool {
+	_, exists := m.defeated[enemyTypeID]
+	return exists
+}
+
+func (m *mockDefeatedEnemyProvider) GetDefeatedLevel(enemyTypeID string) int {
+	return m.defeated[enemyTypeID]
+}
+
+// mockEnemyTypeProvider はテスト用のEnemyTypeProvider実装です。
+type mockEnemyTypeProvider struct {
+	enemyTypes []domain.EnemyType
+}
+
+func (m *mockEnemyTypeProvider) GetEnemyTypes() []domain.EnemyType {
+	return m.enemyTypes
+}
+
+// createTestEnemyTypes はテスト用の敵タイプリストを作成します。
+func createTestEnemyTypes() []domain.EnemyType {
+	return []domain.EnemyType{
+		{ID: "slime", Name: "スライム", DefaultLevel: 1, BaseHP: 50, AttackType: "physical"},
+		{ID: "goblin", Name: "ゴブリン", DefaultLevel: 2, BaseHP: 80, AttackType: "physical"},
+		{ID: "dragon", Name: "ドラゴン", DefaultLevel: 10, BaseHP: 500, AttackType: "magic"},
+	}
+}
+
+// TestBattleSelectCarouselInitialization はカルーセル方式の初期化をテストします。
+func TestBattleSelectCarouselInitialization(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	if screen == nil {
+		t.Fatal("BattleSelectScreenがnilです")
+	}
+
+	// 敵タイプが読み込まれていること
+	if len(screen.enemyTypes) != 3 {
+		t.Errorf("敵タイプ数: got %d, want 3", len(screen.enemyTypes))
+	}
+
+	// 初期選択インデックスが0であること
+	if screen.selectedTypeIdx != 0 {
+		t.Errorf("初期選択インデックス: got %d, want 0", screen.selectedTypeIdx)
+	}
+}
+
+// TestBattleSelectCarouselNavigation は左右キーによる敵種類変更をテストします。
+func TestBattleSelectCarouselNavigation(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// 右キーで次の敵タイプへ
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
+	if screen.selectedTypeIdx != 1 {
+		t.Errorf("右キー後のインデックス: got %d, want 1", screen.selectedTypeIdx)
+	}
+
+	// 左キーで前の敵タイプへ
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyLeft})
+	if screen.selectedTypeIdx != 0 {
+		t.Errorf("左キー後のインデックス: got %d, want 0", screen.selectedTypeIdx)
+	}
+
+	// 最初の敵タイプで左キーを押すと最後に移動（ループ）
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyLeft})
+	if screen.selectedTypeIdx != 2 {
+		t.Errorf("ループ後のインデックス: got %d, want 2", screen.selectedTypeIdx)
+	}
+}
+
+// TestBattleSelectCarouselLevelSelection は上下キーによるレベル変更をテストします。
+func TestBattleSelectCarouselLevelSelection(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	// slimeをレベル5で撃破済み
+	defeated := map[string]int{"slime": 5}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// slime（デフォルトレベル1）が選択されている状態で
+	// 撃破済みなので、レベル1〜6（撃破最高レベル+1）まで選択可能
+	initialLevel := screen.selectedLevel
+	if initialLevel != 1 {
+		t.Errorf("初期レベル: got %d, want 1", initialLevel)
+	}
+
+	// 上キーでレベル上昇
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyUp})
+	if screen.selectedLevel != 2 {
+		t.Errorf("上キー後のレベル: got %d, want 2", screen.selectedLevel)
+	}
+
+	// 下キーでレベル下降
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyDown})
+	if screen.selectedLevel != 1 {
+		t.Errorf("下キー後のレベル: got %d, want 1", screen.selectedLevel)
+	}
+}
+
+// TestBattleSelectCarouselUndefeatedEnemy は未撃破敵のレベル制限をテストします。
+func TestBattleSelectCarouselUndefeatedEnemy(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	// goblinは未撃破
+	defeated := map[string]int{"slime": 5}
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{},
+		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// goblin（インデックス1）を選択
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
+
+	// 未撃破なのでデフォルトレベル（2）のみ選択可能
+	if screen.selectedLevel != 2 {
+		t.Errorf("未撃破敵のレベル: got %d, want 2", screen.selectedLevel)
+	}
+
+	// 上下キーを押してもレベルが変わらない
+	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyUp})
+	if screen.selectedLevel != 2 {
+		t.Errorf("上キー後のレベル（未撃破）: got %d, want 2", screen.selectedLevel)
+	}
+}
+
+// TestBattleSelectCarouselStartBattle はバトル開始メッセージをテストします。
+func TestBattleSelectCarouselStartBattle(t *testing.T) {
+	enemyTypes := createTestEnemyTypes()
+	agent := createTestAgent()
+	screen := NewBattleSelectScreenCarousel(
+		&mockAgentProvider{agents: []*domain.AgentModel{agent}},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
+	)
+
+	// Enterでバトル開始
+	_, cmd := screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if cmd == nil {
+		t.Fatal("コマンドがnilです")
+	}
+
+	// コマンドを実行してメッセージを取得
+	msg := cmd()
+
+	startBattleMsg, ok := msg.(StartBattleMsg)
+	if !ok {
+		t.Fatalf("StartBattleMsgではありません: %T", msg)
+	}
+
+	// 敵タイプIDが含まれていること
+	if startBattleMsg.EnemyTypeID != "slime" {
+		t.Errorf("敵タイプID: got %s, want slime", startBattleMsg.EnemyTypeID)
+	}
+
+	// レベルが正しいこと
+	if startBattleMsg.Level != 1 {
+		t.Errorf("レベル: got %d, want 1", startBattleMsg.Level)
+	}
+}
+
+// createTestAgent はテスト用のエージェントを作成します。
+func createTestAgent() *domain.AgentModel {
+	coreType := domain.CoreType{
+		ID:          "test",
+		Name:        "テスト",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestModule("m2", "モジュール2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestModule("m3", "モジュール3", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestModule("m4", "モジュール4", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+	}
+	return domain.NewAgent("agent1", core, modules)
+}
