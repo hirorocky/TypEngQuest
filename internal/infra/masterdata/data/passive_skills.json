@@ -4,6 +4,7 @@
       "id": "ps_buff_extender",
       "name": "バフエクステンダー",
       "description": "バフ効果時間+50%",
+      "short_description": "バフ時間+50%",
       "trigger_type": "permanent",
       "effect_type": "multiplier",
       "effect_value": 1.5
@@ -12,6 +13,7 @@
       "id": "ps_perfect_rhythm",
       "name": "パーフェクトリズム",
       "description": "正確性100%でスキル効果1.5倍",
+      "short_description": "100%入力で効果↑",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "accuracy_equals",
@@ -24,6 +26,7 @@
       "id": "ps_speed_break",
       "name": "スピードブレイク",
       "description": "WPM80以上で25%追加ダメージ",
+      "short_description": "高速入力でダメ+25%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "wpm_above",
@@ -36,6 +39,7 @@
       "id": "ps_endgame_specialist",
       "name": "エンドゲームスペシャリスト",
       "description": "敵HP30%以下で全ダメージ+25%",
+      "short_description": "敵HP↓でダメ+25%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "enemy_hp_below_percent",
@@ -48,6 +52,7 @@
       "id": "ps_weak_point",
       "name": "ウィークポイント",
       "description": "デバフ中の敵へダメージ+20%",
+      "short_description": "デバフ敵へダメ+20%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "enemy_has_debuff",
@@ -60,6 +65,7 @@
       "id": "ps_overdrive",
       "name": "オーバードライブ",
       "description": "HP50%以下でリキャスト-30%、被ダメ+20%",
+      "short_description": "HP↓でCD-30%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "hp_below_percent",
@@ -72,6 +78,7 @@
       "id": "ps_last_stand",
       "name": "ラストスタンド",
       "description": "HP25%以下で30%の確率で被ダメージ1",
+      "short_description": "HP↓で被ダメ軽減",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "hp_below_percent",
@@ -85,6 +92,7 @@
       "id": "ps_counter_charge",
       "name": "カウンターチャージ",
       "description": "被ダメージ時20%で次の攻撃2倍",
+      "short_description": "被弾時攻撃2倍確率",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_damage_received",
@@ -98,6 +106,7 @@
       "id": "ps_miracle_heal",
       "name": "ミラクルヒール",
       "description": "回復スキル時10%でHP全回復",
+      "short_description": "回復時10%で全回復",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_heal",
@@ -111,6 +120,7 @@
       "id": "ps_chain_reaction",
       "name": "チェインリアクション",
       "description": "バフ/デバフ使用時30%で効果時間2倍",
+      "short_description": "バフデバフ延長確率",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_buff_debuff_use",
@@ -124,6 +134,7 @@
       "id": "ps_echo_skill",
       "name": "エコースキル",
       "description": "15%の確率でスキル2回発動",
+      "short_description": "15%でスキル2回",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_skill_use",
@@ -137,6 +148,7 @@
       "id": "ps_shadow_step",
       "name": "シャドウステップ",
       "description": "物理攻撃成功時20%で敵攻撃タイマーリセット",
+      "short_description": "物理攻撃で敵遅延",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_physical_attack",
@@ -150,6 +162,7 @@
       "id": "ps_debuff_reflect",
       "name": "デバフリフレクト",
       "description": "デバフ受け時30%で敵にも同効果",
+      "short_description": "30%でデバフ反射",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_debuff_received",
@@ -163,6 +176,7 @@
       "id": "ps_second_chance",
       "name": "セカンドチャンス",
       "description": "時間切れ時50%で再挑戦、制限時間半分",
+      "short_description": "時間切れで再挑戦",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_timeout",
@@ -176,6 +190,7 @@
       "id": "ps_combo_master",
       "name": "コンボマスター",
       "description": "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
+      "short_description": "連続入力でダメ累積",
       "trigger_type": "stack",
       "trigger_condition": {
         "type": "no_miss_streak",
@@ -190,6 +205,7 @@
       "id": "ps_adaptive_shield",
       "name": "アダプティブシールド",
       "description": "同種攻撃3回目以降ダメージ-25%",
+      "short_description": "同種攻撃で被ダメ減",
       "trigger_type": "stack",
       "trigger_condition": {
         "type": "same_attack_count",
@@ -204,6 +220,7 @@
       "id": "ps_debuff_absorber",
       "name": "デバフアブソーバー",
       "description": "デバフ効果時間半減＋小回復",
+      "short_description": "デバフ半減+回復",
       "trigger_type": "reactive",
       "trigger_condition": {
         "type": "on_debuff_received",
@@ -216,6 +233,7 @@
       "id": "ps_typo_recovery",
       "name": "タイポリカバリー",
       "description": "ミス時制限時間+1秒、1回/チャレンジ",
+      "short_description": "ミス時に時間+1秒",
       "trigger_type": "reactive",
       "trigger_condition": {
         "type": "on_typing_miss",
@@ -229,6 +247,7 @@
       "id": "ps_first_strike",
       "name": "ファーストストライク",
       "description": "戦闘開始時、最初のスキルが即発動",
+      "short_description": "開始時スキル即発動",
       "trigger_type": "reactive",
       "trigger_condition": {
         "type": "on_battle_start",
@@ -242,6 +261,7 @@
       "id": "ps_critical_focus",
       "name": "クリティカルフォーカス",
       "description": "正確性95%以上でクリティカル率+15%",
+      "short_description": "高精度でクリ率+15%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "accuracy_equals",
@@ -254,6 +274,7 @@
       "id": "ps_quick_recovery",
       "name": "クイックリカバリー",
       "description": "被ダメージ時15%でリキャスト-2秒",
+      "short_description": "被弾でCD短縮確率",
       "trigger_type": "probability",
       "trigger_condition": {
         "type": "on_damage_received",
@@ -267,6 +288,7 @@
       "id": "ps_berserker",
       "name": "バーサーカー",
       "description": "HP30%以下で攻撃力+40%、防御力-20%",
+      "short_description": "HP↓で攻撃力+40%",
       "trigger_type": "conditional",
       "trigger_condition": {
         "type": "hp_below_percent",

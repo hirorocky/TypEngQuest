@@ -10,6 +10,7 @@ import (
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/tui/components"
 	"hirorocky/type-battle/internal/tui/styles"
+	"hirorocky/type-battle/internal/usecase/combat/recast"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -183,6 +184,12 @@ func (s *BattleScreen) renderAgentArea() string {
 		var cardContent strings.Builder
 		isSelected := i == s.selectedAgentIdx
 
+		// リキャスト状態を取得（枠色判定にも使用）
+		var recastState *recast.RecastState
+		if i < len(s.equippedAgents) {
+			recastState = s.recastManager.GetRecastState(i)
+		}
+
 		if i < len(s.equippedAgents) {
 			agent := s.equippedAgents[i]
 
@@ -196,15 +203,18 @@ func (s *BattleScreen) renderAgentArea() string {
 			cardContent.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", agent.GetCoreTypeName(), agent.Level)))
 			cardContent.WriteString("\n")
 
-			// パッシブスキル表示（コア特性から）
+			// パッシブスキル表示（コア特性から）- ShortDescriptionを使用
 			if agent.Core != nil && agent.Core.PassiveSkill.ID != "" {
 				passiveNotification := components.NewPassiveSkillNotification(&agent.Core.PassiveSkill, agent.Level)
-				cardContent.WriteString(passiveNotification.RenderCompact())
+				shortDesc := passiveNotification.GetShortDescription()
+				passiveStyle := lipgloss.NewStyle().
+					Foreground(styles.ColorBuff).
+					Bold(true)
+				cardContent.WriteString(passiveStyle.Render(fmt.Sprintf("★ %s", shortDesc)))
 				cardContent.WriteString("\n")
 			}
 
 			// リキャスト状態表示
-			recastState := s.recastManager.GetRecastState(i)
 			if recastState != nil {
 				recastBar := components.NewRecastProgressBar()
 				recastBar.SetProgress(recastState.RemainingSeconds, recastState.TotalSeconds)
@@ -213,24 +223,18 @@ func (s *BattleScreen) renderAgentArea() string {
 				cardContent.WriteString("\n")
 			}
 
-			// 待機中チェイン効果表示
+			// エージェントのモジュール一覧（2行表示）
+			// 待機中チェイン効果を取得（発動中の強調表示判定用）
 			pendingChain := s.chainEffectManager.GetPendingEffectForAgent(i)
-			if pendingChain != nil {
-				chainBadge := components.NewChainEffectBadge(&pendingChain.Effect)
-				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorBuff).Render("🔗 "))
-				cardContent.WriteString(chainBadge.RenderWithValue())
-				cardContent.WriteString("\n")
-			}
 
-			// エージェントのモジュール一覧
 			agentModules := s.getModulesForAgent(i)
 			for j, slot := range agentModules {
 				isModuleSelected := isSelected && j == s.getSelectedModuleInAgent(i)
 
 				// モジュールアイコン
-				icon := s.getModuleIcon(slot.Module.Category())
+				icon := slot.Module.Icon()
 
-				// モジュール名とクールダウン
+				// モジュール名のスタイル
 				var moduleStyle lipgloss.Style
 				if isModuleSelected {
 					moduleStyle = lipgloss.NewStyle().
@@ -249,24 +253,40 @@ func (s *BattleScreen) renderAgentArea() string {
 					prefix = "> "
 				}
 
-				// チェイン効果バッジ
-				chainBadgeStr := ""
+				// 1行目: プレフィックス + アイコン + モジュール名
+				cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s", prefix, icon, slot.Module.Name())))
+				cardContent.WriteString("\n")
+
+				// 2行目: チェイン効果（あれば）または空行
 				if slot.Module.HasChainEffect() {
 					chainBadge := components.NewChainEffectBadge(slot.Module.ChainEffect)
-					chainBadgeStr = chainBadge.Render() + " "
+					// このモジュールのチェイン効果が発動中かチェック
+					// リキャスト中 かつ 待機中チェイン効果がこのモジュールのものなら発動中
+					isChainActive := pendingChain != nil &&
+						pendingChain.Effect.Type == slot.Module.ChainEffect.Type
+					cardContent.WriteString("    ") // インデント（prefixと同じ幅 + アイコン分）
+					if isChainActive {
+						cardContent.WriteString(chainBadge.RenderActive())
+					} else {
+						cardContent.WriteString(chainBadge.RenderWithValue())
+					}
+					cardContent.WriteString("\n")
+				} else {
+					// チェイン効果がなくても空行を出力（高さを揃えるため）
+					cardContent.WriteString("\n")
 				}
-
-				cardContent.WriteString(moduleStyle.Render(fmt.Sprintf("%s%s %s%s", prefix, icon, chainBadgeStr, slot.Module.Name())))
-				cardContent.WriteString("\n")
 			}
 		} else {
 			// 空スロット
 			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)"))
 		}
 
-		// カードボックス
+		// カードボックス - リキャスト状態で枠色を変更
 		borderColor := styles.ColorSubtle
-		if isSelected {
+		if recastState != nil {
+			// リキャスト中（クールダウン中）は黄色枠
+			borderColor = styles.ColorWarning
+		} else if isSelected {
 			borderColor = styles.ColorPrimary
 		}
 
@@ -275,7 +295,7 @@ func (s *BattleScreen) renderAgentArea() string {
 			BorderForeground(borderColor).
 			Padding(0, 1).
 			Width(cardWidth).
-			Height(12) // 高さを増やしてパッシブスキル・リキャスト表示用のスペースを確保
+			Height(10) // 高さを詰める（待機中チェイン効果表示削除分）
 
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
@@ -283,20 +303,21 @@ func (s *BattleScreen) renderAgentArea() string {
 	// カードを横に並べる（スペースを最小限に）
 	agentCards := lipgloss.JoinHorizontal(lipgloss.Top, cards[0], " ", cards[1], " ", cards[2])
 
-	// エリアボックス
-	areaStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1, 2).
-		Width(s.width - 4)
-
+	// タイトル（枠なし）
 	title := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
 		Render("────────────────────────────────  PLAYER  ────────────────────────────────")
 
+	// エリア枠を削除し、カードのみを表示
+	areaContent := lipgloss.NewStyle().
+		Padding(1, 2).
+		Width(s.width - 4).
+		Align(lipgloss.Center).
+		Render(agentCards)
+
 	return lipgloss.JoinVertical(lipgloss.Center,
 		title,
-		areaStyle.Render(agentCards),
+		areaContent,
 	)
 }
 
@@ -603,11 +624,4 @@ func (s *BattleScreen) getSelectedModuleInAgent(agentIdx int) int {
 		}
 	}
 	return 0
-}
-
-// getModuleIcon はモジュールカテゴリのアイコンを返します。
-// UI-Improvement Requirement 3.6: モジュールカテゴリアイコン
-// 要件 7.3: domain.ModuleCategory.Icon()に委譲
-func (s *BattleScreen) getModuleIcon(category domain.ModuleCategory) string {
-	return category.Icon()
 }

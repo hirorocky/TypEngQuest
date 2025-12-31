@@ -101,22 +101,17 @@ func (b *ChainEffectBadge) Render() string {
 	return style.Render(icon)
 }
 
-// RenderWithValue はバッジをレンダリングします（アイコンと効果値）。
+// RenderWithValue はバッジをレンダリングします（ShortDescriptionを表示）。
 // effectがnilの場合は空文字列を返します。
 func (b *ChainEffectBadge) RenderWithValue() string {
 	if b.effect == nil {
 		return ""
 	}
 
-	icon := b.GetCategoryIcon()
-	color := b.getCategoryColor()
+	// 白で統一
+	style := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
 
-	style := lipgloss.NewStyle().Foreground(color)
-
-	// 効果値のフォーマット
-	valueText := b.formatValue()
-
-	return style.Render(fmt.Sprintf("%s %s", icon, valueText))
+	return style.Render(b.effect.ShortDescription)
 }
 
 // RenderFull はバッジをフルフォーマットでレンダリングします（アイコン、効果値、説明）。
@@ -167,6 +162,23 @@ func (b *ChainEffectBadge) formatValue() string {
 	default:
 		return fmt.Sprintf("%.0f", b.effect.Value)
 	}
+}
+
+// RenderActive は発動中のチェイン効果をレンダリングします（黄色背景黒文字）。
+// effectがnilの場合は空文字列を返します。
+func (b *ChainEffectBadge) RenderActive() string {
+	if b.effect == nil {
+		return ""
+	}
+
+	// 発動中は黄色背景黒文字
+	activeStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Background(styles.ColorWarning).
+		Bold(true).
+		Padding(0, 1)
+
+	return activeStyle.Render(b.effect.ShortDescription)
 }
 
 // HasEffect はこのバッジが有効なチェイン効果を持っているかを返します。

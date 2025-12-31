@@ -45,19 +45,20 @@ func (c ModuleCategory) String() string {
 	}
 }
 
-// Icon はモジュールカテゴリのアイコンを返します。
+// Icon はモジュールカテゴリのデフォルトアイコンを返します。
+// マスターデータにアイコンが設定されていない場合のフォールバック用です。
 func (c ModuleCategory) Icon() string {
 	switch c {
 	case PhysicalAttack:
-		return "⚔"
+		return "⚔️"
 	case MagicAttack:
-		return "✦"
+		return "💥"
 	case Heal:
-		return "♥"
+		return "💚"
 	case Buff:
-		return "▲"
+		return "💪"
 	case Debuff:
-		return "▼"
+		return "💀"
 	default:
 		return "•"
 	}
@@ -71,6 +72,9 @@ type ModuleType struct {
 
 	// Name はモジュールの表示名です（日本語）。
 	Name string
+
+	// Icon はモジュールのアイコン（絵文字）です。
+	Icon string
 
 	// Category はモジュールのカテゴリです（物理攻撃、魔法攻撃、回復、バフ、デバフ）。
 	Category ModuleCategory
@@ -153,6 +157,15 @@ func (m *ModuleModel) StatRef() string {
 // Description はモジュールの効果説明を返します。
 func (m *ModuleModel) Description() string {
 	return m.Type.Description
+}
+
+// Icon はモジュールのアイコンを返します。
+// マスターデータで定義されたアイコンがあればそれを、なければカテゴリのデフォルトアイコンを返します。
+func (m *ModuleModel) Icon() string {
+	if m.Type.Icon != "" {
+		return m.Type.Icon
+	}
+	return m.Type.Category.Icon()
 }
 
 // CooldownSeconds はモジュールのクールダウン時間を返します。

@@ -8,14 +8,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// モジュールカテゴリに対応するアイコン
+// モジュールカテゴリに対応するアイコン（フォールバック用）
 
 var moduleIcons = map[domain.ModuleCategory]string{
-	domain.PhysicalAttack: "⚔", // 剣（物理攻撃）
-	domain.MagicAttack:    "✦", // 星（魔法攻撃）
-	domain.Heal:           "♥", // ハート（回復）
-	domain.Buff:           "▲", // 上矢印（バフ）
-	domain.Debuff:         "▼", // 下矢印（デバフ）
+	domain.PhysicalAttack: "⚔️", // 剣（物理攻撃）
+	domain.MagicAttack:    "💥",  // 爆発（魔法攻撃）
+	domain.Heal:           "💚",  // 緑ハート（回復）
+	domain.Buff:           "💪",  // 筋肉（バフ）
+	domain.Debuff:         "💀",  // ドクロ（デバフ）
 }
 
 // モジュールカテゴリに対応するカラー

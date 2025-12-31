@@ -136,6 +136,7 @@ func (c *CoreTypeData) ToDomain() domain.CoreType {
 type ModuleDefinitionData struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
+	Icon            string   `json:"icon"`
 	Category        string   `json:"category"`
 	Tags            []string `json:"tags"`
 	BaseEffect      float64  `json:"base_effect"`
@@ -193,6 +194,7 @@ func (m *ModuleDefinitionData) ToDomainType() domain.ModuleType {
 	return domain.ModuleType{
 		ID:              m.ID,
 		Name:            m.Name,
+		Icon:            m.Icon,
 		Category:        category,
 		Tags:            tagsCopy,
 		BaseEffect:      m.BaseEffect,
@@ -272,6 +274,7 @@ type PassiveSkillData struct {
 	ID               string                `json:"id"`
 	Name             string                `json:"name"`
 	Description      string                `json:"description"`
+	ShortDescription string                `json:"short_description"`
 	TriggerType      string                `json:"trigger_type"`
 	TriggerCondition *TriggerConditionData `json:"trigger_condition"`
 	EffectType       string                `json:"effect_type"`

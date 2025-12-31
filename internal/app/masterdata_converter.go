@@ -31,15 +31,17 @@ func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.Mod
 	result := make([]rewarding.ModuleDropInfo, len(types))
 	for i, t := range types {
 		result[i] = rewarding.ModuleDropInfo{
-			ID:           t.ID,
-			Name:         t.Name,
-			Category:     convertCategory(t.Category),
-			Tags:         t.Tags,
-			BaseEffect:   t.BaseEffect,
-			StatRef:      t.StatReference,
-			Description:  t.Description,
-			MinDropLevel: t.MinDropLevel,
-			Difficulty:   t.Difficulty,
+			ID:              t.ID,
+			Name:            t.Name,
+			Icon:            t.Icon,
+			Category:        convertCategory(t.Category),
+			Tags:            t.Tags,
+			BaseEffect:      t.BaseEffect,
+			StatRef:         t.StatReference,
+			Description:     t.Description,
+			CooldownSeconds: t.CooldownSeconds,
+			MinDropLevel:    t.MinDropLevel,
+			Difficulty:      t.Difficulty,
 		}
 	}
 	return result
@@ -102,9 +104,10 @@ func ConvertPassiveSkills(skills []masterdata.PassiveSkillData) map[string]domai
 	result := make(map[string]domain.PassiveSkill, len(skills))
 	for _, s := range skills {
 		result[s.ID] = domain.PassiveSkill{
-			ID:          s.ID,
-			Name:        s.Name,
-			Description: s.Description,
+			ID:               s.ID,
+			Name:             s.Name,
+			Description:      s.Description,
+			ShortDescription: s.ShortDescription,
 		}
 	}
 	return result

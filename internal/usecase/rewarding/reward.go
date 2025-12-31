@@ -237,6 +237,9 @@ type ModuleDropInfo struct {
 	// Name はモジュールの表示名です。
 	Name string
 
+	// Icon はモジュールのアイコン（絵文字）です。
+	Icon string
+
 	// Category はモジュールのカテゴリです。
 	Category domain.ModuleCategory
 
@@ -271,6 +274,7 @@ func (m *ModuleDropInfo) ToModuleType() domain.ModuleType {
 	return domain.ModuleType{
 		ID:              m.ID,
 		Name:            m.Name,
+		Icon:            m.Icon,
 		Category:        m.Category,
 		Tags:            tagsCopy,
 		BaseEffect:      m.BaseEffect,

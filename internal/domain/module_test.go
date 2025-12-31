@@ -243,11 +243,11 @@ func TestModuleCategory_Icon(t *testing.T) {
 		category ModuleCategory
 		expected string
 	}{
-		{PhysicalAttack, "⚔"},
-		{MagicAttack, "✦"},
-		{Heal, "♥"},
-		{Buff, "▲"},
-		{Debuff, "▼"},
+		{PhysicalAttack, "⚔️"},
+		{MagicAttack, "💥"},
+		{Heal, "💚"},
+		{Buff, "💪"},
+		{Debuff, "💀"},
 	}
 
 	for _, tt := range tests {

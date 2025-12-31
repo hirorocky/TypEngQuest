@@ -690,19 +690,19 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 	case combat.EnemyActionAttack:
 		// 攻撃予告（赤色）
 		if action.AttackType == "physical" {
-			return "⚔", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+			return "⚔️", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
 		}
-		return "✦", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+		return "💥", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
 
 	case combat.EnemyActionSelfBuff:
 		// 自己バフ予告（黄色）
 		name := combat.GetEnemyBuffName(action.BuffType)
-		return "▲", name, styles.ColorWarning
+		return "💪", name, styles.ColorWarning
 
 	case combat.EnemyActionDebuff:
 		// プレイヤーデバフ予告（青色）
 		name := combat.GetPlayerDebuffName(action.DebuffType)
-		return "▼", name, styles.ColorInfo
+		return "💀", name, styles.ColorInfo
 	}
 
 	return "?", "不明", styles.ColorSubtle

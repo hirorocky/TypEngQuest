@@ -1054,7 +1054,7 @@ func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) s
 	builder.WriteString(nameStyle.Render(module.Name()))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("カテゴリ: "))
-	builder.WriteString(s.getModuleIcon(module.Category()) + " " + module.Category().String())
+	builder.WriteString(module.Icon() + " " + module.Category().String())
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("基礎効果: "))
 	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect()))
@@ -1116,7 +1116,7 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 		builder.WriteString(labelStyle.Render("モジュール:"))
 		builder.WriteString("\n")
 		for _, m := range s.synthesisState.selectedModules {
-			icon := s.getModuleIcon(m.Category())
+			icon := m.Icon()
 			builder.WriteString(fmt.Sprintf("  %s %s", icon, m.Name()))
 			// チェイン効果があれば表示
 			if m.HasChainEffect() {
@@ -1174,7 +1174,7 @@ func (s *AgentManagementScreen) renderSynthesisModuleListItems() string {
 			style = style.Foreground(styles.ColorSubtle)
 		}
 
-		icon := s.getModuleIcon(module.Category())
+		icon := module.Icon()
 		item := fmt.Sprintf("%s %s", icon, module.Name())
 		if !compatible {
 			item += " (互換性なし)"
@@ -1210,18 +1210,13 @@ func (s *AgentManagementScreen) renderEquip() string {
 
 	// 下部エリア: 装備中エージェント（3スロット横並び）
 	bottomSection := s.renderEquipBottomSection()
-	bottomBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorPrimary).
-		Padding(1, 2).
-		Width(s.width - 10)
 
 	bottomTitle := lipgloss.NewStyle().
 		Foreground(styles.ColorSubtle).
 		Render("────────────────────────  装備中エージェント  ────────────────────────")
 
 	builder.WriteString(lipgloss.NewStyle().Width(s.width).Align(lipgloss.Center).Render(
-		lipgloss.JoinVertical(lipgloss.Center, bottomTitle, bottomBox.Render(bottomSection)),
+		lipgloss.JoinVertical(lipgloss.Center, bottomTitle, bottomSection),
 	))
 
 	return builder.String()
@@ -1314,17 +1309,19 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 		return builder.String()
 	}
 
-	// エージェント名とレベル
-	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+	// エージェント名とレベル（白色で表示）
+	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
 	builder.WriteString(nameStyle.Render(fmt.Sprintf("%s Lv.%d", selectedAgent.GetCoreTypeName(), selectedAgent.Level)))
 	builder.WriteString("\n")
 
-	// コアタイプ
-	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
-	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorSecondary)
-	builder.WriteString(labelStyle.Render("コアタイプ: "))
-	builder.WriteString(valueStyle.Render(selectedAgent.Core.Type.Name))
-	builder.WriteString("\n")
+	// パッシブスキル効果（短い説明を表示）
+	passiveNotification := components.NewPassiveSkillNotification(&selectedAgent.Core.PassiveSkill, selectedAgent.Core.Level)
+	if passiveNotification.HasActiveEffects() {
+		passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
+		shortDesc := passiveNotification.GetShortDescription()
+		builder.WriteString(passiveStyle.Render(fmt.Sprintf("★ %s: %s", passiveNotification.GetName(), shortDesc)))
+		builder.WriteString("\n")
+	}
 
 	// 区切り線
 	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
@@ -1339,12 +1336,18 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
 	builder.WriteString("\n")
 
-	// モジュール
+	// モジュール（チェイン効果付き）
+	labelStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
 	builder.WriteString(labelStyle.Render("モジュール:"))
 	builder.WriteString("\n")
 	for _, module := range selectedAgent.Modules {
-		icon := s.getModuleIcon(module.Category())
-		builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name()))
+		icon := module.Icon()
+		if module.HasChainEffect() {
+			chainBadge := components.NewChainEffectBadge(module.ChainEffect)
+			builder.WriteString(fmt.Sprintf("  %s %s + %s\n", icon, module.Name(), chainBadge.GetDescription()))
+		} else {
+			builder.WriteString(fmt.Sprintf("  %s %s\n", icon, module.Name()))
+		}
 	}
 
 	return builder.String()
@@ -1353,33 +1356,65 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 // renderEquipBottomSection は装備タブの下部セクション（装備スロット）をレンダリングします。
 func (s *AgentManagementScreen) renderEquipBottomSection() string {
 	var cards []string
-	cardWidth := 30
+	// 画面幅を3等分してカード幅を計算（枠線とパディングを考慮）
+	cardWidth := (s.width - 20) / 3
 
 	for i := 0; i < 3; i++ {
 		var cardContent strings.Builder
 		isSelected := i == s.selectedEquipSlot
 
-		// スロットタイトル
-		slotTitle := fmt.Sprintf("スロット%d", i+1)
-		if isSelected {
-			slotTitle = "*" + slotTitle + "*"
-		}
-		cardContent.WriteString(lipgloss.NewStyle().Bold(true).Render(slotTitle))
-		cardContent.WriteString("\n\n")
-
 		if s.equipSlots[i] != nil {
 			agent := s.equipSlots[i]
-			cardContent.WriteString(fmt.Sprintf("%s Lv.%d\n", agent.GetCoreTypeName(), agent.Level))
 
-			// モジュールアイコン
-			var icons []string
-			for _, module := range agent.Modules {
-				icons = append(icons, s.getModuleIcon(module.Category()))
+			// コアタイプ+レベル行（選択中は▶を表示、非選択は白色）
+			if isSelected {
+				coreNameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorPrimary)
+				cardContent.WriteString(coreNameStyle.Render(fmt.Sprintf("▶ %s Lv.%d", agent.Core.Type.Name, agent.Level)))
+			} else {
+				coreNameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSecondary)
+				cardContent.WriteString(coreNameStyle.Render(fmt.Sprintf("  %s Lv.%d", agent.Core.Type.Name, agent.Level)))
 			}
-			cardContent.WriteString(strings.Join(icons, ""))
+			cardContent.WriteString("\n")
+
+			// モジュールを2列×2行で表示
+			modules := agent.Modules
+			moduleWidth := (cardWidth - 4) / 2
+			for row := 0; row < 2; row++ {
+				var rowModules []string
+				for col := 0; col < 2; col++ {
+					idx := row*2 + col
+					if idx < len(modules) {
+						module := modules[idx]
+						icon := module.Icon()
+						name := module.Name()
+						// 名前が長すぎる場合は切り詰め
+						maxLen := moduleWidth - 3
+						if len([]rune(name)) > maxLen {
+							name = string([]rune(name)[:maxLen-1]) + ".."
+						}
+						rowModules = append(rowModules, fmt.Sprintf("%s %s", icon, name))
+					}
+				}
+				if len(rowModules) > 0 {
+					// 2列を均等幅で表示
+					cell1 := lipgloss.NewStyle().Width(moduleWidth).Render(rowModules[0])
+					cell2 := ""
+					if len(rowModules) > 1 {
+						cell2 = lipgloss.NewStyle().Width(moduleWidth).Render(rowModules[1])
+					}
+					cardContent.WriteString(lipgloss.JoinHorizontal(lipgloss.Left, cell1, cell2))
+					cardContent.WriteString("\n")
+				}
+			}
 		} else {
-			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("(空)\n\n"))
-			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("Enterで装備"))
+			// 空スロットの表示（選択中は▶を表示）
+			if isSelected {
+				cardContent.WriteString(lipgloss.NewStyle().Bold(true).Foreground(styles.ColorSubtle).Render("▶ (空)"))
+			} else {
+				cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("  (空)"))
+			}
+			cardContent.WriteString("\n\n")
+			cardContent.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("  Enterで装備"))
 		}
 
 		// カードスタイル
@@ -1393,30 +1428,12 @@ func (s *AgentManagementScreen) renderEquipBottomSection() string {
 			BorderForeground(borderColor).
 			Padding(0, 1).
 			Width(cardWidth).
-			Height(6)
+			Height(5)
 
 		cards = append(cards, cardStyle.Render(cardContent.String()))
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, cards[0], "  ", cards[1], "  ", cards[2])
-}
-
-// getModuleIcon はモジュールカテゴリのアイコンを返します。
-func (s *AgentManagementScreen) getModuleIcon(category domain.ModuleCategory) string {
-	switch category {
-	case domain.PhysicalAttack:
-		return "⚔"
-	case domain.MagicAttack:
-		return "✦"
-	case domain.Heal:
-		return "♥"
-	case domain.Buff:
-		return "▲"
-	case domain.Debuff:
-		return "▼"
-	default:
-		return "•"
-	}
+	return lipgloss.JoinHorizontal(lipgloss.Center, cards[0], " ", cards[1], " ", cards[2])
 }
 
 // ==================== デバッグモード専用の関数群 ====================

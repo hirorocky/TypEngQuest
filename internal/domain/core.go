@@ -46,6 +46,10 @@ type PassiveSkill struct {
 	// Description はパッシブスキルの効果説明です。
 	Description string
 
+	// ShortDescription はパッシブスキルの短い効果説明です（最大16文字程度）。
+	// UI上でコンパクトに表示する際に使用します。
+	ShortDescription string
+
 	// BaseModifiers はレベル1時点の基礎効果です。
 	BaseModifiers StatModifiers
 

@@ -83,9 +83,9 @@ func TestChainEffectBadge_RenderWithValue(t *testing.T) {
 
 	result := badge.RenderWithValue()
 
-	// アイコンと効果値が含まれていることを確認
-	if !strings.Contains(result, "🗡️") {
-		t.Errorf("RenderWithValue() should contain category icon, got %v", result)
+	// ShortDescriptionが含まれていることを確認
+	if !strings.Contains(result, "次攻撃ダメ") {
+		t.Errorf("RenderWithValue() should contain short description, got %v", result)
 	}
 	if !strings.Contains(result, "25") {
 		t.Errorf("RenderWithValue() should contain effect value, got %v", result)

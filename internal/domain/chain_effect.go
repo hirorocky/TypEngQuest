@@ -178,6 +178,52 @@ func (t ChainEffectType) GenerateDescription(value float64) string {
 	}
 }
 
+// GenerateShortDescription はチェイン効果種別と効果値から短い説明文（16文字程度）を生成します。
+func (t ChainEffectType) GenerateShortDescription(value float64) string {
+	switch t {
+	case ChainEffectDamageBonus:
+		return fmt.Sprintf("次攻撃ダメ+%.0f%%", value)
+	case ChainEffectHealBonus:
+		return fmt.Sprintf("次回復量+%.0f%%", value)
+	case ChainEffectBuffExtend:
+		return fmt.Sprintf("バフ時間+%.0f秒", value)
+	case ChainEffectDebuffExtend:
+		return fmt.Sprintf("デバフ時間+%.0f秒", value)
+	case ChainEffectDamageAmp:
+		return fmt.Sprintf("攻撃ダメ+%.0f%%", value)
+	case ChainEffectArmorPierce:
+		return "防御バフ無視"
+	case ChainEffectLifeSteal:
+		return fmt.Sprintf("与ダメの%.0f%%回復", value)
+	case ChainEffectDamageCut:
+		return fmt.Sprintf("被ダメ-%.0f%%", value)
+	case ChainEffectEvasion:
+		return fmt.Sprintf("%.0f%%回避", value)
+	case ChainEffectReflect:
+		return fmt.Sprintf("被ダメ%.0f%%反射", value)
+	case ChainEffectRegen:
+		return fmt.Sprintf("毎秒HP%.0f%%回復", value)
+	case ChainEffectHealAmp:
+		return fmt.Sprintf("回復量+%.0f%%", value)
+	case ChainEffectOverheal:
+		return "超過回復→一時HP"
+	case ChainEffectTimeExtend:
+		return fmt.Sprintf("入力時間+%.0f秒", value)
+	case ChainEffectAutoCorrect:
+		return fmt.Sprintf("ミス%.0f回無視", value)
+	case ChainEffectCooldownReduce:
+		return fmt.Sprintf("他CD%.0f%%短縮", value)
+	case ChainEffectBuffDuration:
+		return fmt.Sprintf("バフ延長+%.0f秒", value)
+	case ChainEffectDebuffDuration:
+		return fmt.Sprintf("デバフ延長+%.0f秒", value)
+	case ChainEffectDoubleCast:
+		return fmt.Sprintf("%.0f%%で2回発動", value)
+	default:
+		return "チェイン効果"
+	}
+}
+
 // ChainEffect はモジュールインスタンスに紐づくチェイン効果を表す値オブジェクトです。
 // モジュール取得時にランダム決定され、変更不可のイミュータブルな構造体です。
 type ChainEffect struct {
@@ -189,15 +235,19 @@ type ChainEffect struct {
 
 	// Description は効果の説明文です。
 	Description string
+
+	// ShortDescription は効果の短い説明文です（16文字程度）。
+	ShortDescription string
 }
 
 // NewChainEffect は指定されたタイプと効果値から新しいChainEffectを作成します。
-// Descriptionはタイプと効果値から自動生成されます。
+// DescriptionとShortDescriptionはタイプと効果値から自動生成されます。
 func NewChainEffect(effectType ChainEffectType, value float64) ChainEffect {
 	return ChainEffect{
-		Type:        effectType,
-		Value:       value,
-		Description: effectType.GenerateDescription(value),
+		Type:             effectType,
+		Value:            value,
+		Description:      effectType.GenerateDescription(value),
+		ShortDescription: effectType.GenerateShortDescription(value),
 	}
 }
 

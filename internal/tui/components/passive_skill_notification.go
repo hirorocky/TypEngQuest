@@ -49,6 +49,19 @@ func (n *PassiveSkillNotification) GetDescription() string {
 	return n.skill.Description
 }
 
+// GetShortDescription はパッシブスキルの短い説明を返します。
+// ShortDescriptionが設定されていない場合はDescriptionを返します。
+// skillがnilの場合は空文字列を返します。
+func (n *PassiveSkillNotification) GetShortDescription() string {
+	if n.skill == nil {
+		return ""
+	}
+	if n.skill.ShortDescription != "" {
+		return n.skill.ShortDescription
+	}
+	return n.skill.Description
+}
+
 // GetEffectModifiers はコアレベルに応じた効果量を計算して返します。
 // skillがnilの場合はゼロ値のStatModifiersを返します。
 func (n *PassiveSkillNotification) GetEffectModifiers() domain.StatModifiers {

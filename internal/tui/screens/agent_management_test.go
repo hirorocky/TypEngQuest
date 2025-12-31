@@ -448,8 +448,12 @@ func TestAgentManagementEquipTopBottomLayout(t *testing.T) {
 
 	rendered := screen.View()
 
-	// 装備スロットが表示されていること
-	if !containsString(rendered, "スロット1") || !containsString(rendered, "スロット2") || !containsString(rendered, "スロット3") {
+	// 装備中エージェントセクションが表示されていること
+	if !containsString(rendered, "装備中エージェント") {
+		t.Error("装備中エージェントセクションが表示されていません")
+	}
+	// 空スロットの表示または装備済みエージェントが表示されていること
+	if !containsString(rendered, "(空)") && !containsString(rendered, "Lv.") {
 		t.Error("装備スロットが表示されていません")
 	}
 }

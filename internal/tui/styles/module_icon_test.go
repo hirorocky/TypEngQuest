@@ -15,11 +15,11 @@ func TestGetModuleIcon(t *testing.T) {
 		category domain.ModuleCategory
 		expected string
 	}{
-		{domain.PhysicalAttack, "⚔"},
-		{domain.MagicAttack, "✦"},
-		{domain.Heal, "♥"},
-		{domain.Buff, "▲"},
-		{domain.Debuff, "▼"},
+		{domain.PhysicalAttack, "⚔️"},
+		{domain.MagicAttack, "💥"},
+		{domain.Heal, "💚"},
+		{domain.Buff, "💪"},
+		{domain.Debuff, "💀"},
 	}
 
 	for _, tt := range tests {
@@ -78,17 +78,17 @@ func TestGetModuleIconsForAgent(t *testing.T) {
 	}
 
 	// 最初の2つは物理攻撃アイコン
-	if icons[0] != "⚔" || icons[1] != "⚔" {
+	if icons[0] != "⚔️" || icons[1] != "⚔️" {
 		t.Error("物理攻撃アイコンが正しくありません")
 	}
 
 	// 3番目はバフアイコン
-	if icons[2] != "▲" {
+	if icons[2] != "💪" {
 		t.Error("バフアイコンが正しくありません")
 	}
 
 	// 4番目は回復アイコン
-	if icons[3] != "♥" {
+	if icons[3] != "💚" {
 		t.Error("回復アイコンが正しくありません")
 	}
 }

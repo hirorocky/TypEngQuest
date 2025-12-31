@@ -2,7 +2,8 @@
   "module_types": [
     {
       "id": "physical_strike_lv1",
-      "name": "物理打撃Lv1",
+      "name": "軽斬撃",
+      "icon": "⚔️",
       "category": "physical_attack",
       "tags": ["physical_low"],
       "base_effect": 10.0,
@@ -14,7 +15,8 @@
     },
     {
       "id": "physical_strike_lv2",
-      "name": "物理打撃Lv2",
+      "name": "斬撃",
+      "icon": "⚔️",
       "category": "physical_attack",
       "tags": ["physical_mid"],
       "base_effect": 25.0,
@@ -26,7 +28,8 @@
     },
     {
       "id": "physical_strike_lv3",
-      "name": "物理打撃Lv3",
+      "name": "重斬撃",
+      "icon": "⚔️",
       "category": "physical_attack",
       "tags": ["physical_high"],
       "base_effect": 50.0,
@@ -38,7 +41,8 @@
     },
     {
       "id": "fireball_lv1",
-      "name": "ファイアボールLv1",
+      "name": "初級攻撃魔法",
+      "icon": "💥",
       "category": "magic_attack",
       "tags": ["magic_low"],
       "base_effect": 12.0,
@@ -50,7 +54,8 @@
     },
     {
       "id": "fireball_lv2",
-      "name": "ファイアボールLv2",
+      "name": "中級攻撃魔法",
+      "icon": "💥",
       "category": "magic_attack",
       "tags": ["magic_mid"],
       "base_effect": 22.0,
@@ -62,7 +67,8 @@
     },
     {
       "id": "fireball_lv3",
-      "name": "ファイアボールLv3",
+      "name": "上級攻撃魔法",
+      "icon": "💥",
       "category": "magic_attack",
       "tags": ["magic_high"],
       "base_effect": 40.0,
@@ -74,7 +80,8 @@
     },
     {
       "id": "heal_lv1",
-      "name": "ヒールLv1",
+      "name": "応急手当",
+      "icon": "💚",
       "category": "heal",
       "tags": ["heal_low"],
       "base_effect": 8.0,
@@ -86,7 +93,8 @@
     },
     {
       "id": "heal_lv2",
-      "name": "ヒールLv2",
+      "name": "回復魔法",
+      "icon": "💚",
       "category": "heal",
       "tags": ["heal_mid"],
       "base_effect": 16.0,
@@ -98,7 +106,8 @@
     },
     {
       "id": "heal_lv3",
-      "name": "ヒールLv3",
+      "name": "大回復魔法",
+      "icon": "💚",
       "category": "heal",
       "tags": ["heal_high"],
       "base_effect": 30.0,
@@ -110,7 +119,8 @@
     },
     {
       "id": "attack_buff_lv1",
-      "name": "攻撃バフLv1",
+      "name": "攻撃強化1",
+      "icon": "💪",
       "category": "buff",
       "tags": ["buff_low"],
       "base_effect": 5.0,
@@ -122,7 +132,8 @@
     },
     {
       "id": "defense_buff_lv1",
-      "name": "防御バフLv1",
+      "name": "防御強化1",
+      "icon": "💪",
       "category": "buff",
       "tags": ["buff_low"],
       "base_effect": 5.0,
@@ -134,7 +145,8 @@
     },
     {
       "id": "attack_buff_lv2",
-      "name": "攻撃バフLv2",
+      "name": "攻撃強化2",
+      "icon": "💪",
       "category": "buff",
       "tags": ["buff_mid"],
       "base_effect": 10.0,
@@ -146,7 +158,8 @@
     },
     {
       "id": "defense_buff_lv2",
-      "name": "防御バフLv2",
+      "name": "防御強化2",
+      "icon": "💪",
       "category": "buff",
       "tags": ["buff_mid"],
       "base_effect": 10.0,
@@ -158,7 +171,8 @@
     },
     {
       "id": "attack_buff_lv3",
-      "name": "攻撃バフLv3",
+      "name": "攻撃強化3",
+      "icon": "💪",
       "category": "buff",
       "tags": ["buff_high"],
       "base_effect": 18.0,
@@ -170,7 +184,8 @@
     },
     {
       "id": "attack_debuff_lv1",
-      "name": "攻撃ダウンLv1",
+      "name": "攻撃ダウン1",
+      "icon": "💀",
       "category": "debuff",
       "tags": ["debuff_low"],
       "base_effect": 5.0,
@@ -182,7 +197,8 @@
     },
     {
       "id": "defense_debuff_lv1",
-      "name": "防御ダウンLv1",
+      "name": "防御ダウン1",
+      "icon": "💀",
       "category": "debuff",
       "tags": ["debuff_low"],
       "base_effect": 5.0,
@@ -194,7 +210,8 @@
     },
     {
       "id": "attack_debuff_lv2",
-      "name": "攻撃ダウンLv2",
+      "name": "攻撃ダウン2",
+      "icon": "💀",
       "category": "debuff",
       "tags": ["debuff_mid"],
       "base_effect": 10.0,
@@ -206,7 +223,8 @@
     },
     {
       "id": "attack_debuff_lv3",
-      "name": "攻撃ダウンLv3",
+      "name": "攻撃ダウン3",
+      "icon": "💀",
       "category": "debuff",
       "tags": ["debuff_high"],
       "base_effect": 18.0,
