@@ -134,19 +134,41 @@ func (c *CoreTypeData) ToDomain() domain.CoreType {
 
 // ==================== モジュール定義 ====================
 
+// HPFormulaData はHP増減計算式のJSONデータ構造体です。
+type HPFormulaData struct {
+	Base     float64 `json:"base"`
+	StatCoef float64 `json:"stat_coef"`
+	StatRef  string  `json:"stat_ref"`
+}
+
+// EffectColumnData はEffectColumn効果のJSONデータ構造体です。
+type EffectColumnData struct {
+	Column   string  `json:"column"`
+	Value    float64 `json:"value"`
+	Duration float64 `json:"duration"`
+}
+
+// ModuleEffectData はモジュール効果のJSONデータ構造体です。
+type ModuleEffectData struct {
+	Target       string            `json:"target"`
+	HPFormula    *HPFormulaData    `json:"hp_formula,omitempty"`
+	EffectColumn *EffectColumnData `json:"effect_column,omitempty"`
+	Probability  float64           `json:"probability"`
+	LUKFactor    float64           `json:"luk_factor"`
+	Icon         string            `json:"icon"`
+}
+
 // ModuleDefinitionData はmodules.jsonから読み込むモジュール定義データの構造体です。
 type ModuleDefinitionData struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Icon            string   `json:"icon"`
-	Category        string   `json:"category"`
-	Tags            []string `json:"tags"`
-	BaseEffect      float64  `json:"base_effect"`
-	StatReference   string   `json:"stat_reference"`
-	Description     string   `json:"description"`
-	CooldownSeconds float64  `json:"cooldown_seconds"`
-	Difficulty      int      `json:"difficulty"`
-	MinDropLevel    int      `json:"min_drop_level"`
+	ID              string             `json:"id"`
+	Name            string             `json:"name"`
+	Icon            string             `json:"icon"`
+	Tags            []string           `json:"tags"`
+	Description     string             `json:"description"`
+	CooldownSeconds float64            `json:"cooldown_seconds"`
+	Difficulty      int                `json:"difficulty"`
+	MinDropLevel    int                `json:"min_drop_level"`
+	Effects         []ModuleEffectData `json:"effects"`
 }
 
 // modulesFileData はmodules.jsonのルート構造です。
@@ -172,39 +194,68 @@ func (l *DataLoader) LoadModuleDefinitions() ([]ModuleDefinitionData, error) {
 
 // ToDomainType はModuleDefinitionDataをドメインモデルのModuleTypeに変換します。
 func (m *ModuleDefinitionData) ToDomainType() domain.ModuleType {
-	// カテゴリ文字列をModuleCategoryに変換
-	var category domain.ModuleCategory
-	switch m.Category {
-	case "physical_attack":
-		category = domain.PhysicalAttack
-	case "magic_attack":
-		category = domain.MagicAttack
-	case "heal":
-		category = domain.Heal
-	case "buff":
-		category = domain.Buff
-	case "debuff":
-		category = domain.Debuff
-	default:
-		category = domain.PhysicalAttack // デフォルト
-	}
-
 	// Tagsをコピー（スライスの参照共有を避ける）
 	tagsCopy := make([]string, len(m.Tags))
 	copy(tagsCopy, m.Tags)
+
+	// Effectsを変換
+	effects := make([]domain.ModuleEffect, len(m.Effects))
+	for i, e := range m.Effects {
+		effects[i] = e.ToDomain()
+	}
 
 	return domain.ModuleType{
 		ID:              m.ID,
 		Name:            m.Name,
 		Icon:            m.Icon,
-		Category:        category,
 		Tags:            tagsCopy,
-		BaseEffect:      m.BaseEffect,
-		StatRef:         m.StatReference,
 		Description:     m.Description,
 		CooldownSeconds: m.CooldownSeconds,
 		Difficulty:      m.Difficulty,
 		MinDropLevel:    m.MinDropLevel,
+		Effects:         effects,
+	}
+}
+
+// ToDomain はModuleEffectDataをドメインモデルのModuleEffectに変換します。
+func (e *ModuleEffectData) ToDomain() domain.ModuleEffect {
+	effect := domain.ModuleEffect{
+		Target:      convertEffectTarget(e.Target),
+		Probability: e.Probability,
+		LUKFactor:   e.LUKFactor,
+		Icon:        e.Icon,
+	}
+
+	if e.HPFormula != nil {
+		effect.HPFormula = &domain.HPFormula{
+			Base:     e.HPFormula.Base,
+			StatCoef: e.HPFormula.StatCoef,
+			StatRef:  e.HPFormula.StatRef,
+		}
+	}
+
+	if e.EffectColumn != nil {
+		effect.ColumnSpec = &domain.EffectColumnSpec{
+			Column:   domain.EffectColumn(e.EffectColumn.Column),
+			Value:    e.EffectColumn.Value,
+			Duration: e.EffectColumn.Duration,
+		}
+	}
+
+	return effect
+}
+
+// convertEffectTarget は文字列をEffectTargetに変換します。
+func convertEffectTarget(s string) domain.EffectTarget {
+	switch s {
+	case "self":
+		return domain.TargetSelf
+	case "enemy":
+		return domain.TargetEnemy
+	case "both":
+		return domain.TargetBoth
+	default:
+		return domain.TargetEnemy
 	}
 }
 
@@ -877,8 +928,8 @@ func ValidateModuleDefinitionData(data ModuleDefinitionData) error {
 	if data.Name == "" {
 		return fmt.Errorf("モジュール名が空です: ID=%s", data.ID)
 	}
-	if data.Category == "" {
-		return fmt.Errorf("モジュールカテゴリが空です: ID=%s", data.ID)
+	if len(data.Effects) == 0 {
+		return fmt.Errorf("モジュール効果が空です: ID=%s", data.ID)
 	}
 	return nil
 }

@@ -66,39 +66,22 @@ func ConvertCoreTypes(types []masterdata.CoreTypeData) []domain.CoreType {
 func ConvertModuleTypes(types []masterdata.ModuleDefinitionData) []rewarding.ModuleDropInfo {
 	result := make([]rewarding.ModuleDropInfo, len(types))
 	for i, t := range types {
+		// マスターデータからドメインモデルのModuleTypeを取得し、そこからEffectsを使う
+		moduleType := t.ToDomainType()
+
 		result[i] = rewarding.ModuleDropInfo{
 			ID:              t.ID,
 			Name:            t.Name,
 			Icon:            t.Icon,
-			Category:        convertCategory(t.Category),
 			Tags:            t.Tags,
-			BaseEffect:      t.BaseEffect,
-			StatRef:         t.StatReference,
 			Description:     t.Description,
 			CooldownSeconds: t.CooldownSeconds,
 			MinDropLevel:    t.MinDropLevel,
 			Difficulty:      t.Difficulty,
+			Effects:         moduleType.Effects,
 		}
 	}
 	return result
-}
-
-// convertCategory はカテゴリ文字列をdomain.ModuleCategoryに変換します。
-func convertCategory(cat string) domain.ModuleCategory {
-	switch cat {
-	case "physical_attack":
-		return domain.PhysicalAttack
-	case "magic_attack":
-		return domain.MagicAttack
-	case "heal":
-		return domain.Heal
-	case "buff":
-		return domain.Buff
-	case "debuff":
-		return domain.Debuff
-	default:
-		return domain.PhysicalAttack
-	}
 }
 
 // ConvertExternalDataToDomain はExternalDataから全てのドメイン型データを変換します。

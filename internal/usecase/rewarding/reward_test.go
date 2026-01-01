@@ -9,29 +9,41 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
-// newTestModule はテスト用モジュールを作成するヘルパー関数です。
-func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+// newTestModule はテスト用ダメージモジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, nil)
 }
 
 // newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
-func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+func newTestModuleWithChainEffect(id, name string, tags []string, statCoef float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, chainEffect)
 }
 
@@ -245,9 +257,16 @@ func TestModuleDrop_Judgment(t *testing.T) {
 		{
 			ID:           "test_module",
 			Name:         "テストモジュール",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		},
 	}
 	calculator := NewRewardCalculator(nil, moduleTypes, nil)
@@ -268,21 +287,21 @@ func TestModuleDrop_MinDropLevel(t *testing.T) {
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
 		},
 		{
 			ID:           "physical_lv2",
 			Name:         "物理攻撃Lv2",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_mid"},
 			MinDropLevel: 10,
 		},
 		{
 			ID:           "physical_lv3",
 			Name:         "物理攻撃Lv3",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_high"},
 			MinDropLevel: 20,
 		},
@@ -370,7 +389,7 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 
 	// ドロップしたアイテムを一時保管
 	droppedCore := domain.NewCore("temp_core", "一時コア", 10, domain.CoreType{}, domain.PassiveSkill{})
-	droppedModule := newTestModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
+	droppedModule := newTestModule("temp_module", "一時モジュール", []string{}, 10.0, "STR", "テスト")
 
 	storage := calculator.CreateTempStorage()
 	storage.AddCore(droppedCore)
@@ -522,9 +541,16 @@ func TestModuleDrop_WithChainEffect(t *testing.T) {
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		},
 	}
 
@@ -565,9 +591,16 @@ func TestModuleDrop_ChainEffectValueInRange(t *testing.T) {
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		},
 	}
 
@@ -612,11 +645,16 @@ func TestModuleDropInfo_ToDomainWithRandomChainEffect(t *testing.T) {
 	dropInfo := ModuleDropInfo{
 		ID:          "physical_lv1",
 		Name:        "物理攻撃Lv1",
-		Category:    domain.PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "テスト",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 10.0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+			},
+		},
 	}
 
 	effect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 20)
@@ -645,9 +683,16 @@ func TestCalculateRewards_WithChainEffectPool(t *testing.T) {
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		},
 	}
 
@@ -699,8 +744,6 @@ func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
 	module := newTestModuleWithChainEffect(
 		"physical_lv1",
 		"物理攻撃Lv1",
-		domain.PhysicalAttack,
-		1,
 		[]string{"physical_low"},
 		10.0,
 		"STR",
@@ -814,9 +857,16 @@ func TestModuleDrop_NoChainEffectPool(t *testing.T) {
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		},
 	}
 

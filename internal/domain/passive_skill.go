@@ -263,8 +263,7 @@ func (p PassiveSkill) buildCondition() func(*EffectContext) bool {
 
 	case TriggerConditionOnBuffDebuffUse:
 		return func(ctx *EffectContext) bool {
-			return ctx.EventType == EventOnModuleUse &&
-				(ctx.ModuleCategory == Buff || ctx.ModuleCategory == Debuff)
+			return ctx.EventType == EventOnModuleUse && ctx.HasBuffDebuffEffect
 		}
 
 	case TriggerConditionSameAttackCount:

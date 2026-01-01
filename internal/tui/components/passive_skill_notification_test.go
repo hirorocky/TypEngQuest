@@ -153,7 +153,7 @@ func TestPassiveSkillNotification_RenderEffectsList(t *testing.T) {
 		Description: "複数の効果を付与",
 		Effects: map[domain.EffectColumn]float64{
 			domain.ColSTRMultiplier: 1.1,
-			domain.ColMAGBonus:      5,
+			domain.ColINTBonus:      5,
 			domain.ColDamageCut:     0.05,
 			domain.ColCritRate:      0.1,
 		},

@@ -5,61 +5,22 @@ import (
 	"testing"
 )
 
-// TestModuleCategory_定数の確認 はModuleCategory定数が正しく定義されていることを確認します。
-func TestModuleCategory_定数の確認(t *testing.T) {
-	tests := []struct {
-		name     string
-		category ModuleCategory
-		expected string
-	}{
-		{"物理攻撃", PhysicalAttack, "physical_attack"},
-		{"魔法攻撃", MagicAttack, "magic_attack"},
-		{"回復", Heal, "heal"},
-		{"バフ", Buff, "buff"},
-		{"デバフ", Debuff, "debuff"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if string(tt.category) != tt.expected {
-				t.Errorf("ModuleCategoryが期待値と異なります: got %s, want %s", tt.category, tt.expected)
-			}
-		})
-	}
-}
-
-// TestModuleCategory_String はModuleCategoryのString()メソッドが正しい日本語名を返すことを確認します。
-func TestModuleCategory_String(t *testing.T) {
-	tests := []struct {
-		category ModuleCategory
-		expected string
-	}{
-		{PhysicalAttack, "物理攻撃"},
-		{MagicAttack, "魔法攻撃"},
-		{Heal, "回復"},
-		{Buff, "バフ"},
-		{Debuff, "デバフ"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			if tt.category.String() != tt.expected {
-				t.Errorf("String()が期待値と異なります: got %s, want %s", tt.category.String(), tt.expected)
-			}
-		})
-	}
-}
-
 // TestModuleModel_フィールドの確認 はModuleModel構造体のフィールドが正しく設定されることを確認します。
 func TestModuleModel_フィールドの確認(t *testing.T) {
 	module := NewModuleFromType(ModuleType{
 		ID:          "fireball_lv1",
 		Name:        "ファイアボール",
-		Category:    MagicAttack,
+		Icon:        "🔥",
 		Tags:        []string{"magic_low"},
-		BaseEffect:  10.0,
-		StatRef:     "MAG",
 		Description: "炎の魔法で敵に魔法ダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "INT"},
+				Probability: 1.0,
+				Icon:        "🔥",
+			},
+		},
 	}, nil)
 
 	if module.TypeID != "fireball_lv1" {
@@ -68,20 +29,14 @@ func TestModuleModel_フィールドの確認(t *testing.T) {
 	if module.Name() != "ファイアボール" {
 		t.Errorf("Name()が期待値と異なります: got %s, want ファイアボール", module.Name())
 	}
-	if module.Category() != MagicAttack {
-		t.Errorf("Category()が期待値と異なります: got %s, want magic_attack", module.Category())
-	}
 	if len(module.Tags()) != 1 || module.Tags()[0] != "magic_low" {
 		t.Errorf("Tags()が期待値と異なります: got %v, want [magic_low]", module.Tags())
 	}
-	if module.BaseEffect() != 10.0 {
-		t.Errorf("BaseEffect()が期待値と異なります: got %f, want 10.0", module.BaseEffect())
-	}
-	if module.StatRef() != "MAG" {
-		t.Errorf("StatRef()が期待値と異なります: got %s, want MAG", module.StatRef())
-	}
 	if module.Description() != "炎の魔法で敵に魔法ダメージを与える" {
 		t.Errorf("Description()が期待値と異なります: got %s", module.Description())
+	}
+	if len(module.Effects()) != 1 {
+		t.Errorf("Effects()の長さが期待値と異なります: got %d, want 1", len(module.Effects()))
 	}
 }
 
@@ -90,11 +45,17 @@ func TestNewModuleFromType_モジュール作成(t *testing.T) {
 	module := NewModuleFromType(ModuleType{
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
-		Category:    PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "物理攻撃で敵にダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, nil)
 
 	if module.TypeID != "physical_attack_lv1" {
@@ -102,15 +63,6 @@ func TestNewModuleFromType_モジュール作成(t *testing.T) {
 	}
 	if module.Name() != "物理打撃" {
 		t.Errorf("Name()が期待値と異なります: got %s, want 物理打撃", module.Name())
-	}
-	if module.Category() != PhysicalAttack {
-		t.Errorf("Category()が期待値と異なります: got %s, want physical_attack", module.Category())
-	}
-	if module.BaseEffect() != 10.0 {
-		t.Errorf("BaseEffect()が期待値と異なります: got %f, want 10.0", module.BaseEffect())
-	}
-	if module.StatRef() != "STR" {
-		t.Errorf("StatRef()が期待値と異なります: got %s, want STR", module.StatRef())
 	}
 }
 
@@ -120,11 +72,16 @@ func TestNewModuleFromType_タグのコピー(t *testing.T) {
 	moduleType := ModuleType{
 		ID:          "fireball_lv1",
 		Name:        "ファイアボール",
-		Category:    MagicAttack,
+		Icon:        "🔥",
 		Tags:        originalTags,
-		BaseEffect:  10.0,
-		StatRef:     "MAG",
 		Description: "炎の魔法で敵に魔法ダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "INT"},
+				Probability: 1.0,
+			},
+		},
 	}
 	_ = NewModuleFromType(moduleType, nil)
 
@@ -132,7 +89,6 @@ func TestNewModuleFromType_タグのコピー(t *testing.T) {
 	originalTags[0] = "modified_tag"
 
 	// ModuleTypeのTagsはスライスなので影響を受ける（GoのスライスはReferenceのため）
-	// モジュールのTags()はType.Tagsを返すので、ModuleTypeのTagsと同じ
 	// この挙動は許容される（パフォーマンスのためのトレードオフ）
 	// 本番コードではマスタデータは変更されないため問題なし
 }
@@ -226,55 +182,31 @@ func TestModuleModel_IsCompatibleWithCore_複数タグ(t *testing.T) {
 	}
 }
 
-// TestModuleCategory_Unknown_String は未知のカテゴリに対してString()が適切な値を返すことを確認します。
-func TestModuleCategory_Unknown_String(t *testing.T) {
-	unknownCategory := ModuleCategory("unknown")
-	result := unknownCategory.String()
-	if result != "不明" {
-		t.Errorf("未知のカテゴリに対するString()が期待値と異なります: got %s, want 不明", result)
-	}
-}
-
 // ==================== Task 7.2: Icon()メソッドのテスト ====================
 
-// TestModuleCategory_Icon はModuleCategoryのIcon()メソッドが正しいアイコンを返すことを確認します。
-func TestModuleCategory_Icon(t *testing.T) {
-	tests := []struct {
-		category ModuleCategory
-		expected string
-	}{
-		{PhysicalAttack, "⚔️"},
-		{MagicAttack, "💥"},
-		{Heal, "💚"},
-		{Buff, "💪"},
-		{Debuff, "💀"},
-	}
+// TestModuleType_Icon はModuleTypeのIconフィールドが正しく設定されることを確認します。
+func TestModuleType_Icon(t *testing.T) {
+	module := NewModuleFromType(ModuleType{
+		ID:   "test",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+	}, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.category.String(), func(t *testing.T) {
-			result := tt.category.Icon()
-			if result != tt.expected {
-				t.Errorf("Icon()が期待値と異なります: got %s, want %s", result, tt.expected)
-			}
-		})
+	if module.Icon() != "⚔️" {
+		t.Errorf("Icon()が期待値と異なります: got %s, want ⚔️", module.Icon())
 	}
 }
 
-// TestModuleCategory_Icon_Unknown は未知のカテゴリに対してIcon()がデフォルト値を返すことを確認します。
-func TestModuleCategory_Icon_Unknown(t *testing.T) {
-	unknownCategory := ModuleCategory("unknown")
-	result := unknownCategory.Icon()
-	if result != "•" {
-		t.Errorf("未知のカテゴリに対するIcon()が期待値と異なります: got %s, want •", result)
-	}
-}
+// TestModuleModel_Icon_Empty は空のアイコンに対してIcon()がデフォルト値を返すことを確認します。
+func TestModuleModel_Icon_Empty(t *testing.T) {
+	module := NewModuleFromType(ModuleType{
+		ID:   "test",
+		Icon: "",
+		Tags: []string{"physical_low"},
+	}, nil)
 
-// TestModuleCategory_Icon_Empty は空のカテゴリに対してIcon()がデフォルト値を返すことを確認します。
-func TestModuleCategory_Icon_Empty(t *testing.T) {
-	emptyCategory := ModuleCategory("")
-	result := emptyCategory.Icon()
-	if result != "•" {
-		t.Errorf("空のカテゴリに対するIcon()が期待値と異なります: got %s, want •", result)
+	if module.Icon() != "•" {
+		t.Errorf("空のアイコンに対するIcon()が期待値と異なります: got %s, want •", module.Icon())
 	}
 }
 
@@ -285,11 +217,16 @@ func TestModuleModel_TypeIDフィールドの確認(t *testing.T) {
 	module := NewModuleFromType(ModuleType{
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
-		Category:    PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "物理攻撃で敵にダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+			},
+		},
 	}, nil)
 
 	if module.TypeID != "physical_attack_lv1" {
@@ -306,11 +243,16 @@ func TestModuleModel_ChainEffect付きの作成(t *testing.T) {
 	module := NewModuleFromType(ModuleType{
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
-		Category:    PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "物理攻撃で敵にダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+			},
+		},
 	}, &chainEffect)
 
 	if module.ChainEffect == nil {
@@ -332,11 +274,16 @@ func TestModuleModel_同一TypeID異なるChainEffect(t *testing.T) {
 	moduleType := ModuleType{
 		ID:          "physical_attack_lv1",
 		Name:        "物理打撃",
-		Category:    PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "物理攻撃で敵にダメージを与える",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetEnemy,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+			},
+		},
 	}
 
 	module1 := NewModuleFromType(moduleType, &chainEffect1)
@@ -356,11 +303,16 @@ func TestModuleModel_ChainEffectなし(t *testing.T) {
 	module := NewModuleFromType(ModuleType{
 		ID:          "heal_lv1",
 		Name:        "ヒール",
-		Category:    Heal,
+		Icon:        "💚",
 		Tags:        []string{"heal_low"},
-		BaseEffect:  15.0,
-		StatRef:     "MAG",
 		Description: "HPを回復する",
+		Effects: []ModuleEffect{
+			{
+				Target:      TargetSelf,
+				HPFormula:   &HPFormula{Base: 0, StatCoef: 0.8, StatRef: "INT"},
+				Probability: 1.0,
+			},
+		},
 	}, nil)
 
 	if module.ChainEffect != nil {
@@ -379,11 +331,20 @@ func TestModuleModel_HasChainEffect(t *testing.T) {
 	moduleWithEffect := NewModuleFromType(ModuleType{
 		ID:          "buff_lv1",
 		Name:        "バフ",
-		Category:    Buff,
+		Icon:        "⬆️",
 		Tags:        []string{"buff_low"},
-		BaseEffect:  10.0,
-		StatRef:     "SPD",
 		Description: "バフを付与する",
+		Effects: []ModuleEffect{
+			{
+				Target: TargetSelf,
+				ColumnSpec: &EffectColumnSpec{
+					Column:   ColDamageBonus,
+					Value:    10.0,
+					Duration: 10.0,
+				},
+				Probability: 1.0,
+			},
+		},
 	}, &chainEffect)
 
 	if !moduleWithEffect.HasChainEffect() {
@@ -393,14 +354,115 @@ func TestModuleModel_HasChainEffect(t *testing.T) {
 	moduleWithoutEffect := NewModuleFromType(ModuleType{
 		ID:          "buff_lv1",
 		Name:        "バフ",
-		Category:    Buff,
+		Icon:        "⬆️",
 		Tags:        []string{"buff_low"},
-		BaseEffect:  10.0,
-		StatRef:     "SPD",
 		Description: "バフを付与する",
+		Effects: []ModuleEffect{
+			{
+				Target: TargetSelf,
+				ColumnSpec: &EffectColumnSpec{
+					Column:   ColDamageBonus,
+					Value:    10.0,
+					Duration: 10.0,
+				},
+				Probability: 1.0,
+			},
+		},
 	}, nil)
 
 	if moduleWithoutEffect.HasChainEffect() {
 		t.Error("ChainEffectがない場合、HasChainEffect()はfalseを返すべきです")
+	}
+}
+
+// TestModuleEffect_IsDamageEffect はダメージ効果の判定をテストします。
+func TestModuleEffect_IsDamageEffect(t *testing.T) {
+	damageEffect := ModuleEffect{
+		Target:    TargetEnemy,
+		HPFormula: &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+	}
+	if !damageEffect.IsDamageEffect() {
+		t.Error("敵対象のHPFormula効果はダメージ効果であるべきです")
+	}
+
+	healEffect := ModuleEffect{
+		Target:    TargetSelf,
+		HPFormula: &HPFormula{Base: 0, StatCoef: 0.8, StatRef: "INT"},
+	}
+	if healEffect.IsDamageEffect() {
+		t.Error("自身対象のHPFormula効果はダメージ効果ではないべきです")
+	}
+}
+
+// TestModuleEffect_IsHealEffect は回復効果の判定をテストします。
+func TestModuleEffect_IsHealEffect(t *testing.T) {
+	healEffect := ModuleEffect{
+		Target:    TargetSelf,
+		HPFormula: &HPFormula{Base: 0, StatCoef: 0.8, StatRef: "INT"},
+	}
+	if !healEffect.IsHealEffect() {
+		t.Error("自身対象のHPFormula効果は回復効果であるべきです")
+	}
+
+	damageEffect := ModuleEffect{
+		Target:    TargetEnemy,
+		HPFormula: &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+	}
+	if damageEffect.IsHealEffect() {
+		t.Error("敵対象のHPFormula効果は回復効果ではないべきです")
+	}
+}
+
+// TestModuleEffect_IsBuffEffect はバフ効果の判定をテストします。
+func TestModuleEffect_IsBuffEffect(t *testing.T) {
+	buffEffect := ModuleEffect{
+		Target: TargetSelf,
+		ColumnSpec: &EffectColumnSpec{
+			Column:   ColDamageBonus,
+			Value:    10.0,
+			Duration: 10.0,
+		},
+	}
+	if !buffEffect.IsBuffEffect() {
+		t.Error("自身対象のColumnSpec効果はバフ効果であるべきです")
+	}
+
+	debuffEffect := ModuleEffect{
+		Target: TargetEnemy,
+		ColumnSpec: &EffectColumnSpec{
+			Column:   ColDamageCut,
+			Value:    -10.0,
+			Duration: 8.0,
+		},
+	}
+	if debuffEffect.IsBuffEffect() {
+		t.Error("敵対象のColumnSpec効果はバフ効果ではないべきです")
+	}
+}
+
+// TestModuleEffect_IsDebuffEffect はデバフ効果の判定をテストします。
+func TestModuleEffect_IsDebuffEffect(t *testing.T) {
+	debuffEffect := ModuleEffect{
+		Target: TargetEnemy,
+		ColumnSpec: &EffectColumnSpec{
+			Column:   ColDamageCut,
+			Value:    -10.0,
+			Duration: 8.0,
+		},
+	}
+	if !debuffEffect.IsDebuffEffect() {
+		t.Error("敵対象のColumnSpec効果はデバフ効果であるべきです")
+	}
+
+	buffEffect := ModuleEffect{
+		Target: TargetSelf,
+		ColumnSpec: &EffectColumnSpec{
+			Column:   ColDamageBonus,
+			Value:    10.0,
+			Duration: 10.0,
+		},
+	}
+	if buffEffect.IsDebuffEffect() {
+		t.Error("自身対象のColumnSpec効果はデバフ効果ではないべきです")
 	}
 }

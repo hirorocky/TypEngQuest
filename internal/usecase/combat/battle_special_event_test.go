@@ -40,12 +40,19 @@ func TestBattleEngine_BattleStart_FirstStrike(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -91,12 +98,19 @@ func TestBattleEngine_BattleStart_FirstStrike_NotEquipped(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -156,12 +170,19 @@ func TestBattleEngine_TypoRecovery(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -223,12 +244,19 @@ func TestBattleEngine_SecondChance(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})

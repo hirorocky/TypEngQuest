@@ -177,15 +177,15 @@ func TestEncyclopediaRender(t *testing.T) {
 
 func createTestEncyclopediaData() *EncyclopediaData {
 	coreTypes := []domain.CoreType{
-		{ID: "all_rounder", Name: "オールラウンダー", StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0}},
-		{ID: "attacker", Name: "攻撃バランス", StatWeights: map[string]float64{"STR": 1.2, "MAG": 1.2, "SPD": 0.8, "LUK": 0.8}},
-		{ID: "healer", Name: "ヒーラー", StatWeights: map[string]float64{"STR": 0.8, "MAG": 1.4, "SPD": 0.9, "LUK": 0.9}},
+		{ID: "all_rounder", Name: "オールラウンダー", StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0}},
+		{ID: "attacker", Name: "攻撃バランス", StatWeights: map[string]float64{"STR": 1.2, "INT": 1.2, "WIL": 0.8, "LUK": 0.8}},
+		{ID: "healer", Name: "ヒーラー", StatWeights: map[string]float64{"STR": 0.8, "INT": 1.4, "WIL": 0.9, "LUK": 0.9}},
 	}
 
 	moduleTypes := []ModuleTypeInfo{
-		{ID: "physical_lv1", Name: "物理攻撃Lv1", Category: domain.PhysicalAttack, Level: 1},
-		{ID: "magic_lv1", Name: "魔法攻撃Lv1", Category: domain.MagicAttack, Level: 1},
-		{ID: "heal_lv1", Name: "回復Lv1", Category: domain.Heal, Level: 1},
+		{ID: "physical_lv1", Name: "物理攻撃Lv1", Icon: "⚔️", Tags: []string{"physical_low"}, Description: "基本的な物理攻撃"},
+		{ID: "magic_lv1", Name: "魔法攻撃Lv1", Icon: "💥", Tags: []string{"magic_low"}, Description: "基本的な魔法攻撃"},
+		{ID: "heal_lv1", Name: "回復Lv1", Icon: "💚", Tags: []string{"heal_low"}, Description: "基本的な回復"},
 	}
 
 	enemyTypes := []domain.EnemyType{

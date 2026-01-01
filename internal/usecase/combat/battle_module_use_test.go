@@ -41,12 +41,19 @@ func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -132,12 +139,19 @@ func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_heal",
-		Name:       "テスト回復",
-		Category:   domain.Heal,
-		Tags:       []string{"heal"},
-		BaseEffect: 20, // 20回復
-		StatRef:    "INT",
+		ID:          "test_heal",
+		Name:        "テスト回復",
+		Icon:        "💚",
+		Tags:        []string{"heal"},
+		Description: "テスト用回復",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetSelf,
+				HPFormula:   &domain.HPFormula{Base: 20, StatCoef: 1.0, StatRef: "INT"},
+				Probability: 1.0,
+				Icon:        "💚",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -212,12 +226,19 @@ func TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill(t *testing.T) {
 
 	// 攻撃スキル（回復ではない）
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:          "test_attack",
+		Name:        "テスト攻撃",
+		Icon:        "⚔️",
+		Tags:        []string{"physical_low"},
+		Description: "テスト用攻撃",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 100, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})

@@ -69,27 +69,39 @@ func TestModulesJSONExists(t *testing.T) {
 		t.Fatalf("modules.jsonの読み込みに失敗: %v", err)
 	}
 
-	// 各カテゴリにモジュールが存在すること
-
-	categoryCount := make(map[string]int)
-	categories := []string{"physical_attack", "magic_attack", "heal", "buff", "debuff"}
-	for _, cat := range categories {
-		categoryCount[cat] = 0
+	// 各効果タイプのモジュールが存在すること
+	effectTypeCount := make(map[string]int)
+	effectTypes := []string{"damage", "heal", "buff", "debuff"}
+	for _, et := range effectTypes {
+		effectTypeCount[et] = 0
 	}
 
 	for _, m := range modules {
 		if err := ValidateModuleDefinitionData(m); err != nil {
 			t.Errorf("モジュールのバリデーションに失敗: %v", err)
 		}
-		if _, ok := categoryCount[m.Category]; ok {
-			categoryCount[m.Category]++
+		// モジュールの効果をドメインモデルに変換して判定
+		domainModule := m.ToDomain()
+		for _, effect := range domainModule.Effects() {
+			if effect.IsDamageEffect() {
+				effectTypeCount["damage"]++
+			}
+			if effect.IsHealEffect() {
+				effectTypeCount["heal"]++
+			}
+			if effect.IsBuffEffect() {
+				effectTypeCount["buff"]++
+			}
+			if effect.IsDebuffEffect() {
+				effectTypeCount["debuff"]++
+			}
 		}
 	}
 
-	// 各カテゴリにモジュールが存在することを確認
-	for cat, count := range categoryCount {
+	// 各効果タイプにモジュールが存在することを確認
+	for et, count := range effectTypeCount {
 		if count == 0 {
-			t.Errorf("%s カテゴリにモジュールがありません", cat)
+			t.Errorf("%s 効果を持つモジュールがありません", et)
 		}
 	}
 }
@@ -199,7 +211,7 @@ func TestCoreTypeStatWeightsAreValid(t *testing.T) {
 
 	for _, ct := range coreTypes {
 		// 各ステータス重みが0より大きいこと
-		requiredStats := []string{"STR", "MAG", "SPD", "LUK"}
+		requiredStats := []string{"STR", "INT", "WIL", "LUK"}
 		for _, stat := range requiredStats {
 			weight, exists := ct.StatWeights[stat]
 			if !exists {

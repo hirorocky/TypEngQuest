@@ -4,7 +4,7 @@
       "id": "attack_balance",
       "name": "攻撃バランス",
       "allowed_tags": ["physical_low", "magic_low"],
-      "stat_weights": {"STR": 1.2, "MAG": 1.0, "SPD": 0.8, "LUK": 1.0},
+      "stat_weights": {"STR": 1.2, "INT": 1.0, "WIL": 0.8, "LUK": 1.0},
       "passive_skill_id": "ps_speed_break",
       "min_drop_level": 1
     },
@@ -12,7 +12,7 @@
       "id": "paladin",
       "name": "パラディン",
       "allowed_tags": ["buff_low", "buff_mid", "heal_low"],
-      "stat_weights": {"STR": 1.0, "MAG": 1.1, "SPD": 0.7, "LUK": 1.2},
+      "stat_weights": {"STR": 1.0, "INT": 1.1, "WIL": 0.7, "LUK": 1.2},
       "passive_skill_id": "ps_buff_extender",
       "min_drop_level": 5
     },
@@ -20,7 +20,7 @@
       "id": "all_rounder",
       "name": "オールラウンダー",
       "allowed_tags": ["physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"],
-      "stat_weights": {"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+      "stat_weights": {"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
       "passive_skill_id": "ps_combo_master",
       "min_drop_level": 1
     },
@@ -28,7 +28,7 @@
       "id": "healer",
       "name": "ヒーラー",
       "allowed_tags": ["heal_low", "heal_mid", "heal_high"],
-      "stat_weights": {"STR": 0.5, "MAG": 1.5, "SPD": 0.8, "LUK": 1.2},
+      "stat_weights": {"STR": 0.5, "INT": 1.5, "WIL": 0.8, "LUK": 1.2},
       "passive_skill_id": "ps_miracle_heal",
       "min_drop_level": 3
     },
@@ -36,7 +36,7 @@
       "id": "perfectionist",
       "name": "パーフェクショニスト",
       "allowed_tags": ["physical_low", "physical_mid", "magic_low", "magic_mid"],
-      "stat_weights": {"STR": 1.1, "MAG": 1.1, "SPD": 1.0, "LUK": 0.8},
+      "stat_weights": {"STR": 1.1, "INT": 1.1, "WIL": 1.0, "LUK": 0.8},
       "passive_skill_id": "ps_perfect_rhythm",
       "min_drop_level": 10
     },
@@ -44,7 +44,7 @@
       "id": "speedster",
       "name": "スピードスター",
       "allowed_tags": ["physical_low", "physical_mid", "debuff_low"],
-      "stat_weights": {"STR": 1.0, "MAG": 0.7, "SPD": 1.5, "LUK": 0.8},
+      "stat_weights": {"STR": 1.0, "INT": 0.7, "WIL": 1.5, "LUK": 0.8},
       "passive_skill_id": "ps_first_strike",
       "min_drop_level": 8
     },
@@ -52,7 +52,7 @@
       "id": "finisher",
       "name": "フィニッシャー",
       "allowed_tags": ["physical_low", "physical_mid", "physical_high"],
-      "stat_weights": {"STR": 1.4, "MAG": 0.6, "SPD": 0.8, "LUK": 1.2},
+      "stat_weights": {"STR": 1.4, "INT": 0.6, "WIL": 0.8, "LUK": 1.2},
       "passive_skill_id": "ps_endgame_specialist",
       "min_drop_level": 12
     },
@@ -60,7 +60,7 @@
       "id": "debuff_master",
       "name": "デバフマスター",
       "allowed_tags": ["debuff_low", "debuff_mid", "debuff_high"],
-      "stat_weights": {"STR": 0.8, "MAG": 1.3, "SPD": 0.9, "LUK": 1.0},
+      "stat_weights": {"STR": 0.8, "INT": 1.3, "WIL": 0.9, "LUK": 1.0},
       "passive_skill_id": "ps_weak_point",
       "min_drop_level": 7
     },
@@ -68,7 +68,7 @@
       "id": "berserker",
       "name": "バーサーカー",
       "allowed_tags": ["physical_low", "physical_mid", "physical_high"],
-      "stat_weights": {"STR": 1.6, "MAG": 0.4, "SPD": 1.0, "LUK": 0.8},
+      "stat_weights": {"STR": 1.6, "INT": 0.4, "WIL": 1.0, "LUK": 0.8},
       "passive_skill_id": "ps_berserker",
       "min_drop_level": 15
     },
@@ -76,7 +76,7 @@
       "id": "overdrive",
       "name": "オーバードライブ",
       "allowed_tags": ["physical_low", "physical_mid", "magic_low", "magic_mid"],
-      "stat_weights": {"STR": 1.2, "MAG": 1.2, "SPD": 0.6, "LUK": 1.0},
+      "stat_weights": {"STR": 1.2, "INT": 1.2, "WIL": 0.6, "LUK": 1.0},
       "passive_skill_id": "ps_overdrive",
       "min_drop_level": 18
     },
@@ -84,7 +84,7 @@
       "id": "last_stand",
       "name": "ラストスタンド",
       "allowed_tags": ["heal_low", "buff_low", "buff_mid"],
-      "stat_weights": {"STR": 0.8, "MAG": 1.0, "SPD": 0.8, "LUK": 1.4},
+      "stat_weights": {"STR": 0.8, "INT": 1.0, "WIL": 0.8, "LUK": 1.4},
       "passive_skill_id": "ps_last_stand",
       "min_drop_level": 20
     },
@@ -92,7 +92,7 @@
       "id": "counter_striker",
       "name": "カウンターストライカー",
       "allowed_tags": ["physical_low", "physical_mid", "buff_low"],
-      "stat_weights": {"STR": 1.3, "MAG": 0.7, "SPD": 0.8, "LUK": 1.2},
+      "stat_weights": {"STR": 1.3, "INT": 0.7, "WIL": 0.8, "LUK": 1.2},
       "passive_skill_id": "ps_counter_charge",
       "min_drop_level": 14
     },
@@ -100,7 +100,7 @@
       "id": "chain_master",
       "name": "チェインマスター",
       "allowed_tags": ["buff_low", "buff_mid", "debuff_low", "debuff_mid"],
-      "stat_weights": {"STR": 0.8, "MAG": 1.2, "SPD": 1.0, "LUK": 1.0},
+      "stat_weights": {"STR": 0.8, "INT": 1.2, "WIL": 1.0, "LUK": 1.0},
       "passive_skill_id": "ps_chain_reaction",
       "min_drop_level": 16
     },
@@ -108,7 +108,7 @@
       "id": "echo_caster",
       "name": "エコーキャスター",
       "allowed_tags": ["magic_low", "magic_mid", "magic_high"],
-      "stat_weights": {"STR": 0.5, "MAG": 1.5, "SPD": 0.8, "LUK": 1.2},
+      "stat_weights": {"STR": 0.5, "INT": 1.5, "WIL": 0.8, "LUK": 1.2},
       "passive_skill_id": "ps_echo_skill",
       "min_drop_level": 22
     },
@@ -116,7 +116,7 @@
       "id": "shadow_striker",
       "name": "シャドウストライカー",
       "allowed_tags": ["physical_low", "physical_mid", "physical_high"],
-      "stat_weights": {"STR": 1.3, "MAG": 0.6, "SPD": 1.1, "LUK": 1.0},
+      "stat_weights": {"STR": 1.3, "INT": 0.6, "WIL": 1.1, "LUK": 1.0},
       "passive_skill_id": "ps_shadow_step",
       "min_drop_level": 19
     },
@@ -124,7 +124,7 @@
       "id": "mirror_guard",
       "name": "ミラーガード",
       "allowed_tags": ["buff_low", "buff_mid", "heal_low"],
-      "stat_weights": {"STR": 0.8, "MAG": 1.0, "SPD": 0.8, "LUK": 1.4},
+      "stat_weights": {"STR": 0.8, "INT": 1.0, "WIL": 0.8, "LUK": 1.4},
       "passive_skill_id": "ps_debuff_reflect",
       "min_drop_level": 17
     },
@@ -132,7 +132,7 @@
       "id": "second_chance",
       "name": "セカンドチャンス",
       "allowed_tags": ["heal_low", "heal_mid", "buff_low"],
-      "stat_weights": {"STR": 0.6, "MAG": 1.2, "SPD": 1.0, "LUK": 1.2},
+      "stat_weights": {"STR": 0.6, "INT": 1.2, "WIL": 1.0, "LUK": 1.2},
       "passive_skill_id": "ps_second_chance",
       "min_drop_level": 25
     },
@@ -140,7 +140,7 @@
       "id": "adaptive_shield",
       "name": "アダプティブシールド",
       "allowed_tags": ["buff_low", "buff_mid", "buff_high"],
-      "stat_weights": {"STR": 0.7, "MAG": 1.1, "SPD": 0.8, "LUK": 1.4},
+      "stat_weights": {"STR": 0.7, "INT": 1.1, "WIL": 0.8, "LUK": 1.4},
       "passive_skill_id": "ps_adaptive_shield",
       "min_drop_level": 13
     },
@@ -148,7 +148,7 @@
       "id": "debuff_absorber",
       "name": "デバフアブソーバー",
       "allowed_tags": ["heal_low", "heal_mid", "buff_low"],
-      "stat_weights": {"STR": 0.6, "MAG": 1.3, "SPD": 0.9, "LUK": 1.2},
+      "stat_weights": {"STR": 0.6, "INT": 1.3, "WIL": 0.9, "LUK": 1.2},
       "passive_skill_id": "ps_debuff_absorber",
       "min_drop_level": 11
     },
@@ -156,7 +156,7 @@
       "id": "typo_recoverer",
       "name": "タイポリカバラー",
       "allowed_tags": ["heal_low", "buff_low", "debuff_low"],
-      "stat_weights": {"STR": 0.8, "MAG": 1.0, "SPD": 1.2, "LUK": 1.0},
+      "stat_weights": {"STR": 0.8, "INT": 1.0, "WIL": 1.2, "LUK": 1.0},
       "passive_skill_id": "ps_typo_recovery",
       "min_drop_level": 6
     },
@@ -164,7 +164,7 @@
       "id": "critical_focus",
       "name": "クリティカルフォーカス",
       "allowed_tags": ["physical_low", "physical_mid", "magic_low", "magic_mid"],
-      "stat_weights": {"STR": 1.1, "MAG": 1.1, "SPD": 0.8, "LUK": 1.0},
+      "stat_weights": {"STR": 1.1, "INT": 1.1, "WIL": 0.8, "LUK": 1.0},
       "passive_skill_id": "ps_critical_focus",
       "min_drop_level": 9
     },
@@ -172,7 +172,7 @@
       "id": "quick_recoverer",
       "name": "クイックリカバラー",
       "allowed_tags": ["heal_low", "heal_mid", "buff_low"],
-      "stat_weights": {"STR": 0.7, "MAG": 1.2, "SPD": 1.1, "LUK": 1.0},
+      "stat_weights": {"STR": 0.7, "INT": 1.2, "WIL": 1.1, "LUK": 1.0},
       "passive_skill_id": "ps_quick_recovery",
       "min_drop_level": 4
     }

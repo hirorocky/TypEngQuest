@@ -448,8 +448,7 @@ func (s *EncyclopediaScreen) renderModulePreviewEncyclopedia() string {
 	}
 
 	panel := components.NewInfoPanel(mt.Name)
-	panel.AddItem("カテゴリ", mt.Category.String())
-	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", mt.Level))
+	panel.AddItem("タイプ", mt.Icon+" "+strings.Join(mt.Tags, ", "))
 	if mt.Description != "" {
 		panel.AddItem("説明", mt.Description)
 	}

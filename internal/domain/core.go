@@ -15,22 +15,23 @@ type Stats struct {
 	// 物理攻撃モジュールのダメージ計算に使用されます。
 	STR int
 
-	// MAG は魔法攻撃力を表します。
-	// 魔法攻撃モジュールと回復モジュールの効果計算に使用されます。
-	MAG int
+	// INT は魔法攻撃力を表します。
+	// 攻撃魔法モジュールとデバフモジュールの効果計算に使用されます。
+	INT int
 
-	// SPD は速度を表します。
-	// 行動間隔やクールダウンに影響します。
-	SPD int
+	// WIL は意志力を表します。
+	// 回復魔法モジュールとバフモジュールの効果計算に使用されます。
+	WIL int
 
 	// LUK は運を表します。
-	// クリティカル率や回避に影響します。
+	// 確率系効果の発動率に影響します。
+	// コアレベルでは変化せず、stat_weightsの影響のみ受けます。
 	LUK int
 }
 
 // Total はステータスの合計値を返します。
 func (s Stats) Total() int {
-	return s.STR + s.MAG + s.SPD + s.LUK
+	return s.STR + s.INT + s.WIL + s.LUK
 }
 
 // CoreType はコアの特性（タイプ）を定義する構造体です。
@@ -44,7 +45,7 @@ type CoreType struct {
 	Name string
 
 	// StatWeights はステータス計算に使用する重みのマップです。
-	// キーは "STR", "MAG", "SPD", "LUK" で、値は重み係数（例: 1.2）です。
+	// キーは "STR", "INT", "WIL", "LUK" で、値は重み係数（例: 1.2）です。
 	StatWeights map[string]float64
 
 	// PassiveSkillID はこのコア特性に紐づくパッシブスキルのIDです。
@@ -104,23 +105,25 @@ func (c *CoreModel) Equals(other *CoreModel) bool {
 }
 
 // CalculateStats はコアレベルとコア特性からステータス値を計算します。
-// 計算式: 基礎値(10) × レベル × ステータス重み
+// STR, INT, WIL: 基礎値(10) × レベル × ステータス重み
+// LUK: 基礎値(10) × ステータス重み（レベルに依存しない）
 // 結果は整数に切り捨てられます。
 func CalculateStats(level int, coreType CoreType) Stats {
 	// 各ステータスの重みを取得（未設定の場合はデフォルト1.0）
 	strWeight := coreType.StatWeights["STR"]
-	magWeight := coreType.StatWeights["MAG"]
-	spdWeight := coreType.StatWeights["SPD"]
+	intWeight := coreType.StatWeights["INT"]
+	wilWeight := coreType.StatWeights["WIL"]
 	lukWeight := coreType.StatWeights["LUK"]
 
-	// 計算式: 基礎値 × レベル × 重み
+	// 計算式: 基礎値 × レベル × 重み（STR, INT, WIL）
 	baseValue := float64(BaseStatValue * level)
 
 	return Stats{
 		STR: int(baseValue * strWeight),
-		MAG: int(baseValue * magWeight),
-		SPD: int(baseValue * spdWeight),
-		LUK: int(baseValue * lukWeight),
+		INT: int(baseValue * intWeight),
+		WIL: int(baseValue * wilWeight),
+		// LUKはレベルに依存せず、基礎値10 × 重みで計算
+		LUK: int(float64(BaseStatValue) * lukWeight),
 	}
 }
 

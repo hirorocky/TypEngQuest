@@ -34,15 +34,16 @@ func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate
 	// ModuleTypes の変換
 	moduleTypes := make([]rewarding.ModuleDropInfo, len(ext.ModuleDefinitions))
 	for i, md := range ext.ModuleDefinitions {
+		// マスタデータからドメインモデルに変換
+		domainModule := md.ToDomain()
 		moduleTypes[i] = rewarding.ModuleDropInfo{
 			ID:           md.ID,
 			Name:         md.Name,
-			Category:     categoryStringToModule(md.Category),
+			Icon:         domainModule.Icon(),
 			Tags:         md.Tags,
-			BaseEffect:   md.BaseEffect,
-			StatRef:      md.StatReference,
 			Description:  md.Description,
 			MinDropLevel: md.MinDropLevel,
+			Effects:      domainModule.Effects(),
 		}
 	}
 
@@ -74,24 +75,6 @@ func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate
 		ModuleTypes:   moduleTypes,
 		EnemyTypes:    enemyTypes,
 		PassiveSkills: nil,
-	}
-}
-
-// categoryStringToModule はカテゴリ文字列を domain.ModuleCategory に変換します。
-func categoryStringToModule(category string) domain.ModuleCategory {
-	switch category {
-	case "physical_attack":
-		return domain.PhysicalAttack
-	case "magic_attack":
-		return domain.MagicAttack
-	case "heal":
-		return domain.Heal
-	case "buff":
-		return domain.Buff
-	case "debuff":
-		return domain.Debuff
-	default:
-		return domain.PhysicalAttack
 	}
 }
 
@@ -409,22 +392,31 @@ func TestRefactoring_ScreenInterfaceCompliance(t *testing.T) {
 // TestRefactoring_ModuleIconMethod はモジュールのIcon()メソッドを検証します。
 // 要件7.3: Module.Icon()メソッドの追加
 func TestRefactoring_ModuleIconMethod(t *testing.T) {
-	testCases := []struct {
-		category domain.ModuleCategory
-		expected string
-	}{
-		{domain.PhysicalAttack, ""},
-		{domain.MagicAttack, ""},
-		{domain.Heal, ""},
-		{domain.Buff, ""},
-		{domain.Debuff, ""},
+	// 新しいモジュールシステムでは、各効果にアイコンが設定されます
+	module := domain.NewModuleFromType(domain.ModuleType{
+		ID:   "test_module",
+		Name: "テストモジュール",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
+	}, nil)
+
+	// モジュールタイプからアイコンが取得できること
+	if module.Icon() == "" {
+		t.Error("Module should return non-empty icon")
 	}
 
-	for _, tc := range testCases {
-		icon := tc.category.Icon()
-		if icon == "" {
-			t.Errorf("Category %v should return non-empty icon", tc.category)
-		}
+	// 効果からアイコンが取得できること
+	effects := module.Effects()
+	if len(effects) > 0 && effects[0].Icon == "" {
+		t.Error("Effect should have non-empty icon")
 	}
 }
 

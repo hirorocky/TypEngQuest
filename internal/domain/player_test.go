@@ -246,11 +246,16 @@ func createTestAgents(levels []int) []*AgentModel {
 		modules[i] = NewModuleFromType(ModuleType{
 			ID:          "mod",
 			Name:        "テスト",
-			Category:    PhysicalAttack,
+			Icon:        "⚔️",
 			Tags:        []string{"physical_low"},
-			BaseEffect:  10.0,
-			StatRef:     "STR",
 			Description: "テスト",
+			Effects: []ModuleEffect{
+				{
+					Target:      TargetEnemy,
+					HPFormula:   &HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+				},
+			},
 		}, nil)
 	}
 

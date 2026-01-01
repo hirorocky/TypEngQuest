@@ -282,13 +282,13 @@ func (s *BattleScreen) startAgentRecast(agentIndex int, module *domain.ModuleMod
 }
 
 // triggerChainEffects はモジュール使用時に他エージェントのチェイン効果を発動します。
-func (s *BattleScreen) triggerChainEffects(usingAgentIndex int, moduleCategory domain.ModuleCategory) {
+func (s *BattleScreen) triggerChainEffects(usingAgentIndex int, effectFlags chain.ModuleEffectFlags) {
 	if s.chainEffectManager == nil {
 		return
 	}
 
 	// チェイン効果の発動をチェック
-	triggered := s.chainEffectManager.CheckAndTrigger(usingAgentIndex, moduleCategory)
+	triggered := s.chainEffectManager.CheckAndTrigger(usingAgentIndex, effectFlags)
 
 	// 発動した効果を適用
 	for _, effect := range triggered {
@@ -548,8 +548,11 @@ func (s *BattleScreen) CompleteTyping() {
 	module := slot.Module
 	agentIndex := slot.AgentIndex
 
+	// モジュールの効果フラグを取得
+	effectFlags := getModuleEffectFlags(module)
+
 	// 他エージェントの待機中チェイン効果を発動（モジュール効果適用前）
-	s.triggerChainEffects(agentIndex, module.Category())
+	s.triggerChainEffects(agentIndex, effectFlags)
 
 	// DoubleCast判定
 	doubleCastTriggered := false
@@ -611,12 +614,11 @@ func (s *BattleScreen) CompleteTyping() {
 
 	// UI改善: フローティングダメージ/回復とHPアニメーション
 	if effectAmount > 0 {
-		switch module.Category() {
-		case domain.PhysicalAttack, domain.MagicAttack:
+		if effectFlags.HasDamage {
 			// 敵へのダメージ
 			s.floatingDamageManager.AddDamage(effectAmount, "enemy")
 			s.enemyHPBar.SetTarget(s.enemy.HP)
-		case domain.Heal:
+		} else if effectFlags.HasHeal {
 			// プレイヤーへの回復
 			s.floatingDamageManager.AddHeal(effectAmount, "player")
 			s.playerHPBar.SetTarget(s.player.HP)
@@ -624,7 +626,7 @@ func (s *BattleScreen) CompleteTyping() {
 	}
 
 	// メッセージを表示
-	s.message = s.formatEffectMessage(module, effectAmount, typingResult)
+	s.message = s.formatEffectMessage(module, effectAmount, typingResult, effectFlags)
 	if s.comboCount > 0 {
 		s.message += fmt.Sprintf(" [コンボ:%d]", s.comboCount)
 	}
@@ -655,18 +657,17 @@ func (s *BattleScreen) CompleteTyping() {
 }
 
 // formatEffectMessage は効果メッセージをフォーマットします。
-func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult) string {
+func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult, flags chain.ModuleEffectFlags) string {
 	var action string
-	switch module.Category() {
-	case domain.PhysicalAttack, domain.MagicAttack:
+	if flags.HasDamage {
 		action = fmt.Sprintf("%dダメージを与えた！", effectAmount)
-	case domain.Heal:
+	} else if flags.HasHeal {
 		action = fmt.Sprintf("%d回復した！", effectAmount)
-	case domain.Buff:
+	} else if flags.HasBuff {
 		action = fmt.Sprintf("%sを付与した！", module.Name())
-	case domain.Debuff:
+	} else if flags.HasDebuff {
 		action = fmt.Sprintf("敵に%sを付与した！", module.Name())
-	default:
+	} else {
 		action = "効果を発動した！"
 	}
 
@@ -868,4 +869,26 @@ func (s *BattleScreen) getModuleIndicesForAgent(agentIdx int) []int {
 		}
 	}
 	return indices
+}
+
+// getModuleEffectFlags はモジュールが持つ効果の種別フラグを取得します。
+func getModuleEffectFlags(module *domain.ModuleModel) chain.ModuleEffectFlags {
+	flags := chain.ModuleEffectFlags{}
+
+	for _, effect := range module.Type.Effects {
+		if effect.IsDamageEffect() {
+			flags.HasDamage = true
+		}
+		if effect.IsHealEffect() {
+			flags.HasHeal = true
+		}
+		if effect.IsBuffEffect() {
+			flags.HasBuff = true
+		}
+		if effect.IsDebuffEffect() {
+			flags.HasDebuff = true
+		}
+	}
+
+	return flags
 }

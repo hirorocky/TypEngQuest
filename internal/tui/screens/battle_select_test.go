@@ -108,15 +108,15 @@ func TestBattleSelectWithAgentEquipped(t *testing.T) {
 	coreType := domain.CoreType{
 		ID:          "test",
 		Name:        "テスト",
-		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 		AllowedTags: []string{"physical_low"},
 	}
 	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
 	modules := []*domain.ModuleModel{
-		newTestModule("m1", "モジュール1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m2", "モジュール2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m3", "モジュール3", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m4", "モジュール4", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m2", "モジュール2", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m3", "モジュール3", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m4", "モジュール4", []string{"physical_low"}, 1.0, "STR", ""),
 	}
 	agent := domain.NewAgent("agent1", core, modules)
 
@@ -136,15 +136,15 @@ func TestBattleSelectConfirmScreen(t *testing.T) {
 	coreType := domain.CoreType{
 		ID:          "test",
 		Name:        "テスト",
-		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 		AllowedTags: []string{"physical_low"},
 	}
 	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
 	modules := []*domain.ModuleModel{
-		newTestModule("m1", "モジュール1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m2", "モジュール2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m3", "モジュール3", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m4", "モジュール4", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m2", "モジュール2", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m3", "モジュール3", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m4", "モジュール4", []string{"physical_low"}, 1.0, "STR", ""),
 	}
 	agent := domain.NewAgent("agent1", core, modules)
 
@@ -410,15 +410,15 @@ func createTestAgent() *domain.AgentModel {
 	coreType := domain.CoreType{
 		ID:          "test",
 		Name:        "テスト",
-		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 		AllowedTags: []string{"physical_low"},
 	}
 	core := domain.NewCore("core1", "テストコア", 5, coreType, domain.PassiveSkill{})
 	modules := []*domain.ModuleModel{
-		newTestModule("m1", "モジュール1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m2", "モジュール2", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m3", "モジュール3", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
-		newTestModule("m4", "モジュール4", domain.PhysicalAttack, 1, []string{"physical_low"}, 10, "STR", ""),
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m2", "モジュール2", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m3", "モジュール3", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModule("m4", "モジュール4", []string{"physical_low"}, 1.0, "STR", ""),
 	}
 	return domain.NewAgent("agent1", core, modules)
 }

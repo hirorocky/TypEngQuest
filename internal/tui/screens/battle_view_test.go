@@ -29,14 +29,19 @@ func createTestAgentWithPassive(passiveSkill domain.PassiveSkill, modules []*dom
 // createTestModuleWithChain はチェイン効果付きテスト用モジュールを作成します。
 func createTestModuleWithChain(name string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
-		ID:       "test_module_" + name,
-		Name:     name,
-		Category: domain.PhysicalAttack,
-
+		ID:          "test_module_" + name,
+		Name:        name,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  50.0,
-		StatRef:     "STR",
 		Description: "テスト攻撃モジュール",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 50.0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, chainEffect)
 }
 
@@ -263,7 +268,7 @@ func TestBattleScreen_ChainEffectFeedback(t *testing.T) {
 	screen.chainEffectManager.RegisterChainEffect(0, &chainEffect, "test_module")
 
 	// エージェント1のモジュール使用でチェイン効果発動をチェック
-	triggered := screen.chainEffectManager.CheckAndTrigger(1, domain.PhysicalAttack)
+	triggered := screen.chainEffectManager.CheckAndTrigger(1, chain.ModuleEffectFlags{HasDamage: true})
 
 	// チェイン効果が発動する
 	if len(triggered) != 1 {

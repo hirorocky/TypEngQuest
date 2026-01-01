@@ -20,10 +20,6 @@ import (
 // config.AccuracyPenaltyThresholdを参照するためのエイリアス
 const AccuracyPenaltyThreshold = config.AccuracyPenaltyThreshold
 
-// EffectScaleFactor は効果計算のスケール係数です。
-// ステータス値を適切なダメージ/回復量に変換するための係数
-const EffectScaleFactor = 0.1
-
 // calculateDamage はダメージを計算します（最低1ダメージ保証）。
 func calculateDamage(baseDamage int, damageReduction float64) int {
 	damage := int(float64(baseDamage) * (1.0 - damageReduction))
@@ -753,51 +749,56 @@ func getPlayerDebuffMessage(debuffType PlayerDebuffType) string {
 
 // ==================== モジュール効果計算（Task 7.4） ====================
 
-// CalculateModuleEffect はモジュール効果を計算します。
+// getStatValue はステータス参照名に応じたステータス値を取得します。
+func (e *BattleEngine) getStatValue(stats domain.Stats, statRef string) int {
+	switch statRef {
+	case "STR":
+		return stats.STR
+	case "INT":
+		return stats.INT
+	case "WIL":
+		return stats.WIL
+	case "LUK":
+		return stats.LUK
+	default:
+		return stats.STR
+	}
+}
 
-func (e *BattleEngine) CalculateModuleEffect(
-	agent *domain.AgentModel,
-	module *domain.ModuleModel,
+// calculateHPChange は効果のHP変化量を計算します。
+func (e *BattleEngine) calculateHPChange(
+	effect *domain.ModuleEffect,
+	stats domain.Stats,
 	typingResult *typing.TypingResult,
 ) int {
-
-	var statValue int
-	switch module.StatRef() {
-	case "STR":
-		statValue = agent.BaseStats.STR
-	case "MAG":
-		statValue = agent.BaseStats.MAG
-	case "SPD":
-		statValue = agent.BaseStats.SPD
-	case "LUK":
-		statValue = agent.BaseStats.LUK
-	default:
-		statValue = agent.BaseStats.STR // デフォルト
+	if effect.HPFormula == nil {
+		return 0
 	}
 
-	// 基礎効果 × ステータス値 × スケール係数
-	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
+	// base + stat_coef * STAT
+	statValue := e.getStatValue(stats, effect.HPFormula.StatRef)
+	baseHP := effect.HPFormula.Base + effect.HPFormula.StatCoef*float64(statValue)
 
-	// 速度係数と正確性係数を適用
-	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
-
-	if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
-		effect *= 0.5
+	// タイピング結果による補正
+	if typingResult != nil {
+		baseHP *= typingResult.SpeedFactor * typingResult.AccuracyFactor
+		if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
+			baseHP *= 0.5
+		}
 	}
 
-	return int(effect)
+	// スケール係数を適用
+	return int(baseHP)
 }
 
 // ApplyModuleEffect はモジュール効果を適用します。
-// プレイヤーの EffectTable から DamageMultiplier、ArmorPierce、LifeSteal、HealMultiplier を参照します。
+// 新しいエフェクトベースのシステムで各効果を順に評価・適用します。
 func (e *BattleEngine) ApplyModuleEffect(
 	state *BattleState,
 	agent *domain.AgentModel,
 	module *domain.ModuleModel,
 	typingResult *typing.TypingResult,
 ) int {
-	effectAmount := e.CalculateModuleEffect(agent, module, typingResult)
-
 	// プレイヤーの効果を取得
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
 
@@ -808,68 +809,97 @@ func (e *BattleEngine) ApplyModuleEffect(
 	}
 
 	playerEffects := state.Player.EffectTable.Aggregate(ctx)
+	enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
 
-	switch module.Category() {
-	case domain.PhysicalAttack, domain.MagicAttack:
-		// 攻撃系モジュール - 敵にダメージ
-		damage := effectAmount
+	totalEffect := 0
 
-		// ダメージ乗算を適用
-		if playerEffects.DamageMultiplier != 1.0 {
-			damage = int(float64(damage) * playerEffects.DamageMultiplier)
+	// 各効果を評価・適用
+	for _, effect := range module.Type.Effects {
+		// LUKに基づく発動判定
+		if !effect.ShouldTrigger(agent.BaseStats.LUK, e.rng) {
+			continue
 		}
 
-		// 敵の防御効果を取得
-		enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
+		// HP変化効果の適用
+		if effect.HPFormula != nil {
+			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult)
 
-		// ArmorPierce が有効なら敵の DamageCut を無視
-		if !playerEffects.ArmorPierce {
-			damage = calculateDamage(damage, enemyEffects.DamageCut)
-		}
+			switch effect.Target {
+			case domain.TargetEnemy:
+				// ダメージ効果
+				damage := -hpChange // ダメージは負のHP変化
+				if damage < 0 {
+					damage = -damage
+				}
 
-		state.Enemy.TakeDamage(damage)
-		state.Stats.TotalDamageDealt += damage
+				// ダメージ乗算を適用
+				if playerEffects.DamageMultiplier != 1.0 {
+					damage = int(float64(damage) * playerEffects.DamageMultiplier)
+				}
 
-		// ライフスティール処理
-		if playerEffects.LifeSteal > 0 && damage > 0 {
-			healAmount := int(float64(damage) * playerEffects.LifeSteal)
-			if healAmount > 0 {
-				state.Player.Heal(healAmount)
-				state.Stats.TotalHealAmount += healAmount
+				// ArmorPierce が有効でなければ敵の DamageCut を適用
+				if !playerEffects.ArmorPierce {
+					damage = calculateDamage(damage, enemyEffects.DamageCut)
+				}
+
+				state.Enemy.TakeDamage(damage)
+				state.Stats.TotalDamageDealt += damage
+				totalEffect += damage
+
+				// ライフスティール処理
+				if playerEffects.LifeSteal > 0 && damage > 0 {
+					healAmount := int(float64(damage) * playerEffects.LifeSteal)
+					if healAmount > 0 {
+						state.Player.Heal(healAmount)
+						state.Stats.TotalHealAmount += healAmount
+					}
+				}
+
+			case domain.TargetSelf:
+				// 回復または自傷効果
+				if hpChange > 0 {
+					// 回復
+					healAmount := hpChange
+					if playerEffects.HealMultiplier != 1.0 {
+						healAmount = int(float64(healAmount) * playerEffects.HealMultiplier)
+					}
+					if playerEffects.Overheal {
+						state.Player.HealWithOverheal(healAmount)
+					} else {
+						state.Player.Heal(healAmount)
+					}
+					state.Stats.TotalHealAmount += healAmount
+					totalEffect += healAmount
+				} else if hpChange < 0 {
+					// 自傷ダメージ
+					state.Player.TakeDamage(-hpChange)
+				}
+
+			case domain.TargetBoth:
+				// 両方に効果（将来の拡張用）
 			}
 		}
 
-		return damage
+		// EffectColumn効果の適用（バフ/デバフ）
+		if effect.ColumnSpec != nil {
+			values := map[domain.EffectColumn]float64{
+				effect.ColumnSpec.Column: effect.ColumnSpec.Value,
+			}
+			duration := effect.ColumnSpec.Duration
+			if duration == 0 {
+				duration = config.BuffDuration
+			}
 
-	case domain.Heal:
-		// 回復系モジュール - プレイヤーHP回復
-		healAmount := effectAmount
-
-		// 回復量乗算を適用
-		if playerEffects.HealMultiplier != 1.0 {
-			healAmount = int(float64(healAmount) * playerEffects.HealMultiplier)
+			switch effect.Target {
+			case domain.TargetSelf:
+				state.Player.EffectTable.AddBuff(module.Name(), duration, values)
+			case domain.TargetEnemy:
+				state.Enemy.EffectTable.AddDebuff(module.Name(), duration, values)
+			}
 		}
-
-		// オーバーヒール処理
-		// Overhealが有効な場合は超過分をTempHPに変換
-		if playerEffects.Overheal {
-			state.Player.HealWithOverheal(healAmount)
-		} else {
-			state.Player.Heal(healAmount)
-		}
-		state.Stats.TotalHealAmount += healAmount
-		return healAmount
-
-	case domain.Buff:
-		e.applyPlayerBuff(state, module, effectAmount)
-		return effectAmount
-
-	case domain.Debuff:
-		e.applyEnemyDebuff(state, module, effectAmount)
-		return effectAmount
 	}
 
-	return 0
+	return totalEffect
 }
 
 // ApplyModuleEffectWithCombo はコンボカウントを考慮してモジュール効果を適用します。
@@ -881,77 +911,26 @@ func (e *BattleEngine) ApplyModuleEffectWithCombo(
 	typingResult *typing.TypingResult,
 	comboCount int,
 ) int {
-	effectAmount := e.CalculateModuleEffect(agent, module, typingResult)
+	// 基本効果を適用
+	baseDamage := e.ApplyModuleEffect(state, agent, module, typingResult)
 
-	// プレイヤーの効果を取得
-	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
-
-	// タイピング結果とコンボカウントをコンテキストに設定
-	if typingResult != nil {
-		ctx.SetTypingResult(typingResult.Accuracy, typingResult.WPM, comboCount)
-		ctx.SetEvent(domain.EventOnTypingDone)
-	}
-
-	playerEffects := state.Player.EffectTable.Aggregate(ctx)
-
-	// スタック型パッシブの追加効果を計算
-	stackMultiplier := e.calculateStackMultiplier(state, comboCount)
-
-	switch module.Category() {
-	case domain.PhysicalAttack, domain.MagicAttack:
-		damage := effectAmount
-
-		// ダメージ乗算を適用（通常パッシブ + スタック型パッシブ）
-		totalMultiplier := playerEffects.DamageMultiplier * stackMultiplier
-		if totalMultiplier != 1.0 {
-			damage = int(float64(damage) * totalMultiplier)
-		}
-
-		// 敵の防御効果を取得
-		enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
-
-		// ArmorPierce が有効なら敵の DamageCut を無視
-		if !playerEffects.ArmorPierce {
-			damage = calculateDamage(damage, enemyEffects.DamageCut)
-		}
-
-		state.Enemy.TakeDamage(damage)
-		state.Stats.TotalDamageDealt += damage
-
-		// ライフスティール処理
-		if playerEffects.LifeSteal > 0 && damage > 0 {
-			healAmount := int(float64(damage) * playerEffects.LifeSteal)
-			if healAmount > 0 {
-				state.Player.Heal(healAmount)
-				state.Stats.TotalHealAmount += healAmount
+	// コンボ乗算を計算
+	comboMultiplier := e.calculateStackMultiplier(state, comboCount)
+	if comboMultiplier > 1.0 {
+		// 既に適用された基本ダメージに対して、追加分のダメージを計算
+		// baseDamage × (comboMultiplier - 1) = 追加ダメージ
+		additionalDamage := int(float64(baseDamage) * (comboMultiplier - 1.0))
+		if additionalDamage > 0 {
+			// 追加ダメージを敵に適用
+			state.Enemy.HP -= additionalDamage
+			if state.Enemy.HP < 0 {
+				state.Enemy.HP = 0
 			}
+			return baseDamage + additionalDamage
 		}
-
-		return damage
-
-	case domain.Heal:
-		healAmount := effectAmount
-		if playerEffects.HealMultiplier != 1.0 {
-			healAmount = int(float64(healAmount) * playerEffects.HealMultiplier)
-		}
-		if playerEffects.Overheal {
-			state.Player.HealWithOverheal(healAmount)
-		} else {
-			state.Player.Heal(healAmount)
-		}
-		state.Stats.TotalHealAmount += healAmount
-		return healAmount
-
-	case domain.Buff:
-		e.applyPlayerBuff(state, module, effectAmount)
-		return effectAmount
-
-	case domain.Debuff:
-		e.applyEnemyDebuff(state, module, effectAmount)
-		return effectAmount
 	}
 
-	return 0
+	return baseDamage
 }
 
 // calculateStackMultiplier はスタック型パッシブの効果倍率を計算します。
@@ -984,40 +963,6 @@ func (e *BattleEngine) calculateStackMultiplier(state *BattleState, comboCount i
 	}
 
 	return multiplier
-}
-
-// applyPlayerBuff はプレイヤーにバフを付与します。
-func (e *BattleEngine) applyPlayerBuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	values := make(map[domain.EffectColumn]float64)
-
-	switch module.StatRef() {
-	case "STR":
-		values[domain.ColDamageBonus] = float64(effectAmount)
-	case "MAG":
-		values[domain.ColDamageBonus] = float64(effectAmount)
-	case "SPD":
-		values[domain.ColCooldownReduce] = float64(effectAmount) * 0.01 // SPDに応じたCD短縮
-	case "LUK":
-		values[domain.ColDoubleCast] = float64(effectAmount) * 0.01 // LUKに応じた二重発動率
-	}
-
-	state.Player.EffectTable.AddBuff(module.Name(), config.BuffDuration, values)
-}
-
-// applyEnemyDebuff は敵にデバフを付与します。
-func (e *BattleEngine) applyEnemyDebuff(state *BattleState, module *domain.ModuleModel, effectAmount int) {
-	values := make(map[domain.EffectColumn]float64)
-
-	switch module.StatRef() {
-	case "STR":
-		values[domain.ColDamageBonus] = float64(-effectAmount) // 攻撃力低下
-	case "MAG":
-		values[domain.ColDamageBonus] = float64(-effectAmount)
-	case "SPD":
-		values[domain.ColCooldownReduce] = float64(-effectAmount) * 0.01 // 速度低下
-	}
-
-	state.Enemy.EffectTable.AddDebuff(module.Name(), config.DebuffDuration, values)
 }
 
 // ==================== バトル勝敗判定（Task 7.5） ====================
@@ -1099,62 +1044,26 @@ func (e *BattleEngine) GetPlayerFinalStats(state *BattleState) domain.EffectResu
 }
 
 // CalculateModuleEffectWithPassive はパッシブスキル効果を適用したモジュール効果を計算します。
-// パッシブスキルによるステータス補正を考慮してダメージ/回復量を計算します。
+// 新しいエフェクトベースシステムでは、全ての効果の合計値を返します。
 func (e *BattleEngine) CalculateModuleEffectWithPassive(
 	agent *domain.AgentModel,
 	module *domain.ModuleModel,
 	typingResult *typing.TypingResult,
 ) int {
-	// パッシブスキルの効果値を取得
-	effects := agent.Core.PassiveSkill.Effects
+	totalEffect := 0
 
-	// ヘルパー関数: 効果値を取得（デフォルト値付き）
-	getBonus := func(col domain.EffectColumn) int {
-		if effects == nil {
-			return 0
+	// 各効果のHP変化量を合計
+	for _, effect := range module.Type.Effects {
+		if effect.HPFormula != nil {
+			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult)
+			if hpChange < 0 {
+				hpChange = -hpChange // ダメージの場合は絶対値
+			}
+			totalEffect += hpChange
 		}
-		return int(effects[col])
-	}
-	getMult := func(col domain.EffectColumn) float64 {
-		if effects == nil {
-			return 1.0
-		}
-		if mult, ok := effects[col]; ok && mult != 0 {
-			return mult
-		}
-		return 1.0
 	}
 
-	// 基礎ステータスにパッシブスキル効果を適用
-	var statValue int
-	switch module.StatRef() {
-	case "STR":
-		base := agent.BaseStats.STR + getBonus(domain.ColSTRBonus)
-		statValue = int(float64(base) * getMult(domain.ColSTRMultiplier))
-	case "MAG":
-		base := agent.BaseStats.MAG + getBonus(domain.ColMAGBonus)
-		statValue = int(float64(base) * getMult(domain.ColMAGMultiplier))
-	case "SPD":
-		base := agent.BaseStats.SPD + getBonus(domain.ColSPDBonus)
-		statValue = int(float64(base) * getMult(domain.ColSPDMultiplier))
-	case "LUK":
-		base := agent.BaseStats.LUK + getBonus(domain.ColLUKBonus)
-		statValue = int(float64(base) * getMult(domain.ColLUKMultiplier))
-	default:
-		statValue = agent.BaseStats.STR
-	}
-
-	// 基礎効果 × ステータス値 × スケール係数
-	baseEffect := module.BaseEffect() * float64(statValue) * EffectScaleFactor
-
-	// 速度係数と正確性係数を適用
-	effect := baseEffect * typingResult.SpeedFactor * typingResult.AccuracyFactor
-
-	if typingResult.AccuracyFactor < AccuracyPenaltyThreshold {
-		effect *= 0.5
-	}
-
-	return int(effect)
+	return totalEffect
 }
 
 // EvaluateEchoSkill はps_echo_skillの発動を評価し、繰り返し回数を返します。
@@ -1191,8 +1100,15 @@ func (e *BattleEngine) ApplyModuleEffectWithEcho(
 // EvaluateMiracleHeal はps_miracle_healの発動を評価します。
 // 回復スキル使用時のみ確率で発動します。
 func (e *BattleEngine) EvaluateMiracleHeal(state *BattleState, agent *domain.AgentModel, module *domain.ModuleModel) bool {
-	// 回復スキル以外では発動しない
-	if module.Category() != domain.Heal {
+	// 回復効果を持たないスキルでは発動しない
+	hasHeal := false
+	for _, effect := range module.Type.Effects {
+		if effect.IsHealEffect() {
+			hasHeal = true
+			break
+		}
+	}
+	if !hasHeal {
 		return false
 	}
 

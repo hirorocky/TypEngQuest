@@ -240,17 +240,8 @@ type ModuleDropInfo struct {
 	// Icon はモジュールのアイコン（絵文字）です。
 	Icon string
 
-	// Category はモジュールのカテゴリです。
-	Category domain.ModuleCategory
-
 	// Tags はモジュールのタグリストです。
 	Tags []string
-
-	// BaseEffect はモジュールの基礎効果値です。
-	BaseEffect float64
-
-	// StatRef は効果計算時に参照するステータスです。
-	StatRef string
 
 	// Description はモジュールの効果説明です。
 	Description string
@@ -263,6 +254,9 @@ type ModuleDropInfo struct {
 
 	// MinDropLevel はこのモジュールがドロップする最低敵レベルです。
 	MinDropLevel int
+
+	// Effects はモジュールの効果リストです。
+	Effects []domain.ModuleEffect
 }
 
 // ToModuleType はModuleDropInfoをドメインモデルのModuleTypeに変換します。
@@ -271,18 +265,20 @@ func (m *ModuleDropInfo) ToModuleType() domain.ModuleType {
 	tagsCopy := make([]string, len(m.Tags))
 	copy(tagsCopy, m.Tags)
 
+	// Effectsをコピー
+	effectsCopy := make([]domain.ModuleEffect, len(m.Effects))
+	copy(effectsCopy, m.Effects)
+
 	return domain.ModuleType{
 		ID:              m.ID,
 		Name:            m.Name,
 		Icon:            m.Icon,
-		Category:        m.Category,
 		Tags:            tagsCopy,
-		BaseEffect:      m.BaseEffect,
-		StatRef:         m.StatRef,
 		Description:     m.Description,
 		CooldownSeconds: m.CooldownSeconds,
 		Difficulty:      m.Difficulty,
 		MinDropLevel:    m.MinDropLevel,
+		Effects:         effectsCopy,
 	}
 }
 

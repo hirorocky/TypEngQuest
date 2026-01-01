@@ -8,16 +8,64 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
-// newTestModule はテスト用モジュールを作成するヘルパー関数です。
-func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+// newTestDamageModuleDomain はテスト用のダメージモジュールを作成するヘルパー関数です。
+func newTestDamageModuleDomain(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
+	}, nil)
+}
+
+// newTestHealModuleDomain はテスト用の回復モジュールを作成するヘルパー関数です。
+func newTestHealModuleDomain(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "💚",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetSelf,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "💚",
+			},
+		},
+	}, nil)
+}
+
+// newTestBuffModuleDomain はテスト用のバフモジュールを作成するヘルパー関数です。
+func newTestBuffModuleDomain(id, name string, tags []string, value float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "⬆️",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target: domain.TargetSelf,
+				ColumnSpec: &domain.EffectColumnSpec{
+					Column:   domain.ColDamageBonus,
+					Value:    value,
+					Duration: 10.0,
+				},
+				Probability: 1.0,
+				Icon:        "⬆️",
+			},
+		},
 	}, nil)
 }
 
@@ -32,8 +80,8 @@ func TestCoreModel_StatsCalculation(t *testing.T) {
 		Name: "テスト特性",
 		StatWeights: map[string]float64{
 			"STR": 1.2,
-			"MAG": 0.8,
-			"SPD": 1.0,
+			"INT": 0.8,
+			"WIL": 1.0,
 			"LUK": 1.0,
 		},
 		PassiveSkillID: "test_passive",
@@ -51,20 +99,20 @@ func TestCoreModel_StatsCalculation(t *testing.T) {
 
 	// ステータス計算: 基礎値(10) × レベル(5) × 重み
 	// STR: 10 × 5 × 1.2 = 60
-	// MAG: 10 × 5 × 0.8 = 40
-	// SPD: 10 × 5 × 1.0 = 50
-	// LUK: 10 × 5 × 1.0 = 50
+	// INT: 10 × 5 × 0.8 = 40
+	// WIL: 10 × 5 × 1.0 = 50
+	// LUK: 10 × 1.0 = 10（レベルに依存しない）
 	if core.Stats.STR != 60 {
 		t.Errorf("STR expected 60, got %d", core.Stats.STR)
 	}
-	if core.Stats.MAG != 40 {
-		t.Errorf("MAG expected 40, got %d", core.Stats.MAG)
+	if core.Stats.INT != 40 {
+		t.Errorf("INT expected 40, got %d", core.Stats.INT)
 	}
-	if core.Stats.SPD != 50 {
-		t.Errorf("SPD expected 50, got %d", core.Stats.SPD)
+	if core.Stats.WIL != 50 {
+		t.Errorf("WIL expected 50, got %d", core.Stats.WIL)
 	}
-	if core.Stats.LUK != 50 {
-		t.Errorf("LUK expected 50, got %d", core.Stats.LUK)
+	if core.Stats.LUK != 10 {
+		t.Errorf("LUK expected 10, got %d", core.Stats.LUK)
 	}
 }
 
@@ -73,7 +121,7 @@ func TestCoreModel_TagAllowance(t *testing.T) {
 	coreType := domain.CoreType{
 		ID:          "test_type",
 		Name:        "テスト特性",
-		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 		AllowedTags: []string{"physical_low", "magic_low"},
 	}
 	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト", Description: ""}
@@ -93,22 +141,24 @@ func TestCoreModel_TagAllowance(t *testing.T) {
 	}
 }
 
-func TestModuleModel_CategoryAndTags(t *testing.T) {
+func TestModuleModel_EffectsAndTags(t *testing.T) {
 
-	module := newTestModule(
+	module := newTestDamageModuleDomain(
 		"module_1",
 		"物理打撃Lv1",
-		domain.PhysicalAttack,
-		1,
 		[]string{"physical_low"},
-		10.0,
+		1.0,
 		"STR",
 		"物理ダメージを与える",
 	)
 
-	// カテゴリチェック
-	if module.Category() != domain.PhysicalAttack {
-		t.Errorf("Category expected PhysicalAttack, got %v", module.Category())
+	// 効果チェック
+	effects := module.Effects()
+	if len(effects) != 1 {
+		t.Errorf("Expected 1 effect, got %d", len(effects))
+	}
+	if !effects[0].IsDamageEffect() {
+		t.Error("Effect should be a damage effect")
 	}
 
 	// タグチェック
@@ -131,18 +181,18 @@ func TestModuleModel_CoreCompatibility(t *testing.T) {
 	core := domain.NewCore("core_1", "テストコア", 1, coreType, passiveSkill)
 
 	// 互換性のあるモジュール
-	compatibleModule := newTestModule(
-		"module_1", "物理打撃Lv1", domain.PhysicalAttack, 1,
-		[]string{"physical_low"}, 10.0, "STR", "物理攻撃",
+	compatibleModule := newTestDamageModuleDomain(
+		"module_1", "物理打撃Lv1",
+		[]string{"physical_low"}, 1.0, "STR", "物理攻撃",
 	)
 	if !compatibleModule.IsCompatibleWithCore(core) {
 		t.Error("Module should be compatible with core")
 	}
 
 	// 互換性のないモジュール
-	incompatibleModule := newTestModule(
-		"module_2", "ヒールLv2", domain.Heal, 2,
-		[]string{"heal_mid"}, 15.0, "MAG", "回復",
+	incompatibleModule := newTestHealModuleDomain(
+		"module_2", "ヒールLv2",
+		[]string{"heal_mid"}, 1.5, "MAG", "回復",
 	)
 	if incompatibleModule.IsCompatibleWithCore(core) {
 		t.Error("Module should not be compatible with core")
@@ -160,10 +210,10 @@ func TestAgentModel_LevelEqualsCore(t *testing.T) {
 	core := domain.NewCore("core_1", "テストコア", 10, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		newTestModule("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		newTestModule("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		newTestModule("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		newTestModule("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestDamageModuleDomain("m1", "物理打撃Lv1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModuleDomain("m2", "ファイアボールLv1", []string{"magic_low"}, 1.0, "MAG", ""),
+		newTestHealModuleDomain("m3", "ヒールLv1", []string{"heal_low"}, 0.8, "MAG", ""),
+		newTestBuffModuleDomain("m4", "バフLv1", []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	agent := domain.NewAgent("agent_1", core, modules)

@@ -79,11 +79,11 @@ const (
 	// ColSTRBonus はSTR加算（固定値）を表します。
 	ColSTRBonus EffectColumn = "str_bonus"
 
-	// ColMAGBonus はMAG加算（固定値）を表します。
-	ColMAGBonus EffectColumn = "mag_bonus"
+	// ColINTBonus はINT加算（固定値）を表します。
+	ColINTBonus EffectColumn = "int_bonus"
 
-	// ColSPDBonus はSPD加算（固定値）を表します。
-	ColSPDBonus EffectColumn = "spd_bonus"
+	// ColWILBonus はWIL加算（固定値）を表します。
+	ColWILBonus EffectColumn = "wil_bonus"
 
 	// ColLUKBonus はLUK加算（固定値）を表します。
 	ColLUKBonus EffectColumn = "luk_bonus"
@@ -91,11 +91,11 @@ const (
 	// ColSTRMultiplier はSTR倍率を表します。
 	ColSTRMultiplier EffectColumn = "str_mult"
 
-	// ColMAGMultiplier はMAG倍率を表します。
-	ColMAGMultiplier EffectColumn = "mag_mult"
+	// ColINTMultiplier はINT倍率を表します。
+	ColINTMultiplier EffectColumn = "int_mult"
 
-	// ColSPDMultiplier はSPD倍率を表します。
-	ColSPDMultiplier EffectColumn = "spd_mult"
+	// ColWILMultiplier はWIL倍率を表します。
+	ColWILMultiplier EffectColumn = "wil_mult"
 
 	// ColLUKMultiplier はLUK倍率を表します。
 	ColLUKMultiplier EffectColumn = "luk_mult"
@@ -154,12 +154,12 @@ var ColumnAggregation = map[EffectColumn]AggregationType{
 	// ステータス系
 	ColCritRate:      AggAdd,  // クリティカル率は加算
 	ColSTRBonus:      AggAdd,  // STR加算は加算
-	ColMAGBonus:      AggAdd,  // MAG加算は加算
-	ColSPDBonus:      AggAdd,  // SPD加算は加算
+	ColINTBonus:      AggAdd,  // INT加算は加算
+	ColWILBonus:      AggAdd,  // WIL加算は加算
 	ColLUKBonus:      AggAdd,  // LUK加算は加算
 	ColSTRMultiplier: AggMult, // STR倍率は乗算
-	ColMAGMultiplier: AggMult, // MAG倍率は乗算
-	ColSPDMultiplier: AggMult, // SPD倍率は乗算
+	ColINTMultiplier: AggMult, // INT倍率は乗算
+	ColWILMultiplier: AggMult, // WIL倍率は乗算
 	ColLUKMultiplier: AggMult, // LUK倍率は乗算
 }
 

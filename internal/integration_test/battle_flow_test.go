@@ -11,16 +11,64 @@ import (
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
-// newTestModuleBattle はテスト用モジュールを作成するヘルパー関数です。
-func newTestModuleBattle(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+// newTestDamageModuleBattle はテスト用のダメージモジュールを作成するヘルパー関数です。
+func newTestDamageModuleBattle(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
+	}, nil)
+}
+
+// newTestHealModuleBattle はテスト用の回復モジュールを作成するヘルパー関数です。
+func newTestHealModuleBattle(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "💚",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetSelf,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "💚",
+			},
+		},
+	}, nil)
+}
+
+// newTestBuffModuleBattle はテスト用のバフモジュールを作成するヘルパー関数です。
+func newTestBuffModuleBattle(id, name string, tags []string, value float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "⬆️",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target: domain.TargetSelf,
+				ColumnSpec: &domain.EffectColumnSpec{
+					Column:   domain.ColDamageBonus,
+					Value:    value,
+					Duration: 10.0,
+				},
+				Probability: 1.0,
+				Icon:        "⬆️",
+			},
+		},
 	}, nil)
 }
 
@@ -42,10 +90,10 @@ func createTestAgents() []*domain.AgentModel {
 	core := domain.NewCore("core_1", "テストコア", 5, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		newTestModuleBattle("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		newTestModuleBattle("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		newTestModuleBattle("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		newTestModuleBattle("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestDamageModuleBattle("m1", "物理打撃Lv1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModuleBattle("m2", "ファイアボールLv1", []string{"magic_low"}, 1.0, "MAG", ""),
+		newTestHealModuleBattle("m3", "ヒールLv1", []string{"heal_low"}, 0.8, "MAG", ""),
+		newTestBuffModuleBattle("m4", "バフLv1", []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	return []*domain.AgentModel{
@@ -316,7 +364,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 	engine := combat.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
-	// バトル初期化（stateは使用しないが、エンジン初期化のために呼び出す）
+	// バトル初期化
 	_, _ = engine.InitializeBattle(1, agents)
 
 	agent := agents[0]
@@ -328,7 +376,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 		SpeedFactor:    1.0,
 		AccuracyFactor: 0.95,
 	}
-	highDamage := engine.CalculateModuleEffect(agent, module, highAccuracyResult)
+	highDamage := engine.CalculateModuleEffectWithPassive(agent, module, highAccuracyResult)
 
 	// 低い正確性（50%未満）
 	lowAccuracyResult := &typing.TypingResult{
@@ -336,7 +384,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 		SpeedFactor:    1.0,
 		AccuracyFactor: 0.4,
 	}
-	lowDamage := engine.CalculateModuleEffect(agent, module, lowAccuracyResult)
+	lowDamage := engine.CalculateModuleEffectWithPassive(agent, module, lowAccuracyResult)
 
 	// 低い正確性の方が効果が低い（半減ペナルティ適用）
 	if lowDamage >= highDamage {

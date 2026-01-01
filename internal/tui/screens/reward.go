@@ -191,7 +191,7 @@ func (s *RewardScreen) renderDrops() string {
 
 		for _, module := range s.result.DroppedModules {
 			// モジュール基本情報
-			moduleInfo := fmt.Sprintf("  %s (%s)", module.Name(), module.Category().String())
+			moduleInfo := fmt.Sprintf("  %s %s", module.Icon(), module.Name())
 
 			// チェイン効果がある場合はバッジを追加
 			if module.HasChainEffect() {
