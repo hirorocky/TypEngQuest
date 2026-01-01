@@ -70,26 +70,57 @@
   - 未撃破の敵はデフォルトレベルのみ選択可能であることを確認
   - 敵情報パネルに名前、HP目安、パッシブ名が表示されることを確認
 
-- [ ] 3. 敵行動パターン実行ロジックの実装
-- [ ] 3.1 パターンベースの敵行動実行機能を実装する
-  - 行動パターンに従って順序実行するロジックを実装
-  - 攻撃行動の実行（物理/魔法属性に基づくダメージ計算）
-  - 自己バフ行動の実行（敵のEffectTableへの効果登録）
-  - プレイヤーデバフ行動の実行（プレイヤーのEffectTableへの効果登録）
-  - 行動パターンがない場合の既存ランダムロジックへのフォールバック
-  - _Requirements: 3.2, 6.2_
+- [x] 3. 敵行動システムの再設計とチャージシステム実装 (Phase 3.0-3.3)
 
-- [ ] 3.2 フェーズ遷移時の行動パターン切り替えを実装する
-  - HP50%以下での強化フェーズ遷移検知
-  - 遷移時に行動インデックスをリセットする処理
-  - 強化行動パターンへの切り替え処理
-  - 強化行動パターンが空の場合は通常パターン継続
-  - _Requirements: 2.2, 2.3, 3.4, 6.1_
+- [x] 3.0.1 enemy_actions.json スキーマ定義とサンプルデータ作成
+  - 行動IDベースのマスタデータ管理に変更
+  - 攻撃（物理/魔法）、バフ、デバフ、ディフェンスの4タイプをサポート
+  - チャージタイム、ダメージ計算式（a + Lv × b）を導入
 
-- [ ] 3.3 **動作確認**: 敵行動パターンの手動テスト
-  - バトルを開始し、敵が行動パターン順に行動することを確認
-  - 行動パターンが最後まで到達後、最初に戻ることを確認
-  - 攻撃、自己バフ、プレイヤーデバフが正しく実行されることを確認
+- [x] 3.0.2 EnemyActionData ローダー実装
+  - internal/infra/masterdata/loader.go に LoadEnemyActions() 追加
+  - ToDomain() 変換メソッド実装
+
+- [x] 3.0.3 EnemyAction ドメインモデル拡張
+  - ディフェンスタイプ（物理軽減/魔法軽減/デバフ回避）追加
+  - チャージタイム、ダメージ計算フィールド追加
+  - CalculateDamage() メソッド実装
+
+- [x] 3.0.4 EnemyType の行動パターンをID配列に変更
+  - NormalActionPatternIDs, EnhancedActionPatternIDs（[]string）
+  - ResolvedNormalActions, ResolvedEnhancedActions（解決済み配列）
+
+- [x] 3.0.5 enemies.json のスキーマ更新
+  - 各敵タイプに normal_action_pattern, enhanced_action_pattern 追加
+
+- [x] 3.1 チャージ・ディフェンス状態管理
+  - EnemyModel にチャージ状態フィールド追加
+  - StartCharging(), GetChargeProgress(), IsChargeComplete() 実装
+  - ディフェンス状態管理フィールドとメソッド実装
+
+- [x] 3.2 バトルエンジン対応（チャージ、ディフェンス処理）
+  - [x] 3.2.1 パターンベース行動決定をチャージシステムに対応
+    - `DeterminePatternBasedAction()` - パターンから次回行動を決定
+    - `CalculatePatternDamage()` - ダメージ計算（a + Lv * b）
+    - `StartEnemyCharging()` - チャージ開始
+    - `ExecuteChargedAction()` - チャージ完了後の行動実行
+  - [x] 3.2.2 ディフェンス行動の即時発動処理
+    - `ActivateDefense()` - チャージタイム0で即座に発動
+    - `CheckDefenseExpired()` - ディフェンス終了チェック
+  - [x] 3.2.3 プレイヤー攻撃時のディフェンス軽減適用
+    - `ApplyDefenseReduction()` - 物理/魔法軽減の適用
+  - [x] 3.2.4 デバフ回避判定の実装
+    - `CheckDebuffEvasion()` - デバフ回避ディフェンス中の回避判定
+
+- [x] 3.3 UI チャージ予告表示
+  - [x] 3.3.1 チャージ進捗バー表示
+    - `getChargingActionDisplay()` - チャージ中の行動表示
+    - `renderChargeProgressBar()` - チャージ進捗バーの描画
+  - [x] 3.3.2 次行動の予告テキスト（行動タイプ、予測ダメージ等）
+    - `getDefensePreviewDisplay()` - ディフェンス予告表示
+    - 攻撃/バフ/デバフ/ディフェンスの各タイプに対応
+  - [x] 3.3.3 ディフェンス中の状態表示（残り時間）
+    - `getDefenseActionDisplay()` - ディフェンス発動中の表示
 
 - [ ] 4. 敵パッシブスキルシステムの実装
 - [ ] 4.1 敵パッシブスキルの登録機能を実装する

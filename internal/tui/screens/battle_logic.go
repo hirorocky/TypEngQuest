@@ -5,6 +5,7 @@ package screens
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
@@ -684,6 +685,16 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 		return "?", "不明", styles.ColorSubtle
 	}
 
+	// チャージ中の場合はチャージ状態を表示
+	if s.enemy != nil && s.enemy.IsCharging {
+		return s.getChargingActionDisplay()
+	}
+
+	// ディフェンス中の場合はディフェンス状態を表示
+	if s.enemy != nil && s.enemy.IsDefending {
+		return s.getDefenseActionDisplay()
+	}
+
 	action := s.battleState.NextAction
 
 	switch action.ActionType {
@@ -703,9 +714,73 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 		// プレイヤーデバフ予告（青色）
 		name := combat.GetPlayerDebuffName(action.DebuffType)
 		return "💀", name, styles.ColorInfo
+
+	case combat.EnemyActionDefense:
+		// ディフェンス予告（シアン色）
+		return s.getDefensePreviewDisplay(action)
 	}
 
 	return "?", "不明", styles.ColorSubtle
+}
+
+// getChargingActionDisplay はチャージ中の行動表示情報を返します。
+func (s *BattleScreen) getChargingActionDisplay() (icon string, text string, color lipgloss.Color) {
+	now := time.Now()
+	progress := s.enemy.GetChargeProgress(now)
+	remaining := s.enemy.GetChargeRemainingTime(now)
+
+	actionName := "不明"
+	if s.enemy.PendingAction != nil {
+		actionName = s.enemy.PendingAction.Name
+	}
+
+	// チャージ進捗バーを生成
+	progressBar := s.renderChargeProgressBar(progress)
+
+	text = fmt.Sprintf("チャージ中: %s %s (%.1fs)", actionName, progressBar, remaining.Seconds())
+	return "⏳", text, styles.ColorWarning
+}
+
+// getDefenseActionDisplay はディフェンス中の行動表示情報を返します。
+func (s *BattleScreen) getDefenseActionDisplay() (icon string, text string, color lipgloss.Color) {
+	now := time.Now()
+	remaining := s.enemy.GetDefenseRemainingTime(now)
+	typeName := s.enemy.GetDefenseTypeName()
+
+	text = fmt.Sprintf("%s発動中 (残り%.1fs)", typeName, remaining.Seconds())
+	return "🛡️", text, styles.ColorBuff
+}
+
+// getDefensePreviewDisplay はディフェンス予告の表示情報を返します。
+func (s *BattleScreen) getDefensePreviewDisplay(action combat.NextEnemyAction) (icon string, text string, color lipgloss.Color) {
+	var defenseName string
+	switch action.DefenseType {
+	case domain.DefensePhysicalCut:
+		defenseName = fmt.Sprintf("物理防御 (%.0f%%軽減)", action.DefenseValue*100)
+	case domain.DefenseMagicCut:
+		defenseName = fmt.Sprintf("魔法防御 (%.0f%%軽減)", action.DefenseValue*100)
+	case domain.DefenseDebuffEvade:
+		defenseName = fmt.Sprintf("デバフ回避 (%.0f%%)", action.DefenseValue*100)
+	default:
+		defenseName = "防御"
+	}
+
+	text = fmt.Sprintf("%s (%.1fs)", defenseName, float64(action.DefenseDurationMs)/1000)
+	return "🛡️", text, styles.ColorBuff
+}
+
+// renderChargeProgressBar はチャージ進捗バーを描画します。
+func (s *BattleScreen) renderChargeProgressBar(progress float64) string {
+	barWidth := 10
+	filledWidth := int(float64(barWidth) * progress)
+	if filledWidth > barWidth {
+		filledWidth = barWidth
+	}
+
+	filled := strings.Repeat("█", filledWidth)
+	empty := strings.Repeat("░", barWidth-filledWidth)
+
+	return "[" + filled + empty + "]"
 }
 
 // ==================== ゲームロジック: モジュール選択ナビゲーション ====================
