@@ -139,6 +139,8 @@ func (s *BattleScreen) processEnemyAttack() {
 
 	// フェーズ変化をチェック
 	if s.battleEngine.CheckPhaseTransition(s.battleState) {
+		// 敵のパッシブを強化パッシブに切り替え
+		s.battleEngine.SwitchEnemyPassive(s.battleState)
 		s.message += " [敵が強化フェーズに突入！]"
 	}
 
@@ -645,6 +647,8 @@ func (s *BattleScreen) CompleteTyping() {
 	// フェーズ変化をチェック
 	if s.battleEngine != nil && s.battleState != nil {
 		if s.battleEngine.CheckPhaseTransition(s.battleState) {
+			// 敵のパッシブを強化パッシブに切り替え
+			s.battleEngine.SwitchEnemyPassive(s.battleState)
 			s.message += " [敵が強化フェーズに突入！]"
 		}
 	}

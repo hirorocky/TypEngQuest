@@ -185,6 +185,9 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 
 	screen.battleState.NextAction = screen.battleEngine.DetermineNextAction(screen.battleState)
 
+	// 敵のパッシブスキルを登録
+	screen.battleEngine.RegisterEnemyPassive(screen.battleState)
+
 	// モジュールスロットを初期化
 
 	for agentIdx, agent := range agents {
