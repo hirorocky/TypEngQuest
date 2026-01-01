@@ -1571,3 +1571,31 @@ func (e *BattleEngine) RegisterEnemyPassive(state *BattleState) {
 	// ActivePassiveIDを設定
 	state.Enemy.ActivePassiveID = normalPassive.ID
 }
+
+// SwitchEnemyPassive はフェーズ遷移時に敵のパッシブを切り替えます。
+// 通常パッシブを無効化し、強化パッシブを登録します。
+// 強化フェーズ遷移後に呼び出されることを想定しています。
+func (e *BattleEngine) SwitchEnemyPassive(state *BattleState) {
+	if state.Enemy == nil {
+		return
+	}
+
+	// 通常パッシブを無効化（EffectTableからパッシブ効果を削除）
+	state.Enemy.EffectTable.RemoveBySourceType(domain.SourcePassive)
+
+	// ActivePassiveIDをクリア
+	state.Enemy.ActivePassiveID = ""
+
+	// 強化パッシブを登録
+	enhancedPassive := state.Enemy.Type.EnhancedPassive
+	if enhancedPassive == nil {
+		return
+	}
+
+	// 強化パッシブスキルをEffectEntryに変換して登録
+	entry := enhancedPassive.ToEntry()
+	state.Enemy.EffectTable.AddEntry(entry)
+
+	// ActivePassiveIDを更新
+	state.Enemy.ActivePassiveID = enhancedPassive.ID
+}

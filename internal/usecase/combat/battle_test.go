@@ -1676,3 +1676,241 @@ func TestRegisterEnemyPassive_EffectApplied(t *testing.T) {
 		t.Errorf("DamageMultiplierが不正: 期待 1.3, 実際 %f", effects.DamageMultiplier)
 	}
 }
+
+// TestSwitchEnemyPassive_OnPhaseTransition はフェーズ遷移時にパッシブが切り替わることをテストします。
+func TestSwitchEnemyPassive_OnPhaseTransition(t *testing.T) {
+	// 通常パッシブと強化パッシブを持つ敵タイプ
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.1,
+		},
+	}
+	enhancedPassive := &domain.EnemyPassiveSkill{
+		ID:          "slime_enhanced",
+		Name:        "怒りのスライム",
+		Description: "攻撃力+50%",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 1.5,
+		},
+	}
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             100,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			NormalPassive:      normalPassive,
+			EnhancedPassive:    enhancedPassive,
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 初期状態: 通常パッシブを登録
+	engine.RegisterEnemyPassive(state)
+
+	// 通常パッシブが適用されていることを確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageCut != 0.1 {
+		t.Errorf("通常パッシブのDamageCutが不正: 期待 0.1, 実際 %f", effects.DamageCut)
+	}
+
+	// 敵のHPを50%以下にしてフェーズ遷移
+	state.Enemy.HP = state.Enemy.MaxHP / 2
+	transitioned := engine.CheckPhaseTransition(state)
+	if !transitioned {
+		t.Fatal("フェーズ遷移が発生しなかった")
+	}
+
+	// パッシブ切り替えを実行
+	engine.SwitchEnemyPassive(state)
+
+	// 強化パッシブが適用されていることを確認
+	effects = state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageMultiplier != 1.5 {
+		t.Errorf("強化パッシブのDamageMultiplierが不正: 期待 1.5, 実際 %f", effects.DamageMultiplier)
+	}
+
+	// 通常パッシブが無効化されていることを確認（DamageCutが0）
+	if effects.DamageCut != 0.0 {
+		t.Errorf("通常パッシブのDamageCutが残っている: 実際 %f", effects.DamageCut)
+	}
+
+	// ActivePassiveIDが更新されていることを確認
+	if state.Enemy.ActivePassiveID != "slime_enhanced" {
+		t.Errorf("ActivePassiveIDが不正: 期待 slime_enhanced, 実際 %s", state.Enemy.ActivePassiveID)
+	}
+}
+
+// TestSwitchEnemyPassive_NoEnhancedPassive は強化パッシブがない場合のフェーズ遷移をテストします。
+func TestSwitchEnemyPassive_NoEnhancedPassive(t *testing.T) {
+	// 通常パッシブのみを持つ敵タイプ
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.1,
+		},
+	}
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             100,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			NormalPassive:      normalPassive,
+			// EnhancedPassiveはnil
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 初期状態: 通常パッシブを登録
+	engine.RegisterEnemyPassive(state)
+
+	// 敵のHPを50%以下にしてフェーズ遷移
+	state.Enemy.HP = state.Enemy.MaxHP / 2
+	engine.CheckPhaseTransition(state)
+
+	// パッシブ切り替えを実行（強化パッシブなし）
+	engine.SwitchEnemyPassive(state)
+
+	// 通常パッシブが無効化されていることを確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageCut != 0.0 {
+		t.Errorf("通常パッシブのDamageCutが残っている: 実際 %f", effects.DamageCut)
+	}
+
+	// ActivePassiveIDが空であることを確認
+	if state.Enemy.ActivePassiveID != "" {
+		t.Errorf("ActivePassiveIDが残っている: %s", state.Enemy.ActivePassiveID)
+	}
+}
+
+// TestSwitchEnemyPassive_NoNormalPassive はフェーズ遷移時に通常パッシブがない場合をテストします。
+func TestSwitchEnemyPassive_NoNormalPassive(t *testing.T) {
+	// 強化パッシブのみを持つ敵タイプ（通常パッシブなし）
+	enhancedPassive := &domain.EnemyPassiveSkill{
+		ID:          "slime_enhanced",
+		Name:        "怒りのスライム",
+		Description: "攻撃力+50%",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 1.5,
+		},
+	}
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             100,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			// NormalPassiveはnil
+			EnhancedPassive: enhancedPassive,
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 初期状態: 通常パッシブなし
+	engine.RegisterEnemyPassive(state)
+
+	// パッシブが登録されていないことを確認
+	passives := state.Enemy.EffectTable.FindBySourceType(domain.SourcePassive)
+	if len(passives) != 0 {
+		t.Errorf("通常パッシブなしなのにパッシブが登録されている: %d件", len(passives))
+	}
+
+	// 敵のHPを50%以下にしてフェーズ遷移
+	state.Enemy.HP = state.Enemy.MaxHP / 2
+	engine.CheckPhaseTransition(state)
+
+	// パッシブ切り替えを実行（通常パッシブなし→強化パッシブあり）
+	engine.SwitchEnemyPassive(state)
+
+	// 強化パッシブが適用されていることを確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageMultiplier != 1.5 {
+		t.Errorf("強化パッシブのDamageMultiplierが不正: 期待 1.5, 実際 %f", effects.DamageMultiplier)
+	}
+
+	// ActivePassiveIDが更新されていることを確認
+	if state.Enemy.ActivePassiveID != "slime_enhanced" {
+		t.Errorf("ActivePassiveIDが不正: 期待 slime_enhanced, 実際 %s", state.Enemy.ActivePassiveID)
+	}
+}
