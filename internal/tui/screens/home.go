@@ -31,6 +31,8 @@ type DefeatedEnemyProvider interface {
 	IsEnemyDefeated(enemyTypeID string) bool
 	// GetDefeatedLevel は指定した敵タイプの撃破最高レベルを返します。
 	GetDefeatedLevel(enemyTypeID string) int
+	// GetMaxDefeatedLevel は全敵種類を通じた最高撃破レベル（到達Lv）を返します。
+	GetMaxDefeatedLevel() int
 }
 
 // HomeScreen はホーム画面を表します。

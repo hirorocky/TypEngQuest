@@ -317,3 +317,18 @@ func (g *GameState) SetDefeatedEnemies(defeated map[string]int) {
 		g.defeatedEnemies[k] = v
 	}
 }
+
+// GetMaxDefeatedLevel は全敵種類を通じた最高撃破レベル（到達Lv）を返します。
+// 一度も敵を撃破していない場合は0を返します。
+func (g *GameState) GetMaxDefeatedLevel() int {
+	if g.defeatedEnemies == nil {
+		return 0
+	}
+	maxLevel := 0
+	for _, level := range g.defeatedEnemies {
+		if level > maxLevel {
+			maxLevel = level
+		}
+	}
+	return maxLevel
+}

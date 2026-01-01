@@ -321,6 +321,9 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 		// 勝利時：統計を記録し、最高レベルを更新
 		m.gameState.RecordBattleVictory(result.Level)
 
+		// 撃破済み敵情報を記録（敵選択UIで使用）
+		m.gameState.RecordEnemyDefeat(result.EnemyID, result.Level)
+
 		// ノーダメージ判定付きで実績チェック
 		noDamage := result.Stats != nil && result.Stats.TotalDamageTaken == 0
 		m.gameState.CheckBattleAchievementsWithNoDamage(noDamage)

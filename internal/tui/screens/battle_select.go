@@ -363,12 +363,30 @@ func NewBattleSelectScreenCarousel(
 	defeatedProvider DefeatedEnemyProvider,
 	enemyTypeProvider EnemyTypeProvider,
 ) *BattleSelectScreenCarousel {
-	enemyTypes := enemyTypeProvider.GetEnemyTypes()
+	allEnemyTypes := enemyTypeProvider.GetEnemyTypes()
+
+	// 到達Lv（全敵種類を通じた最高撃破レベル）を取得
+	maxDefeatedLevel := defeatedProvider.GetMaxDefeatedLevel()
+
+	// 到達Lv + 1 以下のデフォルトLvを持つ敵のみ表示
+	// 初回プレイ（到達Lv=0）の場合、デフォルトLv=1の敵のみ表示
+	maxAllowedDefaultLevel := maxDefeatedLevel + 1
+
+	filteredEnemyTypes := make([]domain.EnemyType, 0)
+	for _, et := range allEnemyTypes {
+		defaultLevel := et.DefaultLevel
+		if defaultLevel < 1 {
+			defaultLevel = 1
+		}
+		if defaultLevel <= maxAllowedDefaultLevel {
+			filteredEnemyTypes = append(filteredEnemyTypes, et)
+		}
+	}
 
 	s := &BattleSelectScreenCarousel{
 		agentProvider:    agentProvider,
 		defeatedProvider: defeatedProvider,
-		enemyTypes:       enemyTypes,
+		enemyTypes:       filteredEnemyTypes,
 		selectedTypeIdx:  0,
 		styles:           styles.NewGameStyles(),
 		width:            140,
@@ -376,7 +394,7 @@ func NewBattleSelectScreenCarousel(
 	}
 
 	// 初期選択敵タイプのレベル範囲を設定
-	if len(enemyTypes) > 0 {
+	if len(filteredEnemyTypes) > 0 {
 		s.updateLevelRange()
 	}
 

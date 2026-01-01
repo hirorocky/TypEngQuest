@@ -111,6 +111,9 @@ func (g *GameState) ToSaveData() *savedata.SaveData {
 	// 設定
 	saveData.Settings.KeyBindings = g.settings.Keybinds()
 
+	// 撃破済み敵情報を保存
+	saveData.Statistics.DefeatedEnemies = g.GetDefeatedEnemies()
+
 	return saveData
 }
 
@@ -298,15 +301,17 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	// EnemyGeneratorを作成
 	enemyGen := spawning.NewEnemyGenerator(enemyTypes)
 
-	// 最高到達レベルとエンカウント敵リストを取得
+	// 最高到達レベル、エンカウント敵リスト、撃破済み敵情報を取得
 	maxLevelReached := 0
 	var encounteredEnemies []string
+	var defeatedEnemies map[string]int
 	if data.Statistics != nil {
 		maxLevelReached = data.Statistics.MaxLevelReached
 		encounteredEnemies = data.Statistics.EncounteredEnemies
+		defeatedEnemies = data.Statistics.DefeatedEnemies
 	}
 
-	return &GameState{
+	gs := &GameState{
 		MaxLevelReached:    maxLevelReached,
 		player:             player,
 		inventory:          invManager,
@@ -318,7 +323,15 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		tempStorage:        &rewarding.TempStorage{},
 		enemyGenerator:     enemyGen,
 		encounteredEnemies: encounteredEnemies,
+		defeatedEnemies:    make(map[string]int),
 	}
+
+	// 撃破済み敵情報を復元
+	if defeatedEnemies != nil {
+		gs.SetDefeatedEnemies(defeatedEnemies)
+	}
+
+	return gs
 }
 
 // findCoreType はコア特性リストから指定IDのコア特性を検索します。
