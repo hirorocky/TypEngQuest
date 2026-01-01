@@ -340,15 +340,18 @@ func TestEnhanceThreshold(t *testing.T) {
 
 // TestEnemyActionType_定数の確認 はEnemyActionType定数が正しく定義されていることを確認します。
 func TestEnemyActionType_定数の確認(t *testing.T) {
-	// 行動タイプは Attack, SelfBuff, Debuff の3種類
+	// 行動タイプは Attack, Buff, Debuff, Defense の4種類
 	if EnemyActionAttack != 0 {
 		t.Errorf("EnemyActionAttackが期待値と異なります: got %d, want 0", EnemyActionAttack)
 	}
-	if EnemyActionSelfBuff != 1 {
-		t.Errorf("EnemyActionSelfBuffが期待値と異なります: got %d, want 1", EnemyActionSelfBuff)
+	if EnemyActionBuff != 1 {
+		t.Errorf("EnemyActionBuffが期待値と異なります: got %d, want 1", EnemyActionBuff)
 	}
 	if EnemyActionDebuff != 2 {
 		t.Errorf("EnemyActionDebuffが期待値と異なります: got %d, want 2", EnemyActionDebuff)
+	}
+	if EnemyActionDefense != 3 {
+		t.Errorf("EnemyActionDefenseが期待値と異なります: got %d, want 3", EnemyActionDefense)
 	}
 }
 
@@ -359,8 +362,9 @@ func TestEnemyActionType_String(t *testing.T) {
 		expected   string
 	}{
 		{EnemyActionAttack, "攻撃"},
-		{EnemyActionSelfBuff, "自己バフ"},
+		{EnemyActionBuff, "バフ"},
 		{EnemyActionDebuff, "デバフ"},
+		{EnemyActionDefense, "ディフェンス"},
 		{EnemyActionType(99), "不明"}, // 未定義値
 	}
 
@@ -400,13 +404,13 @@ func TestEnemyAction_攻撃行動のフィールド(t *testing.T) {
 // TestEnemyAction_バフ行動のフィールド は自己バフ行動のフィールドが正しく設定されることを確認します。
 func TestEnemyAction_バフ行動のフィールド(t *testing.T) {
 	buff := EnemyAction{
-		ActionType:  EnemyActionSelfBuff,
+		ActionType:  EnemyActionBuff,
 		EffectType:  "attackUp",
 		EffectValue: 0.3,
 		Duration:    10.0,
 	}
 
-	if buff.ActionType != EnemyActionSelfBuff {
+	if buff.ActionType != EnemyActionBuff {
 		t.Error("ActionTypeがSelfBuffであるべきです")
 	}
 	if buff.EffectType != "attackUp" {
@@ -446,7 +450,7 @@ func TestEnemyAction_デバフ行動のフィールド(t *testing.T) {
 // TestEnemyAction_IsAttack は攻撃行動かどうかを判定するヘルパーメソッドを確認します。
 func TestEnemyAction_IsAttack(t *testing.T) {
 	attack := EnemyAction{ActionType: EnemyActionAttack}
-	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	buff := EnemyAction{ActionType: EnemyActionBuff}
 	debuff := EnemyAction{ActionType: EnemyActionDebuff}
 
 	if !attack.IsAttack() {
@@ -463,7 +467,7 @@ func TestEnemyAction_IsAttack(t *testing.T) {
 // TestEnemyAction_IsBuff はバフ行動かどうかを判定するヘルパーメソッドを確認します。
 func TestEnemyAction_IsBuff(t *testing.T) {
 	attack := EnemyAction{ActionType: EnemyActionAttack}
-	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	buff := EnemyAction{ActionType: EnemyActionBuff}
 	debuff := EnemyAction{ActionType: EnemyActionDebuff}
 
 	if attack.IsBuff() {
@@ -480,7 +484,7 @@ func TestEnemyAction_IsBuff(t *testing.T) {
 // TestEnemyAction_IsDebuff はデバフ行動かどうかを判定するヘルパーメソッドを確認します。
 func TestEnemyAction_IsDebuff(t *testing.T) {
 	attack := EnemyAction{ActionType: EnemyActionAttack}
-	buff := EnemyAction{ActionType: EnemyActionSelfBuff}
+	buff := EnemyAction{ActionType: EnemyActionBuff}
 	debuff := EnemyAction{ActionType: EnemyActionDebuff}
 
 	if attack.IsDebuff() {
@@ -655,26 +659,26 @@ func TestEnemyType_拡張フィールドの確認(t *testing.T) {
 		AttackType: "physical",
 	}
 	enhancedAction := EnemyAction{
-		ActionType:  EnemyActionSelfBuff,
+		ActionType:  EnemyActionBuff,
 		EffectType:  "attackUp",
 		EffectValue: 0.3,
 		Duration:    10.0,
 	}
 
 	enemyType := EnemyType{
-		ID:                    "slime",
-		Name:                  "スライム",
-		BaseHP:                50,
-		BaseAttackPower:       5,
-		BaseAttackInterval:    3 * time.Second,
-		AttackType:            "physical",
-		DefaultLevel:          1,
-		NormalActionPattern:   []EnemyAction{normalAction},
-		EnhancedActionPattern: []EnemyAction{normalAction, enhancedAction},
-		NormalPassive:         normalPassive,
-		EnhancedPassive:       enhancedPassive,
-		DropItemCategory:      "core",
-		DropItemTypeID:        "fire",
+		ID:                      "slime",
+		Name:                    "スライム",
+		BaseHP:                  50,
+		BaseAttackPower:         5,
+		BaseAttackInterval:      3 * time.Second,
+		AttackType:              "physical",
+		DefaultLevel:            1,
+		ResolvedNormalActions:   []EnemyAction{normalAction},
+		ResolvedEnhancedActions: []EnemyAction{normalAction, enhancedAction},
+		NormalPassive:           normalPassive,
+		EnhancedPassive:         enhancedPassive,
+		DropItemCategory:        "core",
+		DropItemTypeID:          "fire",
 	}
 
 	// デフォルトレベル
@@ -683,16 +687,16 @@ func TestEnemyType_拡張フィールドの確認(t *testing.T) {
 	}
 
 	// 通常行動パターン
-	if len(enemyType.NormalActionPattern) != 1 {
-		t.Errorf("NormalActionPatternの長さが期待値と異なります: got %d, want 1", len(enemyType.NormalActionPattern))
+	if len(enemyType.ResolvedNormalActions) != 1 {
+		t.Errorf("ResolvedNormalActionsの長さが期待値と異なります: got %d, want 1", len(enemyType.ResolvedNormalActions))
 	}
-	if enemyType.NormalActionPattern[0].ActionType != EnemyActionAttack {
-		t.Error("NormalActionPattern[0]のActionTypeがAttackであるべきです")
+	if enemyType.ResolvedNormalActions[0].ActionType != EnemyActionAttack {
+		t.Error("ResolvedNormalActions[0]のActionTypeがAttackであるべきです")
 	}
 
 	// 強化行動パターン
-	if len(enemyType.EnhancedActionPattern) != 2 {
-		t.Errorf("EnhancedActionPatternの長さが期待値と異なります: got %d, want 2", len(enemyType.EnhancedActionPattern))
+	if len(enemyType.ResolvedEnhancedActions) != 2 {
+		t.Errorf("ResolvedEnhancedActionsの長さが期待値と異なります: got %d, want 2", len(enemyType.ResolvedEnhancedActions))
 	}
 
 	// 通常パッシブ
@@ -756,13 +760,13 @@ func TestEnemyType_行動パターンバリデーション(t *testing.T) {
 		{"1つの行動（有効）", []EnemyAction{{ActionType: EnemyActionAttack}}, true},
 		{"複数の行動（有効）", []EnemyAction{
 			{ActionType: EnemyActionAttack},
-			{ActionType: EnemyActionSelfBuff},
+			{ActionType: EnemyActionBuff},
 		}, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			enemyType := EnemyType{NormalActionPattern: tt.pattern}
+			enemyType := EnemyType{ResolvedNormalActions: tt.pattern}
 			result := enemyType.HasValidNormalActionPattern()
 			if result != tt.expected {
 				t.Errorf("HasValidNormalActionPattern()が期待値と異なります: got %v, want %v", result, tt.expected)
@@ -800,11 +804,11 @@ func TestEnemyType_ドロップカテゴリバリデーション(t *testing.T) {
 // TestEnemyModel_行動管理フィールドの確認 はEnemyModelの行動管理フィールドを確認します。
 func TestEnemyModel_行動管理フィールドの確認(t *testing.T) {
 	enemyType := EnemyType{
-		NormalActionPattern: []EnemyAction{
+		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "physical"},
-			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
+			{ActionType: EnemyActionBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
 		},
-		EnhancedActionPattern: []EnemyAction{
+		ResolvedEnhancedActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "magic"},
 		},
 	}
@@ -825,9 +829,9 @@ func TestEnemyModel_行動管理フィールドの確認(t *testing.T) {
 // TestEnemyModel_GetCurrentAction は現在実行すべき行動を取得するメソッドを確認します。
 func TestEnemyModel_GetCurrentAction(t *testing.T) {
 	enemyType := EnemyType{
-		NormalActionPattern: []EnemyAction{
+		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "physical"},
-			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp"},
+			{ActionType: EnemyActionBuff, EffectType: "attackUp"},
 		},
 	}
 
@@ -846,9 +850,9 @@ func TestEnemyModel_GetCurrentAction(t *testing.T) {
 // TestEnemyModel_AdvanceActionIndex は行動インデックスを進める（ループ対応）メソッドを確認します。
 func TestEnemyModel_AdvanceActionIndex(t *testing.T) {
 	enemyType := EnemyType{
-		NormalActionPattern: []EnemyAction{
+		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack},
-			{ActionType: EnemyActionSelfBuff},
+			{ActionType: EnemyActionBuff},
 			{ActionType: EnemyActionDebuff},
 		},
 	}
@@ -885,8 +889,8 @@ func TestEnemyModel_GetCurrentPattern(t *testing.T) {
 	enhancedAction := EnemyAction{ActionType: EnemyActionAttack, AttackType: "magic"}
 
 	enemyType := EnemyType{
-		NormalActionPattern:   []EnemyAction{normalAction},
-		EnhancedActionPattern: []EnemyAction{enhancedAction},
+		ResolvedNormalActions:   []EnemyAction{normalAction},
+		ResolvedEnhancedActions: []EnemyAction{enhancedAction},
 	}
 
 	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
@@ -910,8 +914,8 @@ func TestEnemyModel_GetCurrentPattern_強化パターン空の場合(t *testing.
 	normalAction := EnemyAction{ActionType: EnemyActionAttack, AttackType: "physical"}
 
 	enemyType := EnemyType{
-		NormalActionPattern:   []EnemyAction{normalAction},
-		EnhancedActionPattern: []EnemyAction{}, // 空
+		ResolvedNormalActions:   []EnemyAction{normalAction},
+		ResolvedEnhancedActions: []EnemyAction{}, // 空
 	}
 
 	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
@@ -927,9 +931,9 @@ func TestEnemyModel_GetCurrentPattern_強化パターン空の場合(t *testing.
 // TestEnemyModel_ResetActionIndex はフェーズ遷移時に行動インデックスをリセットすることを確認します。
 func TestEnemyModel_ResetActionIndex(t *testing.T) {
 	enemyType := EnemyType{
-		NormalActionPattern: []EnemyAction{
+		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack},
-			{ActionType: EnemyActionSelfBuff},
+			{ActionType: EnemyActionBuff},
 		},
 	}
 
@@ -951,7 +955,7 @@ func TestEnemyModel_ResetActionIndex(t *testing.T) {
 // TestEnemyModel_行動パターン空の場合のGetCurrentAction は行動パターンが空の場合のデフォルト動作を確認します。
 func TestEnemyModel_行動パターン空の場合のGetCurrentAction(t *testing.T) {
 	enemyType := EnemyType{
-		NormalActionPattern: []EnemyAction{}, // 空
+		ResolvedNormalActions: []EnemyAction{}, // 空
 	}
 
 	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
@@ -968,7 +972,7 @@ func TestEnemyModel_行動パターン空の場合のGetCurrentAction(t *testing
 // TestEnemyAction_JSONシリアライズ はEnemyActionのJSONシリアライズを確認します。
 func TestEnemyAction_JSONシリアライズ(t *testing.T) {
 	action := EnemyAction{
-		ActionType:  EnemyActionSelfBuff,
+		ActionType:  EnemyActionBuff,
 		EffectType:  "attackUp",
 		EffectValue: 0.3,
 		Duration:    10.0,
@@ -1046,12 +1050,12 @@ func TestEnemyType拡張フィールド_JSONシリアライズ(t *testing.T) {
 		BaseAttackInterval: 3 * time.Second,
 		AttackType:         "physical",
 		DefaultLevel:       1,
-		NormalActionPattern: []EnemyAction{
+		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "physical"},
 		},
-		EnhancedActionPattern: []EnemyAction{
+		ResolvedEnhancedActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "physical"},
-			{ActionType: EnemyActionSelfBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
+			{ActionType: EnemyActionBuff, EffectType: "attackUp", EffectValue: 0.3, Duration: 10.0},
 		},
 		NormalPassive: &EnemyPassiveSkill{
 			ID:   "slime_normal",
@@ -1087,11 +1091,11 @@ func TestEnemyType拡張フィールド_JSONシリアライズ(t *testing.T) {
 	if restored.DefaultLevel != enemyType.DefaultLevel {
 		t.Errorf("DefaultLevelが一致しません: got %d, want %d", restored.DefaultLevel, enemyType.DefaultLevel)
 	}
-	if len(restored.NormalActionPattern) != len(enemyType.NormalActionPattern) {
-		t.Errorf("NormalActionPatternの長さが一致しません: got %d, want %d", len(restored.NormalActionPattern), len(enemyType.NormalActionPattern))
+	if len(restored.ResolvedNormalActions) != len(enemyType.ResolvedNormalActions) {
+		t.Errorf("ResolvedNormalActionsの長さが一致しません: got %d, want %d", len(restored.ResolvedNormalActions), len(enemyType.ResolvedNormalActions))
 	}
-	if len(restored.EnhancedActionPattern) != len(enemyType.EnhancedActionPattern) {
-		t.Errorf("EnhancedActionPatternの長さが一致しません: got %d, want %d", len(restored.EnhancedActionPattern), len(enemyType.EnhancedActionPattern))
+	if len(restored.ResolvedEnhancedActions) != len(enemyType.ResolvedEnhancedActions) {
+		t.Errorf("ResolvedEnhancedActionsの長さが一致しません: got %d, want %d", len(restored.ResolvedEnhancedActions), len(enemyType.ResolvedEnhancedActions))
 	}
 	if restored.NormalPassive == nil {
 		t.Error("NormalPassiveがnilになっています")

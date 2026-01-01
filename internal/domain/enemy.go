@@ -60,11 +60,17 @@ type EnemyType struct {
 	// DefaultLevel はデフォルトレベル（1〜100）です。未撃破時はこのレベルのみ選択可能。
 	DefaultLevel int
 
-	// NormalActionPattern は通常状態での行動パターン（最低1つの行動を持つ配列）です。
-	NormalActionPattern []EnemyAction
+	// NormalActionPatternIDs は通常状態での行動パターンIDの配列です。
+	NormalActionPatternIDs []string
 
-	// EnhancedActionPattern は強化状態での行動パターンです。空の場合は通常パターンを継続。
-	EnhancedActionPattern []EnemyAction
+	// EnhancedActionPatternIDs は強化状態での行動パターンIDの配列です。空の場合は通常パターンを継続。
+	EnhancedActionPatternIDs []string
+
+	// ResolvedNormalActions は解決済みの通常行動パターンです（ランタイムで設定）。
+	ResolvedNormalActions []EnemyAction
+
+	// ResolvedEnhancedActions は解決済みの強化行動パターンです（ランタイムで設定）。
+	ResolvedEnhancedActions []EnemyAction
 
 	// NormalPassive は通常状態で適用されるパッシブスキルです。
 	NormalPassive *EnemyPassiveSkill
@@ -86,7 +92,23 @@ func (e EnemyType) IsValidDefaultLevel() bool {
 
 // HasValidNormalActionPattern は通常行動パターンが有効（最低1つの行動を持つ）かどうかを判定します。
 func (e EnemyType) HasValidNormalActionPattern() bool {
-	return len(e.NormalActionPattern) > 0
+	return len(e.NormalActionPatternIDs) > 0 || len(e.ResolvedNormalActions) > 0
+}
+
+// SetResolvedActions は行動IDから解決された行動パターンを設定します。
+func (e *EnemyType) SetResolvedActions(normalActions, enhancedActions []EnemyAction) {
+	e.ResolvedNormalActions = normalActions
+	e.ResolvedEnhancedActions = enhancedActions
+}
+
+// GetNormalActions は通常行動パターンを返します。
+func (e EnemyType) GetNormalActions() []EnemyAction {
+	return e.ResolvedNormalActions
+}
+
+// GetEnhancedActions は強化行動パターンを返します。
+func (e EnemyType) GetEnhancedActions() []EnemyAction {
+	return e.ResolvedEnhancedActions
 }
 
 // IsValidDropItemCategory はドロップカテゴリが有効かどうかを判定します。
@@ -134,6 +156,37 @@ type EnemyModel struct {
 
 	// ActivePassiveID は現在適用中のパッシブスキルIDです（解除時に使用）。
 	ActivePassiveID string
+
+	// ========== チャージ状態管理フィールド ==========
+
+	// IsCharging はチャージ中かどうかを示します。
+	IsCharging bool
+
+	// ChargeStartTime はチャージ開始時刻です。
+	ChargeStartTime time.Time
+
+	// CurrentChargeTime は現在の行動のチャージタイムです。
+	CurrentChargeTime time.Duration
+
+	// PendingAction はチャージ中の行動です。
+	PendingAction *EnemyAction
+
+	// ========== ディフェンス状態管理フィールド ==========
+
+	// IsDefending はディフェンス中かどうかを示します。
+	IsDefending bool
+
+	// DefenseStartTime はディフェンス開始時刻です。
+	DefenseStartTime time.Time
+
+	// DefenseDuration はディフェンス持続時間です。
+	DefenseDuration time.Duration
+
+	// ActiveDefenseType は発動中のディフェンス種別です。
+	ActiveDefenseType EnemyDefenseType
+
+	// DefenseValue は軽減率/回避率です。
+	DefenseValue float64
 }
 
 // NewEnemy は新しいEnemyModelを作成します。
@@ -217,10 +270,10 @@ func (e *EnemyModel) GetPhaseString() string {
 // GetCurrentPattern は現在のフェーズに対応する行動パターンを返します。
 // 強化フェーズで強化パターンが空の場合は通常パターンを継続します。
 func (e *EnemyModel) GetCurrentPattern() []EnemyAction {
-	if e.Phase == PhaseEnhanced && len(e.Type.EnhancedActionPattern) > 0 {
-		return e.Type.EnhancedActionPattern
+	if e.Phase == PhaseEnhanced && len(e.Type.ResolvedEnhancedActions) > 0 {
+		return e.Type.ResolvedEnhancedActions
 	}
-	return e.Type.NormalActionPattern
+	return e.Type.ResolvedNormalActions
 }
 
 // GetCurrentAction は現在実行すべき行動を返します。
@@ -253,6 +306,123 @@ func (e *EnemyModel) ResetActionIndex() {
 	e.ActionIndex = 0
 }
 
+// ========== チャージ状態管理メソッド ==========
+
+// StartCharging はチャージを開始します。
+func (e *EnemyModel) StartCharging(action EnemyAction, now time.Time) {
+	e.IsCharging = true
+	e.ChargeStartTime = now
+	e.CurrentChargeTime = action.ChargeTime
+	e.PendingAction = &action
+}
+
+// GetChargeProgress はチャージ進捗（0.0〜1.0）を返します。
+func (e *EnemyModel) GetChargeProgress(now time.Time) float64 {
+	if !e.IsCharging || e.CurrentChargeTime == 0 {
+		return 0
+	}
+	elapsed := now.Sub(e.ChargeStartTime)
+	progress := float64(elapsed) / float64(e.CurrentChargeTime)
+	if progress > 1.0 {
+		return 1.0
+	}
+	return progress
+}
+
+// GetChargeRemainingTime はチャージ残り時間を返します。
+func (e *EnemyModel) GetChargeRemainingTime(now time.Time) time.Duration {
+	if !e.IsCharging {
+		return 0
+	}
+	elapsed := now.Sub(e.ChargeStartTime)
+	remaining := e.CurrentChargeTime - elapsed
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+// IsChargeComplete はチャージ完了かどうかを返します。
+func (e *EnemyModel) IsChargeComplete(now time.Time) bool {
+	if !e.IsCharging {
+		return false
+	}
+	return now.Sub(e.ChargeStartTime) >= e.CurrentChargeTime
+}
+
+// ExecuteChargedAction はチャージ完了した行動を実行可能状態にします。
+// 実行後は行動インデックスを進めます。
+func (e *EnemyModel) ExecuteChargedAction() *EnemyAction {
+	if e.PendingAction == nil {
+		return nil
+	}
+	action := e.PendingAction
+	e.IsCharging = false
+	e.PendingAction = nil
+	e.AdvanceActionIndex()
+	return action
+}
+
+// CancelCharge はチャージをキャンセルします。
+func (e *EnemyModel) CancelCharge() {
+	e.IsCharging = false
+	e.PendingAction = nil
+}
+
+// ========== ディフェンス状態管理メソッド ==========
+
+// StartDefense はディフェンスを開始します。
+func (e *EnemyModel) StartDefense(defenseType EnemyDefenseType, value float64, duration time.Duration, now time.Time) {
+	e.IsDefending = true
+	e.DefenseStartTime = now
+	e.DefenseDuration = duration
+	e.ActiveDefenseType = defenseType
+	e.DefenseValue = value
+}
+
+// IsDefenseActive はディフェンスが有効かどうかを返します。
+func (e *EnemyModel) IsDefenseActive(now time.Time) bool {
+	if !e.IsDefending {
+		return false
+	}
+	return now.Sub(e.DefenseStartTime) < e.DefenseDuration
+}
+
+// GetDefenseRemainingTime はディフェンス残り時間を返します。
+func (e *EnemyModel) GetDefenseRemainingTime(now time.Time) time.Duration {
+	if !e.IsDefending {
+		return 0
+	}
+	elapsed := now.Sub(e.DefenseStartTime)
+	remaining := e.DefenseDuration - elapsed
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+// EndDefense はディフェンスを終了し、行動インデックスを進めます。
+func (e *EnemyModel) EndDefense() {
+	e.IsDefending = false
+	e.ActiveDefenseType = ""
+	e.DefenseValue = 0
+	e.AdvanceActionIndex()
+}
+
+// GetDefenseTypeName はディフェンス種別の表示名を返します。
+func (e *EnemyModel) GetDefenseTypeName() string {
+	switch e.ActiveDefenseType {
+	case DefensePhysicalCut:
+		return "物理防御"
+	case DefenseMagicCut:
+		return "魔法防御"
+	case DefenseDebuffEvade:
+		return "デバフ回避"
+	default:
+		return "防御"
+	}
+}
+
 // ========== 敵行動データ構造 ==========
 
 // EnemyActionType は敵の行動タイプを表す列挙型です。
@@ -262,11 +432,14 @@ const (
 	// EnemyActionAttack は攻撃行動です。
 	EnemyActionAttack EnemyActionType = iota
 
-	// EnemyActionSelfBuff は自己バフ行動です。
-	EnemyActionSelfBuff
+	// EnemyActionBuff は自己バフ行動です。
+	EnemyActionBuff
 
 	// EnemyActionDebuff はプレイヤーへのデバフ行動です。
 	EnemyActionDebuff
+
+	// EnemyActionDefense はディフェンス行動です。
+	EnemyActionDefense
 )
 
 // String はEnemyActionTypeの日本語表示名を返します。
@@ -274,31 +447,82 @@ func (t EnemyActionType) String() string {
 	switch t {
 	case EnemyActionAttack:
 		return "攻撃"
-	case EnemyActionSelfBuff:
-		return "自己バフ"
+	case EnemyActionBuff:
+		return "バフ"
 	case EnemyActionDebuff:
 		return "デバフ"
+	case EnemyActionDefense:
+		return "ディフェンス"
 	default:
 		return "不明"
 	}
 }
 
+// EnemyDefenseType はディフェンス行動の種類を表す列挙型です。
+type EnemyDefenseType string
+
+const (
+	// DefensePhysicalCut は物理ダメージ軽減です。
+	DefensePhysicalCut EnemyDefenseType = "physical_cut"
+
+	// DefenseMagicCut は魔法ダメージ軽減です。
+	DefenseMagicCut EnemyDefenseType = "magic_cut"
+
+	// DefenseDebuffEvade はデバフ回避です。
+	DefenseDebuffEvade EnemyDefenseType = "debuff_evade"
+)
+
 // EnemyAction は敵の個別行動を定義する値オブジェクトです。
 type EnemyAction struct {
-	// ActionType は行動タイプ（攻撃、自己バフ、プレイヤーデバフ）です。
+	// ========== 共通フィールド ==========
+
+	// ID は行動の一意識別子です。
+	ID string
+
+	// Name は行動の表示名です。
+	Name string
+
+	// ActionType は行動タイプ（攻撃、バフ、デバフ、ディフェンス）です。
 	ActionType EnemyActionType
+
+	// ChargeTime はチャージタイム（行動決定から実行までの時間）です。
+	ChargeTime time.Duration
+
+	// ========== 攻撃行動用フィールド ==========
 
 	// AttackType は攻撃行動時の攻撃属性（"physical" または "magic"）です。
 	AttackType string
 
-	// EffectType はバフ/デバフ行動時の効果種別です（例: "attackUp", "defenseDown"）。
+	// DamageBase は基礎ダメージ (a) です。ダメージ = a + Lv * b
+	DamageBase float64
+
+	// DamagePerLevel はレベル係数 (b) です。ダメージ = a + Lv * b
+	DamagePerLevel float64
+
+	// Element は攻撃の属性（"fire", "water", "dark"等）です。空文字は無属性。
+	Element string
+
+	// ========== バフ/デバフ行動用フィールド ==========
+
+	// EffectType はバフ/デバフ行動時の効果種別です（例: "damage_mult", "cooldown_reduce"）。
 	EffectType string
 
 	// EffectValue はバフ/デバフ行動時の効果値です。
 	EffectValue float64
 
-	// Duration はバフ/デバフの持続時間（秒）です。
+	// Duration はバフ/デバフ/ディフェンスの持続時間（秒）です。
 	Duration float64
+
+	// ========== ディフェンス行動用フィールド ==========
+
+	// DefenseType はディフェンスの種類（物理軽減/魔法軽減/デバフ回避）です。
+	DefenseType EnemyDefenseType
+
+	// ReductionRate は物理/魔法ダメージの軽減割合（0.0〜1.0）です。
+	ReductionRate float64
+
+	// EvadeRate はデバフ回避率（0.0〜1.0）です。
+	EvadeRate float64
 }
 
 // IsAttack は攻撃行動かどうかを判定します。
@@ -308,12 +532,32 @@ func (a EnemyAction) IsAttack() bool {
 
 // IsBuff は自己バフ行動かどうかを判定します。
 func (a EnemyAction) IsBuff() bool {
-	return a.ActionType == EnemyActionSelfBuff
+	return a.ActionType == EnemyActionBuff
 }
 
 // IsDebuff はデバフ行動かどうかを判定します。
 func (a EnemyAction) IsDebuff() bool {
 	return a.ActionType == EnemyActionDebuff
+}
+
+// IsDefense はディフェンス行動かどうかを判定します。
+func (a EnemyAction) IsDefense() bool {
+	return a.ActionType == EnemyActionDefense
+}
+
+// CalculateDamage はレベルに応じたダメージを計算します。
+// ダメージ = DamageBase + Level * DamagePerLevel
+func (a EnemyAction) CalculateDamage(level int) int {
+	damage := a.DamageBase + float64(level)*a.DamagePerLevel
+	if damage < 1 {
+		return 1
+	}
+	return int(damage)
+}
+
+// GetChargeTimeMs はチャージタイムをミリ秒で返します。
+func (a EnemyAction) GetChargeTimeMs() int64 {
+	return a.ChargeTime.Milliseconds()
 }
 
 // ========== 敵パッシブスキルデータ構造 ==========

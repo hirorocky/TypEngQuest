@@ -70,6 +70,7 @@ type ExternalData struct {
 	CoreTypes         []CoreTypeData
 	ModuleDefinitions []ModuleDefinitionData
 	EnemyTypes        []EnemyTypeData
+	EnemyActions      []EnemyActionData
 	PassiveSkills     []PassiveSkillData
 	TypingDictionary  *TypingDictionary
 	FirstAgent        *FirstAgentData
@@ -224,6 +225,14 @@ type EnemyTypeData struct {
 	BaseAttackIntervalMS int64  `json:"base_attack_interval_ms"`
 	AttackType           string `json:"attack_type"`
 	ASCIIArt             string `json:"ascii_art"`
+
+	// 拡張フィールド
+	DefaultLevel             int      `json:"default_level"`
+	NormalActionPatternIDs   []string `json:"normal_action_pattern"`
+	EnhancedActionPatternIDs []string `json:"enhanced_action_pattern"`
+	DropItemCategory         string   `json:"drop_item_category"`
+	DropItemTypeID           string   `json:"drop_item_type_id"`
+
 	// 内部で計算されるフィールド
 	BaseAttackInterval time.Duration `json:"-"`
 }
@@ -255,16 +264,119 @@ func (l *DataLoader) LoadEnemyTypes() ([]EnemyTypeData, error) {
 }
 
 // ToDomain はEnemyTypeDataをドメインモデルのEnemyTypeに変換します。
+// actionMap が指定された場合、行動パターンIDを解決します。
 func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 	return domain.EnemyType{
-		ID:                 e.ID,
-		Name:               e.Name,
-		BaseHP:             e.BaseHP,
-		BaseAttackPower:    e.BaseAttackPower,
-		BaseAttackInterval: e.BaseAttackInterval,
-		AttackType:         e.AttackType,
-		ASCIIArt:           e.ASCIIArt,
+		ID:                       e.ID,
+		Name:                     e.Name,
+		BaseHP:                   e.BaseHP,
+		BaseAttackPower:          e.BaseAttackPower,
+		BaseAttackInterval:       e.BaseAttackInterval,
+		AttackType:               e.AttackType,
+		ASCIIArt:                 e.ASCIIArt,
+		DefaultLevel:             e.DefaultLevel,
+		NormalActionPatternIDs:   e.NormalActionPatternIDs,
+		EnhancedActionPatternIDs: e.EnhancedActionPatternIDs,
+		DropItemCategory:         e.DropItemCategory,
+		DropItemTypeID:           e.DropItemTypeID,
 	}
+}
+
+// ==================== 敵行動定義 ====================
+
+// EnemyActionData はenemy_actions.jsonから読み込む敵行動データの構造体です。
+type EnemyActionData struct {
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	ActionType     string  `json:"action_type"`
+	AttackType     string  `json:"attack_type,omitempty"`
+	DamageBase     float64 `json:"damage_base,omitempty"`
+	DamagePerLevel float64 `json:"damage_per_level,omitempty"`
+	Element        string  `json:"element,omitempty"`
+	EffectType     string  `json:"effect_type,omitempty"`
+	EffectValue    float64 `json:"effect_value,omitempty"`
+	DefenseType    string  `json:"defense_type,omitempty"`
+	ReductionRate  float64 `json:"reduction_rate,omitempty"`
+	EvadeRate      float64 `json:"evade_rate,omitempty"`
+	DurationSec    float64 `json:"duration_seconds,omitempty"`
+	ChargeTimeMS   int64   `json:"charge_time_ms"`
+}
+
+// enemyActionsFileData はenemy_actions.jsonのルート構造です。
+type enemyActionsFileData struct {
+	EnemyActions []EnemyActionData `json:"enemy_actions"`
+}
+
+// LoadEnemyActions はenemy_actions.jsonから敵行動定義を読み込みます。
+func (l *DataLoader) LoadEnemyActions() ([]EnemyActionData, error) {
+	data, err := l.readFile("enemy_actions.json")
+	if err != nil {
+		return nil, fmt.Errorf("enemy_actions.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData enemyActionsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("enemy_actions.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.EnemyActions, nil
+}
+
+// ToDomain はEnemyActionDataをドメインモデルのEnemyActionに変換します。
+func (a *EnemyActionData) ToDomain() domain.EnemyAction {
+	action := domain.EnemyAction{
+		ID:             a.ID,
+		Name:           a.Name,
+		ChargeTime:     time.Duration(a.ChargeTimeMS) * time.Millisecond,
+		AttackType:     a.AttackType,
+		DamageBase:     a.DamageBase,
+		DamagePerLevel: a.DamagePerLevel,
+		Element:        a.Element,
+		EffectType:     a.EffectType,
+		EffectValue:    a.EffectValue,
+		Duration:       a.DurationSec,
+		ReductionRate:  a.ReductionRate,
+		EvadeRate:      a.EvadeRate,
+	}
+
+	// ActionTypeの変換
+	switch a.ActionType {
+	case "attack":
+		action.ActionType = domain.EnemyActionAttack
+	case "buff":
+		action.ActionType = domain.EnemyActionBuff
+	case "debuff":
+		action.ActionType = domain.EnemyActionDebuff
+	case "defense":
+		action.ActionType = domain.EnemyActionDefense
+	}
+
+	// DefenseTypeの変換
+	switch a.DefenseType {
+	case "physical_cut":
+		action.DefenseType = domain.DefensePhysicalCut
+	case "magic_cut":
+		action.DefenseType = domain.DefenseMagicCut
+	case "debuff_evade":
+		action.DefenseType = domain.DefenseDebuffEvade
+	}
+
+	return action
+}
+
+// ValidateEnemyActionData は敵行動データのバリデーションを行います。
+func ValidateEnemyActionData(data EnemyActionData) error {
+	if data.ID == "" {
+		return fmt.Errorf("敵行動IDが空です")
+	}
+	if data.ActionType == "" {
+		return fmt.Errorf("敵行動タイプが空です: ID=%s", data.ID)
+	}
+	validTypes := map[string]bool{"attack": true, "buff": true, "debuff": true, "defense": true}
+	if !validTypes[data.ActionType] {
+		return fmt.Errorf("敵行動タイプが不正です: ID=%s, ActionType=%s", data.ID, data.ActionType)
+	}
+	return nil
 }
 
 // ==================== パッシブスキル定義 ====================
@@ -311,29 +423,30 @@ func (l *DataLoader) LoadPassiveSkills() ([]PassiveSkillData, error) {
 	return fileData.PassiveSkills, nil
 }
 
-// ToDomain はPassiveSkillDataをドメインモデルのPassiveSkillDefinitionに変換します。
-func (p *PassiveSkillData) ToDomain() domain.PassiveSkillDefinition {
-	def := domain.PassiveSkillDefinition{
-		ID:             p.ID,
-		Name:           p.Name,
-		Description:    p.Description,
-		TriggerType:    convertTriggerType(p.TriggerType),
-		EffectType:     convertEffectType(p.EffectType),
-		EffectValue:    p.EffectValue,
-		Probability:    p.Probability,
-		MaxStacks:      p.MaxStacks,
-		StackIncrement: p.StackIncrement,
-		UsesPerBattle:  p.UsesPerBattle,
+// ToDomain はPassiveSkillDataをドメインモデルのPassiveSkillに変換します。
+func (p *PassiveSkillData) ToDomain() domain.PassiveSkill {
+	skill := domain.PassiveSkill{
+		ID:               p.ID,
+		Name:             p.Name,
+		Description:      p.Description,
+		ShortDescription: p.ShortDescription,
+		TriggerType:      convertTriggerType(p.TriggerType),
+		EffectType:       convertEffectType(p.EffectType),
+		EffectValue:      p.EffectValue,
+		Probability:      p.Probability,
+		MaxStacks:        p.MaxStacks,
+		StackIncrement:   p.StackIncrement,
+		UsesPerBattle:    p.UsesPerBattle,
 	}
 
 	if p.TriggerCondition != nil {
-		def.TriggerCondition = &domain.TriggerCondition{
+		skill.TriggerCondition = &domain.TriggerCondition{
 			Type:  convertTriggerConditionType(p.TriggerCondition.Type),
 			Value: p.TriggerCondition.Value,
 		}
 	}
 
-	return def
+	return skill
 }
 
 // convertTriggerType は文字列をPassiveTriggerTypeに変換します。
@@ -648,6 +761,13 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		return nil, fmt.Errorf("敵タイプのロードに失敗: %w", err)
 	}
 
+	// 敵行動データのロード（オプショナル：ファイルが存在しない場合は空配列）
+	enemyActions, err := l.LoadEnemyActions()
+	if err != nil {
+		// enemy_actions.jsonが存在しない場合は空配列を使用（後方互換性）
+		enemyActions = []EnemyActionData{}
+	}
+
 	passiveSkills, err := l.LoadPassiveSkills()
 	if err != nil {
 		return nil, fmt.Errorf("パッシブスキルのロードに失敗: %w", err)
@@ -667,6 +787,7 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		CoreTypes:         coreTypes,
 		ModuleDefinitions: modules,
 		EnemyTypes:        enemyTypes,
+		EnemyActions:      enemyActions,
 		PassiveSkills:     passiveSkills,
 		TypingDictionary:  dictionary,
 		FirstAgent:        firstAgent,

@@ -1,0 +1,114 @@
+{
+  "enemy_actions": [
+    {
+      "id": "act_slime_attack_phys",
+      "name": "体当たり",
+      "action_type": "attack",
+      "attack_type": "physical",
+      "damage_base": 5,
+      "damage_per_level": 1.0,
+      "charge_time_ms": 3000
+    },
+    {
+      "id": "act_slime_attack_magic",
+      "name": "酸攻撃",
+      "action_type": "attack",
+      "attack_type": "magic",
+      "damage_base": 8,
+      "damage_per_level": 1.5,
+      "element": "poison",
+      "charge_time_ms": 4000
+    },
+    {
+      "id": "act_goblin_attack_phys",
+      "name": "棍棒",
+      "action_type": "attack",
+      "attack_type": "physical",
+      "damage_base": 8,
+      "damage_per_level": 1.2,
+      "charge_time_ms": 3500
+    },
+    {
+      "id": "act_goblin_buff_attack",
+      "name": "怒り",
+      "action_type": "buff",
+      "effect_type": "damage_mult",
+      "effect_value": 1.3,
+      "duration_seconds": 10.0,
+      "charge_time_ms": 2000
+    },
+    {
+      "id": "act_goblin_debuff_slow",
+      "name": "妨害",
+      "action_type": "debuff",
+      "effect_type": "cooldown_reduce",
+      "effect_value": -0.2,
+      "duration_seconds": 8.0,
+      "charge_time_ms": 2500
+    },
+    {
+      "id": "act_skeleton_attack_phys",
+      "name": "骨剣",
+      "action_type": "attack",
+      "attack_type": "physical",
+      "damage_base": 10,
+      "damage_per_level": 1.5,
+      "charge_time_ms": 4000
+    },
+    {
+      "id": "act_skeleton_attack_magic",
+      "name": "呪詛",
+      "action_type": "attack",
+      "attack_type": "magic",
+      "damage_base": 12,
+      "damage_per_level": 2.0,
+      "element": "dark",
+      "charge_time_ms": 5000
+    },
+    {
+      "id": "act_skeleton_debuff_defense",
+      "name": "骨粉",
+      "action_type": "debuff",
+      "effect_type": "damage_cut",
+      "effect_value": -0.15,
+      "duration_seconds": 6.0,
+      "charge_time_ms": 3000
+    },
+    {
+      "id": "act_bat_attack_phys",
+      "name": "噛みつき",
+      "action_type": "attack",
+      "attack_type": "physical",
+      "damage_base": 6,
+      "damage_per_level": 0.8,
+      "charge_time_ms": 2000
+    },
+    {
+      "id": "act_bat_defense_phys",
+      "name": "回避飛行",
+      "action_type": "defense",
+      "defense_type": "physical_cut",
+      "reduction_rate": 0.5,
+      "duration_seconds": 3.0,
+      "charge_time_ms": 0
+    },
+    {
+      "id": "act_bat_defense_debuff",
+      "name": "超音波",
+      "action_type": "defense",
+      "defense_type": "debuff_evade",
+      "evade_rate": 0.7,
+      "duration_seconds": 4.0,
+      "charge_time_ms": 0
+    },
+    {
+      "id": "act_bat_buff_speed",
+      "name": "加速",
+      "action_type": "buff",
+      "effect_type": "attack_speed",
+      "effect_value": 1.5,
+      "duration_seconds": 8.0,
+      "charge_time_ms": 1500
+    }
+  ]
+}

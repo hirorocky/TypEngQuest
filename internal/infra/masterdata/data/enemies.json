@@ -7,7 +7,12 @@
       "base_attack_power": 5,
       "base_attack_interval_ms": 10000,
       "attack_type": "physical",
-      "ascii_art": "   ___\n  /   \\\n |     |\n  \\___/"
+      "ascii_art": "   ___\n  /   \\\n |     |\n  \\___/",
+      "default_level": 1,
+      "normal_action_pattern": ["act_slime_attack_phys"],
+      "enhanced_action_pattern": ["act_slime_attack_phys", "act_slime_attack_magic"],
+      "drop_item_category": "core",
+      "drop_item_type_id": "attack_balance"
     },
     {
       "id": "goblin",
@@ -16,7 +21,12 @@
       "base_attack_power": 8,
       "base_attack_interval_ms": 10000,
       "attack_type": "physical",
-      "ascii_art": "  /\\_/\\\n ( o.o )\n  > ^ <"
+      "ascii_art": "  /\\_/\\\n ( o.o )\n  > ^ <",
+      "default_level": 3,
+      "normal_action_pattern": ["act_goblin_attack_phys", "act_goblin_attack_phys"],
+      "enhanced_action_pattern": ["act_goblin_attack_phys", "act_goblin_buff_attack", "act_goblin_attack_phys", "act_goblin_debuff_slow"],
+      "drop_item_category": "module",
+      "drop_item_type_id": "physical_strike_lv1"
     },
     {
       "id": "skeleton",
@@ -25,7 +35,12 @@
       "base_attack_power": 10,
       "base_attack_interval_ms": 12800,
       "attack_type": "physical",
-      "ascii_art": "  _____\n /     \\\n | x x |\n |  ^  |\n  \\___/"
+      "ascii_art": "  _____\n /     \\\n | x x |\n |  ^  |\n  \\___/",
+      "default_level": 5,
+      "normal_action_pattern": ["act_skeleton_attack_phys"],
+      "enhanced_action_pattern": ["act_skeleton_attack_phys", "act_skeleton_attack_magic", "act_skeleton_debuff_defense"],
+      "drop_item_category": "core",
+      "drop_item_type_id": "magic_balance"
     },
     {
       "id": "bat",
@@ -34,7 +49,12 @@
       "base_attack_power": 6,
       "base_attack_interval_ms": 12000,
       "attack_type": "physical",
-      "ascii_art": " /V   V\\\n(  ' '  )\n  \\   /"
+      "ascii_art": " /V   V\\\n(  ' '  )\n  \\   /",
+      "default_level": 2,
+      "normal_action_pattern": ["act_bat_attack_phys", "act_bat_attack_phys"],
+      "enhanced_action_pattern": ["act_bat_attack_phys", "act_bat_defense_phys", "act_bat_attack_phys", "act_bat_buff_speed"],
+      "drop_item_category": "module",
+      "drop_item_type_id": "heal_lv1"
     }
   ]
 }
