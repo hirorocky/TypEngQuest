@@ -1,0 +1,20 @@
+{
+  "enemy_passive_skills": [
+    {
+      "id": "slime_normal",
+      "name": "ぷるぷるボディ",
+      "description": "物理ダメージを10%軽減する",
+      "effects": {
+        "damage_cut": 0.1
+      }
+    },
+    {
+      "id": "slime_enhanced",
+      "name": "怒りのスライム",
+      "description": "攻撃力が20%上昇する",
+      "effects": {
+        "damage_mult": 1.2
+      }
+    }
+  ]
+}

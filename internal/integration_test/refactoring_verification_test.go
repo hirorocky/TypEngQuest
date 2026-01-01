@@ -46,10 +46,27 @@ func convertExternalDataToDomainSources(ext *masterdata.ExternalData) *gamestate
 		}
 	}
 
-	// EnemyTypes の変換
+	// EnemyPassiveSkills をマップに変換
+	enemyPassiveMap := make(map[string]*domain.EnemyPassiveSkill, len(ext.EnemyPassiveSkills))
+	for _, ep := range ext.EnemyPassiveSkills {
+		enemyPassiveMap[ep.ID] = ep.ToDomain()
+	}
+
+	// EnemyTypes の変換（パッシブを解決）
 	enemyTypes := make([]domain.EnemyType, len(ext.EnemyTypes))
 	for i, et := range ext.EnemyTypes {
 		enemyTypes[i] = et.ToDomain()
+		// パッシブIDが設定されている場合、パッシブを解決
+		if et.NormalPassiveID != "" {
+			if passive, ok := enemyPassiveMap[et.NormalPassiveID]; ok {
+				enemyTypes[i].NormalPassive = passive
+			}
+		}
+		if et.EnhancedPassiveID != "" {
+			if passive, ok := enemyPassiveMap[et.EnhancedPassiveID]; ok {
+				enemyTypes[i].EnhancedPassive = passive
+			}
+		}
 	}
 
 	return &gamestate.DomainDataSources{

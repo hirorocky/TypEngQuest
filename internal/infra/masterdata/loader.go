@@ -67,13 +67,14 @@ func (l *DataLoader) readFile(filename string) ([]byte, error) {
 
 // ExternalData は外部データファイルから読み込んだ全データを格納する構造体です。
 type ExternalData struct {
-	CoreTypes         []CoreTypeData
-	ModuleDefinitions []ModuleDefinitionData
-	EnemyTypes        []EnemyTypeData
-	EnemyActions      []EnemyActionData
-	PassiveSkills     []PassiveSkillData
-	TypingDictionary  *TypingDictionary
-	FirstAgent        *FirstAgentData
+	CoreTypes          []CoreTypeData
+	ModuleDefinitions  []ModuleDefinitionData
+	EnemyTypes         []EnemyTypeData
+	EnemyActions       []EnemyActionData
+	EnemyPassiveSkills []EnemyPassiveSkillData
+	PassiveSkills      []PassiveSkillData
+	TypingDictionary   *TypingDictionary
+	FirstAgent         *FirstAgentData
 }
 
 // ==================== コア特性定義 ====================
@@ -230,6 +231,8 @@ type EnemyTypeData struct {
 	DefaultLevel             int      `json:"default_level"`
 	NormalActionPatternIDs   []string `json:"normal_action_pattern"`
 	EnhancedActionPatternIDs []string `json:"enhanced_action_pattern"`
+	NormalPassiveID          string   `json:"normal_passive_id"`
+	EnhancedPassiveID        string   `json:"enhanced_passive_id"`
 	DropItemCategory         string   `json:"drop_item_category"`
 	DropItemTypeID           string   `json:"drop_item_type_id"`
 
@@ -521,6 +524,51 @@ func convertTriggerConditionType(s string) domain.TriggerConditionType {
 	}
 }
 
+// ==================== 敵パッシブスキル定義 ====================
+
+// EnemyPassiveSkillData はenemy_passive_skills.jsonから読み込む敵パッシブスキルデータの構造体です。
+type EnemyPassiveSkillData struct {
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Effects     map[string]float64 `json:"effects"`
+}
+
+// enemyPassiveSkillsFileData はenemy_passive_skills.jsonのルート構造です。
+type enemyPassiveSkillsFileData struct {
+	EnemyPassiveSkills []EnemyPassiveSkillData `json:"enemy_passive_skills"`
+}
+
+// LoadEnemyPassiveSkills はenemy_passive_skills.jsonから敵パッシブスキル定義を読み込みます。
+func (l *DataLoader) LoadEnemyPassiveSkills() ([]EnemyPassiveSkillData, error) {
+	data, err := l.readFile("enemy_passive_skills.json")
+	if err != nil {
+		return nil, fmt.Errorf("enemy_passive_skills.jsonの読み込みに失敗: %w", err)
+	}
+
+	var fileData enemyPassiveSkillsFileData
+	if err := json.Unmarshal(data, &fileData); err != nil {
+		return nil, fmt.Errorf("enemy_passive_skills.jsonのパースに失敗: %w", err)
+	}
+
+	return fileData.EnemyPassiveSkills, nil
+}
+
+// ToDomain はEnemyPassiveSkillDataをドメインモデルのEnemyPassiveSkillに変換します。
+func (p *EnemyPassiveSkillData) ToDomain() *domain.EnemyPassiveSkill {
+	effects := make(map[domain.EffectColumn]float64)
+	for key, value := range p.Effects {
+		effects[domain.EffectColumn(key)] = value
+	}
+
+	return &domain.EnemyPassiveSkill{
+		ID:          p.ID,
+		Name:        p.Name,
+		Description: p.Description,
+		Effects:     effects,
+	}
+}
+
 // ==================== チェイン効果定義 ====================
 
 // ChainEffectData はchain_effects.jsonから読み込むチェイン効果データの構造体です。
@@ -768,6 +816,13 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		enemyActions = []EnemyActionData{}
 	}
 
+	// 敵パッシブスキルデータのロード（オプショナル：ファイルが存在しない場合は空配列）
+	enemyPassiveSkills, err := l.LoadEnemyPassiveSkills()
+	if err != nil {
+		// enemy_passive_skills.jsonが存在しない場合は空配列を使用（後方互換性）
+		enemyPassiveSkills = []EnemyPassiveSkillData{}
+	}
+
 	passiveSkills, err := l.LoadPassiveSkills()
 	if err != nil {
 		return nil, fmt.Errorf("パッシブスキルのロードに失敗: %w", err)
@@ -784,13 +839,14 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 	}
 
 	return &ExternalData{
-		CoreTypes:         coreTypes,
-		ModuleDefinitions: modules,
-		EnemyTypes:        enemyTypes,
-		EnemyActions:      enemyActions,
-		PassiveSkills:     passiveSkills,
-		TypingDictionary:  dictionary,
-		FirstAgent:        firstAgent,
+		CoreTypes:          coreTypes,
+		ModuleDefinitions:  modules,
+		EnemyTypes:         enemyTypes,
+		EnemyActions:       enemyActions,
+		EnemyPassiveSkills: enemyPassiveSkills,
+		PassiveSkills:      passiveSkills,
+		TypingDictionary:   dictionary,
+		FirstAgent:         firstAgent,
 	}, nil
 }
 

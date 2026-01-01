@@ -17,6 +17,42 @@ func ConvertEnemyTypes(types []masterdata.EnemyTypeData) []domain.EnemyType {
 	return result
 }
 
+// ConvertEnemyPassiveSkills はmasterdata.EnemyPassiveSkillDataのスライスをIDマップに変換します。
+func ConvertEnemyPassiveSkills(skills []masterdata.EnemyPassiveSkillData) map[string]*domain.EnemyPassiveSkill {
+	result := make(map[string]*domain.EnemyPassiveSkill, len(skills))
+	for _, s := range skills {
+		result[s.ID] = s.ToDomain()
+	}
+	return result
+}
+
+// ConvertEnemyTypesWithPassives は敵タイプを変換し、パッシブスキルを解決します。
+func ConvertEnemyTypesWithPassives(
+	types []masterdata.EnemyTypeData,
+	passives []masterdata.EnemyPassiveSkillData,
+) []domain.EnemyType {
+	// パッシブスキルをマップに変換
+	passiveMap := ConvertEnemyPassiveSkills(passives)
+
+	result := make([]domain.EnemyType, len(types))
+	for i, t := range types {
+		result[i] = t.ToDomain()
+
+		// パッシブIDが設定されている場合、パッシブを解決
+		if t.NormalPassiveID != "" {
+			if passive, ok := passiveMap[t.NormalPassiveID]; ok {
+				result[i].NormalPassive = passive
+			}
+		}
+		if t.EnhancedPassiveID != "" {
+			if passive, ok := passiveMap[t.EnhancedPassiveID]; ok {
+				result[i].EnhancedPassive = passive
+			}
+		}
+	}
+	return result
+}
+
 // ConvertCoreTypes はmasterdata.CoreTypeDataのスライスをdomain.CoreTypeのスライスに変換します。
 func ConvertCoreTypes(types []masterdata.CoreTypeData) []domain.CoreType {
 	result := make([]domain.CoreType, len(types))
@@ -75,7 +111,8 @@ func ConvertExternalDataToDomain(ext *masterdata.ExternalData) (
 		return nil, nil, nil
 	}
 
-	enemyTypes := ConvertEnemyTypes(ext.EnemyTypes)
+	// 敵タイプとパッシブスキルを変換（パッシブを解決）
+	enemyTypes := ConvertEnemyTypesWithPassives(ext.EnemyTypes, ext.EnemyPassiveSkills)
 	coreTypes := ConvertCoreTypes(ext.CoreTypes)
 	moduleTypes := ConvertModuleTypes(ext.ModuleDefinitions)
 
