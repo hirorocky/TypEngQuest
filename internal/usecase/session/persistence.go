@@ -331,20 +331,6 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 		gs.SetDefeatedEnemies(defeatedEnemies)
 	}
 
-	// 後方互換性: encountered_enemiesにあるがdefeated_enemiesにない敵は、
-	// デフォルトレベルで撃破済みとして扱う
-	for _, enemyID := range encounteredEnemies {
-		if _, exists := gs.defeatedEnemies[enemyID]; !exists {
-			// 敵タイプからデフォルトレベルを取得
-			for _, et := range enemyTypes {
-				if et.ID == enemyID {
-					gs.defeatedEnemies[enemyID] = et.DefaultLevel
-					break
-				}
-			}
-		}
-	}
-
 	return gs
 }
 
