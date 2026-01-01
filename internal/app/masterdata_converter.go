@@ -103,22 +103,6 @@ func ConvertChainEffects(effects []masterdata.ChainEffectData) []rewarding.Chain
 func ConvertPassiveSkills(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkill {
 	result := make(map[string]domain.PassiveSkill, len(skills))
 	for _, s := range skills {
-		result[s.ID] = domain.PassiveSkill{
-			ID:               s.ID,
-			Name:             s.Name,
-			Description:      s.Description,
-			ShortDescription: s.ShortDescription,
-		}
-	}
-	return result
-}
-
-// ConvertPassiveSkillDefinitions はmasterdata.PassiveSkillDataのスライスを
-// domain.PassiveSkillDefinitionのマップに変換します。
-// キーはパッシブスキルのIDです。
-func ConvertPassiveSkillDefinitions(skills []masterdata.PassiveSkillData) map[string]domain.PassiveSkillDefinition {
-	result := make(map[string]domain.PassiveSkillDefinition, len(skills))
-	for _, s := range skills {
 		result[s.ID] = s.ToDomain()
 	}
 	return result

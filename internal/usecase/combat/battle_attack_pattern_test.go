@@ -122,7 +122,7 @@ func TestBattleState_SameAttackCount_Reset(t *testing.T) {
 // TestBattleEngine_AdaptiveShield は同種攻撃3回以上でダメージ軽減をテストします。
 func TestBattleEngine_AdaptiveShield(t *testing.T) {
 	// Arrange
-	adaptiveShieldDef := domain.PassiveSkillDefinition{
+	adaptiveShieldDef := domain.PassiveSkill{
 		ID:          "ps_adaptive_shield",
 		Name:        "アダプティブシールド",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -135,7 +135,7 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 		Probability: 1.0,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_adaptive_shield": adaptiveShieldDef,
 	}
 
@@ -172,7 +172,7 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)

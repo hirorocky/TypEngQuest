@@ -15,11 +15,10 @@ import (
 
 // DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
 type DomainDataSources struct {
-	CoreTypes               []domain.CoreType
-	ModuleTypes             []rewarding.ModuleDropInfo
-	EnemyTypes              []domain.EnemyType
-	PassiveSkills           map[string]domain.PassiveSkill
-	PassiveSkillDefinitions map[string]domain.PassiveSkillDefinition
+	CoreTypes     []domain.CoreType
+	ModuleTypes   []rewarding.ModuleDropInfo
+	EnemyTypes    []domain.EnemyType
+	PassiveSkills map[string]domain.PassiveSkill
 }
 
 // ToSaveData はGameStateをセーブデータに変換します。

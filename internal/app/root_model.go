@@ -80,7 +80,7 @@ type RootModel struct {
 	rewardScreen            *screens.RewardScreen
 
 	// パッシブスキル定義（バトル開始時に BattleEngine へ渡す）
-	passiveSkillDefs map[string]domain.PassiveSkillDefinition
+	passiveSkills map[string]domain.PassiveSkill
 
 	// タイピング辞書（words.jsonからロード）
 	typingDictionary *typing.Dictionary
@@ -131,18 +131,16 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 
 	// masterdata → domain型への変換（app層で変換を行う）
 	var domainSources *gamestate.DomainDataSources
-	var passiveSkillDefs map[string]domain.PassiveSkillDefinition
+	var passiveSkills map[string]domain.PassiveSkill
 	var typingDict *typing.Dictionary
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
-		passiveSkills := ConvertPassiveSkills(externalData.PassiveSkills)
-		passiveSkillDefs = ConvertPassiveSkillDefinitions(externalData.PassiveSkills)
+		passiveSkills = ConvertPassiveSkills(externalData.PassiveSkills)
 		domainSources = &gamestate.DomainDataSources{
-			CoreTypes:               coreTypes,
-			ModuleTypes:             moduleTypes,
-			EnemyTypes:              enemyTypes,
-			PassiveSkills:           passiveSkills,
-			PassiveSkillDefinitions: passiveSkillDefs,
+			CoreTypes:     coreTypes,
+			ModuleTypes:   moduleTypes,
+			EnemyTypes:    enemyTypes,
+			PassiveSkills: passiveSkills,
 		}
 		// タイピング辞書を変換
 		if externalData.TypingDictionary != nil {
@@ -255,7 +253,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 		encyclopediaScreen:      encyclopediaScreen,
 		statsAchievementsScreen: statsAchievementsScreen,
 		settingsScreen:          settingsScreen,
-		passiveSkillDefs:        passiveSkillDefs,
+		passiveSkills:           passiveSkills,
 		typingDictionary:        typingDict,
 		debugMode:               debugMode,
 		invProvider:             invProvider,
@@ -464,8 +462,8 @@ func (m *RootModel) startBattle(level int) tea.Cmd {
 	m.battleScreen = screens.NewBattleScreen(enemy, player, agents, m.typingDictionary)
 
 	// パッシブスキル定義を設定（EffectTable登録に使用）
-	if m.passiveSkillDefs != nil {
-		m.battleScreen.SetPassiveSkillDefinitions(m.passiveSkillDefs)
+	if m.passiveSkills != nil {
+		m.battleScreen.SetPassiveSkills(m.passiveSkills)
 	}
 
 	// シーンを切り替え

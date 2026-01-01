@@ -15,7 +15,7 @@ import (
 // TestBattleEngine_ModuleUse_EchoSkill は15%でスキル2回発動をテストします。
 func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 	// Arrange: ps_echo_skillの定義
-	echoSkillDef := domain.PassiveSkillDefinition{
+	echoSkillDef := domain.PassiveSkill{
 		ID:          "ps_echo_skill",
 		Name:        "エコースキル",
 		TriggerType: domain.PassiveTriggerProbability,
@@ -27,7 +27,7 @@ func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 		Probability: 1.0, // テスト用に100%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_echo_skill": echoSkillDef,
 	}
 
@@ -64,7 +64,7 @@ func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)
@@ -106,7 +106,7 @@ func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 // TestBattleEngine_ModuleUse_MiracleHeal は回復スキル時10%でHP全回復をテストします。
 func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 	// Arrange: ps_miracle_healの定義
-	miracleHealDef := domain.PassiveSkillDefinition{
+	miracleHealDef := domain.PassiveSkill{
 		ID:          "ps_miracle_heal",
 		Name:        "ミラクルヒール",
 		TriggerType: domain.PassiveTriggerProbability,
@@ -118,7 +118,7 @@ func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 		Probability: 1.0, // テスト用に100%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_miracle_heal": miracleHealDef,
 	}
 
@@ -155,7 +155,7 @@ func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)
@@ -185,7 +185,7 @@ func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 // TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill は非回復スキルでは発動しないことをテストします。
 func TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill(t *testing.T) {
 	// Arrange
-	miracleHealDef := domain.PassiveSkillDefinition{
+	miracleHealDef := domain.PassiveSkill{
 		ID:          "ps_miracle_heal",
 		Name:        "ミラクルヒール",
 		TriggerType: domain.PassiveTriggerProbability,
@@ -197,7 +197,7 @@ func TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill(t *testing.T) {
 		Probability: 1.0,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_miracle_heal": miracleHealDef,
 	}
 
@@ -235,7 +235,7 @@ func TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)

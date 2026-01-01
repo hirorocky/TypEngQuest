@@ -62,13 +62,13 @@ func (n *PassiveSkillNotification) GetShortDescription() string {
 	return n.skill.Description
 }
 
-// GetEffectModifiers はコアレベルに応じた効果量を計算して返します。
-// skillがnilの場合はゼロ値のStatModifiersを返します。
-func (n *PassiveSkillNotification) GetEffectModifiers() domain.StatModifiers {
+// GetEffects はパッシブスキルの効果マップを返します。
+// skillがnilの場合はnilを返します。
+func (n *PassiveSkillNotification) GetEffects() map[domain.EffectColumn]float64 {
 	if n.skill == nil {
-		return domain.StatModifiers{}
+		return nil
 	}
-	return n.skill.CalculateModifiers(n.coreLevel)
+	return n.skill.Effects
 }
 
 // HasActiveEffects はこの通知が有効なパッシブスキルを持っているかを返します。
@@ -137,61 +137,86 @@ func (n *PassiveSkillNotification) RenderEffectsList() []string {
 		return []string{}
 	}
 
-	modifiers := n.GetEffectModifiers()
-	effects := make([]string, 0)
+	effectsMap := n.GetEffects()
+	if effectsMap == nil {
+		return []string{}
+	}
 
+	effects := make([]string, 0)
 	valueStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 
-	// ステータス乗算効果
-	if modifiers.STR_Mult != 0 && modifiers.STR_Mult != 1.0 {
-		percent := (modifiers.STR_Mult - 1.0) * 100
-		effects = append(effects, fmt.Sprintf("STR: %s", valueStyle.Render(fmt.Sprintf("%+.0f%%", percent))))
-	}
-	if modifiers.MAG_Mult != 0 && modifiers.MAG_Mult != 1.0 {
-		percent := (modifiers.MAG_Mult - 1.0) * 100
-		effects = append(effects, fmt.Sprintf("MAG: %s", valueStyle.Render(fmt.Sprintf("%+.0f%%", percent))))
-	}
-	if modifiers.SPD_Mult != 0 && modifiers.SPD_Mult != 1.0 {
-		percent := (modifiers.SPD_Mult - 1.0) * 100
-		effects = append(effects, fmt.Sprintf("SPD: %s", valueStyle.Render(fmt.Sprintf("%+.0f%%", percent))))
-	}
-	if modifiers.LUK_Mult != 0 && modifiers.LUK_Mult != 1.0 {
-		percent := (modifiers.LUK_Mult - 1.0) * 100
-		effects = append(effects, fmt.Sprintf("LUK: %s", valueStyle.Render(fmt.Sprintf("%+.0f%%", percent))))
-	}
-
-	// ステータス加算効果
-	if modifiers.STR_Add != 0 {
-		effects = append(effects, fmt.Sprintf("STR: %s", valueStyle.Render(fmt.Sprintf("%+d", modifiers.STR_Add))))
-	}
-	if modifiers.MAG_Add != 0 {
-		effects = append(effects, fmt.Sprintf("MAG: %s", valueStyle.Render(fmt.Sprintf("%+d", modifiers.MAG_Add))))
-	}
-	if modifiers.SPD_Add != 0 {
-		effects = append(effects, fmt.Sprintf("SPD: %s", valueStyle.Render(fmt.Sprintf("%+d", modifiers.SPD_Add))))
-	}
-	if modifiers.LUK_Add != 0 {
-		effects = append(effects, fmt.Sprintf("LUK: %s", valueStyle.Render(fmt.Sprintf("%+d", modifiers.LUK_Add))))
+	// 効果名のマッピング
+	columnNames := map[domain.EffectColumn]string{
+		domain.ColDamageBonus:      "ダメージ",
+		domain.ColDamageMultiplier: "ダメージ倍率",
+		domain.ColDamageCut:        "被ダメ軽減",
+		domain.ColEvasion:          "回避率",
+		domain.ColTimeExtend:       "入力時間",
+		domain.ColCooldownReduce:   "CD短縮",
+		domain.ColCritRate:         "クリ率",
+		domain.ColSTRBonus:         "STR",
+		domain.ColMAGBonus:         "MAG",
+		domain.ColSPDBonus:         "SPD",
+		domain.ColLUKBonus:         "LUK",
+		domain.ColSTRMultiplier:    "STR倍率",
+		domain.ColMAGMultiplier:    "MAG倍率",
+		domain.ColSPDMultiplier:    "SPD倍率",
+		domain.ColLUKMultiplier:    "LUK倍率",
+		domain.ColHealBonus:        "回復",
+		domain.ColHealMultiplier:   "回復倍率",
+		domain.ColLifeSteal:        "HP吸収",
 	}
 
-	// 特殊効果
-	if modifiers.CDReduction != 0 {
-		effects = append(effects, fmt.Sprintf("CD短縮: %s", valueStyle.Render(fmt.Sprintf("%.0f%%", modifiers.CDReduction*100))))
+	// 乗算系の列（パーセント表示）
+	multColumns := map[domain.EffectColumn]bool{
+		domain.ColDamageMultiplier: true,
+		domain.ColSTRMultiplier:    true,
+		domain.ColMAGMultiplier:    true,
+		domain.ColSPDMultiplier:    true,
+		domain.ColLUKMultiplier:    true,
+		domain.ColHealMultiplier:   true,
 	}
-	if modifiers.TypingTimeExt != 0 {
-		effects = append(effects, fmt.Sprintf("入力時間: %s", valueStyle.Render(fmt.Sprintf("+%.1f秒", modifiers.TypingTimeExt))))
+
+	// パーセント系の列
+	percentColumns := map[domain.EffectColumn]bool{
+		domain.ColDamageCut:      true,
+		domain.ColEvasion:        true,
+		domain.ColCooldownReduce: true,
+		domain.ColCritRate:       true,
+		domain.ColLifeSteal:      true,
 	}
-	if modifiers.DamageReduction != 0 {
-		effects = append(effects, fmt.Sprintf("被ダメ軽減: %s", valueStyle.Render(fmt.Sprintf("%.0f%%", modifiers.DamageReduction*100))))
-	}
-	if modifiers.CritRate != 0 {
-		effects = append(effects, fmt.Sprintf("クリ率: %s", valueStyle.Render(fmt.Sprintf("+%.0f%%", modifiers.CritRate*100))))
-	}
-	if modifiers.PhysicalEvade != 0 {
-		effects = append(effects, fmt.Sprintf("物理回避: %s", valueStyle.Render(fmt.Sprintf("+%.0f%%", modifiers.PhysicalEvade*100))))
-	}
-	if modifiers.MagicEvade != 0 {
-		effects = append(effects, fmt.Sprintf("魔法回避: %s", valueStyle.Render(fmt.Sprintf("+%.0f%%", modifiers.MagicEvade*100))))
+
+	for col, val := range effectsMap {
+		if val == 0 {
+			continue
+		}
+
+		name, ok := columnNames[col]
+		if !ok {
+			name = string(col)
+		}
+
+		var formatted string
+		if multColumns[col] {
+			// 乗算系は1.0からの差分をパーセント表示
+			percent := (val - 1.0) * 100
+			formatted = fmt.Sprintf("%+.0f%%", percent)
+		} else if percentColumns[col] {
+			// パーセント系はそのまま100倍
+			formatted = fmt.Sprintf("+%.0f%%", val*100)
+		} else if col == domain.ColTimeExtend {
+			// 時間延長は秒数
+			formatted = fmt.Sprintf("+%.1f秒", val)
+		} else {
+			// その他は整数または小数
+			if val == float64(int(val)) {
+				formatted = fmt.Sprintf("%+.0f", val)
+			} else {
+				formatted = fmt.Sprintf("%+.1f", val)
+			}
+		}
+
+		effects = append(effects, fmt.Sprintf("%s: %s", name, valueStyle.Render(formatted)))
 	}
 
 	return effects

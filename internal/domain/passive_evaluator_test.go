@@ -7,7 +7,7 @@ import (
 
 // TestPassiveEvaluator_永続効果_バフエクステンダー は永続効果タイプのパッシブスキルが正しく評価されることを確認します。
 func TestPassiveEvaluator_永続効果_バフエクステンダー(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_buff_extender",
 		Name:        "バフエクステンダー",
 		Description: "バフ効果時間+50%",
@@ -29,7 +29,7 @@ func TestPassiveEvaluator_永続効果_バフエクステンダー(t *testing.T)
 
 // TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満たす は条件を満たした時に効果が発動することを確認します。
 func TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満たす(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		Description: "正確性100%でスキル効果1.5倍",
@@ -57,7 +57,7 @@ func TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満た�
 
 // TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満たさない は条件を満たさない時に効果が発動しないことを確認します。
 func TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満たさない(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		Description: "正確性100%でスキル効果1.5倍",
@@ -82,7 +82,7 @@ func TestPassiveEvaluator_条件付き_パーフェクトリズム_条件満た�
 
 // TestPassiveEvaluator_条件付き_スピードブレイク_WPM80以上 はWPM条件を満たした時に効果が発動することを確認します。
 func TestPassiveEvaluator_条件付き_スピードブレイク_WPM80以上(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_speed_break",
 		Name:        "スピードブレイク",
 		Description: "WPM80以上で25%追加ダメージ",
@@ -121,7 +121,7 @@ func TestPassiveEvaluator_条件付き_スピードブレイク_WPM80以上(t *t
 
 // TestPassiveEvaluator_条件付き_エンドゲームスペシャリスト は敵HP条件を満たした時に効果が発動することを確認します。
 func TestPassiveEvaluator_条件付き_エンドゲームスペシャリスト(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_endgame_specialist",
 		Name:        "エンドゲームスペシャリスト",
 		Description: "敵HP30%以下で全ダメージ+25%",
@@ -160,7 +160,7 @@ func TestPassiveEvaluator_条件付き_エンドゲームスペシャリスト(t
 
 // TestPassiveEvaluator_条件付き_ウィークポイント は敵デバフ状態で効果が発動することを確認します。
 func TestPassiveEvaluator_条件付き_ウィークポイント(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_weak_point",
 		Name:        "ウィークポイント",
 		Description: "デバフ中の敵へダメージ+20%",
@@ -196,7 +196,7 @@ func TestPassiveEvaluator_条件付き_ウィークポイント(t *testing.T) {
 
 // TestPassiveEvaluator_条件付き_オーバードライブ はHP条件で複合効果が発動することを確認します。
 func TestPassiveEvaluator_条件付き_オーバードライブ(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_overdrive",
 		Name:        "オーバードライブ",
 		Description: "HP50%以下でリキャスト-30%、被ダメ+20%",
@@ -235,7 +235,7 @@ func TestPassiveEvaluator_条件付き_オーバードライブ(t *testing.T) {
 
 // TestPassiveEvaluator_確率トリガー_ラストスタンド は確率トリガーの基本動作を確認します。
 func TestPassiveEvaluator_確率トリガー_ラストスタンド(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_last_stand",
 		Name:        "ラストスタンド",
 		Description: "HP25%以下で30%の確率で被ダメージ1",
@@ -276,7 +276,7 @@ func TestPassiveEvaluator_確率トリガー_ラストスタンド(t *testing.T)
 
 // TestPassiveEvaluator_確率トリガー_カウンターチャージ は被ダメージ時の確率トリガーを確認します。
 func TestPassiveEvaluator_確率トリガー_カウンターチャージ(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_counter_charge",
 		Name:        "カウンターチャージ",
 		Description: "被ダメージ時20%で次の攻撃2倍",
@@ -308,7 +308,7 @@ func TestPassiveEvaluator_確率トリガー_カウンターチャージ(t *test
 
 // TestPassiveEvaluator_スタック型_コンボマスター はスタック型の基本動作を確認します。
 func TestPassiveEvaluator_スタック型_コンボマスター(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_combo_master",
 		Name:        "コンボマスター",
 		Description: "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
@@ -350,7 +350,7 @@ func TestPassiveEvaluator_スタック型_コンボマスター(t *testing.T) {
 
 // TestPassiveEvaluator_スタック型_アダプティブシールド はカウンター型の動作を確認します。
 func TestPassiveEvaluator_スタック型_アダプティブシールド(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_adaptive_shield",
 		Name:        "アダプティブシールド",
 		Description: "同種攻撃3回目以降ダメージ-25%",
@@ -389,7 +389,7 @@ func TestPassiveEvaluator_スタック型_アダプティブシールド(t *test
 
 // TestPassiveEvaluator_反応型_ファーストストライク は戦闘開始時トリガーを確認します。
 func TestPassiveEvaluator_反応型_ファーストストライク(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_first_strike",
 		Name:        "ファーストストライク",
 		Description: "戦闘開始時、最初のスキルが即発動",
@@ -424,7 +424,7 @@ func TestPassiveEvaluator_反応型_ファーストストライク(t *testing.T)
 
 // TestPassiveEvaluator_反応型_デバフアブソーバー はデバフ受け時の反応を確認します。
 func TestPassiveEvaluator_反応型_デバフアブソーバー(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_debuff_absorber",
 		Name:        "デバフアブソーバー",
 		Description: "デバフ効果時間半減＋小回復",
@@ -457,7 +457,7 @@ func TestPassiveEvaluator_反応型_デバフアブソーバー(t *testing.T) {
 
 // TestPassiveEvaluator_反応型_タイポリカバリー はタイピングミス時の反応を確認します。
 func TestPassiveEvaluator_反応型_タイポリカバリー(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_typo_recovery",
 		Name:        "タイポリカバリー",
 		Description: "ミス時制限時間+1秒（1回/チャレンジ）",
@@ -548,7 +548,7 @@ func TestPassiveEvaluationResult_フィールドの確認(t *testing.T) {
 
 // TestPassiveEvaluator_確率トリガー_モック化テスト は確率判定のモック化テストを行います。
 func TestPassiveEvaluator_確率トリガー_モック化テスト(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "ps_echo_skill",
 		Name:        "エコースキル",
 		Description: "15%の確率でスキル2回発動",
@@ -576,7 +576,7 @@ func TestPassiveEvaluator_確率トリガー_モック化テスト(t *testing.T)
 
 	// 発動判定はユースケース層で行うので、ここでは確率値の返却を確認
 	// モック化テスト: 確率0の場合は発動しない
-	defNoChance := PassiveSkillDefinition{
+	defNoChance := PassiveSkill{
 		ID:          "test_no_chance",
 		TriggerType: PassiveTriggerProbability,
 		TriggerCondition: &TriggerCondition{
@@ -594,7 +594,7 @@ func TestPassiveEvaluator_確率トリガー_モック化テスト(t *testing.T)
 // TestPassiveEvaluator_複数パッシブスキル併存 は複数のパッシブスキルが独立して評価されることを確認します。
 func TestPassiveEvaluator_複数パッシブスキル併存(t *testing.T) {
 	// 永続効果
-	buffExtender := PassiveSkillDefinition{
+	buffExtender := PassiveSkill{
 		ID:          "ps_buff_extender",
 		TriggerType: PassiveTriggerPermanent,
 		EffectType:  PassiveEffectMultiplier,
@@ -602,7 +602,7 @@ func TestPassiveEvaluator_複数パッシブスキル併存(t *testing.T) {
 	}
 
 	// 条件付き効果
-	perfectRhythm := PassiveSkillDefinition{
+	perfectRhythm := PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		TriggerType: PassiveTriggerConditional,
 		TriggerCondition: &TriggerCondition{
@@ -654,7 +654,7 @@ func TestPassiveEvaluator_複数パッシブスキル併存(t *testing.T) {
 
 // TestPassiveEvaluator_条件付きnil はTriggerConditionがnilの場合の処理を確認します。
 func TestPassiveEvaluator_条件付きnil(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:               "test_no_condition",
 		TriggerType:      PassiveTriggerConditional,
 		TriggerCondition: nil, // 条件なし
@@ -673,7 +673,7 @@ func TestPassiveEvaluator_条件付きnil(t *testing.T) {
 
 // TestPassiveEvaluator_スタック型_条件nil はスタック型でTriggerConditionがnilの場合の処理を確認します。
 func TestPassiveEvaluator_スタック型_条件nil(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:               "test_stack_no_condition",
 		TriggerType:      PassiveTriggerStack,
 		TriggerCondition: nil, // 条件なし
@@ -694,7 +694,7 @@ func TestPassiveEvaluator_スタック型_条件nil(t *testing.T) {
 
 // TestPassiveEvaluator_反応型_条件nil は反応型でTriggerConditionがnilの場合の処理を確認します。
 func TestPassiveEvaluator_反応型_条件nil(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:               "test_reactive_no_condition",
 		TriggerType:      PassiveTriggerReactive,
 		TriggerCondition: nil, // 条件なし
@@ -714,7 +714,7 @@ func TestPassiveEvaluator_反応型_条件nil(t *testing.T) {
 
 // TestPassiveEvaluator_使用回数無制限 は使用回数制限なし（UsesPerBattle=0）の処理を確認します。
 func TestPassiveEvaluator_使用回数無制限(t *testing.T) {
-	def := PassiveSkillDefinition{
+	def := PassiveSkill{
 		ID:          "test_unlimited_uses",
 		TriggerType: PassiveTriggerReactive,
 		TriggerCondition: &TriggerCondition{

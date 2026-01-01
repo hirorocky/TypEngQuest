@@ -55,11 +55,11 @@ func (s *ModuleSlot) IsReady() bool {
 	return s.CooldownRemaining <= 0
 }
 
-// SetPassiveSkillDefinitions はパッシブスキル定義を設定します。
+// SetPassiveSkills はパッシブスキル定義を設定します。
 // これにより、RegisterPassiveSkills で条件付きパッシブスキルが EffectTable に登録されます。
-func (s *BattleScreen) SetPassiveSkillDefinitions(defs map[string]domain.PassiveSkillDefinition) {
+func (s *BattleScreen) SetPassiveSkills(skills map[string]domain.PassiveSkill) {
 	if s.battleEngine != nil {
-		s.battleEngine.SetPassiveSkillDefinitions(defs)
+		s.battleEngine.SetPassiveSkills(skills)
 	}
 }
 

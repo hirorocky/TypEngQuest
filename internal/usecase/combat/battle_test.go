@@ -660,10 +660,9 @@ func TestRegisterPassiveSkills_SingleAgent(t *testing.T) {
 		ID:          "ps_buff_extender",
 		Name:        "バフエクステンダー",
 		Description: "バフ効果時間+50%",
-		BaseModifiers: domain.StatModifiers{
-			CDReduction: 0.15, // テスト用にCDReductionを設定
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColCooldownReduce: 0.15,
 		},
-		ScalePerLevel: 0.1,
 	}
 	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	// TypeIDを設定
@@ -725,10 +724,9 @@ func TestRegisterPassiveSkills_MultipleAgents(t *testing.T) {
 		ID:          "ps_buff_extender",
 		Name:        "バフエクステンダー",
 		Description: "バフ効果時間+50%",
-		BaseModifiers: domain.StatModifiers{
-			CDReduction: 0.15,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColCooldownReduce: 0.15,
 		},
-		ScalePerLevel: 0.1,
 	}
 	core1 := domain.NewCore("core_001", "コア1", 5, coreType1, passiveSkill1)
 	core1.TypeID = "buff_master"
@@ -744,10 +742,9 @@ func TestRegisterPassiveSkills_MultipleAgents(t *testing.T) {
 		ID:          "ps_damage_boost",
 		Name:        "ダメージブースト",
 		Description: "攻撃ダメージ+20%",
-		BaseModifiers: domain.StatModifiers{
-			STR_Mult: 1.2,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRMultiplier: 1.2,
 		},
-		ScalePerLevel: 0.05,
 	}
 	core2 := domain.NewCore("core_002", "コア2", 3, coreType2, passiveSkill2)
 	core2.TypeID = "attacker"
@@ -819,10 +816,9 @@ func TestRegisterPassiveSkills_LevelScaling(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.1, // レベル1で10%軽減
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.1,
 		},
-		ScalePerLevel: 0.05, // レベルごとに5%増加
 	}
 	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
 	core.TypeID = "tank"
@@ -842,20 +838,19 @@ func TestRegisterPassiveSkills_LevelScaling(t *testing.T) {
 	// パッシブスキルを登録
 	engine.RegisterPassiveSkills(state, agents)
 
-	// 効果量がレベルスケーリングされていることを確認
-	// レベル10: 0.1 × (1 + 0.05 × 9) = 0.1 × 1.45 = 0.145
+	// 効果量が登録されていることを確認
 	coreEffects := state.Player.EffectTable.FindBySourceType(domain.SourcePassive)
 	if len(coreEffects) == 0 {
 		t.Fatal("パッシブスキルが登録されていない")
 	}
 
-	expectedReduction := 0.1 * (1 + 0.05*9) // 0.145
+	expectedReduction := 0.1
 	actualReduction := coreEffects[0].Values[domain.ColDamageCut]
 
 	// 浮動小数点の比較は許容誤差を使用
 	tolerance := 0.001
 	if actualReduction < expectedReduction-tolerance || actualReduction > expectedReduction+tolerance {
-		t.Errorf("効果量のスケーリングが不正: 期待 %.3f, 実際 %.3f", expectedReduction, actualReduction)
+		t.Errorf("効果量が不正: 期待 %.3f, 実際 %.3f", expectedReduction, actualReduction)
 	}
 }
 
@@ -932,10 +927,9 @@ func TestPassiveSkillDamageReduction(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ20%軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.2, // 20%軽減
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.2,
 		},
-		ScalePerLevel: 0.0, // スケーリングなし
 	}
 	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	core.TypeID = "tank"
@@ -988,10 +982,9 @@ func TestPassiveSkillSTRMultiplier(t *testing.T) {
 		ID:          "ps_power_boost",
 		Name:        "パワーブースト",
 		Description: "攻撃力+20%",
-		BaseModifiers: domain.StatModifiers{
-			STR_Mult: 1.2, // 20%増加
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRMultiplier: 1.2,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
 	core.TypeID = "attacker"
@@ -1050,10 +1043,9 @@ func TestPassiveSkillEffectContinuesDuringRecast(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ30%軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.3, // 30%軽減
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.3,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	core.TypeID = "tank"
@@ -1118,14 +1110,13 @@ func TestGetPlayerStatsWithPassive(t *testing.T) {
 		ID:          "ps_all_stats",
 		Name:        "オールステータスアップ",
 		Description: "全ステータス+10",
-		BaseModifiers: domain.StatModifiers{
-			STR_Add:         10,
-			MAG_Add:         10,
-			SPD_Add:         10,
-			LUK_Add:         10,
-			DamageReduction: 0.1,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRBonus:  10,
+			domain.ColMAGBonus:  10,
+			domain.ColSPDBonus:  10,
+			domain.ColLUKBonus:  10,
+			domain.ColDamageCut: 0.1,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	core.TypeID = "all_stats"
@@ -1181,10 +1172,9 @@ func TestPassiveSkillIntegration_BattleInitToStatCalculation(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ20%軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.2,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.2,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "タンクコア", 5, coreType, passiveSkill)
 	core.TypeID = "tank"
@@ -1252,10 +1242,9 @@ func TestPassiveSkillIntegration_MultipleAgentCoexistence(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ15%軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.15,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.15,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core1 := domain.NewCore("core_001", "タンクコア", 5, coreType1, passiveSkill1)
 	core1.TypeID = "tank"
@@ -1272,10 +1261,9 @@ func TestPassiveSkillIntegration_MultipleAgentCoexistence(t *testing.T) {
 		ID:          "ps_cd_reduction",
 		Name:        "クールダウンリダクション",
 		Description: "クールダウン10%短縮",
-		BaseModifiers: domain.StatModifiers{
-			CDReduction: 0.1,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColCooldownReduce: 0.1,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core2 := domain.NewCore("core_002", "スピーダーコア", 5, coreType2, passiveSkill2)
 	core2.TypeID = "speeder"
@@ -1292,10 +1280,9 @@ func TestPassiveSkillIntegration_MultipleAgentCoexistence(t *testing.T) {
 		ID:          "ps_str_up",
 		Name:        "パワーアップ",
 		Description: "STR+20",
-		BaseModifiers: domain.StatModifiers{
-			STR_Add: 20,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRBonus: 20,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core3 := domain.NewCore("core_003", "アタッカーコア", 5, coreType3, passiveSkill3)
 	core3.TypeID = "attacker"
@@ -1376,10 +1363,9 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 		ID:          "ps_damage_reduction",
 		Name:        "ダメージリダクション",
 		Description: "被ダメージ25%軽減",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.25,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.25,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "タンクコア", 5, coreType, passiveSkill)
 	core.TypeID = "tank"
@@ -1464,10 +1450,9 @@ func TestPassiveSkillIntegration_CombinedEffects(t *testing.T) {
 		ID:          "ps_damage_cut",
 		Name:        "アイアンウォール",
 		Description: "ダメージ軽減20%",
-		BaseModifiers: domain.StatModifiers{
-			DamageReduction: 0.2, // 20%軽減
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.2,
 		},
-		ScalePerLevel: 0.0,
 	}
 	core := domain.NewCore("core_001", "ディフェンダーコア", 10, coreType, passiveSkill)
 	core.TypeID = "defender"

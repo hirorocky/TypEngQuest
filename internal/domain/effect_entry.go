@@ -1,66 +1,6 @@
 // Package domain はゲームのドメインモデルを定義します。
 package domain
 
-// StatModifiers はステータス修正値を表す構造体です。
-// 加算値と乗算値、および特殊効果を持ちます。
-// 既存コードとの互換性のために維持されています。
-type StatModifiers struct {
-	// 基本ステータス（加算）
-	STR_Add int
-	MAG_Add int
-	SPD_Add int
-	LUK_Add int
-
-	// 基本ステータス（乗算）
-	// 1.0 = 変化なし、1.2 = 20%増加、0.8 = 20%減少
-	// 0.0の場合は1.0として扱う（ゼロ値対応）
-	STR_Mult float64
-	MAG_Mult float64
-	SPD_Mult float64
-	LUK_Mult float64
-
-	// 特殊効果
-	CDReduction     float64 // クールダウン短縮率（0.1 = 10%短縮）
-	TypingTimeExt   float64 // タイピング時間延長（秒数）
-	DamageReduction float64 // ダメージ軽減率（0.1 = 10%軽減）
-	CritRate        float64 // クリティカル率加算（0.05 = 5%）
-	PhysicalEvade   float64 // 物理回避率加算（0.1 = 10%）
-	MagicEvade      float64 // 魔法回避率加算（0.1 = 10%）
-}
-
-// ToEffectValues は StatModifiers を EffectColumn のマップに変換します。
-func (m StatModifiers) ToEffectValues() map[EffectColumn]float64 {
-	values := make(map[EffectColumn]float64)
-
-	// ダメージ関連
-	if m.STR_Add > 0 || m.MAG_Add > 0 {
-		values[ColDamageBonus] = float64(m.STR_Add + m.MAG_Add)
-	}
-	if m.STR_Mult > 0 && m.STR_Mult != 1.0 {
-		values[ColDamageMultiplier] = m.STR_Mult
-	}
-
-	// 防御関連
-	if m.DamageReduction > 0 {
-		values[ColDamageCut] = m.DamageReduction
-	}
-	if m.PhysicalEvade > 0 || m.MagicEvade > 0 {
-		values[ColEvasion] = m.PhysicalEvade + m.MagicEvade
-	}
-
-	// タイピング関連
-	if m.TypingTimeExt != 0 {
-		values[ColTimeExtend] = m.TypingTimeExt
-	}
-
-	// リキャスト関連
-	if m.CDReduction > 0 {
-		values[ColCooldownReduce] = m.CDReduction
-	}
-
-	return values
-}
-
 // EffectSourceType は効果のソース種別を表します。
 // パッシブスキル、チェイン効果、バフ、デバフを区別します。
 type EffectSourceType string

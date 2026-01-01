@@ -15,7 +15,7 @@ import (
 // TestBattleEngine_TypingDone_PerfectRhythm は正確性100%でps_perfect_rhythmが発動することをテストします。
 func TestBattleEngine_TypingDone_PerfectRhythm(t *testing.T) {
 	// Arrange: パッシブスキル定義を作成
-	perfectRhythmDef := domain.PassiveSkillDefinition{
+	perfectRhythmDef := domain.PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -27,7 +27,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm(t *testing.T) {
 		EffectValue: 1.5,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_perfect_rhythm": perfectRhythmDef,
 	}
 
@@ -67,7 +67,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm(t *testing.T) {
 
 	// BattleEngineを作成
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 
 	// バトルを初期化
 	state, err := engine.InitializeBattle(1, agents)
@@ -113,7 +113,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm(t *testing.T) {
 // TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered は正確性100%未満でps_perfect_rhythmが発動しないことをテストします。
 func TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered(t *testing.T) {
 	// Arrange
-	perfectRhythmDef := domain.PassiveSkillDefinition{
+	perfectRhythmDef := domain.PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -125,7 +125,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered(t *testing.T) {
 		EffectValue: 1.5,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_perfect_rhythm": perfectRhythmDef,
 	}
 
@@ -162,7 +162,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
@@ -192,7 +192,7 @@ func TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered(t *testing.T) {
 // TestBattleEngine_TypingDone_SpeedBreak はWPM80以上でps_speed_breakが発動することをテストします。
 func TestBattleEngine_TypingDone_SpeedBreak(t *testing.T) {
 	// Arrange
-	speedBreakDef := domain.PassiveSkillDefinition{
+	speedBreakDef := domain.PassiveSkill{
 		ID:          "ps_speed_break",
 		Name:        "スピードブレイク",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -204,7 +204,7 @@ func TestBattleEngine_TypingDone_SpeedBreak(t *testing.T) {
 		EffectValue: 1.25,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_speed_break": speedBreakDef,
 	}
 
@@ -241,7 +241,7 @@ func TestBattleEngine_TypingDone_SpeedBreak(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
@@ -282,7 +282,7 @@ func TestBattleEngine_TypingDone_SpeedBreak(t *testing.T) {
 // TestBattleEngine_TypingDone_SpeedBreak_NotTriggered はWPM80未満でps_speed_breakが発動しないことをテストします。
 func TestBattleEngine_TypingDone_SpeedBreak_NotTriggered(t *testing.T) {
 	// Arrange
-	speedBreakDef := domain.PassiveSkillDefinition{
+	speedBreakDef := domain.PassiveSkill{
 		ID:          "ps_speed_break",
 		Name:        "スピードブレイク",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -294,7 +294,7 @@ func TestBattleEngine_TypingDone_SpeedBreak_NotTriggered(t *testing.T) {
 		EffectValue: 1.25,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_speed_break": speedBreakDef,
 	}
 
@@ -331,7 +331,7 @@ func TestBattleEngine_TypingDone_SpeedBreak_NotTriggered(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
@@ -361,7 +361,7 @@ func TestBattleEngine_TypingDone_SpeedBreak_NotTriggered(t *testing.T) {
 // TestBattleEngine_TypingDone_Combined は両方の条件を満たした場合、両方のパッシブが発動することをテストします。
 func TestBattleEngine_TypingDone_Combined(t *testing.T) {
 	// Arrange: 両方のパッシブスキルを定義
-	perfectRhythmDef := domain.PassiveSkillDefinition{
+	perfectRhythmDef := domain.PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -373,7 +373,7 @@ func TestBattleEngine_TypingDone_Combined(t *testing.T) {
 		EffectValue: 1.5,
 	}
 
-	speedBreakDef := domain.PassiveSkillDefinition{
+	speedBreakDef := domain.PassiveSkill{
 		ID:          "ps_speed_break",
 		Name:        "スピードブレイク",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -385,7 +385,7 @@ func TestBattleEngine_TypingDone_Combined(t *testing.T) {
 		EffectValue: 1.25,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_perfect_rhythm": perfectRhythmDef,
 		"ps_speed_break":    speedBreakDef,
 	}
@@ -430,7 +430,7 @@ func TestBattleEngine_TypingDone_Combined(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 

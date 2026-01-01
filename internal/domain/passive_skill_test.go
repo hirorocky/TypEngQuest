@@ -98,9 +98,9 @@ func TestTriggerCondition_作成(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_作成 はPassiveSkillDefinitionが正しく作成されることを確認します。
-func TestPassiveSkillDefinition_作成(t *testing.T) {
-	def := PassiveSkillDefinition{
+// TestPassiveSkill_作成 はPassiveSkillが正しく作成されることを確認します。
+func TestPassiveSkill_作成(t *testing.T) {
+	def := PassiveSkill{
 		ID:          "ps_perfect_rhythm",
 		Name:        "パーフェクトリズム",
 		Description: "正確性100%でスキル効果1.5倍",
@@ -134,9 +134,9 @@ func TestPassiveSkillDefinition_作成(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_確率トリガー は確率トリガータイプのPassiveSkillDefinitionが正しく作成されることを確認します。
-func TestPassiveSkillDefinition_確率トリガー(t *testing.T) {
-	def := PassiveSkillDefinition{
+// TestPassiveSkill_確率トリガー は確率トリガータイプのPassiveSkillが正しく作成されることを確認します。
+func TestPassiveSkill_確率トリガー(t *testing.T) {
+	def := PassiveSkill{
 		ID:          "ps_last_stand",
 		Name:        "ラストスタンド",
 		Description: "HP25%以下で30%の確率で被ダメージ1",
@@ -158,9 +158,9 @@ func TestPassiveSkillDefinition_確率トリガー(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_永続効果 は永続効果タイプのPassiveSkillDefinitionが正しく作成されることを確認します。
-func TestPassiveSkillDefinition_永続効果(t *testing.T) {
-	def := PassiveSkillDefinition{
+// TestPassiveSkill_永続効果 は永続効果タイプのPassiveSkillが正しく作成されることを確認します。
+func TestPassiveSkill_永続効果(t *testing.T) {
+	def := PassiveSkill{
 		ID:          "ps_buff_extender",
 		Name:        "バフエクステンダー",
 		Description: "バフ効果時間+50%",
@@ -177,9 +177,9 @@ func TestPassiveSkillDefinition_永続効果(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_スタック型 はスタック型のPassiveSkillDefinitionが正しく作成されることを確認します。
-func TestPassiveSkillDefinition_スタック型(t *testing.T) {
-	def := PassiveSkillDefinition{
+// TestPassiveSkill_スタック型 はスタック型のPassiveSkillが正しく作成されることを確認します。
+func TestPassiveSkill_スタック型(t *testing.T) {
+	def := PassiveSkill{
 		ID:          "ps_combo_master",
 		Name:        "コンボマスター",
 		Description: "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
@@ -204,9 +204,9 @@ func TestPassiveSkillDefinition_スタック型(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_反応型 は反応型のPassiveSkillDefinitionが正しく作成されることを確認します。
-func TestPassiveSkillDefinition_反応型(t *testing.T) {
-	def := PassiveSkillDefinition{
+// TestPassiveSkill_反応型 は反応型のPassiveSkillが正しく作成されることを確認します。
+func TestPassiveSkill_反応型(t *testing.T) {
+	def := PassiveSkill{
 		ID:          "ps_first_strike",
 		Name:        "ファーストストライク",
 		Description: "戦闘開始時、最初のスキルが即発動",
@@ -226,8 +226,8 @@ func TestPassiveSkillDefinition_反応型(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_IsPermanent は永続効果かどうかの判定を確認します。
-func TestPassiveSkillDefinition_IsPermanent(t *testing.T) {
+// TestPassiveSkill_IsPermanent は永続効果かどうかの判定を確認します。
+func TestPassiveSkill_IsPermanent(t *testing.T) {
 	tests := []struct {
 		name        string
 		triggerType PassiveTriggerType
@@ -242,7 +242,7 @@ func TestPassiveSkillDefinition_IsPermanent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			def := PassiveSkillDefinition{TriggerType: tt.triggerType}
+			def := PassiveSkill{TriggerType: tt.triggerType}
 			if def.IsPermanent() != tt.expected {
 				t.Errorf("IsPermanent()が期待値と異なります: got %v, want %v", def.IsPermanent(), tt.expected)
 			}
@@ -250,8 +250,8 @@ func TestPassiveSkillDefinition_IsPermanent(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_HasProbability は確率判定があるかどうかの確認をします。
-func TestPassiveSkillDefinition_HasProbability(t *testing.T) {
+// TestPassiveSkill_HasProbability は確率判定があるかどうかの確認をします。
+func TestPassiveSkill_HasProbability(t *testing.T) {
 	tests := []struct {
 		name        string
 		probability float64
@@ -264,7 +264,7 @@ func TestPassiveSkillDefinition_HasProbability(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			def := PassiveSkillDefinition{Probability: tt.probability}
+			def := PassiveSkill{Probability: tt.probability}
 			if def.HasProbability() != tt.expected {
 				t.Errorf("HasProbability()が期待値と異なります: got %v, want %v", def.HasProbability(), tt.expected)
 			}
@@ -272,8 +272,8 @@ func TestPassiveSkillDefinition_HasProbability(t *testing.T) {
 	}
 }
 
-// TestPassiveSkillDefinition_IsStackable はスタック可能かどうかの判定を確認します。
-func TestPassiveSkillDefinition_IsStackable(t *testing.T) {
+// TestPassiveSkill_IsStackable はスタック可能かどうかの判定を確認します。
+func TestPassiveSkill_IsStackable(t *testing.T) {
 	tests := []struct {
 		name        string
 		triggerType PassiveTriggerType
@@ -287,7 +287,7 @@ func TestPassiveSkillDefinition_IsStackable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			def := PassiveSkillDefinition{
+			def := PassiveSkill{
 				TriggerType: tt.triggerType,
 				MaxStacks:   tt.maxStacks,
 			}

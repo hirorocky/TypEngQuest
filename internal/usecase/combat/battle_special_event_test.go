@@ -14,7 +14,7 @@ import (
 // TestBattleEngine_BattleStart_FirstStrike はバトル開始時の即発動をテストします。
 func TestBattleEngine_BattleStart_FirstStrike(t *testing.T) {
 	// Arrange: ps_first_strikeの定義
-	firstStrikeDef := domain.PassiveSkillDefinition{
+	firstStrikeDef := domain.PassiveSkill{
 		ID:          "ps_first_strike",
 		Name:        "ファーストストライク",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -26,7 +26,7 @@ func TestBattleEngine_BattleStart_FirstStrike(t *testing.T) {
 		Probability: 1.0, // テスト用に100%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_first_strike": firstStrikeDef,
 	}
 
@@ -63,7 +63,7 @@ func TestBattleEngine_BattleStart_FirstStrike(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)
@@ -130,7 +130,7 @@ func TestBattleEngine_BattleStart_FirstStrike_NotEquipped(t *testing.T) {
 // TestBattleEngine_TypoRecovery はミス時の時間延長をテストします。
 func TestBattleEngine_TypoRecovery(t *testing.T) {
 	// Arrange: ps_typo_recoveryの定義
-	typoRecoveryDef := domain.PassiveSkillDefinition{
+	typoRecoveryDef := domain.PassiveSkill{
 		ID:          "ps_typo_recovery",
 		Name:        "タイポリカバリー",
 		TriggerType: domain.PassiveTriggerProbability,
@@ -142,7 +142,7 @@ func TestBattleEngine_TypoRecovery(t *testing.T) {
 		Probability: 1.0, // テスト用に100%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_typo_recovery": typoRecoveryDef,
 	}
 
@@ -179,7 +179,7 @@ func TestBattleEngine_TypoRecovery(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)
@@ -197,7 +197,7 @@ func TestBattleEngine_TypoRecovery(t *testing.T) {
 // TestBattleEngine_SecondChance はタイムアウト時の再挑戦をテストします。
 func TestBattleEngine_SecondChance(t *testing.T) {
 	// Arrange: ps_second_chanceの定義
-	secondChanceDef := domain.PassiveSkillDefinition{
+	secondChanceDef := domain.PassiveSkill{
 		ID:          "ps_second_chance",
 		Name:        "セカンドチャンス",
 		TriggerType: domain.PassiveTriggerProbability,
@@ -209,7 +209,7 @@ func TestBattleEngine_SecondChance(t *testing.T) {
 		Probability: 1.0, // テスト用に100%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_second_chance": secondChanceDef,
 	}
 
@@ -246,7 +246,7 @@ func TestBattleEngine_SecondChance(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)

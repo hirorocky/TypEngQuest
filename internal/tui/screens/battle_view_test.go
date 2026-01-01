@@ -100,10 +100,9 @@ func TestBattleScreen_RenderAgentAreaWithPassiveSkill(t *testing.T) {
 		ID:          "test_passive",
 		Name:        "パワーブースト",
 		Description: "STRを強化する",
-		BaseModifiers: domain.StatModifiers{
-			STR_Mult: 1.1,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRMultiplier: 1.1,
 		},
-		ScalePerLevel: 0.05,
 	}
 
 	modules := []*domain.ModuleModel{

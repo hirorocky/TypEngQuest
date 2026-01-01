@@ -13,11 +13,10 @@ func createTestPassiveSkill() domain.PassiveSkill {
 		ID:          "test_passive",
 		Name:        "テストスキル",
 		Description: "テスト効果を付与する",
-		BaseModifiers: domain.StatModifiers{
-			STR_Mult:        1.1,
-			DamageReduction: 0.1,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRMultiplier: 1.1,
+			domain.ColDamageCut:     0.1,
 		},
-		ScalePerLevel: 0.1,
 	}
 }
 
@@ -67,16 +66,16 @@ func TestPassiveSkillNotification_GetDescription(t *testing.T) {
 	}
 }
 
-func TestPassiveSkillNotification_GetEffectModifiers(t *testing.T) {
+func TestPassiveSkillNotification_GetEffects(t *testing.T) {
 	skill := createTestPassiveSkill()
 	notification := NewPassiveSkillNotification(&skill, 5)
 
-	modifiers := notification.GetEffectModifiers()
+	effects := notification.GetEffects()
 
-	// レベル5なので: 1.0 + (1.1-1.0) * (1 + 0.1 * (5-1)) = 1.0 + 0.1 * 1.4 = 1.14
-	expectedSTRMult := 1.14
-	if modifiers.STR_Mult < expectedSTRMult-0.01 || modifiers.STR_Mult > expectedSTRMult+0.01 {
-		t.Errorf("GetEffectModifiers().STR_Mult = %v, want approximately %v", modifiers.STR_Mult, expectedSTRMult)
+	// Effects マップの値を確認
+	expectedSTRMult := 1.1
+	if effects[domain.ColSTRMultiplier] != expectedSTRMult {
+		t.Errorf("GetEffects()[ColSTRMultiplier] = %v, want %v", effects[domain.ColSTRMultiplier], expectedSTRMult)
 	}
 }
 
@@ -152,13 +151,12 @@ func TestPassiveSkillNotification_RenderEffectsList(t *testing.T) {
 		ID:          "multi_effect",
 		Name:        "複合スキル",
 		Description: "複数の効果を付与",
-		BaseModifiers: domain.StatModifiers{
-			STR_Mult:        1.1,
-			MAG_Add:         5,
-			DamageReduction: 0.05,
-			CritRate:        0.1,
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColSTRMultiplier: 1.1,
+			domain.ColMAGBonus:      5,
+			domain.ColDamageCut:     0.05,
+			domain.ColCritRate:      0.1,
 		},
-		ScalePerLevel: 0.05,
 	}
 	notification := NewPassiveSkillNotification(&skill, 3)
 

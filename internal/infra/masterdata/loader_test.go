@@ -569,8 +569,8 @@ func TestLoadPassiveSkills(t *testing.T) {
 	}
 }
 
-// TestConvertToDomainPassiveSkillDefinition はパッシブスキルデータからドメインモデルへの変換をテストします。
-func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
+// TestConvertToDomainPassiveSkill はパッシブスキルデータからドメインモデルへの変換をテストします。
+func TestConvertToDomainPassiveSkill(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	passiveSkillsJSON := `{
