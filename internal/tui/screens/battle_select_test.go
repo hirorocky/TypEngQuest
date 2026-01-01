@@ -435,12 +435,14 @@ func TestBattleSelectCarouselEnemyInfoPanel(t *testing.T) {
 			BaseHP:       50,
 			AttackType:   "physical",
 			NormalPassive: &domain.EnemyPassiveSkill{
-				ID:   "slime_normal",
-				Name: "ぷるぷるボディ",
+				ID:          "slime_normal",
+				Name:        "ぷるぷるボディ",
+				Description: "物理ダメージ10%軽減",
 			},
 			EnhancedPassive: &domain.EnemyPassiveSkill{
-				ID:   "slime_enhanced",
-				Name: "怒りのスライム",
+				ID:          "slime_enhanced",
+				Name:        "怒りのスライム",
+				Description: "攻撃力20%上昇",
 			},
 		},
 	}
@@ -465,13 +467,13 @@ func TestBattleSelectCarouselEnemyInfoPanel(t *testing.T) {
 		t.Error("攻撃属性が表示されていません")
 	}
 
-	// パッシブスキル名が表示されていること
-	if !containsString(view, "ぷるぷるボディ") {
-		t.Error("通常パッシブ名が表示されていません")
+	// パッシブスキルのDescriptionが表示されていること（★付き）
+	if !containsString(view, "物理ダメージ10%軽減") {
+		t.Error("通常パッシブのDescriptionが表示されていません")
 	}
 
-	if !containsString(view, "怒りのスライム") {
-		t.Error("強化パッシブ名が表示されていません")
+	if !containsString(view, "攻撃力20%上昇") {
+		t.Error("強化パッシブのDescriptionが表示されていません")
 	}
 }
 

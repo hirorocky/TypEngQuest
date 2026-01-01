@@ -89,10 +89,23 @@ func (s *BattleScreen) renderEnemyArea() string {
 	builder.WriteString(nameStyle.Render(s.enemy.Name))
 	builder.WriteString(fmt.Sprintf(" Lv.%d", s.enemy.Level))
 
+	// パッシブスキル表示（フェーズに応じて通常または強化パッシブを表示）
+	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 	if s.enemy.IsEnhanced() {
 		phaseStyle := lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
 		builder.WriteString("  ")
 		builder.WriteString(phaseStyle.Render("[強化フェーズ]"))
+		// 強化パッシブを表示
+		if s.enemy.Type.EnhancedPassive != nil {
+			builder.WriteString("  ")
+			builder.WriteString(passiveStyle.Render("★" + s.enemy.Type.EnhancedPassive.Description))
+		}
+	} else {
+		// 通常パッシブを表示
+		if s.enemy.Type.NormalPassive != nil {
+			builder.WriteString("  ")
+			builder.WriteString(passiveStyle.Render("★" + s.enemy.Type.NormalPassive.Description))
+		}
 	}
 	builder.WriteString("\n")
 

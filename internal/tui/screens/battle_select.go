@@ -605,12 +605,12 @@ func (s *BattleSelectScreenCarousel) renderEnemyInfoPanel(builder *strings.Build
 	infoPanel.AddItem("基礎HP", fmt.Sprintf("%d", selectedEnemy.BaseHP))
 	infoPanel.AddItem("デフォルトLv", fmt.Sprintf("%d", selectedEnemy.DefaultLevel))
 
-	// パッシブスキル情報
+	// パッシブスキル情報（descriptionを表示）
 	if selectedEnemy.NormalPassive != nil {
-		infoPanel.AddItem("通常パッシブ", selectedEnemy.NormalPassive.Name)
+		infoPanel.AddItem("通常パッシブ", "★"+selectedEnemy.NormalPassive.Description)
 	}
 	if selectedEnemy.EnhancedPassive != nil {
-		infoPanel.AddItem("強化パッシブ", selectedEnemy.EnhancedPassive.Name)
+		infoPanel.AddItem("強化パッシブ", "★"+selectedEnemy.EnhancedPassive.Description)
 	}
 
 	// 撃破状態
