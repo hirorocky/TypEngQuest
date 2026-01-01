@@ -74,7 +74,7 @@ type ExternalData struct {
 	EnemyPassiveSkills []EnemyPassiveSkillData
 	PassiveSkills      []PassiveSkillData
 	TypingDictionary   *TypingDictionary
-	FirstAgent         *FirstAgentData
+	FirstAgents        []FirstAgentData
 }
 
 // ==================== コア特性定義 ====================
@@ -771,11 +771,11 @@ func (m *FirstAgentModuleData) HasChainEffect() bool {
 
 // firstAgentFileData はfirst_agent.jsonのルート構造です。
 type firstAgentFileData struct {
-	FirstAgent FirstAgentData `json:"first_agent"`
+	FirstAgents []FirstAgentData `json:"first_agents"`
 }
 
-// LoadFirstAgent はfirst_agent.jsonから初期エージェント定義を読み込みます。
-func (l *DataLoader) LoadFirstAgent() (*FirstAgentData, error) {
+// LoadFirstAgents はfirst_agent.jsonから初期エージェント定義を読み込みます。
+func (l *DataLoader) LoadFirstAgents() ([]FirstAgentData, error) {
 	data, err := l.readFile("first_agent.json")
 	if err != nil {
 		return nil, fmt.Errorf("first_agent.jsonの読み込みに失敗: %w", err)
@@ -786,7 +786,7 @@ func (l *DataLoader) LoadFirstAgent() (*FirstAgentData, error) {
 		return nil, fmt.Errorf("first_agent.jsonのパースに失敗: %w", err)
 	}
 
-	return &fileData.FirstAgent, nil
+	return fileData.FirstAgents, nil
 }
 
 // ==================== 全データ一括ロード ====================
@@ -833,7 +833,7 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		return nil, fmt.Errorf("タイピング辞書のロードに失敗: %w", err)
 	}
 
-	firstAgent, err := l.LoadFirstAgent()
+	firstAgents, err := l.LoadFirstAgents()
 	if err != nil {
 		return nil, fmt.Errorf("初期エージェントのロードに失敗: %w", err)
 	}
@@ -846,7 +846,7 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		EnemyPassiveSkills: enemyPassiveSkills,
 		PassiveSkills:      passiveSkills,
 		TypingDictionary:   dictionary,
-		FirstAgent:         firstAgent,
+		FirstAgents:        firstAgents,
 	}, nil
 }
 

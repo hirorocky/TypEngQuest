@@ -1,23 +1,34 @@
 {
-  "first_agent": {
-    "id": "agent_first",
-    "core_type_id": "all_rounder",
-    "core_level": 1,
-    "modules": [
-      {
-        "type_id": "physical_strike_lv1",
-        "chain_effect_type": "damage_amp",
-        "chain_effect_value": 20.0
-      },
-      {
-        "type_id": "fireball_lv1"
-      },
-      {
-        "type_id": "heal_lv1"
-      },
-      {
-        "type_id": "attack_buff_lv1"
-      }
-    ]
-  }
+  "first_agents": [
+    {
+      "id": "agent_first_1",
+      "core_type_id": "all_rounder",
+      "core_level": 1,
+      "modules": [
+        {
+          "type_id": "physical_strike_lv1"
+        }
+      ]
+    },
+    {
+      "id": "agent_first_2",
+      "core_type_id": "all_rounder",
+      "core_level": 1,
+      "modules": [
+        {
+          "type_id": "heal_lv1"
+        }
+      ]
+    },
+    {
+      "id": "agent_first_3",
+      "core_type_id": "all_rounder",
+      "core_level": 1,
+      "modules": [
+        {
+          "type_id": "attack_buff_lv1"
+        }
+      ]
+    }
+  ]
 }

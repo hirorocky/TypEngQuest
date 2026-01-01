@@ -100,8 +100,8 @@ func (m *AgentManager) FilterCompatibleModules(core *domain.CoreModel) []*domain
 
 func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*domain.AgentModel, error) {
 
-	if len(moduleIDs) != domain.ModuleSlotCount {
-		return nil, fmt.Errorf("モジュールが4個必要です（現在: %d個）", len(moduleIDs))
+	if len(moduleIDs) < domain.MinModuleSlotCount || len(moduleIDs) > domain.MaxModuleSlotCount {
+		return nil, fmt.Errorf("モジュールは%d〜%d個必要です（現在: %d個）", domain.MinModuleSlotCount, domain.MaxModuleSlotCount, len(moduleIDs))
 	}
 
 	// コアを取得
@@ -111,7 +111,7 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 	}
 
 	// モジュールを取得し、互換性チェック
-	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
+	modules := make([]*domain.ModuleModel, 0, len(moduleIDs))
 	for _, moduleID := range moduleIDs {
 		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {
@@ -149,8 +149,8 @@ func (m *AgentManager) SynthesizeAgent(coreID string, moduleIDs []string) (*doma
 // GetSynthesisPreview は合成プレビュー情報を取得します。
 
 func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*SynthesisPreview, error) {
-	if len(moduleIDs) != domain.ModuleSlotCount {
-		return nil, fmt.Errorf("モジュールが4個必要です（現在: %d個）", len(moduleIDs))
+	if len(moduleIDs) < domain.MinModuleSlotCount || len(moduleIDs) > domain.MaxModuleSlotCount {
+		return nil, fmt.Errorf("モジュールは%d〜%d個必要です（現在: %d個）", domain.MinModuleSlotCount, domain.MaxModuleSlotCount, len(moduleIDs))
 	}
 
 	core := m.coreInventory.Get(coreID)
@@ -158,7 +158,7 @@ func (m *AgentManager) GetSynthesisPreview(coreID string, moduleIDs []string) (*
 		return nil, fmt.Errorf("コアが見つかりません: %s", coreID)
 	}
 
-	modules := make([]*domain.ModuleModel, 0, domain.ModuleSlotCount)
+	modules := make([]*domain.ModuleModel, 0, len(moduleIDs))
 	for _, moduleID := range moduleIDs {
 		module := m.moduleInventory.GetByTypeID(moduleID)
 		if module == nil {

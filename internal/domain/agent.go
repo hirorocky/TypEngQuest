@@ -2,7 +2,7 @@
 package domain
 
 // AgentModel はゲーム内のエージェントエンティティを表す構造体です。
-// エージェントは1つのコアと4つのモジュールで構成され、バトル中にプレイヤーを支援します。
+// エージェントは1つのコアと1〜4つのモジュールで構成され、バトル中にプレイヤーを支援します。
 
 type AgentModel struct {
 	// ID はエージェントインスタンスの一意識別子です。
@@ -13,7 +13,7 @@ type AgentModel struct {
 	Core *CoreModel
 
 	// Modules はエージェントに装備されているモジュール（スキル）のリストです。
-	// エージェントは必ず4つのモジュールを装備します。
+	// エージェントは1〜4つのモジュールを装備できます。
 	Modules []*ModuleModel
 
 	// Level はエージェントのレベルです。
@@ -27,8 +27,11 @@ type AgentModel struct {
 	BaseStats Stats
 }
 
-// ModuleSlotCount はエージェント1体あたりのモジュールスロット数です。
-const ModuleSlotCount = 4
+// MinModuleSlotCount はエージェント1体あたりの最小モジュール数です。
+const MinModuleSlotCount = 1
+
+// MaxModuleSlotCount はエージェント1体あたりの最大モジュール数です。
+const MaxModuleSlotCount = 4
 
 // NewAgent は新しいAgentModelを作成します。
 // エージェントのレベルはコアのレベルから自動的に導出されます。

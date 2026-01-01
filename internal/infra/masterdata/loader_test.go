@@ -338,14 +338,16 @@ func TestLoadAllExternalData(t *testing.T) {
 
 	// first_agent.json
 	firstAgentJSON := `{
-		"first_agent": {
-			"id": "agent_first",
-			"core_type_id": "attack_balance",
-			"core_level": 1,
-			"modules": [
-				{"type_id": "physical_strike_lv1"}
-			]
-		}
+		"first_agents": [
+			{
+				"id": "agent_first",
+				"core_type_id": "attack_balance",
+				"core_level": 1,
+				"modules": [
+					{"type_id": "physical_strike_lv1"}
+				]
+			}
+		]
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "first_agent.json"), []byte(firstAgentJSON), 0644)
 
@@ -370,8 +372,8 @@ func TestLoadAllExternalData(t *testing.T) {
 	if externalData.TypingDictionary == nil {
 		t.Error("TypingDictionary should not be nil")
 	}
-	if externalData.FirstAgent == nil {
-		t.Error("FirstAgent should not be nil")
+	if len(externalData.FirstAgents) == 0 {
+		t.Error("FirstAgents should not be empty")
 	}
 }
 

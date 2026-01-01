@@ -562,8 +562,11 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
+	if len(agents) == 0 {
+		t.Fatal("初期エージェントが存在しません")
+	}
+	agent := agents[0]
 
 	battleState, err := engine.InitializeBattle(1, agents)
 	if err != nil {

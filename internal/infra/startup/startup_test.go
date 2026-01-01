@@ -74,15 +74,30 @@ func createTestExternalData() *masterdata.ExternalData {
 				Description: "連続タイピングでダメージ増加",
 			},
 		},
-		FirstAgent: &masterdata.FirstAgentData{
-			ID:         "agent_first",
-			CoreTypeID: "all_rounder",
-			CoreLevel:  1,
-			Modules: []masterdata.FirstAgentModuleData{
-				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
-				{TypeID: "fireball_lv1"},
-				{TypeID: "heal_lv1"},
-				{TypeID: "attack_buff_lv1"},
+		FirstAgents: []masterdata.FirstAgentData{
+			{
+				ID:         "agent_first_1",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "physical_strike_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_2",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "heal_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_3",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "attack_buff_lv1"},
+				},
 			},
 		},
 	}
@@ -92,32 +107,39 @@ func createTestExternalData() *masterdata.ExternalData {
 // Task 14.1: 新規ゲーム初期化テスト
 // ==================================================
 
-func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
+func TestNewGameInitializer_CreateInitialAgents(t *testing.T) {
 	initializer := NewNewGameInitializer(createTestExternalData())
 
-	agent := initializer.CreateInitialAgent()
-	if agent == nil {
+	agents := initializer.CreateInitialAgents()
+	if agents == nil {
 		t.Fatal("初期エージェントが作成されるべきです")
 	}
 
-	// エージェントがコアを持つこと
-	if agent.Core == nil {
-		t.Error("初期エージェントはコアを持つべきです")
+	// 3体のエージェントが作成されること
+	if len(agents) != 3 {
+		t.Fatalf("初期エージェントは3体作成されるべきです: got %d", len(agents))
 	}
 
-	// エージェントが4つのモジュールを持つこと
-	if len(agent.Modules) != 4 {
-		t.Errorf("初期エージェントは4つのモジュールを持つべきです: got %d", len(agent.Modules))
-	}
+	for i, agent := range agents {
+		// エージェントがコアを持つこと
+		if agent.Core == nil {
+			t.Errorf("初期エージェント%dはコアを持つべきです", i+1)
+		}
 
-	// エージェントレベルがコアレベルと一致すること
-	if agent.Level != agent.Core.Level {
-		t.Error("エージェントレベルはコアレベルと一致するべきです")
-	}
+		// エージェントが1つのモジュールを持つこと
+		if len(agent.Modules) != 1 {
+			t.Errorf("初期エージェント%dは1つのモジュールを持つべきです: got %d", i+1, len(agent.Modules))
+		}
 
-	// オールラウンダー特性であること（FirstAgentから作成）
-	if agent.Core.Type.ID != "all_rounder" {
-		t.Errorf("初期コアはオールラウンダー特性であるべきです: got %s", agent.Core.Type.ID)
+		// エージェントレベルがコアレベルと一致すること
+		if agent.Level != agent.Core.Level {
+			t.Errorf("エージェント%dのレベルはコアレベルと一致するべきです", i+1)
+		}
+
+		// オールラウンダー特性であること
+		if agent.Core.Type.ID != "all_rounder" {
+			t.Errorf("初期エージェント%dのコアはオールラウンダー特性であるべきです: got %s", i+1, agent.Core.Type.ID)
+		}
 	}
 }
 
@@ -131,33 +153,37 @@ func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
 	}
 
 	// インベントリに初期コアが含まれている（エージェント合成で消費されるため0）
-	// 初期エージェントが作成されていること（ID化された構造）
-	if len(saveData.Inventory.AgentInstances) != 1 {
-		t.Errorf("初期エージェントが1体存在するべきです: got %d", len(saveData.Inventory.AgentInstances))
+	// 初期エージェントが3体作成されていること（ID化された構造）
+	if len(saveData.Inventory.AgentInstances) != 3 {
+		t.Errorf("初期エージェントが3体存在するべきです: got %d", len(saveData.Inventory.AgentInstances))
 	}
 
-	// 初期エージェントが装備されていること（スロット0に装備）
+	// 初期エージェントが3体装備されていること
 	equippedCount := 0
 	for _, id := range saveData.Player.EquippedAgentIDs {
 		if id != "" {
 			equippedCount++
 		}
 	}
-	if equippedCount != 1 {
-		t.Errorf("初期エージェントが1体装備されているべきです: got %d", equippedCount)
+	if equippedCount != 3 {
+		t.Errorf("初期エージェントが3体装備されているべきです: got %d", equippedCount)
 	}
 
 	// 装備されているエージェントIDがインベントリのエージェントと一致すること
-	equippedID := saveData.Player.EquippedAgentIDs[0]
-	found := false
-	for _, a := range saveData.Inventory.AgentInstances {
-		if a.ID == equippedID {
-			found = true
-			break
+	for _, equippedID := range saveData.Player.EquippedAgentIDs {
+		if equippedID == "" {
+			continue
 		}
-	}
-	if !found {
-		t.Error("装備エージェントIDがインベントリ内のエージェントと一致するべきです")
+		found := false
+		for _, a := range saveData.Inventory.AgentInstances {
+			if a.ID == equippedID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("装備エージェントID %s がインベントリ内のエージェントと一致するべきです", equippedID)
+		}
 	}
 }
 
@@ -193,11 +219,13 @@ func TestInitialAgent_ModulesCompatibleWithCore(t *testing.T) {
 	// 初期エージェントのモジュールがコアと互換性があること
 	initializer := NewNewGameInitializer(createTestExternalData())
 
-	agent := initializer.CreateInitialAgent()
+	agents := initializer.CreateInitialAgents()
 
-	for i, module := range agent.Modules {
-		if !module.IsCompatibleWithCore(agent.Core) {
-			t.Errorf("モジュール%dはコアと互換性があるべきです", i)
+	for agentIdx, agent := range agents {
+		for i, module := range agent.Modules {
+			if !module.IsCompatibleWithCore(agent.Core) {
+				t.Errorf("エージェント%dのモジュール%dはコアと互換性があるべきです", agentIdx+1, i)
+			}
 		}
 	}
 }

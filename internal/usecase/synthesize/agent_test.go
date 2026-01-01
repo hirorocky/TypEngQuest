@@ -4,6 +4,7 @@
 package synthesize
 
 import (
+	"fmt"
 	"testing"
 
 	"hirorocky/type-battle/internal/domain"
@@ -185,7 +186,7 @@ func TestSynthesizeAgent_IncompatibleModule(t *testing.T) {
 	}
 }
 
-// TestSynthesizeAgent_NotEnoughModules はモジュールが4個未満での合成拒否をテストします。
+// TestSynthesizeAgent_NotEnoughModules はモジュールが0個での合成拒否をテストします。
 
 func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 	coreInv := domain.NewCoreInventory(10)
@@ -201,14 +202,66 @@ func TestSynthesizeAgent_NotEnoughModules(t *testing.T) {
 	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
 	coreInv.Add(core)
 
-	moduleInv.Add(newTestModule("m1", "物理打撃", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
-	moduleInv.Add(newTestModule("m2", "ファイアボール", domain.MagicAttack, 1, []string{"magic_low"}, 12.0, "MAG", ""))
-
 	manager := NewAgentManager(coreInv, moduleInv)
 
-	_, err := manager.SynthesizeAgent("core_001", []string{"m1", "m2"})
+	// 0個のモジュールでの合成はエラーになるべき
+	_, err := manager.SynthesizeAgent("core_001", []string{})
 	if err == nil {
-		t.Error("モジュール不足での合成がエラーにならなかった")
+		t.Error("モジュールなしでの合成がエラーにならなかった")
+	}
+}
+
+// TestSynthesizeAgent_VariableModuleCount は1〜4個のモジュールでの合成をテストします。
+func TestSynthesizeAgent_VariableModuleCount(t *testing.T) {
+	testCases := []struct {
+		name        string
+		moduleCount int
+		shouldPass  bool
+	}{
+		{"1モジュール", 1, true},
+		{"2モジュール", 2, true},
+		{"3モジュール", 3, true},
+		{"4モジュール", 4, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			coreInv := domain.NewCoreInventory(10)
+			moduleInv := domain.NewModuleInventory(20)
+
+			coreType := domain.CoreType{
+				ID:          "all_rounder",
+				Name:        "オールラウンダー",
+				StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				AllowedTags: []string{"physical_low", "magic_low", "heal_low", "buff_low"},
+			}
+			passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+			core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+			coreInv.Add(core)
+
+			moduleIDs := make([]string, 0, tc.moduleCount)
+			for i := 0; i < tc.moduleCount; i++ {
+				moduleID := fmt.Sprintf("m%d", i+1)
+				moduleInv.Add(newTestModule(moduleID, fmt.Sprintf("モジュール%d", i+1), domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""))
+				moduleIDs = append(moduleIDs, moduleID)
+			}
+
+			manager := NewAgentManager(coreInv, moduleInv)
+
+			agent, err := manager.SynthesizeAgent("core_001", moduleIDs)
+			if tc.shouldPass {
+				if err != nil {
+					t.Errorf("合成に失敗: %v", err)
+				}
+				if agent != nil && len(agent.Modules) != tc.moduleCount {
+					t.Errorf("モジュール数が不正: got %d, want %d", len(agent.Modules), tc.moduleCount)
+				}
+			} else {
+				if err == nil {
+					t.Error("合成がエラーにならなかった")
+				}
+			}
+		})
 	}
 }
 

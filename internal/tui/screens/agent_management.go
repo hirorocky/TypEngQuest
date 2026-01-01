@@ -198,6 +198,13 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		s.moveDown()
 	case "enter":
 		return s.handleEnter()
+	case "tab":
+		// 合成タブでモジュール選択中、1個以上選択済みなら確認画面へ
+		if s.currentTab == TabSynthesis && s.synthesisState.step == 1 {
+			if len(s.synthesisState.selectedModules) >= domain.MinModuleSlotCount {
+				s.synthesisState.step = 2
+			}
+		}
 	case "d":
 		return s.handleDelete()
 	}
@@ -389,10 +396,11 @@ func (s *AgentManagementScreen) handleSynthesisEnter() (tea.Model, tea.Cmd) {
 			if s.synthesisState.selectedCore != nil &&
 				s.isModuleCompatible(module) &&
 				!s.isModuleAlreadySelected(module) {
-				if len(s.synthesisState.selectedModules) < 4 {
+				if len(s.synthesisState.selectedModules) < domain.MaxModuleSlotCount {
 					s.synthesisState.selectedModules = append(s.synthesisState.selectedModules, module)
 				}
-				if len(s.synthesisState.selectedModules) == 4 {
+				// 最大数に達したら確認画面へ自動遷移
+				if len(s.synthesisState.selectedModules) == domain.MaxModuleSlotCount {
 					s.synthesisState.step = 2
 				}
 			}
@@ -541,7 +549,8 @@ func (s *AgentManagementScreen) isModuleCompatible(module *domain.ModuleModel) b
 // canSynthesize は合成可能かどうかを返します。
 func (s *AgentManagementScreen) canSynthesize() bool {
 	return s.synthesisState.selectedCore != nil &&
-		len(s.synthesisState.selectedModules) == 4
+		len(s.synthesisState.selectedModules) >= domain.MinModuleSlotCount &&
+		len(s.synthesisState.selectedModules) <= domain.MaxModuleSlotCount
 }
 
 // executeSynthesis は合成を実行します。
@@ -1562,6 +1571,12 @@ func (s *AgentManagementScreen) handleDebugModuleTypeSelection(msg tea.KeyMsg) (
 			s.debugSynthesisState.step = 3 // チェイン効果選択へ
 			s.selectedIndex = 0
 		}
+	case "tab":
+		// Tabキーで確認画面へ遷移（1個以上選択済みの場合）
+		if len(s.debugSynthesisState.selectedModules) >= domain.MinModuleSlotCount {
+			s.debugSynthesisState.step = 4 // 確認画面へ
+			s.selectedIndex = 0
+		}
 	}
 	return s, nil
 }
@@ -1600,13 +1615,22 @@ func (s *AgentManagementScreen) handleDebugChainEffectSelection(msg tea.KeyMsg) 
 		}
 
 		// 次のモジュールスロットへ、または確認画面へ
-		if s.debugSynthesisState.currentModuleIdx < 3 {
+		if s.debugSynthesisState.currentModuleIdx < domain.MaxModuleSlotCount-1 {
 			s.debugSynthesisState.currentModuleIdx++
 			s.debugSynthesisState.step = 2 // モジュール選択に戻る
 		} else {
 			s.debugSynthesisState.step = 4 // 確認画面へ
 		}
 		s.selectedIndex = 0
+	case "tab":
+		// Tabキーで確認画面へ遷移（1個以上選択済みの場合）
+		if len(s.debugSynthesisState.selectedModules) >= domain.MinModuleSlotCount {
+			// 現在のモジュールにチェイン効果なしを設定
+			moduleIdx := s.debugSynthesisState.currentModuleIdx
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = nil
+			s.debugSynthesisState.step = 4 // 確認画面へ
+			s.selectedIndex = 0
+		}
 	}
 	return s, nil
 }
@@ -1617,7 +1641,7 @@ func (s *AgentManagementScreen) handleDebugConfirmation(msg tea.KeyMsg) (tea.Mod
 	case "esc", "backspace":
 		// 最後のチェイン効果選択に戻る
 		s.debugSynthesisState.step = 3
-		s.debugSynthesisState.currentModuleIdx = 3
+		s.debugSynthesisState.currentModuleIdx = len(s.debugSynthesisState.selectedModules) - 1
 		s.selectedIndex = 0
 	case "enter":
 		// 合成を実行

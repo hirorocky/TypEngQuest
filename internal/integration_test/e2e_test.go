@@ -85,15 +85,30 @@ func createTestExternalData() *masterdata.ExternalData {
 				Description: "連続タイピングでダメージ増加",
 			},
 		},
-		FirstAgent: &masterdata.FirstAgentData{
-			ID:         "agent_first",
-			CoreTypeID: "all_rounder",
-			CoreLevel:  1,
-			Modules: []masterdata.FirstAgentModuleData{
-				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
-				{TypeID: "fireball_lv1"},
-				{TypeID: "heal_lv1"},
-				{TypeID: "attack_buff_lv1"},
+		FirstAgents: []masterdata.FirstAgentData{
+			{
+				ID:         "agent_first_1",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "physical_strike_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_2",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "heal_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_3",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "attack_buff_lv1"},
+				},
 			},
 		},
 	}
@@ -191,8 +206,7 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 	saveData := initializer.InitializeNewGame()
 
 	// ホーム画面（シミュレート）- 装備エージェントを取得（ドメインオブジェクトを直接作成）
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 	if len(agents) == 0 {
 		t.Fatal("エージェントがいません")
 	}
@@ -319,20 +333,21 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	if len(saveData.Inventory.CoreInstances) == 0 {
 		t.Fatal("コアがありません")
 	}
-	if len(saveData.Inventory.ModuleInstances) < 4 {
-		t.Fatalf("モジュールが4個未満です: got %d", len(saveData.Inventory.ModuleInstances))
+	if len(saveData.Inventory.ModuleInstances) < 1 {
+		t.Fatalf("モジュールがありません: got %d", len(saveData.Inventory.ModuleInstances))
 	}
 
 	// テスト用にドメインオブジェクトを作成（マスタデータから初期エージェントを使用）
-	firstAgent := initializer.CreateInitialAgent()
-	if firstAgent == nil {
+	firstAgents := initializer.CreateInitialAgents()
+	if len(firstAgents) == 0 {
 		t.Fatal("初期エージェントの作成に失敗しました")
 	}
+	firstAgent := firstAgents[0]
 	core := firstAgent.Core
 	selectedModules := firstAgent.Modules
 
-	if len(selectedModules) != 4 {
-		t.Fatalf("初期モジュールが4個必要です: got %d", len(selectedModules))
+	if len(selectedModules) < 1 {
+		t.Fatalf("初期モジュールが1個以上必要です: got %d", len(selectedModules))
 	}
 
 	// エージェント合成
@@ -342,8 +357,8 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	if newAgent.Level != core.Level {
 		t.Error("エージェントレベルはコアレベルと一致するべきです")
 	}
-	if len(newAgent.Modules) != 4 {
-		t.Error("エージェントは4つのモジュールを持つべきです")
+	if len(newAgent.Modules) != len(selectedModules) {
+		t.Errorf("エージェントは%d個のモジュールを持つべきです", len(selectedModules))
 	}
 
 	// インベントリに追加（v1.0.0形式: コア情報とチェイン効果を埋め込み）
@@ -409,8 +424,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 
 	saveData := initializer.InitializeNewGame()
 	// ドメインオブジェクトを直接作成
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 
 	enemyTypes := []domain.EnemyType{
 		{
@@ -536,8 +550,7 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 
 	saveData := initializer.InitializeNewGame()
 	// ドメインオブジェクトを直接作成
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 
 	enemyTypes := []domain.EnemyType{
 		{
