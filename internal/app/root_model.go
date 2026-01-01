@@ -71,7 +71,7 @@ type RootModel struct {
 
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
-	battleSelectScreen      *screens.BattleSelectScreen
+	battleSelectScreen      *screens.BattleSelectScreenCarousel
 	battleScreen            *screens.BattleScreen
 	agentManagementScreen   *screens.AgentManagementScreen
 	encyclopediaScreen      *screens.EncyclopediaScreen
@@ -223,8 +223,8 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	homeScreen := screenFactory.CreateHomeScreen(gs.MaxLevelReached, invProvider)
 	homeScreen.SetStatusMessage(statusMessage)
 
-	// バトル選択画面を初期化
-	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gs.MaxLevelReached, invProvider)
+	// バトル選択画面を初期化（カルーセル方式）
+	battleSelectScreen := screenFactory.CreateBattleSelectScreenCarousel(invProvider, gs)
 
 	// エージェント管理画面を初期化
 	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invProvider, debugMode, debugInvProvider)
@@ -449,9 +449,15 @@ func (m *RootModel) handleSaveRequest() {
 }
 
 // startBattle はバトルを開始します。
-func (m *RootModel) startBattle(level int) tea.Cmd {
-	// 敵を生成
-	enemy := m.gameState.EnemyGenerator().Generate(level)
+// enemyTypeID が空でない場合は指定された敵タイプで生成し、空の場合はランダム生成します。
+func (m *RootModel) startBattle(level int, enemyTypeID string) tea.Cmd {
+	// 敵を生成（タイプが指定されている場合はそのタイプで、なければランダム）
+	var enemy *domain.EnemyModel
+	if enemyTypeID != "" {
+		enemy = m.gameState.EnemyGenerator().GenerateWithType(level, enemyTypeID)
+	} else {
+		enemy = m.gameState.EnemyGenerator().Generate(level)
+	}
 
 	// プレイヤーを準備し、インベントリプロバイダーから装備エージェントを取得
 	m.gameState.PreparePlayerForBattle()
@@ -494,11 +500,10 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 		// ホーム画面の最高到達レベルを更新
 		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
 	case "battle_select":
-		// バトル選択画面を再初期化してリセット
-		invAdapter := m.createInventoryAdapter()
-		m.battleSelectScreen = m.screenFactory.CreateBattleSelectScreen(
-			m.gameState.MaxLevelReached,
-			invAdapter,
+		// バトル選択画面を再初期化してリセット（カルーセル方式）
+		m.battleSelectScreen = m.screenFactory.CreateBattleSelectScreenCarousel(
+			m.invProvider,
+			m.gameState,
 		)
 	case "encyclopedia":
 		// 最新の図鑑データで画面を再初期化
@@ -507,15 +512,6 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 		// 最新の統計データで画面を再初期化
 		m.statsAchievementsScreen = m.screenFactory.CreateStatsAchievementsScreen()
 	}
-}
-
-// createInventoryAdapter はインベントリプロバイダーアダプターを作成します。
-func (m *RootModel) createInventoryAdapter() *presenter.InventoryProviderAdapter {
-	return presenter.NewInventoryProviderAdapter(
-		m.gameState.Inventory(),
-		m.gameState.AgentManager(),
-		m.gameState.Player(),
-	)
 }
 
 // View はアプリケーションの現在の状態を文字列としてレンダリングします。
