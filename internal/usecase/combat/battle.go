@@ -1546,3 +1546,28 @@ func (e *BattleEngine) GetDefenseInfo(state *BattleState, now time.Time) (active
 
 	return true, remainingMs, typeName
 }
+
+// ==================== 敵パッシブスキルシステム（Task 4） ====================
+
+// RegisterEnemyPassive は敵の通常パッシブをEffectTableに登録します。
+// バトル開始時に呼び出され、敵タイプに設定されているNormalPassiveを
+// 一時ステータス修正として効果を適用します。
+// パッシブ未設定の場合はスキップします。
+func (e *BattleEngine) RegisterEnemyPassive(state *BattleState) {
+	if state.Enemy == nil {
+		return
+	}
+
+	// 敵タイプから通常パッシブを取得
+	normalPassive := state.Enemy.Type.NormalPassive
+	if normalPassive == nil {
+		return
+	}
+
+	// パッシブスキルをEffectEntryに変換して登録
+	entry := normalPassive.ToEntry()
+	state.Enemy.EffectTable.AddEntry(entry)
+
+	// ActivePassiveIDを設定
+	state.Enemy.ActivePassiveID = normalPassive.ID
+}

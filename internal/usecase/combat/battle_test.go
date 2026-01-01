@@ -1492,3 +1492,187 @@ func TestPassiveSkillIntegration_CombinedEffects(t *testing.T) {
 	t.Logf("パッシブスキル適用後DamageCut: %f", finalStats.DamageCut)
 	t.Logf("バフ追加後DamageCut: %f", combinedStats.DamageCut)
 }
+
+// ==================== 敵パッシブスキルシステムテスト（Task 4） ====================
+
+// TestRegisterEnemyPassive_NormalPhase はバトル開始時に通常パッシブがEffectTableに登録されることをテストします。
+func TestRegisterEnemyPassive_NormalPhase(t *testing.T) {
+	// 通常パッシブを持つ敵タイプ
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "slime_normal",
+		Name:        "ぷるぷるボディ",
+		Description: "物理ダメージを10%軽減",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.1,
+		},
+	}
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			NormalPassive:      normalPassive,
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 敵パッシブスキルを登録
+	engine.RegisterEnemyPassive(state)
+
+	// 敵のEffectTableに通常パッシブが登録されていることを確認
+	passives := state.Enemy.EffectTable.FindBySourceType(domain.SourcePassive)
+	if len(passives) != 1 {
+		t.Errorf("敵のパッシブスキルの登録数が不正: 期待 1, 実際 %d", len(passives))
+	}
+
+	if passives[0].Name != "ぷるぷるボディ" {
+		t.Errorf("パッシブ名が不正: 期待 ぷるぷるボディ, 実際 %s", passives[0].Name)
+	}
+
+	// パッシブが永続効果（Duration=nil）であることを確認
+	if passives[0].Duration != nil {
+		t.Error("パッシブスキルは永続効果（Duration=nil）であるべきです")
+	}
+
+	// 敵のActivePassiveIDが設定されていることを確認
+	if state.Enemy.ActivePassiveID != "slime_normal" {
+		t.Errorf("ActivePassiveIDが不正: 期待 slime_normal, 実際 %s", state.Enemy.ActivePassiveID)
+	}
+}
+
+// TestRegisterEnemyPassive_NoPassive はパッシブ未設定の場合にスキップされることをテストします。
+func TestRegisterEnemyPassive_NoPassive(t *testing.T) {
+	// パッシブなしの敵タイプ
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			// NormalPassiveはnil
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 敵パッシブスキルを登録
+	engine.RegisterEnemyPassive(state)
+
+	// パッシブ未設定の場合、EffectTableには何も登録されないことを確認
+	passives := state.Enemy.EffectTable.FindBySourceType(domain.SourcePassive)
+	if len(passives) != 0 {
+		t.Errorf("パッシブ未設定の敵にパッシブが登録された: %d件", len(passives))
+	}
+
+	// ActivePassiveIDは空のまま
+	if state.Enemy.ActivePassiveID != "" {
+		t.Errorf("ActivePassiveIDが設定されている: %s", state.Enemy.ActivePassiveID)
+	}
+}
+
+// TestRegisterEnemyPassive_EffectApplied は敵パッシブスキルの効果が適用されることをテストします。
+func TestRegisterEnemyPassive_EffectApplied(t *testing.T) {
+	// 攻撃力ボーナスを持つ通常パッシブ
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "goblin_normal",
+		Name:        "戦闘本能",
+		Description: "攻撃力+30%",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 1.3,
+		},
+	}
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "goblin",
+			Name:               "ゴブリン",
+			BaseHP:             100,
+			BaseAttackPower:    50,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			NormalPassive:      normalPassive,
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "all_rounder",
+		Name:        "オールラウンダー",
+		StatWeights: map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestModule("m1", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m2", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m3", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+		newTestModule("m4", "モジュール", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, err := engine.InitializeBattle(5, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 敵パッシブスキルを登録
+	engine.RegisterEnemyPassive(state)
+
+	// 敵のEffectTableから効果を集計
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+
+	// 攻撃力+30%が適用されていることを確認
+	if effects.DamageMultiplier != 1.3 {
+		t.Errorf("DamageMultiplierが不正: 期待 1.3, 実際 %f", effects.DamageMultiplier)
+	}
+}
