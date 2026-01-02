@@ -119,6 +119,24 @@ type NextEnemyAction struct {
 	DefenseDurationMs int
 }
 
+// EnemyTurnResult は敵ターンの処理結果を表します。
+type EnemyTurnResult struct {
+	// Damage はプレイヤーに与えたダメージ（攻撃時のみ）
+	Damage int
+
+	// ActionType は実行された行動タイプ
+	ActionType EnemyActionType
+
+	// Message は行動結果のメッセージ
+	Message string
+
+	// PhaseChanged はフェーズ遷移が発生したかどうか
+	PhaseChanged bool
+
+	// Evaded は回避されたかどうか
+	Evaded bool
+}
+
 // BattleStatistics はバトル統計を表す構造体です。
 type BattleStatistics struct {
 	// TotalTypingCount は総タイピング回数です。
@@ -307,91 +325,7 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 	)
 }
 
-// ==================== 敵攻撃システム（Task 7.2） ====================
-
-// ProcessEnemyAttack は敵の攻撃を処理します。
-// 回避、反射、ダメージカットなどの効果を適用します。
-func (e *BattleEngine) ProcessEnemyAttack(state *BattleState) int {
-	// 敵の攻撃力を取得
-	attackPower := state.Enemy.AttackPower
-
-	// プレイヤーの防御効果を計算（新しい効果システム）
-	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
-	effects := state.Player.EffectTable.Aggregate(ctx)
-
-	// 回避判定
-	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
-		// 回避成功 - ダメージなし
-		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
-		return 0
-	}
-
-	// ダメージ計算（軽減率を適用）
-	damage := calculateDamage(attackPower, effects.DamageCut)
-
-	// プレイヤーにダメージを与える
-	state.Player.TakeDamage(damage)
-	state.Stats.TotalDamageTaken += damage
-
-	// 反射処理
-	if effects.Reflect > 0 && damage > 0 {
-		reflectDamage := int(float64(damage) * effects.Reflect)
-		if reflectDamage > 0 {
-			state.Enemy.TakeDamage(reflectDamage)
-			state.Stats.TotalDamageDealt += reflectDamage
-		}
-	}
-
-	// 次回攻撃時刻を更新
-	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
-
-	return damage
-}
-
-// ProcessEnemyAttackWithPassive は被ダメージ時パッシブを考慮して敵の攻撃を処理します。
-// ps_last_stand（ダメージ固定）、ps_counter_charge（次攻撃バフ）などを評価します。
-func (e *BattleEngine) ProcessEnemyAttackWithPassive(state *BattleState) int {
-	// 敵の攻撃力を取得
-	attackPower := state.Enemy.AttackPower
-
-	// プレイヤーの防御効果を計算
-	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
-	ctx.SetEvent(domain.EventOnDamageRecv)
-	effects := state.Player.EffectTable.Aggregate(ctx)
-
-	// 回避判定
-	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
-		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
-		return 0
-	}
-
-	// ダメージ計算（軽減率を適用）
-	damage := calculateDamage(attackPower, effects.DamageCut)
-
-	// 被ダメージ時パッシブの評価
-	damage = e.evaluateDamageRecvPassives(state, damage)
-
-	// プレイヤーにダメージを与える
-	state.Player.TakeDamage(damage)
-	state.Stats.TotalDamageTaken += damage
-
-	// 反射処理
-	if effects.Reflect > 0 && damage > 0 {
-		reflectDamage := int(float64(damage) * effects.Reflect)
-		if reflectDamage > 0 {
-			state.Enemy.TakeDamage(reflectDamage)
-			state.Stats.TotalDamageDealt += reflectDamage
-		}
-	}
-
-	// 被ダメージ後のパッシブ効果（バフ付与など）
-	e.applyPostDamagePassives(state)
-
-	// 次回攻撃時刻を更新
-	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
-
-	return damage
-}
+// ==================== 敵攻撃システム ====================
 
 // evaluateDamageRecvPassives は被ダメージ時のパッシブ効果を評価します。
 // ps_last_stand（ダメージ固定）などを処理します。
@@ -451,14 +385,14 @@ func (e *BattleEngine) RecordAttackType(state *BattleState, attackType string) {
 	}
 }
 
-// ProcessEnemyAttackWithPassiveAndPattern は攻撃パターンを考慮してダメージを処理します。
+// ProcessEnemyAttackDamage は攻撃パターンを考慮してダメージを処理します。
 // ps_adaptive_shield（同種攻撃連続時の軽減）などを評価します。
-func (e *BattleEngine) ProcessEnemyAttackWithPassiveAndPattern(state *BattleState, attackType string) int {
+func (e *BattleEngine) ProcessEnemyAttackDamage(state *BattleState, attackType string) int {
 	// 攻撃タイプを記録
 	e.RecordAttackType(state, attackType)
 
-	// 敵の攻撃力を取得
-	attackPower := state.Enemy.AttackPower
+	// 敵バフ適用済みの攻撃力を取得
+	attackPower := e.getBuffedAttackPower(state)
 
 	// プレイヤーの防御効果を計算
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
@@ -506,6 +440,47 @@ func (e *BattleEngine) ProcessEnemyAttackWithPassiveAndPattern(state *BattleStat
 	return damage
 }
 
+// ProcessEnemyTurn は敵ターン全体を処理し、結果を返します。
+// 攻撃、バフ、デバフ、ディフェンスなどの行動を実行し、フェーズ遷移と次回行動決定も行います。
+func (e *BattleEngine) ProcessEnemyTurn(state *BattleState) EnemyTurnResult {
+	action := state.NextAction
+	result := EnemyTurnResult{ActionType: action.ActionType}
+
+	switch action.ActionType {
+	case EnemyActionAttack:
+		result.Damage = e.ProcessEnemyAttackDamage(state, action.AttackType)
+		if result.Damage == 0 {
+			result.Evaded = true
+			result.Message = "回避！"
+		} else {
+			result.Message = fmt.Sprintf("%dダメージを受けた！", result.Damage)
+		}
+
+	case EnemyActionSelfBuff:
+		e.ApplyEnemySelfBuff(state, action.BuffType)
+		result.Message = GetEnemyBuffName(action.BuffType)
+
+	case EnemyActionDebuff:
+		e.ApplyPlayerDebuff(state, action.DebuffType)
+		result.Message = GetPlayerDebuffName(action.DebuffType)
+
+	case EnemyActionDefense:
+		// ディフェンス行動は現在未実装
+		result.Message = "防御態勢"
+	}
+
+	// フェーズ遷移判定
+	if e.CheckPhaseTransition(state) {
+		e.SwitchEnemyPassive(state)
+		result.PhaseChanged = true
+	}
+
+	// 次回行動決定
+	state.NextAction = e.DetermineNextAction(state)
+
+	return result
+}
+
 // evaluateAdaptiveShield はps_adaptive_shieldの軽減効果を評価します。
 func (e *BattleEngine) evaluateAdaptiveShield(state *BattleState) float64 {
 	for _, agent := range state.EquippedAgents {
@@ -538,12 +513,32 @@ func (e *BattleEngine) GetTimeUntilNextAttack(state *BattleState) time.Duration 
 	return remaining
 }
 
-// GetExpectedDamage は次の攻撃の予測ダメージを返します。
-func (e *BattleEngine) GetExpectedDamage(state *BattleState) int {
+// getBuffedAttackPower は敵のバフ効果を適用した攻撃力を返します。
+// 予測と実計算で共有される基本計算です。
+func (e *BattleEngine) getBuffedAttackPower(state *BattleState) int {
 	attackPower := state.Enemy.AttackPower
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
-	effects := state.Player.EffectTable.Aggregate(ctx)
-	return calculateDamage(attackPower, effects.DamageCut)
+
+	// 敵のバフ効果を適用（攻撃力倍率など）
+	enemyEffects := state.Enemy.EffectTable.Aggregate(ctx)
+	if enemyEffects.DamageMultiplier != 1.0 {
+		attackPower = int(float64(attackPower) * enemyEffects.DamageMultiplier)
+	}
+	return attackPower
+}
+
+// CalculateEnemyDamage は敵の基本攻撃ダメージを計算します。
+// 敵のバフ（damage_mult）とプレイヤーの防御効果（damage_cut）を考慮します。
+func (e *BattleEngine) CalculateEnemyDamage(state *BattleState) int {
+	attackPower := e.getBuffedAttackPower(state)
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	playerEffects := state.Player.EffectTable.Aggregate(ctx)
+	return calculateDamage(attackPower, playerEffects.DamageCut)
+}
+
+// GetExpectedDamage は次の攻撃の予測ダメージを返します。
+func (e *BattleEngine) GetExpectedDamage(state *BattleState) int {
+	return e.CalculateEnemyDamage(state)
 }
 
 // GetAttackType は敵の攻撃タイプを返します。
@@ -588,31 +583,6 @@ func (e *BattleEngine) DetermineNextAction(state *BattleState) NextEnemyAction {
 		ActionType: EnemyActionDebuff,
 		DebuffType: debuffTypes[e.rng.Intn(len(debuffTypes))],
 	}
-}
-
-// ExecuteNextAction は事前決定された次回行動を実行します。
-
-func (e *BattleEngine) ExecuteNextAction(state *BattleState) (damage int, message string) {
-	action := state.NextAction
-
-	switch action.ActionType {
-	case EnemyActionAttack:
-		// 通常攻撃を実行
-		damage = e.ProcessEnemyAttack(state)
-		return damage, fmt.Sprintf("%dダメージを受けた！", damage)
-
-	case EnemyActionSelfBuff:
-		// 自己バフを適用
-		e.ApplyEnemySelfBuff(state, action.BuffType)
-		return 0, getEnemyBuffMessage(action.BuffType)
-
-	case EnemyActionDebuff:
-		// プレイヤーデバフを適用
-		e.ApplyPlayerDebuff(state, action.DebuffType)
-		return 0, getPlayerDebuffMessage(action.DebuffType)
-	}
-
-	return 0, ""
 }
 
 // GetEnemyBuffName は敵自己バフの名前を返します。
@@ -717,8 +687,8 @@ func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	}
 }
 
-// getEnemyBuffMessage は敵自己バフのメッセージを返します。
-func getEnemyBuffMessage(buffType EnemyBuffType) string {
+// GetEnemyBuffMessage は敵自己バフのメッセージを返します。
+func GetEnemyBuffMessage(buffType EnemyBuffType) string {
 	switch buffType {
 	case EnemyBuffAttackUp:
 		return "敵の攻撃力が上昇した！"
@@ -731,8 +701,8 @@ func getEnemyBuffMessage(buffType EnemyBuffType) string {
 	}
 }
 
-// getPlayerDebuffMessage はプレイヤーデバフのメッセージを返します。
-func getPlayerDebuffMessage(debuffType PlayerDebuffType) string {
+// GetPlayerDebuffMessage はプレイヤーデバフのメッセージを返します。
+func GetPlayerDebuffMessage(debuffType PlayerDebuffType) string {
 	switch debuffType {
 	case PlayerDebuffTypingTimeDown:
 		return "タイピング時間が短縮された！"
@@ -765,18 +735,36 @@ func (e *BattleEngine) getStatValue(stats domain.Stats, statRef string) int {
 	}
 }
 
+// getModifiedStatValue はエフェクトを適用した修正後のステータス値を返します。
+// Multiplierは増加率として扱います（0.25 = +25%増加 → 1.25倍）。
+func (e *BattleEngine) getModifiedStatValue(stats domain.Stats, statRef string, effects domain.EffectResult) int {
+	base := e.getStatValue(stats, statRef)
+	switch statRef {
+	case "STR":
+		return int((float64(base) + float64(effects.STRBonus)) * (1.0 + effects.STRMultiplier))
+	case "INT":
+		return int((float64(base) + float64(effects.INTBonus)) * (1.0 + effects.INTMultiplier))
+	case "WIL":
+		return int((float64(base) + float64(effects.WILBonus)) * (1.0 + effects.WILMultiplier))
+	case "LUK":
+		return int((float64(base) + float64(effects.LUKBonus)) * (1.0 + effects.LUKMultiplier))
+	}
+	return base
+}
+
 // calculateHPChange は効果のHP変化量を計算します。
 func (e *BattleEngine) calculateHPChange(
 	effect *domain.ModuleEffect,
 	stats domain.Stats,
 	typingResult *typing.TypingResult,
+	effects domain.EffectResult,
 ) int {
 	if effect.HPFormula == nil {
 		return 0
 	}
 
-	// base + stat_coef * STAT
-	statValue := e.getStatValue(stats, effect.HPFormula.StatRef)
+	// base + stat_coef * STAT（エフェクトによるステータス修飾を適用）
+	statValue := e.getModifiedStatValue(stats, effect.HPFormula.StatRef, effects)
 	baseHP := effect.HPFormula.Base + effect.HPFormula.StatCoef*float64(statValue)
 
 	// タイピング結果による補正
@@ -822,7 +810,7 @@ func (e *BattleEngine) ApplyModuleEffect(
 
 		// HP変化効果の適用
 		if effect.HPFormula != nil {
-			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult)
+			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult, playerEffects)
 
 			switch effect.Target {
 			case domain.TargetEnemy:
@@ -1045,17 +1033,20 @@ func (e *BattleEngine) GetPlayerFinalStats(state *BattleState) domain.EffectResu
 
 // CalculateModuleEffectWithPassive はパッシブスキル効果を適用したモジュール効果を計算します。
 // 新しいエフェクトベースシステムでは、全ての効果の合計値を返します。
+// 注意: この関数は基礎計算のみを行い、実際のバトル中のエフェクト適用はApplyModuleEffectで行われます。
 func (e *BattleEngine) CalculateModuleEffectWithPassive(
 	agent *domain.AgentModel,
 	module *domain.ModuleModel,
 	typingResult *typing.TypingResult,
 ) int {
 	totalEffect := 0
+	// 基礎計算用のデフォルトエフェクト結果を使用
+	defaultEffects := domain.NewEffectResult()
 
 	// 各効果のHP変化量を合計
 	for _, effect := range module.Type.Effects {
 		if effect.HPFormula != nil {
-			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult)
+			hpChange := e.calculateHPChange(&effect, agent.BaseStats, typingResult, defaultEffects)
 			if hpChange < 0 {
 				hpChange = -hpChange // ダメージの場合は絶対値
 			}

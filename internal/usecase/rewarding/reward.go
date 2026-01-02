@@ -523,6 +523,176 @@ func (c *RewardCalculator) CreateTempStorage() *TempStorage {
 	}
 }
 
+// CalculateGuaranteedReward は確定ドロップを計算します。
+// 敵タイプのDropItemCategoryとDropItemTypeIDに基づいてアイテムを決定します。
+// ドロップ設定がない場合は既存の確率ドロップにフォールバックします。
+func (c *RewardCalculator) CalculateGuaranteedReward(
+	stats *BattleStatistics,
+	enemyLevel int,
+	enemyType domain.EnemyType,
+) *RewardResult {
+	result := &RewardResult{
+		IsVictory:        true,
+		ShowRewardScreen: true,
+		Stats:            stats,
+		EnemyLevel:       enemyLevel,
+		DroppedCores:     make([]*domain.CoreModel, 0),
+		DroppedModules:   make([]*domain.ModuleModel, 0),
+	}
+
+	// ドロップ設定の確認
+	hasValidDropConfig := enemyType.DropItemCategory != "" && enemyType.DropItemTypeID != ""
+
+	if !hasValidDropConfig {
+		// ドロップ設定がない場合は既存の確率ドロップにフォールバック
+		return c.CalculateRewards(true, stats, enemyLevel)
+	}
+
+	// 確定ドロップ処理
+	switch enemyType.DropItemCategory {
+	case "core":
+		core := c.RollCoreDropWithTypeID(enemyType.DropItemTypeID, enemyLevel)
+		if core != nil {
+			result.DroppedCores = append(result.DroppedCores, core)
+		} else {
+			// TypeIDが見つからない場合はフォールバック
+			return c.CalculateRewards(true, stats, enemyLevel)
+		}
+
+	case "module":
+		module := c.RollModuleDropWithTypeID(enemyType.DropItemTypeID, enemyLevel)
+		if module != nil {
+			result.DroppedModules = append(result.DroppedModules, module)
+		} else {
+			// TypeIDが見つからない場合はフォールバック
+			return c.CalculateRewards(true, stats, enemyLevel)
+		}
+
+	default:
+		// 不正なカテゴリの場合はフォールバック
+		return c.CalculateRewards(true, stats, enemyLevel)
+	}
+
+	return result
+}
+
+// RollCoreDropWithTypeID は指定されたTypeIDのコアを生成します。
+// 敵レベル以下でランダムにレベルを決定します。
+func (c *RewardCalculator) RollCoreDropWithTypeID(typeID string, maxLevel int) *domain.CoreModel {
+	// 指定されたTypeIDのコア特性を検索
+	var selectedType *domain.CoreType
+	for i := range c.coreTypes {
+		if c.coreTypes[i].ID == typeID {
+			selectedType = &c.coreTypes[i]
+			break
+		}
+	}
+
+	if selectedType == nil {
+		return nil
+	}
+
+	// コアレベルを敵レベル以下でランダムに決定（重み付け）
+	coreLevel := c.calculateCoreLevel(maxLevel)
+
+	// パッシブスキルを取得
+	passiveSkill := domain.PassiveSkill{}
+	if c.passiveSkills != nil {
+		if skill, ok := c.passiveSkills[selectedType.PassiveSkillID]; ok {
+			passiveSkill = skill
+		}
+	}
+
+	// コアをインスタンス化
+	return domain.NewCore(
+		uuid.New().String(),
+		selectedType.Name,
+		coreLevel,
+		*selectedType,
+		passiveSkill,
+	)
+}
+
+// RollModuleDropWithTypeID は指定されたTypeIDのモジュールを生成します。
+// 敵レベルに応じたチェイン効果をランダムに選択します。
+func (c *RewardCalculator) RollModuleDropWithTypeID(typeID string, enemyLevel int) *domain.ModuleModel {
+	// 指定されたTypeIDのモジュールを検索
+	var selectedType *ModuleDropInfo
+	for i := range c.moduleTypes {
+		if c.moduleTypes[i].ID == typeID {
+			selectedType = &c.moduleTypes[i]
+			break
+		}
+	}
+
+	if selectedType == nil {
+		return nil
+	}
+
+	// チェイン効果を生成（プールが設定されている場合）
+	var chainEffect *domain.ChainEffect
+	if c.chainEffectPool != nil {
+		chainEffect = c.generateLevelBasedChainEffect(enemyLevel)
+	}
+
+	// モジュールをインスタンス化
+	return selectedType.ToDomainWithChainEffect(chainEffect)
+}
+
+// calculateCoreLevel は敵レベル以下でコアレベルをランダムに決定します。
+// 高レベル敵ほど高レベルコアの確率を上げる重み付けを適用します。
+func (c *RewardCalculator) calculateCoreLevel(maxLevel int) int {
+	if maxLevel <= 1 {
+		return 1
+	}
+
+	// 高レベルほど高い値が出やすい重み付け
+	// 簡易実装: 最小レベル1から最大レベルまでの範囲で、後半に偏る
+	minLevel := 1
+	if maxLevel > 5 {
+		minLevel = maxLevel / 2 // 敵レベルの半分を最小値に
+	}
+
+	return minLevel + c.rng.Intn(maxLevel-minLevel+1)
+}
+
+// generateLevelBasedChainEffect は敵レベルに応じたチェイン効果を生成します。
+// 高レベル敵ほど高品質チェイン効果の確率を上げます。
+func (c *RewardCalculator) generateLevelBasedChainEffect(enemyLevel int) *domain.ChainEffect {
+	if c.chainEffectPool == nil || len(c.chainEffectPool.Effects) == 0 {
+		return nil
+	}
+
+	// レベルが高いほどチェイン効果なしの確率を下げる
+	// レベル1: 30%なし、レベル50: 15%なし、レベル100: 5%なし
+	baseNoEffectProb := c.chainEffectPool.noEffectProbability
+	levelFactor := float64(enemyLevel) / 100.0
+	adjustedNoEffectProb := baseNoEffectProb * (1.0 - levelFactor*0.8)
+	if adjustedNoEffectProb < 0.05 {
+		adjustedNoEffectProb = 0.05
+	}
+
+	if c.rng.Float64() < adjustedNoEffectProb {
+		return nil
+	}
+
+	// ランダムにチェイン効果を選択
+	selected := c.chainEffectPool.Effects[c.rng.Intn(len(c.chainEffectPool.Effects))]
+
+	// 効果値を決定（高レベルほど高い値が出やすい）
+	valueRange := selected.MaxValue - selected.MinValue
+	levelBonus := valueRange * levelFactor * 0.3 // 最大30%のボーナス
+	baseValue := selected.MinValue + c.rng.Float64()*(valueRange-levelBonus) + levelBonus
+	value := float64(int(baseValue + 0.5))
+
+	if value > selected.MaxValue {
+		value = selected.MaxValue
+	}
+
+	effect := domain.NewChainEffect(selected.EffectType, value)
+	return &effect
+}
+
 // AddRewardsToInventory はドロップしたアイテムをインベントリに追加します。
 // インベントリが満杯の場合は一時保管に追加します。
 func AddRewardsToInventory(
