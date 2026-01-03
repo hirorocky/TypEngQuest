@@ -15,10 +15,11 @@ import (
 
 // DomainDataSources はセーブデータ復元時に使用するドメイン型データソースです。
 type DomainDataSources struct {
-	CoreTypes     []domain.CoreType
-	ModuleTypes   []rewarding.ModuleDropInfo
-	EnemyTypes    []domain.EnemyType
-	PassiveSkills map[string]domain.PassiveSkill
+	CoreTypes              []domain.CoreType
+	ModuleTypes            []rewarding.ModuleDropInfo
+	EnemyTypes             []domain.EnemyType
+	PassiveSkills          map[string]domain.PassiveSkill
+	ChainEffectDefinitions []rewarding.ChainEffectDefinition
 }
 
 // ToSaveData はGameStateをセーブデータに変換します。
@@ -131,6 +132,7 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	moduleTypes := sources.ModuleTypes
 	passiveSkills := sources.PassiveSkills
 	enemyTypes := sources.EnemyTypes
+	chainEffectDefs := sources.ChainEffectDefinitions
 
 	// インベントリマネージャーを作成
 	invManager := NewInventoryManager()
@@ -165,11 +167,17 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 				// チェイン効果を復元
 				var chainEffect *domain.ChainEffect
 				if modSave.ChainEffect != nil {
-					ce := domain.NewChainEffect(
-						domain.ChainEffectType(modSave.ChainEffect.Type),
-						modSave.ChainEffect.Value,
-					)
-					chainEffect = &ce
+					effectType := domain.ChainEffectType(modSave.ChainEffect.Type)
+					chainEffectDef := findChainEffectDefinition(chainEffectDefs, effectType)
+					if chainEffectDef != nil {
+						ce := domain.NewChainEffectWithTemplate(
+							effectType,
+							modSave.ChainEffect.Value,
+							chainEffectDef.Description,
+							chainEffectDef.ShortDescription,
+						)
+						chainEffect = &ce
+					}
 				}
 				module := moduleDropInfo.ToDomainWithChainEffect(chainEffect)
 				if err := invManager.AddModule(module); err != nil {
@@ -227,11 +235,17 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 					// チェイン効果を復元
 					var chainEffect *domain.ChainEffect
 					if modSave.ChainEffect != nil {
-						ce := domain.NewChainEffect(
-							domain.ChainEffectType(modSave.ChainEffect.Type),
-							modSave.ChainEffect.Value,
-						)
-						chainEffect = &ce
+						effectType := domain.ChainEffectType(modSave.ChainEffect.Type)
+						chainEffectDef := findChainEffectDefinition(chainEffectDefs, effectType)
+						if chainEffectDef != nil {
+							ce := domain.NewChainEffectWithTemplate(
+								effectType,
+								modSave.ChainEffect.Value,
+								chainEffectDef.Description,
+								chainEffectDef.ShortDescription,
+							)
+							chainEffect = &ce
+						}
 					}
 					modules = append(modules, moduleDropInfo.ToDomainWithChainEffect(chainEffect))
 				}
@@ -298,6 +312,12 @@ func GameStateFromSaveData(data *savedata.SaveData, sources *DomainDataSources) 
 	// RewardCalculatorを作成
 	rewardCalc := rewarding.NewRewardCalculator(coreTypes, moduleTypes, passiveSkills)
 
+	// チェイン効果プールを設定
+	if len(sources.ChainEffectDefinitions) > 0 {
+		chainEffectPool := rewarding.NewChainEffectPool(sources.ChainEffectDefinitions)
+		rewardCalc.SetChainEffectPool(chainEffectPool)
+	}
+
 	// EnemyGeneratorを作成
 	enemyGen := spawning.NewEnemyGenerator(enemyTypes)
 
@@ -363,6 +383,16 @@ func findModuleDropInfo(moduleDefs []rewarding.ModuleDropInfo, moduleID string) 
 	for i := range moduleDefs {
 		if moduleDefs[i].ID == moduleID {
 			return &moduleDefs[i]
+		}
+	}
+	return nil
+}
+
+// findChainEffectDefinition はチェイン効果定義を検索します。
+func findChainEffectDefinition(defs []rewarding.ChainEffectDefinition, effectType domain.ChainEffectType) *rewarding.ChainEffectDefinition {
+	for i := range defs {
+		if defs[i].EffectType == effectType {
+			return &defs[i]
 		}
 	}
 	return nil

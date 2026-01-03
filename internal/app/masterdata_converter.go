@@ -107,12 +107,13 @@ func ConvertChainEffects(effects []masterdata.ChainEffectData) []rewarding.Chain
 	result := make([]rewarding.ChainEffectDefinition, len(effects))
 	for i, e := range effects {
 		result[i] = rewarding.ChainEffectDefinition{
-			ID:         e.ID,
-			Name:       e.Name,
-			Category:   e.Category,
-			EffectType: e.ToDomainEffectType(),
-			MinValue:   e.MinValue,
-			MaxValue:   e.MaxValue,
+			ID:           e.ID,
+			Name:         e.Name,
+			Category:     e.Category,
+			EffectType:   e.ToDomainEffectType(),
+			MinValue:     e.MinValue,
+			MaxValue:     e.MaxValue,
+			MinDropLevel: e.MinDropLevel,
 		}
 	}
 	return result

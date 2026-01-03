@@ -87,11 +87,27 @@ func (i *NewGameInitializer) CreateInitialAgents() []*domain.AgentModel {
 			// チェイン効果を作成
 			var chainEffect *domain.ChainEffect
 			if modData.HasChainEffect() {
-				ce := domain.NewChainEffect(
-					convertChainEffectType(modData.ChainEffectType),
-					modData.ChainEffectValue,
-				)
-				chainEffect = &ce
+				// チェイン効果定義を検索して説明文テンプレートを取得
+				var chainEffectDef *masterdata.ChainEffectData
+				for j := range i.externalData.ChainEffects {
+					if i.externalData.ChainEffects[j].EffectType == modData.ChainEffectType {
+						chainEffectDef = &i.externalData.ChainEffects[j]
+						break
+					}
+				}
+				if chainEffectDef != nil {
+					ce := domain.NewChainEffectWithTemplate(
+						convertChainEffectType(modData.ChainEffectType),
+						modData.ChainEffectValue,
+						chainEffectDef.Description,
+						chainEffectDef.ShortDescription,
+					)
+					chainEffect = &ce
+				} else {
+					slog.Warn("チェイン効果定義が見つかりません",
+						slog.String("effect_type", modData.ChainEffectType),
+					)
+				}
 			}
 
 			// モジュールを作成

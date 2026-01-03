@@ -125,105 +125,6 @@ const (
 	ChainEffectDoubleCast ChainEffectType = "double_cast"
 )
 
-// GenerateDescription はチェイン効果種別と効果値から説明文を生成します。
-func (t ChainEffectType) GenerateDescription(value float64) string {
-	switch t {
-	case ChainEffectDamageBonus:
-		return fmt.Sprintf("次の攻撃のダメージ+%.0f%%", value)
-	case ChainEffectHealBonus:
-		return fmt.Sprintf("次の回復量+%.0f%%", value)
-	case ChainEffectBuffExtend:
-		return fmt.Sprintf("バフ効果時間+%.0f秒", value)
-	case ChainEffectDebuffExtend:
-		return fmt.Sprintf("デバフ効果時間+%.0f秒", value)
-	// 攻撃強化カテゴリ
-	case ChainEffectDamageAmp:
-		return fmt.Sprintf("効果中の攻撃ダメージ+%.0f%%", value)
-	case ChainEffectArmorPierce:
-		return "効果中の攻撃が防御バフ無視"
-	case ChainEffectLifeSteal:
-		return fmt.Sprintf("効果中の攻撃ダメージの%.0f%%回復", value)
-	// 防御強化カテゴリ
-	case ChainEffectDamageCut:
-		return fmt.Sprintf("効果中の被ダメージ-%.0f%%", value)
-	case ChainEffectEvasion:
-		return fmt.Sprintf("効果中%.0f%%で攻撃回避", value)
-	case ChainEffectReflect:
-		return fmt.Sprintf("効果中被ダメージの%.0f%%反射", value)
-	case ChainEffectRegen:
-		return fmt.Sprintf("効果中毎秒HP%.0f%%回復", value)
-	// 回復強化カテゴリ
-	case ChainEffectHealAmp:
-		return fmt.Sprintf("効果中の回復量+%.0f%%", value)
-	case ChainEffectOverheal:
-		return "効果中の超過回復を一時HPに"
-	// タイピングカテゴリ
-	case ChainEffectTimeExtend:
-		return fmt.Sprintf("効果中のタイピング制限時間+%.0f秒", value)
-	case ChainEffectAutoCorrect:
-		return fmt.Sprintf("効果中ミス%.0f回まで無視", value)
-	// リキャストカテゴリ
-	case ChainEffectCooldownReduce:
-		return fmt.Sprintf("効果中発生した他エージェントのリキャスト時間%.0f%%短縮", value)
-	// 効果延長カテゴリ
-	case ChainEffectBuffDuration:
-		return fmt.Sprintf("効果中のバフスキル効果時間+%.0f秒", value)
-	case ChainEffectDebuffDuration:
-		return fmt.Sprintf("効果中のデバフスキル効果時間+%.0f秒", value)
-	// 特殊カテゴリ
-	case ChainEffectDoubleCast:
-		return fmt.Sprintf("効果中%.0f%%でスキル2回発動", value)
-	default:
-		return "チェイン効果"
-	}
-}
-
-// GenerateShortDescription はチェイン効果種別と効果値から短い説明文（16文字程度）を生成します。
-func (t ChainEffectType) GenerateShortDescription(value float64) string {
-	switch t {
-	case ChainEffectDamageBonus:
-		return fmt.Sprintf("次攻撃ダメ+%.0f%%", value)
-	case ChainEffectHealBonus:
-		return fmt.Sprintf("次回復量+%.0f%%", value)
-	case ChainEffectBuffExtend:
-		return fmt.Sprintf("バフ時間+%.0f秒", value)
-	case ChainEffectDebuffExtend:
-		return fmt.Sprintf("デバフ時間+%.0f秒", value)
-	case ChainEffectDamageAmp:
-		return fmt.Sprintf("攻撃ダメ+%.0f%%", value)
-	case ChainEffectArmorPierce:
-		return "防御バフ無視"
-	case ChainEffectLifeSteal:
-		return fmt.Sprintf("与ダメの%.0f%%回復", value)
-	case ChainEffectDamageCut:
-		return fmt.Sprintf("被ダメ-%.0f%%", value)
-	case ChainEffectEvasion:
-		return fmt.Sprintf("%.0f%%回避", value)
-	case ChainEffectReflect:
-		return fmt.Sprintf("被ダメ%.0f%%反射", value)
-	case ChainEffectRegen:
-		return fmt.Sprintf("毎秒HP%.0f%%回復", value)
-	case ChainEffectHealAmp:
-		return fmt.Sprintf("回復量+%.0f%%", value)
-	case ChainEffectOverheal:
-		return "超過回復→一時HP"
-	case ChainEffectTimeExtend:
-		return fmt.Sprintf("入力時間+%.0f秒", value)
-	case ChainEffectAutoCorrect:
-		return fmt.Sprintf("ミス%.0f回無視", value)
-	case ChainEffectCooldownReduce:
-		return fmt.Sprintf("他CD%.0f%%短縮", value)
-	case ChainEffectBuffDuration:
-		return fmt.Sprintf("バフ延長+%.0f秒", value)
-	case ChainEffectDebuffDuration:
-		return fmt.Sprintf("デバフ延長+%.0f秒", value)
-	case ChainEffectDoubleCast:
-		return fmt.Sprintf("%.0f%%で2回発動", value)
-	default:
-		return "チェイン効果"
-	}
-}
-
 // ChainEffect はモジュールインスタンスに紐づくチェイン効果を表す値オブジェクトです。
 // モジュール取得時にランダム決定され、変更不可のイミュータブルな構造体です。
 type ChainEffect struct {
@@ -240,14 +141,35 @@ type ChainEffect struct {
 	ShortDescription string
 }
 
-// NewChainEffect は指定されたタイプと効果値から新しいChainEffectを作成します。
-// DescriptionとShortDescriptionはタイプと効果値から自動生成されます。
-func NewChainEffect(effectType ChainEffectType, value float64) ChainEffect {
+// NewChainEffectWithTemplate は説明文テンプレートから新しいChainEffectを作成します。
+// テンプレート内の%.0fなどのプレースホルダに効果値を埋め込みます。
+// プレースホルダがない場合はテンプレートをそのまま使用します。
+func NewChainEffectWithTemplate(effectType ChainEffectType, value float64, descTemplate, shortDescTemplate string) ChainEffect {
 	return ChainEffect{
 		Type:             effectType,
 		Value:            value,
-		Description:      effectType.GenerateDescription(value),
-		ShortDescription: effectType.GenerateShortDescription(value),
+		Description:      formatIfHasPlaceholder(descTemplate, value),
+		ShortDescription: formatIfHasPlaceholder(shortDescTemplate, value),
+	}
+}
+
+// formatIfHasPlaceholder はテンプレートにプレースホルダがある場合のみフォーマットします。
+func formatIfHasPlaceholder(template string, value float64) string {
+	// %を含む場合はプレースホルダがあると判定（%%はエスケープ）
+	for i := 0; i < len(template); i++ {
+		if template[i] == '%' && i+1 < len(template) && template[i+1] != '%' {
+			return fmt.Sprintf(template, value)
+		}
+	}
+	return template
+}
+
+// NewChainEffect は説明文なしでChainEffectを作成する簡易コンストラクタです。
+// テスト用途または説明文が不要な場合に使用します。
+func NewChainEffect(effectType ChainEffectType, value float64) ChainEffect {
+	return ChainEffect{
+		Type:  effectType,
+		Value: value,
 	}
 }
 

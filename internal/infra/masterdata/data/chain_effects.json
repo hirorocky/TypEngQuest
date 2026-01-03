@@ -3,173 +3,211 @@
     {
       "id": "damage_bonus",
       "name": "ダメージボーナス",
-      "description": "次の攻撃のダメージにボーナスを付与",
+      "description": "次の攻撃のダメージ+%.0f%%",
+      "short_description": "次攻撃ダメ+%.0f%%",
       "category": "attack",
       "effect_type": "damage_bonus",
       "min_value": 10,
-      "max_value": 50
+      "max_value": 50,
+      "min_drop_level": 1
     },
     {
       "id": "damage_amp",
       "name": "ダメージアンプ",
-      "description": "効果中の攻撃ダメージを増加",
+      "description": "効果中の攻撃ダメージ+%.0f%%",
+      "short_description": "攻撃ダメ+%.0f%%",
       "category": "attack",
       "effect_type": "damage_amp",
       "min_value": 10,
-      "max_value": 30
+      "max_value": 30,
+      "min_drop_level": 5
     },
     {
       "id": "armor_pierce",
       "name": "アーマーピアス",
-      "description": "効果中の攻撃が防御バフを無視",
+      "description": "効果中の攻撃が防御バフ無視",
+      "short_description": "防御バフ無視",
       "category": "attack",
       "effect_type": "armor_pierce",
       "min_value": 1,
-      "max_value": 1
+      "max_value": 1,
+      "min_drop_level": 10
     },
     {
       "id": "life_steal",
       "name": "ライフスティール",
-      "description": "効果中の攻撃ダメージの一部をHPとして回復",
+      "description": "効果中の攻撃ダメージの%.0f%%回復",
+      "short_description": "与ダメの%.0f%%回復",
       "category": "attack",
       "effect_type": "life_steal",
       "min_value": 10,
-      "max_value": 25
+      "max_value": 25,
+      "min_drop_level": 5
     },
     {
       "id": "damage_cut",
       "name": "ダメージカット",
-      "description": "効果中の被ダメージを軽減",
+      "description": "効果中の被ダメージ-%.0f%%",
+      "short_description": "被ダメ-%.0f%%",
       "category": "defense",
       "effect_type": "damage_cut",
       "min_value": 10,
-      "max_value": 30
+      "max_value": 30,
+      "min_drop_level": 1
     },
     {
       "id": "evasion",
       "name": "イベイジョン",
-      "description": "効果中に一定確率で攻撃を回避",
+      "description": "効果中%.0f%%で攻撃回避",
+      "short_description": "%.0f%%回避",
       "category": "defense",
       "effect_type": "evasion",
       "min_value": 15,
-      "max_value": 35
+      "max_value": 35,
+      "min_drop_level": 5
     },
     {
       "id": "reflect",
       "name": "リフレクト",
-      "description": "効果中の被ダメージを反射",
+      "description": "効果中被ダメージの%.0f%%反射",
+      "short_description": "被ダメ%.0f%%反射",
       "category": "defense",
       "effect_type": "reflect",
       "min_value": 20,
-      "max_value": 50
+      "max_value": 50,
+      "min_drop_level": 10
     },
     {
       "id": "regen",
       "name": "リジェネ",
-      "description": "効果中毎秒HPを回復",
+      "description": "効果中毎秒HP%.0f%%回復",
+      "short_description": "毎秒HP%.0f%%回復",
       "category": "defense",
       "effect_type": "regen",
       "min_value": 1,
-      "max_value": 5
+      "max_value": 5,
+      "min_drop_level": 1
     },
     {
       "id": "heal_bonus",
       "name": "ヒールボーナス",
-      "description": "次の回復量にボーナスを付与",
+      "description": "次の回復量+%.0f%%",
+      "short_description": "次回復量+%.0f%%",
       "category": "heal",
       "effect_type": "heal_bonus",
       "min_value": 15,
-      "max_value": 40
+      "max_value": 40,
+      "min_drop_level": 1
     },
     {
       "id": "heal_amp",
       "name": "ヒールアンプ",
-      "description": "効果中の回復量を増加",
+      "description": "効果中の回復量+%.0f%%",
+      "short_description": "回復量+%.0f%%",
       "category": "heal",
       "effect_type": "heal_amp",
       "min_value": 15,
-      "max_value": 35
+      "max_value": 35,
+      "min_drop_level": 5
     },
     {
       "id": "overheal",
       "name": "オーバーヒール",
-      "description": "効果中の超過回復を一時HPに変換",
+      "description": "効果中の超過回復を一時HPに",
+      "short_description": "超過回復→一時HP",
       "category": "heal",
       "effect_type": "overheal",
       "min_value": 1,
-      "max_value": 1
+      "max_value": 1,
+      "min_drop_level": 10
     },
     {
       "id": "time_extend",
       "name": "タイムエクステンド",
-      "description": "効果中のタイピング制限時間を延長",
+      "description": "効果中のタイピング制限時間+%.0f秒",
+      "short_description": "入力時間+%.0f秒",
       "category": "typing",
       "effect_type": "time_extend",
       "min_value": 1,
-      "max_value": 3
+      "max_value": 3,
+      "min_drop_level": 1
     },
     {
       "id": "auto_correct",
       "name": "オートコレクト",
-      "description": "効果中に一定回数のミスを無視",
+      "description": "効果中ミス%.0f回まで無視",
+      "short_description": "ミス%.0f回無視",
       "category": "typing",
       "effect_type": "auto_correct",
       "min_value": 1,
-      "max_value": 3
+      "max_value": 3,
+      "min_drop_level": 1
     },
     {
       "id": "cooldown_reduce",
       "name": "クールダウンリデュース",
-      "description": "効果中に発生した他エージェントのリキャスト時間を短縮",
+      "description": "効果中発生した他エージェントのリキャスト時間%.0f%%短縮",
+      "short_description": "他CD%.0f%%短縮",
       "category": "recast",
       "effect_type": "cooldown_reduce",
       "min_value": 10,
-      "max_value": 30
+      "max_value": 30,
+      "min_drop_level": 5
     },
     {
       "id": "buff_extend",
       "name": "バフエクステンド",
-      "description": "バフスキルの効果時間を延長",
+      "description": "バフ効果時間+%.0f秒",
+      "short_description": "バフ時間+%.0f秒",
       "category": "effect_extend",
       "effect_type": "buff_extend",
       "min_value": 1,
-      "max_value": 5
+      "max_value": 5,
+      "min_drop_level": 1
     },
     {
       "id": "debuff_extend",
       "name": "デバフエクステンド",
-      "description": "デバフスキルの効果時間を延長",
+      "description": "デバフ効果時間+%.0f秒",
+      "short_description": "デバフ時間+%.0f秒",
       "category": "effect_extend",
       "effect_type": "debuff_extend",
       "min_value": 1,
-      "max_value": 5
+      "max_value": 5,
+      "min_drop_level": 1
     },
     {
       "id": "buff_duration",
       "name": "バフデュレーション",
-      "description": "効果中のバフスキル効果時間を延長",
+      "description": "効果中のバフスキル効果時間+%.0f秒",
+      "short_description": "バフ延長+%.0f秒",
       "category": "effect_extend",
       "effect_type": "buff_duration",
       "min_value": 1,
-      "max_value": 5
+      "max_value": 5,
+      "min_drop_level": 5
     },
     {
       "id": "debuff_duration",
       "name": "デバフデュレーション",
-      "description": "効果中のデバフスキル効果時間を延長",
+      "description": "効果中のデバフスキル効果時間+%.0f秒",
+      "short_description": "デバフ延長+%.0f秒",
       "category": "effect_extend",
       "effect_type": "debuff_duration",
       "min_value": 1,
-      "max_value": 5
+      "max_value": 5,
+      "min_drop_level": 5
     },
     {
       "id": "double_cast",
       "name": "ダブルキャスト",
-      "description": "効果中に一定確率でスキルを2回発動",
+      "description": "効果中%.0f%%でスキル2回発動",
+      "short_description": "%.0f%%で2回発動",
       "category": "special",
       "effect_type": "double_cast",
       "min_value": 10,
-      "max_value": 25
+      "max_value": 25,
+      "min_drop_level": 10
     }
   ]
 }

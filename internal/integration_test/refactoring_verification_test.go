@@ -308,7 +308,7 @@ func TestRefactoring_BattleFlowUnchanged(t *testing.T) {
 
 	// 敵攻撃の検証
 	initialHP := state.Player.HP
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 	if damage <= 0 {
 		t.Error("ダメージは正の値であるべき")
 	}

@@ -123,11 +123,8 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	}
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 
-	// チェイン効果データをロード（デバッグモードで使用）
-	var chainEffects []masterdata.ChainEffectData
-	if debugMode {
-		chainEffects, _ = dataLoader.LoadChainEffects()
-	}
+	// チェイン効果データをロード
+	chainEffects, _ := dataLoader.LoadChainEffects()
 
 	// masterdata → domain型への変換（app層で変換を行う）
 	var domainSources *gamestate.DomainDataSources
@@ -136,11 +133,13 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
 		passiveSkills = ConvertPassiveSkills(externalData.PassiveSkills)
+		chainEffectDefs := ConvertChainEffects(chainEffects)
 		domainSources = &gamestate.DomainDataSources{
-			CoreTypes:     coreTypes,
-			ModuleTypes:   moduleTypes,
-			EnemyTypes:    enemyTypes,
-			PassiveSkills: passiveSkills,
+			CoreTypes:              coreTypes,
+			ModuleTypes:            moduleTypes,
+			EnemyTypes:             enemyTypes,
+			PassiveSkills:          passiveSkills,
+			ChainEffectDefinitions: chainEffectDefs,
 		}
 		// タイピング辞書を変換
 		if externalData.TypingDictionary != nil {
@@ -180,6 +179,12 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	if domainSources != nil {
 		gs.UpdateEnemyGenerator(domainSources.EnemyTypes)
 		gs.UpdateRewardCalculator(domainSources.CoreTypes, domainSources.ModuleTypes, domainSources.PassiveSkills)
+
+		// チェイン効果プールを設定（UpdateRewardCalculatorで新しいRewardCalculatorが作成されるため再設定が必要）
+		if len(domainSources.ChainEffectDefinitions) > 0 {
+			chainEffectPool := rewarding.NewChainEffectPool(domainSources.ChainEffectDefinitions)
+			gs.RewardCalculator().SetChainEffectPool(chainEffectPool)
+		}
 	}
 
 	// インベントリプロバイダーを作成（デバッグモードに応じて切り替え）
@@ -338,11 +343,11 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 			TotalHealAmount:  result.Stats.TotalHealAmount,
 		}
 
-		// 報酬を計算（ドメイン型API）
-		rewardResult := m.gameState.RewardCalculator().CalculateRewards(
-			true,
+		// 確定報酬を計算（敵タイプのドロップ設定に基づく）
+		rewardResult := m.gameState.RewardCalculator().CalculateGuaranteedReward(
 			rewardStats,
 			result.Level,
+			*result.EnemyType,
 		)
 
 		// 報酬をインベントリに追加

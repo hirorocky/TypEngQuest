@@ -182,6 +182,35 @@ type EffectResult struct {
 	// DoubleCast は2回発動確率です。
 	DoubleCast float64
 
+	// ========== ステータス系 ==========
+
+	// STRBonus はSTR加算値です。
+	STRBonus int
+
+	// STRMultiplier はSTR倍率です。
+	STRMultiplier float64
+
+	// INTBonus はINT加算値です。
+	INTBonus int
+
+	// INTMultiplier はINT倍率です。
+	INTMultiplier float64
+
+	// WILBonus はWIL加算値です。
+	WILBonus int
+
+	// WILMultiplier はWIL倍率です。
+	WILMultiplier float64
+
+	// LUKBonus はLUK加算値です。
+	LUKBonus int
+
+	// LUKMultiplier はLUK倍率です。
+	LUKMultiplier float64
+
+	// CritRate はクリティカル率加算です。
+	CritRate float64
+
 	// ========== デバッグ用 ==========
 
 	// ActiveSources は有効だったソース名のリストです。
@@ -193,7 +222,12 @@ func NewEffectResult() EffectResult {
 	return EffectResult{
 		DamageMultiplier: 1.0,
 		HealMultiplier:   1.0,
-		ActiveSources:    make([]string, 0),
+		// ステータス系Multiplierは増加率として扱う（0.0 = +0%、0.25 = +25%）
+		STRMultiplier: 0.0,
+		INTMultiplier: 0.0,
+		WILMultiplier: 0.0,
+		LUKMultiplier: 0.0,
+		ActiveSources: make([]string, 0),
 	}
 }
 

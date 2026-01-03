@@ -150,7 +150,7 @@ func TestBattleFlow_EnemyAttack(t *testing.T) {
 	initialHP := state.Player.HP
 
 	// 敵攻撃を処理
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// ダメージが与えられた
 	if damage <= 0 {
@@ -350,7 +350,7 @@ func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
 	})
 
 	// 敵攻撃
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 	expectedMaxDamage := state.Enemy.AttackPower // バフなしの場合
 
 	// ダメージが軽減されている

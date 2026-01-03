@@ -456,8 +456,13 @@ func TestDomainConversion_ChainEffect(t *testing.T) {
 		Value: 25.0,
 	}
 
-	// ドメインChainEffectへの変換
-	chainEffect := domain.NewChainEffect(domain.ChainEffectType(chainEffectSave.Type), chainEffectSave.Value)
+	// ドメインChainEffectへの変換（テンプレート付き）
+	chainEffect := domain.NewChainEffectWithTemplate(
+		domain.ChainEffectType(chainEffectSave.Type),
+		chainEffectSave.Value,
+		"次の攻撃のダメージ+%.0f%%",
+		"次攻撃ダメ+%.0f%%",
+	)
 
 	if chainEffect.Type != domain.ChainEffectDamageBonus {
 		t.Errorf("ChainEffect.Type expected damage_bonus, got %s", chainEffect.Type)

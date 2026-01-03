@@ -73,6 +73,7 @@ type ExternalData struct {
 	EnemyActions       []EnemyActionData
 	EnemyPassiveSkills []EnemyPassiveSkillData
 	PassiveSkills      []PassiveSkillData
+	ChainEffects       []ChainEffectData
 	TypingDictionary   *TypingDictionary
 	FirstAgents        []FirstAgentData
 }
@@ -624,13 +625,15 @@ func (p *EnemyPassiveSkillData) ToDomain() *domain.EnemyPassiveSkill {
 
 // ChainEffectData はchain_effects.jsonから読み込むチェイン効果データの構造体です。
 type ChainEffectData struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Category    string  `json:"category"`
-	EffectType  string  `json:"effect_type"`
-	MinValue    float64 `json:"min_value"`
-	MaxValue    float64 `json:"max_value"`
+	ID               string  `json:"id"`
+	Name             string  `json:"name"`
+	Description      string  `json:"description"`
+	ShortDescription string  `json:"short_description"`
+	Category         string  `json:"category"`
+	EffectType       string  `json:"effect_type"`
+	MinValue         float64 `json:"min_value"`
+	MaxValue         float64 `json:"max_value"`
+	MinDropLevel     int     `json:"min_drop_level"`
 }
 
 // chainEffectsFileData はchain_effects.jsonのルート構造です。
@@ -667,12 +670,15 @@ func (s *ChainEffectData) ToDomainCategory() domain.ChainEffectCategory {
 // rewardingパッケージのChainEffectPoolで使用されます。
 func (s *ChainEffectData) ToChainEffectDefinition() ChainEffectDefinitionData {
 	return ChainEffectDefinitionData{
-		ID:         s.ID,
-		Name:       s.Name,
-		Category:   s.Category,
-		EffectType: convertChainEffectType(s.EffectType),
-		MinValue:   s.MinValue,
-		MaxValue:   s.MaxValue,
+		ID:               s.ID,
+		Name:             s.Name,
+		Description:      s.Description,
+		ShortDescription: s.ShortDescription,
+		Category:         s.Category,
+		EffectType:       convertChainEffectType(s.EffectType),
+		MinValue:         s.MinValue,
+		MaxValue:         s.MaxValue,
+		MinDropLevel:     s.MinDropLevel,
 	}
 }
 
@@ -685,6 +691,12 @@ type ChainEffectDefinitionData struct {
 	// Name は表示名です。
 	Name string
 
+	// Description は説明文テンプレートです（%.0fをプレースホルダとして使用）。
+	Description string
+
+	// ShortDescription は短い説明文テンプレートです（%.0fをプレースホルダとして使用）。
+	ShortDescription string
+
 	// Category はカテゴリです（attack, defense, heal等）。
 	Category string
 
@@ -696,6 +708,9 @@ type ChainEffectDefinitionData struct {
 
 	// MaxValue は効果値の最大値です。
 	MaxValue float64
+
+	// MinDropLevel はこのチェイン効果がドロップする最低敵レベルです。
+	MinDropLevel int
 }
 
 // convertChainEffectType は文字列をChainEffectTypeに変換します。
@@ -879,6 +894,11 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		return nil, fmt.Errorf("パッシブスキルのロードに失敗: %w", err)
 	}
 
+	chainEffects, err := l.LoadChainEffects()
+	if err != nil {
+		return nil, fmt.Errorf("チェイン効果のロードに失敗: %w", err)
+	}
+
 	dictionary, err := l.LoadTypingDictionary()
 	if err != nil {
 		return nil, fmt.Errorf("タイピング辞書のロードに失敗: %w", err)
@@ -896,6 +916,7 @@ func (l *DataLoader) LoadAllExternalData() (*ExternalData, error) {
 		EnemyActions:       enemyActions,
 		EnemyPassiveSkills: enemyPassiveSkills,
 		PassiveSkills:      passiveSkills,
+		ChainEffects:       chainEffects,
 		TypingDictionary:   dictionary,
 		FirstAgents:        firstAgents,
 	}, nil

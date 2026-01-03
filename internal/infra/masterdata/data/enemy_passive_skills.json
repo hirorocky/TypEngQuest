@@ -3,17 +3,17 @@
     {
       "id": "slime_normal",
       "name": "ぷるぷるボディ",
-      "description": "物理ダメージ10%軽減",
+      "description": "物理ダメージ50%軽減",
       "effects": {
-        "damage_cut": 0.1
+        "damage_cut": 0.5
       }
     },
     {
       "id": "slime_enhanced",
       "name": "怒りのスライム",
-      "description": "攻撃力20%上昇",
+      "description": "攻撃力50%上昇",
       "effects": {
-        "damage_mult": 1.2
+        "damage_mult": 1.5
       }
     }
   ]

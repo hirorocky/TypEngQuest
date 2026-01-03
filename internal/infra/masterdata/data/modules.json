@@ -12,7 +12,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 1.0, "stat_ref": "STR"},
+          "hp_formula": { "base": 0, "stat_coef": 10.0, "stat_ref": "STR" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "⚔️"
@@ -31,7 +31,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 2.5, "stat_ref": "STR"},
+          "hp_formula": { "base": 0, "stat_coef": 2.5, "stat_ref": "STR" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "⚔️"
@@ -50,7 +50,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 5.0, "stat_ref": "STR"},
+          "hp_formula": { "base": 0, "stat_coef": 5.0, "stat_ref": "STR" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "⚔️"
@@ -69,7 +69,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 1.2, "stat_ref": "INT"},
+          "hp_formula": { "base": 0, "stat_coef": 1.2, "stat_ref": "INT" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💥"
@@ -88,7 +88,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 2.2, "stat_ref": "INT"},
+          "hp_formula": { "base": 0, "stat_coef": 2.2, "stat_ref": "INT" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💥"
@@ -107,7 +107,7 @@
       "effects": [
         {
           "target": "enemy",
-          "hp_formula": {"base": 0, "stat_coef": 4.0, "stat_ref": "INT"},
+          "hp_formula": { "base": 0, "stat_coef": 4.0, "stat_ref": "INT" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💥"
@@ -126,7 +126,7 @@
       "effects": [
         {
           "target": "self",
-          "hp_formula": {"base": 5, "stat_coef": 0.8, "stat_ref": "WIL"},
+          "hp_formula": { "base": 5, "stat_coef": 0.8, "stat_ref": "WIL" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💚"
@@ -145,7 +145,7 @@
       "effects": [
         {
           "target": "self",
-          "hp_formula": {"base": 10, "stat_coef": 1.6, "stat_ref": "WIL"},
+          "hp_formula": { "base": 10, "stat_coef": 1.6, "stat_ref": "WIL" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💚"
@@ -164,7 +164,7 @@
       "effects": [
         {
           "target": "self",
-          "hp_formula": {"base": 20, "stat_coef": 3.0, "stat_ref": "WIL"},
+          "hp_formula": { "base": 20, "stat_coef": 3.0, "stat_ref": "WIL" },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💚"
@@ -172,18 +172,29 @@
       ]
     },
     {
-      "id": "attack_buff_lv1",
-      "name": "攻撃強化1",
+      "id": "str_buff_lv1",
+      "name": "気合い溜め",
       "icon": "💪",
       "tags": ["buff_low"],
-      "description": "一時的に攻撃力を上昇させる。",
+      "description": "一時的にSTRを上昇させる。",
       "cooldown_seconds": 10.0,
       "difficulty": 1,
       "min_drop_level": 1,
       "effects": [
         {
           "target": "self",
-          "effect_column": {"column": "damage_bonus", "value": 5.0, "duration": 10.0},
+          "hp_formula": { "base": 10, "stat_coef": 0.1, "stat_ref": "WIL" },
+          "probability": 1.0,
+          "luk_factor": 0,
+          "icon": "💚"
+        },
+        {
+          "target": "self",
+          "effect_column": {
+            "column": "str_mult",
+            "value": 0.25,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💪"
@@ -202,7 +213,11 @@
       "effects": [
         {
           "target": "self",
-          "effect_column": {"column": "damage_cut", "value": 0.1, "duration": 10.0},
+          "effect_column": {
+            "column": "damage_cut",
+            "value": 0.1,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "🛡️"
@@ -210,18 +225,22 @@
       ]
     },
     {
-      "id": "attack_buff_lv2",
-      "name": "攻撃強化2",
+      "id": "str_buff_lv2",
+      "name": "STR強化2",
       "icon": "💪",
       "tags": ["buff_mid"],
-      "description": "攻撃力を大きく上昇させる。",
+      "description": "STRを大きく上昇させる。",
       "cooldown_seconds": 10.0,
       "difficulty": 2,
       "min_drop_level": 10,
       "effects": [
         {
           "target": "self",
-          "effect_column": {"column": "damage_bonus", "value": 10.0, "duration": 10.0},
+          "effect_column": {
+            "column": "str_mult",
+            "value": 0.5,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💪"
@@ -240,7 +259,11 @@
       "effects": [
         {
           "target": "self",
-          "effect_column": {"column": "damage_cut", "value": 0.2, "duration": 10.0},
+          "effect_column": {
+            "column": "damage_cut",
+            "value": 0.2,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "🛡️"
@@ -248,18 +271,22 @@
       ]
     },
     {
-      "id": "attack_buff_lv3",
-      "name": "攻撃強化3",
+      "id": "str_buff_lv3",
+      "name": "STR強化3",
       "icon": "💪",
       "tags": ["buff_high"],
-      "description": "攻撃力を大幅に上昇させる。",
+      "description": "STRを大幅に上昇させる。",
       "cooldown_seconds": 20.0,
       "difficulty": 3,
       "min_drop_level": 20,
       "effects": [
         {
           "target": "self",
-          "effect_column": {"column": "damage_bonus", "value": 18.0, "duration": 15.0},
+          "effect_column": {
+            "column": "str_mult",
+            "value": 0.75,
+            "duration": 15.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💪"
@@ -278,7 +305,11 @@
       "effects": [
         {
           "target": "enemy",
-          "effect_column": {"column": "damage_mult", "value": 0.9, "duration": 10.0},
+          "effect_column": {
+            "column": "damage_mult",
+            "value": 0.9,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💀"
@@ -297,7 +328,11 @@
       "effects": [
         {
           "target": "enemy",
-          "effect_column": {"column": "damage_cut", "value": -0.1, "duration": 10.0},
+          "effect_column": {
+            "column": "damage_cut",
+            "value": -0.1,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💀"
@@ -316,7 +351,11 @@
       "effects": [
         {
           "target": "enemy",
-          "effect_column": {"column": "damage_mult", "value": 0.8, "duration": 10.0},
+          "effect_column": {
+            "column": "damage_mult",
+            "value": 0.8,
+            "duration": 10.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💀"
@@ -335,7 +374,11 @@
       "effects": [
         {
           "target": "enemy",
-          "effect_column": {"column": "damage_mult", "value": 0.65, "duration": 15.0},
+          "effect_column": {
+            "column": "damage_mult",
+            "value": 0.65,
+            "duration": 15.0
+          },
           "probability": 1.0,
           "luk_factor": 0,
           "icon": "💀"

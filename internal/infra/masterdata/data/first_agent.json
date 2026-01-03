@@ -26,7 +26,7 @@
       "core_level": 1,
       "modules": [
         {
-          "type_id": "attack_buff_lv1"
+          "type_id": "str_buff_lv1"
         }
       ]
     }

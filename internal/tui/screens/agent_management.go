@@ -1617,7 +1617,12 @@ func (s *AgentManagementScreen) handleDebugChainEffectSelection(msg tea.KeyMsg) 
 		} else {
 			ce := chainEffects[s.selectedIndex-1]
 			// 効果値はmax_valueを使用（デバッグモードなので最大値）
-			chainEffect := domain.NewChainEffect(ce.ToDomainEffectType(), ce.MaxValue)
+			chainEffect := domain.NewChainEffectWithTemplate(
+				ce.ToDomainEffectType(),
+				ce.MaxValue,
+				ce.Description,
+				ce.ShortDescription,
+			)
 			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = &chainEffect
 		}
 

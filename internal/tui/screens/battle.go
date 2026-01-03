@@ -32,10 +32,11 @@ type BattleTickMsg struct{}
 
 // BattleResultMsg はバトル結果メッセージです。
 type BattleResultMsg struct {
-	Victory bool
-	Level   int
-	Stats   *combat.BattleStatistics // バトル統計
-	EnemyID string                   // 敵図鑑更新用
+	Victory   bool
+	Level     int
+	Stats     *combat.BattleStatistics // バトル統計
+	EnemyID   string                   // 敵図鑑更新用
+	EnemyType *domain.EnemyType        // 確定ドロップ設定参照用
 }
 
 // ==================== モジュールスロット ====================

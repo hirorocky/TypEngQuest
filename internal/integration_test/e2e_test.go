@@ -96,10 +96,12 @@ func createTestExternalData() *masterdata.ExternalData {
 		},
 		EnemyTypes: []masterdata.EnemyTypeData{
 			{
-				ID:              "slime",
-				Name:            "スライム",
-				BaseHP:          50,
-				BaseAttackPower: 5,
+				ID:               "slime",
+				Name:             "スライム",
+				BaseHP:           50,
+				BaseAttackPower:  5,
+				DropItemCategory: "core",
+				DropItemTypeID:   "all_rounder",
 			},
 		},
 		PassiveSkills: []masterdata.PassiveSkillData{
@@ -295,7 +297,14 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 		TotalAccuracy:    result.Stats.TotalAccuracy,
 		TotalTypingCount: result.Stats.TotalTypingCount,
 	}
-	rewards := rewardCalc.CalculateRewards(result.IsVictory, battleStats, battleLevel)
+	// 敵タイプを作成（確定ドロップ用）
+	enemyType := domain.EnemyType{
+		ID:               "slime",
+		Name:             "スライム",
+		DropItemCategory: "core",
+		DropItemTypeID:   "all_rounder",
+	}
+	rewards := rewardCalc.CalculateGuaranteedReward(battleStats, battleLevel, enemyType)
 
 	// 報酬画面（シミュレート）- WPM、正確性を表示
 	avgWPM := result.Stats.GetAverageWPM()
@@ -599,7 +608,7 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 
 	// 敵の攻撃を受け続けて敗北
 	for battleState.Player.IsAlive() {
-		engine.ProcessEnemyAttack(battleState)
+		engine.ProcessEnemyAttackDamage(battleState, "physical")
 	}
 
 	// 敗北確認

@@ -49,10 +49,11 @@ func (s *BattleScreen) checkGameOver() bool {
 // createGameOverCmd はゲーム終了時のコマンドを作成します。
 func (s *BattleScreen) createGameOverCmd() tea.Cmd {
 	result := BattleResultMsg{
-		Victory: s.victory,
-		Level:   s.enemy.Level,
-		Stats:   s.battleState.Stats,
-		EnemyID: s.enemy.Type.ID,
+		Victory:   s.victory,
+		Level:     s.enemy.Level,
+		Stats:     s.battleState.Stats,
+		EnemyID:   s.enemy.Type.ID,
+		EnemyType: &s.enemy.Type,
 	}
 	return func() tea.Msg {
 		return result
@@ -81,71 +82,63 @@ func (s *BattleScreen) IsShowingResult() bool {
 
 // ==================== ゲームロジック: 敵攻撃処理 ====================
 
-// processEnemyAttack は敵の行動を処理します。
-// パッシブスキル（ps_last_stand, ps_counter_charge, ps_adaptive_shield, ps_quick_recovery）を統合。
+// processEnemyAttack は敵のターンを処理します。
+// ビジネスロジックは BattleEngine.ProcessEnemyTurn() に委譲し、UI更新のみを担当します。
 func (s *BattleScreen) processEnemyAttack() {
 	if s.battleEngine == nil || s.battleState == nil {
-		// フォールバック: 従来の攻撃処理
-		damage := s.enemy.AttackPower
-		s.player.HP -= damage
-		if s.player.HP < 0 {
-			s.player.HP = 0
-		}
-		s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
-		s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
-		// UI改善: フローティングダメージとHPアニメーション
-		s.floatingDamageManager.AddDamage(damage, "player")
-		s.playerHPBar.SetTarget(s.player.HP)
+		s.processLegacyEnemyAttack()
 		return
 	}
 
-	action := s.battleState.NextAction
-	var damage int
-	var msg string
+	// ビジネスロジックはエンジンに委譲
+	result := s.battleEngine.ProcessEnemyTurn(s.battleState)
 
-	switch action.ActionType {
+	// UI更新
+	s.updateUIAfterEnemyTurn(result)
+}
+
+// processLegacyEnemyAttack はフォールバック用の従来攻撃処理です。
+func (s *BattleScreen) processLegacyEnemyAttack() {
+	damage := s.enemy.AttackPower
+	s.player.HP -= damage
+	if s.player.HP < 0 {
+		s.player.HP = 0
+	}
+	s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
+	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+	s.floatingDamageManager.AddDamage(damage, "player")
+	s.playerHPBar.SetTarget(s.player.HP)
+}
+
+// updateUIAfterEnemyTurn は敵ターン結果に基づいてUIを更新します。
+func (s *BattleScreen) updateUIAfterEnemyTurn(result combat.EnemyTurnResult) {
+	switch result.ActionType {
 	case combat.EnemyActionAttack:
-		// パッシブスキル対応版の攻撃処理を使用
-		// ps_last_stand, ps_counter_charge, ps_adaptive_shield が評価される
-		attackType := action.AttackType
-		if attackType == "" {
-			attackType = s.enemy.Type.AttackType
-		}
-		damage = s.battleEngine.ProcessEnemyAttackWithPassiveAndPattern(s.battleState, attackType)
-		msg = fmt.Sprintf("%dダメージを受けた！", damage)
-
-		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, msg)
-		if damage > 0 {
-			s.floatingDamageManager.AddDamage(damage, "player")
+		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, result.Message)
+		if result.Damage > 0 {
+			s.floatingDamageManager.AddDamage(result.Damage, "player")
 			s.playerHPBar.SetTarget(s.player.HP)
 		}
-
 		// ps_quick_recovery: 被ダメージ時にリキャスト短縮
 		s.evaluateQuickRecovery()
 
 	case combat.EnemyActionSelfBuff:
-		s.battleEngine.ApplyEnemySelfBuff(s.battleState, action.BuffType)
-		msg = combat.GetEnemyBuffName(action.BuffType)
-		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, msg)
+		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
 	case combat.EnemyActionDebuff:
-		s.battleEngine.ApplyPlayerDebuff(s.battleState, action.DebuffType)
-		msg = combat.GetPlayerDebuffName(action.DebuffType)
-		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, msg)
+		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, result.Message)
+
+	case combat.EnemyActionDefense:
+		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
 	default:
 		s.message = "敵の行動"
 	}
 
-	// フェーズ変化をチェック
-	if s.battleEngine.CheckPhaseTransition(s.battleState) {
-		// 敵のパッシブを強化パッシブに切り替え
-		s.battleEngine.SwitchEnemyPassive(s.battleState)
+	// フェーズ変化をUIに反映
+	if result.PhaseChanged {
 		s.message += " [敵が強化フェーズに突入！]"
 	}
-
-	// 次回行動を決定
-	s.battleState.NextAction = s.battleEngine.DetermineNextAction(s.battleState)
 
 	// 次の行動時間を設定
 	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
@@ -704,11 +697,12 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 
 	switch action.ActionType {
 	case combat.EnemyActionAttack:
-		// 攻撃予告（赤色）
+		// 攻撃予告（赤色）- バフ反映のため毎回計算
+		expectedDamage := s.battleEngine.GetExpectedDamage(s.battleState)
 		if action.AttackType == "physical" {
-			return "⚔️", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+			return "⚔️", fmt.Sprintf("物理攻撃 %dダメージ", expectedDamage), styles.ColorDamage
 		}
-		return "💥", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+		return "💥", fmt.Sprintf("魔法攻撃 %dダメージ", expectedDamage), styles.ColorDamage
 
 	case combat.EnemyActionSelfBuff:
 		// 自己バフ予告（黄色）

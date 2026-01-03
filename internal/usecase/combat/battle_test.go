@@ -236,7 +236,7 @@ func TestEnemyAttack(t *testing.T) {
 	state, _ := engine.InitializeBattle(5, agents)
 
 	initialHP := state.Player.HP
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	if state.Player.HP >= initialHP {
 		t.Error("プレイヤーHPが減少していない")
@@ -285,7 +285,7 @@ func TestEnemyAttack_WithDefenseBuff(t *testing.T) {
 		domain.ColDamageCut: 0.3, // 30%軽減
 	})
 
-	damageWithBuff := engine.ProcessEnemyAttack(state)
+	damageWithBuff := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// ダメージが軽減されていることを確認
 	// 基礎ダメージ × 0.7 程度になるはず
@@ -1021,7 +1021,7 @@ func TestPassiveSkillDamageReduction(t *testing.T) {
 
 	// 敵の攻撃を処理
 	initialHP := state.Player.HP
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// ダメージが軽減されていることを確認
 	// 敵の攻撃力は BaseAttackPower + (level * 2) = 100 + 10 = 110
@@ -1156,14 +1156,14 @@ func TestPassiveSkillEffectContinuesDuringRecast(t *testing.T) {
 	engine.RegisterPassiveSkills(state, agents)
 
 	// 1回目の攻撃
-	damage1 := engine.ProcessEnemyAttack(state)
+	damage1 := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// エフェクトの時間を経過させる（リキャスト中をシミュレート）
 	engine.UpdateEffects(state, 5.0) // 5秒経過
 
 	// 2回目の攻撃（リキャスト中でもパッシブスキルは有効）
 	state.NextAttackTime = time.Now().Add(-1 * time.Second) // 攻撃可能に
-	damage2 := engine.ProcessEnemyAttack(state)
+	damage2 := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// 両方とも同じダメージ（パッシブスキルが継続適用されている）
 	// 敵の攻撃力は BaseAttackPower + (level * 2) = 100 + 10 = 110
@@ -1301,7 +1301,7 @@ func TestPassiveSkillIntegration_BattleInitToStatCalculation(t *testing.T) {
 	}
 
 	// Step 5: 実際のダメージ計算に適用されていることを確認
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 	expectedDamage := int(float64(state.Enemy.AttackPower) * 0.8)
 	if damage != expectedDamage {
 		t.Errorf("ダメージ計算が不正: 期待 %d, 実際 %d (敵攻撃力 %d)", expectedDamage, damage, state.Enemy.AttackPower)
@@ -1422,7 +1422,7 @@ func TestPassiveSkillIntegration_MultipleAgentCoexistence(t *testing.T) {
 	// DamageBonusのチェックはスキップ（パッシブスキルの設定次第）
 
 	// 実際のダメージ計算で複数のパッシブ効果が適用されていることを確認
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 	expectedDamage := int(float64(state.Enemy.AttackPower) * 0.85) // 15%軽減
 	if damage != expectedDamage {
 		t.Errorf("ダメージ計算で複数パッシブが適用されていない: 期待 %d, 実際 %d", expectedDamage, damage)
@@ -1474,7 +1474,7 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 	engine.RegisterPassiveSkills(state, agents)
 
 	// 初期ダメージを記録
-	initialDamage := engine.ProcessEnemyAttack(state)
+	initialDamage := engine.ProcessEnemyAttackDamage(state, "physical")
 	expectedDamage := int(float64(state.Enemy.AttackPower) * 0.75)
 	if initialDamage != expectedDamage {
 		t.Errorf("初期ダメージが不正: 期待 %d, 実際 %d", expectedDamage, initialDamage)
@@ -1487,7 +1487,7 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 
 	// バフ適用中のダメージ（新システムではmax取りなので、max(25%, 10%) = 25%軽減）
 	state.NextAttackTime = time.Now().Add(-1 * time.Second)
-	buffedDamage := engine.ProcessEnemyAttack(state)
+	buffedDamage := engine.ProcessEnemyAttackDamage(state, "physical")
 	// max取りなので元の25%軽減と同じになる
 	if buffedDamage != initialDamage {
 		t.Errorf("バフ適用中ダメージが不正: 期待 %d, 実際 %d（max取りなので元と同じはず）", initialDamage, buffedDamage)
@@ -1498,7 +1498,7 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 
 	// バフ切れ後のダメージ（パッシブスキルの25%軽減のみ）
 	state.NextAttackTime = time.Now().Add(-1 * time.Second)
-	afterBuffExpiredDamage := engine.ProcessEnemyAttack(state)
+	afterBuffExpiredDamage := engine.ProcessEnemyAttackDamage(state, "physical")
 	if afterBuffExpiredDamage != expectedDamage {
 		t.Errorf("バフ切れ後ダメージが不正: 期待 %d, 実際 %d (パッシブスキル効果が消えている可能性)", expectedDamage, afterBuffExpiredDamage)
 	}

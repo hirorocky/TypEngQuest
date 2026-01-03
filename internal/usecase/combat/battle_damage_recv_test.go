@@ -83,7 +83,7 @@ func TestBattleEngine_DamageRecv_LastStand(t *testing.T) {
 	state.Player.HP = 20 // 20/100 = 20%
 
 	// Act: 敵の攻撃を処理
-	damage := engine.ProcessEnemyAttackWithPassive(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// Assert: ダメージが1に固定されている
 	if damage != 1 {
@@ -161,7 +161,7 @@ func TestBattleEngine_DamageRecv_LastStand_HPAbove25(t *testing.T) {
 	state.Player.HP = 100 // 100/200 = 50%
 
 	// Act
-	damage := engine.ProcessEnemyAttackWithPassive(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// Assert: 通常ダメージ（1より大きい）
 	if damage <= 1 {
@@ -235,7 +235,7 @@ func TestBattleEngine_DamageRecv_CounterCharge(t *testing.T) {
 	engine.RegisterPassiveSkills(state, agents)
 
 	// Act: 敵の攻撃を処理
-	engine.ProcessEnemyAttackWithPassive(state)
+	engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// Assert: プレイヤーのEffectTableに「次攻撃2倍」バフが追加されている
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)

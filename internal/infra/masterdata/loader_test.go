@@ -372,6 +372,23 @@ func TestLoadAllExternalData(t *testing.T) {
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "first_agent.json"), []byte(firstAgentJSON), 0644)
 
+	// chain_effects.json
+	chainEffectsJSON := `{
+		"chain_effects": [
+			{
+				"id": "damage_bonus",
+				"name": "ダメージボーナス",
+				"description": "次の攻撃のダメージ+%.0f%%",
+				"short_description": "次攻撃ダメ+%.0f%%",
+				"category": "attack",
+				"min_value": 10,
+				"max_value": 50,
+				"value_step": 5
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "chain_effects.json"), []byte(chainEffectsJSON), 0644)
+
 	loader := NewDataLoader(tmpDir)
 	externalData, err := loader.LoadAllExternalData()
 	if err != nil {

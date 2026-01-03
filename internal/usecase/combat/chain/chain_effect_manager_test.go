@@ -56,8 +56,9 @@ func TestRegisterChainEffect(t *testing.T) {
 func TestCheckAndTrigger(t *testing.T) {
 	cem := NewChainEffectManager()
 
-	// エージェント0のチェイン効果を登録
-	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+	// エージェント0のチェイン効果を登録（説明文テンプレート付き）
+	effect := domain.NewChainEffectWithTemplate(domain.ChainEffectDamageBonus, 25.0,
+		"次の攻撃のダメージ+%.0f%%", "次攻撃ダメ+%.0f%%")
 	cem.RegisterChainEffect(0, &effect, "slash_lv1")
 
 	// エージェント1がモジュールを使用（チェイン効果が発動）
