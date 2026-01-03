@@ -2005,3 +2005,263 @@ func TestSwitchEnemyPassive_NoNormalPassive(t *testing.T) {
 		t.Errorf("ActivePassiveIDが不正: 期待 slime_enhanced, 実際 %s", state.Enemy.ActivePassiveID)
 	}
 }
+
+// ==================== Task 6.2: バトル進行ロジック統合テスト ====================
+
+// TestBattleEngine_DetermineNextAction_PatternBased は行動パターンがある場合にパターンベース行動が使われることをテストします。
+func TestBattleEngine_DetermineNextAction_PatternBased(t *testing.T) {
+	// 行動パターンを持つ敵タイプを定義
+	normalActions := []domain.EnemyAction{
+		{
+			ID:             "act_slash",
+			Name:           "斬撃",
+			ActionType:     domain.EnemyActionAttack,
+			AttackType:     "physical",
+			DamageBase:     10.0,
+			DamagePerLevel: 2.0,
+			ChargeTime:     1 * time.Second,
+		},
+		{
+			ID:          "act_buff",
+			Name:        "気合い",
+			ActionType:  domain.EnemyActionBuff,
+			EffectType:  "damage_mult",
+			EffectValue: 1.5,
+			Duration:    5.0,
+			ChargeTime:  500 * time.Millisecond,
+		},
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                    "pattern_enemy",
+			Name:                  "パターン敵",
+			BaseHP:                100,
+			BaseAttackPower:       10,
+			BaseAttackInterval:    3 * time.Second,
+			AttackType:            "physical",
+			ResolvedNormalActions: normalActions,
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	// エージェントを作成
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test_passive", Name: "テストパッシブ"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	// 敵を生成（パターンあり）
+	state, _ := engine.InitializeBattle(5, agents)
+	state.Enemy.Type = enemyTypes[0] // 行動パターンを持つ敵タイプに設定
+
+	// パターンベースの行動を決定
+	nextAction := engine.DeterminePatternBasedAction(state)
+
+	// 最初の行動が斬撃であること
+	if nextAction.ActionType != EnemyActionAttack {
+		t.Errorf("最初の行動は攻撃であるべき: got %d", nextAction.ActionType)
+	}
+	if nextAction.SourceAction == nil {
+		t.Error("SourceActionが設定されていない")
+	} else if nextAction.SourceAction.ID != "act_slash" {
+		t.Errorf("最初の行動IDが不正: got %s, want act_slash", nextAction.SourceAction.ID)
+	}
+
+	// チャージタイムが設定されていること
+	if nextAction.ChargeTimeMs != 1000 {
+		t.Errorf("チャージタイムが不正: got %d, want 1000", nextAction.ChargeTimeMs)
+	}
+}
+
+// TestBattleEngine_ProcessEnemyTurn_PhaseTransitionWithPatternReset はフェーズ遷移時の行動パターンリセットをテストします。
+func TestBattleEngine_ProcessEnemyTurn_PhaseTransitionWithPatternReset(t *testing.T) {
+	normalActions := []domain.EnemyAction{
+		{ID: "normal_1", Name: "通常攻撃1", ActionType: domain.EnemyActionAttack, AttackType: "physical"},
+		{ID: "normal_2", Name: "通常攻撃2", ActionType: domain.EnemyActionAttack, AttackType: "physical"},
+	}
+	enhancedActions := []domain.EnemyAction{
+		{ID: "enhanced_1", Name: "強化攻撃1", ActionType: domain.EnemyActionAttack, AttackType: "physical"},
+	}
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:      "normal_passive",
+		Name:    "通常パッシブ",
+		Effects: map[domain.EffectColumn]float64{},
+	}
+	enhancedPassive := &domain.EnemyPassiveSkill{
+		ID:   "enhanced_passive",
+		Name: "強化パッシブ",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 2.0,
+		},
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                      "phase_enemy",
+			Name:                    "フェーズ敵",
+			BaseHP:                  100,
+			BaseAttackPower:         10,
+			BaseAttackInterval:      3 * time.Second,
+			AttackType:              "physical",
+			ResolvedNormalActions:   normalActions,
+			ResolvedEnhancedActions: enhancedActions,
+			NormalPassive:           normalPassive,
+			EnhancedPassive:         enhancedPassive,
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	// エージェントを作成
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test_passive", Name: "テストパッシブ"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	state, _ := engine.InitializeBattle(10, agents)
+	state.Enemy = domain.NewEnemy("test", "フェーズ敵 Lv.10", 10, 100, 10, 3*time.Second, enemyTypes[0])
+
+	// 敵パッシブを登録
+	engine.RegisterEnemyPassive(state)
+
+	// 通常フェーズで行動インデックスを進める
+	state.Enemy.AdvanceActionIndex()
+	if state.Enemy.ActionIndex != 1 {
+		t.Errorf("行動インデックスが進んでいない: got %d, want 1", state.Enemy.ActionIndex)
+	}
+
+	// HP50%以下にしてフェーズ遷移をトリガー
+	state.Enemy.HP = 45
+
+	// フェーズ遷移と行動インデックスのリセット
+	if engine.CheckPhaseTransition(state) {
+		state.Enemy.ResetActionIndex()
+		engine.SwitchEnemyPassive(state)
+	}
+
+	// 行動インデックスが0にリセットされていること
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("フェーズ遷移後に行動インデックスがリセットされていない: got %d, want 0", state.Enemy.ActionIndex)
+	}
+
+	// 強化フェーズになっていること
+	if !state.Enemy.IsEnhanced() {
+		t.Error("敵が強化フェーズに移行していない")
+	}
+
+	// 強化パッシブが適用されていること
+	if state.Enemy.ActivePassiveID != "enhanced_passive" {
+		t.Errorf("ActivePassiveIDが不正: got %s, want enhanced_passive", state.Enemy.ActivePassiveID)
+	}
+}
+
+// TestBattleEngine_ProcessEnemyTurn_AdvanceActionIndex は敵ターン処理後に行動インデックスが進むことをテストします。
+func TestBattleEngine_ProcessEnemyTurn_AdvanceActionIndex(t *testing.T) {
+	normalActions := []domain.EnemyAction{
+		{
+			ID:         "act_1",
+			Name:       "行動1",
+			ActionType: domain.EnemyActionAttack,
+			AttackType: "physical",
+		},
+		{
+			ID:         "act_2",
+			Name:       "行動2",
+			ActionType: domain.EnemyActionAttack,
+			AttackType: "physical",
+		},
+		{
+			ID:         "act_3",
+			Name:       "行動3",
+			ActionType: domain.EnemyActionAttack,
+			AttackType: "physical",
+		},
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                    "sequence_enemy",
+			Name:                  "シーケンス敵",
+			BaseHP:                1000,
+			BaseAttackPower:       10,
+			BaseAttackInterval:    3 * time.Second,
+			AttackType:            "physical",
+			ResolvedNormalActions: normalActions,
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	// エージェントを作成
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test_passive", Name: "テストパッシブ"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール1", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	state, _ := engine.InitializeBattle(5, agents)
+	state.Enemy = domain.NewEnemy("test", "シーケンス敵 Lv.5", 5, 1000, 10, 3*time.Second, enemyTypes[0])
+
+	// 初期状態: ActionIndex = 0
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("初期ActionIndexが0でない: got %d", state.Enemy.ActionIndex)
+	}
+
+	// 現在の行動を確認
+	action := state.Enemy.GetCurrentAction()
+	if action.ID != "act_1" {
+		t.Errorf("最初の行動が不正: got %s, want act_1", action.ID)
+	}
+
+	// 行動インデックスを進める
+	state.Enemy.AdvanceActionIndex()
+	if state.Enemy.ActionIndex != 1 {
+		t.Errorf("ActionIndexが進んでいない: got %d, want 1", state.Enemy.ActionIndex)
+	}
+
+	action = state.Enemy.GetCurrentAction()
+	if action.ID != "act_2" {
+		t.Errorf("次の行動が不正: got %s, want act_2", action.ID)
+	}
+
+	// 最後まで進めてループ確認
+	state.Enemy.AdvanceActionIndex() // index = 2
+	state.Enemy.AdvanceActionIndex() // index = 0 (ループ)
+
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("ActionIndexがループしていない: got %d, want 0", state.Enemy.ActionIndex)
+	}
+
+	action = state.Enemy.GetCurrentAction()
+	if action.ID != "act_1" {
+		t.Errorf("ループ後の行動が不正: got %s, want act_1", action.ID)
+	}
+}
