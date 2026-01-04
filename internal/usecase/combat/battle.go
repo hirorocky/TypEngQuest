@@ -640,6 +640,10 @@ func (e *BattleEngine) ApplyModuleEffect(
 					damage = calculateDamage(damage, enemyEffects.DamageCut)
 				}
 
+				// ボルテージ乗算を適用（最終段階）
+				voltageMultiplier := state.Enemy.GetVoltageMultiplier()
+				damage = int(float64(damage) * voltageMultiplier)
+
 				state.Enemy.TakeDamage(damage)
 				state.Stats.TotalDamageDealt += damage
 				totalEffect += damage

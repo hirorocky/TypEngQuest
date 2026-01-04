@@ -243,3 +243,208 @@ func TestBattleEngine_VoltageManager_NotNil(t *testing.T) {
 		t.Error("expected voltageManager to be initialized")
 	}
 }
+
+// TestBattleEngine_VoltageDamageMultiplier_100Percent はボルテージ100%で等倍ダメージをテストします。
+func TestBattleEngine_VoltageDamageMultiplier_100Percent(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                     "test_enemy",
+			Name:                   "テスト敵",
+			BaseHP:                 1000,
+			BaseAttackPower:        10,
+			VoltageRisePer10s:      0.0, // 上昇しない設定
+			NormalActionPatternIDs: []string{},
+			ResolvedNormalActions: []domain.EnemyAction{
+				{ID: "attack_1", Name: "攻撃", ActionType: domain.EnemyActionAttack, ChargeTime: 2 * time.Second},
+			},
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	core := &domain.CoreModel{
+		ID:    "test_core",
+		Name:  "テストコア",
+		Stats: domain.Stats{STR: 10, INT: 10, WIL: 10, LUK: 10},
+	}
+	module := newTestDamageModule("m1", "ダメージスキル", []string{"physical"}, 10.0, "STR", "テスト")
+	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
+	agents := []*domain.AgentModel{agent}
+
+	state, err := engine.InitializeBattle(1, agents)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// ボルテージ100%（等倍）
+	initialHP := state.Enemy.HP
+	damage := engine.ApplyModuleEffect(state, agent, module, nil)
+
+	// STR=10, statCoef=10.0 -> 基礎ダメージ = 10 * 10 = 100
+	// ボルテージ100% -> 乗算 x1.0 -> 最終ダメージ = 100
+	expectedDamage := 100
+	if damage != expectedDamage {
+		t.Errorf("expected damage %d, got %d", expectedDamage, damage)
+	}
+
+	actualDamage := initialHP - state.Enemy.HP
+	if actualDamage != expectedDamage {
+		t.Errorf("expected HP reduction %d, got %d", expectedDamage, actualDamage)
+	}
+}
+
+// TestBattleEngine_VoltageDamageMultiplier_150Percent はボルテージ150%で1.5倍ダメージをテストします。
+func TestBattleEngine_VoltageDamageMultiplier_150Percent(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                     "test_enemy",
+			Name:                   "テスト敵",
+			BaseHP:                 1000,
+			BaseAttackPower:        10,
+			VoltageRisePer10s:      0.0,
+			NormalActionPatternIDs: []string{},
+			ResolvedNormalActions: []domain.EnemyAction{
+				{ID: "attack_1", Name: "攻撃", ActionType: domain.EnemyActionAttack, ChargeTime: 2 * time.Second},
+			},
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	core := &domain.CoreModel{
+		ID:    "test_core",
+		Name:  "テストコア",
+		Stats: domain.Stats{STR: 10, INT: 10, WIL: 10, LUK: 10},
+	}
+	module := newTestDamageModule("m1", "ダメージスキル", []string{"physical"}, 10.0, "STR", "テスト")
+	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
+	agents := []*domain.AgentModel{agent}
+
+	state, err := engine.InitializeBattle(1, agents)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// ボルテージを150%に設定
+	state.Enemy.SetVoltage(150.0)
+
+	initialHP := state.Enemy.HP
+	damage := engine.ApplyModuleEffect(state, agent, module, nil)
+
+	// STR=10, statCoef=10.0 -> 基礎ダメージ = 10 * 10 = 100
+	// ボルテージ150% -> 乗算 x1.5 -> 最終ダメージ = 150
+	expectedDamage := 150
+	if damage != expectedDamage {
+		t.Errorf("expected damage %d, got %d", expectedDamage, damage)
+	}
+
+	actualDamage := initialHP - state.Enemy.HP
+	if actualDamage != expectedDamage {
+		t.Errorf("expected HP reduction %d, got %d", expectedDamage, actualDamage)
+	}
+}
+
+// TestBattleEngine_VoltageDamageMultiplier_200Percent はボルテージ200%で2倍ダメージをテストします。
+func TestBattleEngine_VoltageDamageMultiplier_200Percent(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                     "test_enemy",
+			Name:                   "テスト敵",
+			BaseHP:                 1000,
+			BaseAttackPower:        10,
+			VoltageRisePer10s:      0.0,
+			NormalActionPatternIDs: []string{},
+			ResolvedNormalActions: []domain.EnemyAction{
+				{ID: "attack_1", Name: "攻撃", ActionType: domain.EnemyActionAttack, ChargeTime: 2 * time.Second},
+			},
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	core := &domain.CoreModel{
+		ID:    "test_core",
+		Name:  "テストコア",
+		Stats: domain.Stats{STR: 10, INT: 10, WIL: 10, LUK: 10},
+	}
+	module := newTestDamageModule("m1", "ダメージスキル", []string{"physical"}, 10.0, "STR", "テスト")
+	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
+	agents := []*domain.AgentModel{agent}
+
+	state, err := engine.InitializeBattle(1, agents)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// ボルテージを200%に設定
+	state.Enemy.SetVoltage(200.0)
+
+	initialHP := state.Enemy.HP
+	damage := engine.ApplyModuleEffect(state, agent, module, nil)
+
+	// STR=10, statCoef=10.0 -> 基礎ダメージ = 10 * 10 = 100
+	// ボルテージ200% -> 乗算 x2.0 -> 最終ダメージ = 200
+	expectedDamage := 200
+	if damage != expectedDamage {
+		t.Errorf("expected damage %d, got %d", expectedDamage, damage)
+	}
+
+	actualDamage := initialHP - state.Enemy.HP
+	if actualDamage != expectedDamage {
+		t.Errorf("expected HP reduction %d, got %d", expectedDamage, actualDamage)
+	}
+}
+
+// TestBattleEngine_VoltageDamageMultiplier_HealNotAffected はボルテージが回復に影響しないことをテストします。
+func TestBattleEngine_VoltageDamageMultiplier_HealNotAffected(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                     "test_enemy",
+			Name:                   "テスト敵",
+			BaseHP:                 1000,
+			BaseAttackPower:        10,
+			VoltageRisePer10s:      0.0,
+			NormalActionPatternIDs: []string{},
+			ResolvedNormalActions: []domain.EnemyAction{
+				{ID: "attack_1", Name: "攻撃", ActionType: domain.EnemyActionAttack, ChargeTime: 2 * time.Second},
+			},
+		},
+	}
+
+	engine := NewBattleEngine(enemyTypes)
+
+	core := &domain.CoreModel{
+		ID:    "test_core",
+		Name:  "テストコア",
+		Stats: domain.Stats{STR: 10, INT: 10, WIL: 10, LUK: 10},
+	}
+	healModule := newTestHealModule("m1", "回復スキル", []string{"heal"}, 10.0, "WIL", "テスト")
+	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{healModule})
+	agents := []*domain.AgentModel{agent}
+
+	state, err := engine.InitializeBattle(1, agents)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// ボルテージを200%に設定
+	state.Enemy.SetVoltage(200.0)
+
+	// プレイヤーのHPを十分減らす（回復量以上減らす）
+	state.Player.TakeDamage(200)
+	initialHP := state.Player.HP
+
+	healAmount := engine.ApplyModuleEffect(state, agent, healModule, nil)
+
+	// WIL=10, statCoef=10.0 -> 基礎回復 = 10 * 10 = 100
+	// 回復はボルテージの影響を受けない（ボルテージ200%でも回復量は100のまま）
+	expectedHeal := 100
+	if healAmount != expectedHeal {
+		t.Errorf("expected heal %d, got %d", expectedHeal, healAmount)
+	}
+
+	actualHeal := state.Player.HP - initialHP
+	if actualHeal != expectedHeal {
+		t.Errorf("expected HP increase %d, got %d", expectedHeal, actualHeal)
+	}
+}
