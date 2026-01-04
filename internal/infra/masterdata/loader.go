@@ -288,6 +288,11 @@ type EnemyTypeData struct {
 	DropItemCategory         string   `json:"drop_item_category"`
 	DropItemTypeID           string   `json:"drop_item_type_id"`
 
+	// ボルテージシステム
+	// VoltageRisePer10s は10秒あたりのボルテージ上昇量です。
+	// 0の場合はボルテージが上昇しません。未設定時のデフォルト値は10です。
+	VoltageRisePer10s *float64 `json:"voltage_rise_per_10s,omitempty"`
+
 	// 内部で計算されるフィールド
 	BaseAttackInterval time.Duration `json:"-"`
 }
@@ -318,9 +323,19 @@ func (l *DataLoader) LoadEnemyTypes() ([]EnemyTypeData, error) {
 	return fileData.EnemyTypes, nil
 }
 
+// DefaultVoltageRisePer10s はボルテージ上昇量のデフォルト値（10ポイント/10秒）です。
+const DefaultVoltageRisePer10s = 10.0
+
 // ToDomain はEnemyTypeDataをドメインモデルのEnemyTypeに変換します。
 // actionMap が指定された場合、行動パターンIDを解決します。
+// VoltageRisePer10sが未設定の場合はデフォルト値（10）を適用します。
 func (e *EnemyTypeData) ToDomain() domain.EnemyType {
+	// ボルテージ上昇率の決定（未設定時はデフォルト値を適用）
+	voltageRise := DefaultVoltageRisePer10s
+	if e.VoltageRisePer10s != nil {
+		voltageRise = *e.VoltageRisePer10s
+	}
+
 	return domain.EnemyType{
 		ID:                       e.ID,
 		Name:                     e.Name,
@@ -334,7 +349,17 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 		EnhancedActionPatternIDs: e.EnhancedActionPatternIDs,
 		DropItemCategory:         e.DropItemCategory,
 		DropItemTypeID:           e.DropItemTypeID,
+		VoltageRisePer10s:        voltageRise,
 	}
+}
+
+// GetVoltageRisePer10s は10秒あたりのボルテージ上昇量を返します。
+// 未設定の場合はデフォルト値を返します。
+func (e *EnemyTypeData) GetVoltageRisePer10s() float64 {
+	if e.VoltageRisePer10s == nil {
+		return DefaultVoltageRisePer10s
+	}
+	return *e.VoltageRisePer10s
 }
 
 // ==================== 敵行動定義 ====================

@@ -830,3 +830,180 @@ func TestConvertToDomainChainEffectType(t *testing.T) {
 		t.Errorf("Category: got %s, want %s", domainCategory, domain.ChainEffectCategoryAttack)
 	}
 }
+
+// ==================== ボルテージ設定テスト ====================
+
+// TestLoadEnemyTypesWithVoltageRise はボルテージ上昇率の読み込みをテストします。
+func TestLoadEnemyTypesWithVoltageRise(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	enemiesJSON := `{
+		"enemy_types": [
+			{
+				"id": "slime",
+				"name": "スライム",
+				"base_hp": 50,
+				"base_attack_power": 5,
+				"base_attack_interval_ms": 3000,
+				"attack_type": "physical",
+				"ascii_art": "  ___",
+				"voltage_rise_per_10s": 15.0
+			},
+			{
+				"id": "boss",
+				"name": "ボス",
+				"base_hp": 500,
+				"base_attack_power": 20,
+				"base_attack_interval_ms": 5000,
+				"attack_type": "physical",
+				"ascii_art": "  BOSS",
+				"voltage_rise_per_10s": 25.5
+			}
+		]
+	}`
+
+	enemiesPath := filepath.Join(tmpDir, "enemies.json")
+	if err := os.WriteFile(enemiesPath, []byte(enemiesJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	enemyTypes, err := loader.LoadEnemyTypes()
+	if err != nil {
+		t.Fatalf("敵タイプのロードに失敗: %v", err)
+	}
+
+	// スライムのボルテージ上昇率を検証
+	if enemyTypes[0].GetVoltageRisePer10s() != 15.0 {
+		t.Errorf("VoltageRisePer10s: got %f, want 15.0", enemyTypes[0].GetVoltageRisePer10s())
+	}
+
+	// ボスのボルテージ上昇率を検証（小数値対応）
+	if enemyTypes[1].GetVoltageRisePer10s() != 25.5 {
+		t.Errorf("VoltageRisePer10s: got %f, want 25.5", enemyTypes[1].GetVoltageRisePer10s())
+	}
+}
+
+// TestLoadEnemyTypesVoltageDefaultValue はボルテージ上昇率未設定時のデフォルト値をテストします。
+func TestLoadEnemyTypesVoltageDefaultValue(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// voltage_rise_per_10sフィールドが未設定のJSON
+	enemiesJSON := `{
+		"enemy_types": [
+			{
+				"id": "slime",
+				"name": "スライム",
+				"base_hp": 50,
+				"base_attack_power": 5,
+				"base_attack_interval_ms": 3000,
+				"attack_type": "physical",
+				"ascii_art": "  ___"
+			}
+		]
+	}`
+
+	enemiesPath := filepath.Join(tmpDir, "enemies.json")
+	if err := os.WriteFile(enemiesPath, []byte(enemiesJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	enemyTypes, err := loader.LoadEnemyTypes()
+	if err != nil {
+		t.Fatalf("敵タイプのロードに失敗: %v", err)
+	}
+
+	// ToDomain変換してデフォルト値が適用されることを検証
+	domainEnemy := enemyTypes[0].ToDomain()
+	if domainEnemy.VoltageRisePer10s != 10.0 {
+		t.Errorf("VoltageRisePer10s default: got %f, want 10.0", domainEnemy.VoltageRisePer10s)
+	}
+}
+
+// TestLoadEnemyTypesVoltageZeroValue はボルテージ上昇率0（上昇なし）をテストします。
+func TestLoadEnemyTypesVoltageZeroValue(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// voltage_rise_per_10sが0のJSON（ボルテージ上昇なし）
+	enemiesJSON := `{
+		"enemy_types": [
+			{
+				"id": "calm_enemy",
+				"name": "穏やかな敵",
+				"base_hp": 100,
+				"base_attack_power": 10,
+				"base_attack_interval_ms": 5000,
+				"attack_type": "physical",
+				"ascii_art": "  :)",
+				"voltage_rise_per_10s": 0
+			}
+		]
+	}`
+
+	enemiesPath := filepath.Join(tmpDir, "enemies.json")
+	if err := os.WriteFile(enemiesPath, []byte(enemiesJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	enemyTypes, err := loader.LoadEnemyTypes()
+	if err != nil {
+		t.Fatalf("敵タイプのロードに失敗: %v", err)
+	}
+
+	// 0が正しく読み込まれることを検証
+	if enemyTypes[0].GetVoltageRisePer10s() != 0 {
+		t.Errorf("VoltageRisePer10s: got %f, want 0", enemyTypes[0].GetVoltageRisePer10s())
+	}
+
+	// ToDomain変換で0が維持されることを検証
+	domainEnemy := enemyTypes[0].ToDomain()
+	if domainEnemy.VoltageRisePer10s != 0 {
+		t.Errorf("VoltageRisePer10s after ToDomain: got %f, want 0", domainEnemy.VoltageRisePer10s)
+	}
+}
+
+// TestEnemyTypeToDomainWithVoltage はToDomain変換時のボルテージ上昇率設定をテストします。
+func TestEnemyTypeToDomainWithVoltage(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	enemiesJSON := `{
+		"enemy_types": [
+			{
+				"id": "fast_enemy",
+				"name": "高速敵",
+				"base_hp": 80,
+				"base_attack_power": 12,
+				"base_attack_interval_ms": 2000,
+				"attack_type": "magic",
+				"ascii_art": "  FAST",
+				"voltage_rise_per_10s": 20.0
+			}
+		]
+	}`
+
+	enemiesPath := filepath.Join(tmpDir, "enemies.json")
+	if err := os.WriteFile(enemiesPath, []byte(enemiesJSON), 0644); err != nil {
+		t.Fatalf("テストファイルの作成に失敗: %v", err)
+	}
+
+	loader := NewDataLoader(tmpDir)
+	enemyTypes, err := loader.LoadEnemyTypes()
+	if err != nil {
+		t.Fatalf("敵タイプのロードに失敗: %v", err)
+	}
+
+	// ドメインモデルに変換
+	domainEnemy := enemyTypes[0].ToDomain()
+
+	// 基本フィールドの検証
+	if domainEnemy.ID != "fast_enemy" {
+		t.Errorf("ID: got %s, want fast_enemy", domainEnemy.ID)
+	}
+
+	// ボルテージ上昇率が正しく変換されていることを検証
+	if domainEnemy.VoltageRisePer10s != 20.0 {
+		t.Errorf("VoltageRisePer10s: got %f, want 20.0", domainEnemy.VoltageRisePer10s)
+	}
+}

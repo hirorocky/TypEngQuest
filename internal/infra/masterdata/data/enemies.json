@@ -21,7 +21,8 @@
       "normal_passive_id": "slime_normal",
       "enhanced_passive_id": "slime_enhanced",
       "drop_item_category": "core",
-      "drop_item_type_id": "attack_balance"
+      "drop_item_type_id": "attack_balance",
+      "voltage_rise_per_10s": 10
     },
     {
       "id": "bat",
@@ -40,7 +41,8 @@
         "act_bat_buff_speed"
       ],
       "drop_item_category": "module",
-      "drop_item_type_id": "heal_lv1"
+      "drop_item_type_id": "heal_lv1",
+      "voltage_rise_per_10s": 12
     },
     {
       "id": "goblin",
@@ -62,7 +64,8 @@
         "act_goblin_debuff_slow"
       ],
       "drop_item_category": "module",
-      "drop_item_type_id": "physical_strike_lv1"
+      "drop_item_type_id": "physical_strike_lv1",
+      "voltage_rise_per_10s": 15
     },
     {
       "id": "skeleton",
@@ -80,7 +83,8 @@
         "act_skeleton_debuff_defense"
       ],
       "drop_item_category": "core",
-      "drop_item_type_id": "magic_balance"
+      "drop_item_type_id": "magic_balance",
+      "voltage_rise_per_10s": 20
     }
   ]
 }
