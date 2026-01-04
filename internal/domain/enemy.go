@@ -211,10 +211,16 @@ type EnemyModel struct {
 
 	// DefenseValue は軽減率/回避率です。
 	DefenseValue float64
+
+	// ========== ボルテージシステム ==========
+
+	// Voltage は現在のボルテージ値です（100.0 = 100%）。
+	// 時間経過で上昇し、プレイヤーのダメージ乗算に使用されます。
+	Voltage float64
 }
 
 // NewEnemy は新しいEnemyModelを作成します。
-// 初期状態は通常フェーズ（PhaseNormal）で、行動インデックスは0です。
+// 初期状態は通常フェーズ（PhaseNormal）で、行動インデックスは0、ボルテージは100.0です。
 func NewEnemy(id, name string, level, hp, attackPower int, attackInterval time.Duration, enemyType EnemyType) *EnemyModel {
 	return &EnemyModel{
 		ID:              id,
@@ -227,8 +233,9 @@ func NewEnemy(id, name string, level, hp, attackPower int, attackInterval time.D
 		Type:            enemyType,
 		Phase:           PhaseNormal,
 		EffectTable:     NewEffectTable(),
-		ActionIndex:     0,  // 行動インデックス初期化
-		ActivePassiveID: "", // パッシブID初期化
+		ActionIndex:     0,     // 行動インデックス初期化
+		ActivePassiveID: "",    // パッシブID初期化
+		Voltage:         100.0, // ボルテージ初期化（100% = 等倍）
 	}
 }
 
@@ -639,4 +646,22 @@ func (p *EnemyPassiveSkill) ToEntry() EffectEntry {
 		Duration:   nil, // 永続効果
 		Values:     values,
 	}
+}
+
+// ========== ボルテージ関連メソッド ==========
+
+// GetVoltage は現在のボルテージ値を返します。
+func (e *EnemyModel) GetVoltage() float64 {
+	return e.Voltage
+}
+
+// SetVoltage はボルテージ値を設定します。
+func (e *EnemyModel) SetVoltage(voltage float64) {
+	e.Voltage = voltage
+}
+
+// GetVoltageMultiplier はダメージ乗算用の倍率を返します（ボルテージ/100）。
+// 例: ボルテージ100.0 -> 1.0倍、150.0 -> 1.5倍
+func (e *EnemyModel) GetVoltageMultiplier() float64 {
+	return e.Voltage / 100.0
 }

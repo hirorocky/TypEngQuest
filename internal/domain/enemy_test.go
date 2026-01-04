@@ -1557,3 +1557,81 @@ func TestEnemyModel_GetDefenseTypeName(t *testing.T) {
 		})
 	}
 }
+
+// ========== ボルテージシステムのテスト ==========
+
+// TestNewEnemy_ボルテージ初期化 は敵生成時にボルテージが100.0で初期化されることを確認します。
+func TestNewEnemy_ボルテージ初期化(t *testing.T) {
+	enemyType := EnemyType{
+		ID:   "slime",
+		Name: "スライム",
+	}
+	enemy := NewEnemy("enemy_001", "スライム", 1, 100, 10, 3*time.Second, enemyType)
+
+	// ボルテージは100.0で初期化されるべき
+	if enemy.Voltage != 100.0 {
+		t.Errorf("ボルテージが100.0で初期化されるべきです: got %f", enemy.Voltage)
+	}
+}
+
+// TestEnemyModel_GetVoltage はボルテージ取得メソッドを確認します。
+func TestEnemyModel_GetVoltage(t *testing.T) {
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+
+	// 初期値の取得
+	voltage := enemy.GetVoltage()
+	if voltage != 100.0 {
+		t.Errorf("GetVoltage()が100.0を返すべきです: got %f", voltage)
+	}
+
+	// 値を変更して取得
+	enemy.Voltage = 150.0
+	voltage = enemy.GetVoltage()
+	if voltage != 150.0 {
+		t.Errorf("GetVoltage()が150.0を返すべきです: got %f", voltage)
+	}
+}
+
+// TestEnemyModel_SetVoltage はボルテージ設定メソッドを確認します。
+func TestEnemyModel_SetVoltage(t *testing.T) {
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+
+	// ボルテージを設定
+	enemy.SetVoltage(175.5)
+	if enemy.Voltage != 175.5 {
+		t.Errorf("SetVoltage()でボルテージが設定されるべきです: got %f, want 175.5", enemy.Voltage)
+	}
+
+	// 別の値を設定
+	enemy.SetVoltage(200.0)
+	if enemy.Voltage != 200.0 {
+		t.Errorf("SetVoltage()でボルテージが更新されるべきです: got %f, want 200.0", enemy.Voltage)
+	}
+}
+
+// TestEnemyModel_GetVoltageMultiplier はダメージ乗算用の倍率取得メソッドを確認します。
+func TestEnemyModel_GetVoltageMultiplier(t *testing.T) {
+	tests := []struct {
+		name     string
+		voltage  float64
+		expected float64
+	}{
+		{"100%で等倍", 100.0, 1.0},
+		{"150%で1.5倍", 150.0, 1.5},
+		{"200%で2.0倍", 200.0, 2.0},
+		{"50%で0.5倍", 50.0, 0.5},
+		{"115.5%で1.155倍", 115.5, 1.155},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+			enemy.SetVoltage(tt.voltage)
+
+			multiplier := enemy.GetVoltageMultiplier()
+			if multiplier != tt.expected {
+				t.Errorf("GetVoltageMultiplier()が期待値と異なります: got %f, want %f", multiplier, tt.expected)
+			}
+		})
+	}
+}
