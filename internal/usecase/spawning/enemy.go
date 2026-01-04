@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"time"
 
-	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
 
 	"github.com/google/uuid"
@@ -21,14 +20,8 @@ const (
 	// MinEnemyLevel は敵の最小レベルです。
 	MinEnemyLevel = 1
 
-	// MinAttackInterval は敵の最低攻撃間隔です。
-	MinAttackInterval = config.MinEnemyAttackInterval
-
 	// AttackPowerPerLevel はレベルあたりの攻撃力上昇値です。
 	AttackPowerPerLevel = 2
-
-	// AttackIntervalReductionPerLevel はレベルあたりの攻撃間隔短縮（ミリ秒）です。
-	AttackIntervalReductionPerLevel = 50
 )
 
 // EnemyGenerator はドメイン型を使用した敵生成を担当する構造体です。
@@ -64,7 +57,6 @@ func (g *EnemyGenerator) Generate(level int) *domain.EnemyModel {
 	// レベルに応じたステータス計算
 	hp := g.calculateHP(selectedType.BaseHP, level)
 	attackPower := g.calculateAttackPower(selectedType.BaseAttackPower, level)
-	attackInterval := g.calculateAttackInterval(selectedType.BaseAttackInterval, level)
 
 	// 敵モデルを作成
 	return domain.NewEnemy(
@@ -73,7 +65,6 @@ func (g *EnemyGenerator) Generate(level int) *domain.EnemyModel {
 		level,
 		hp,
 		attackPower,
-		attackInterval,
 		selectedType,
 	)
 }
@@ -98,7 +89,6 @@ func (g *EnemyGenerator) GenerateWithType(level int, typeID string) *domain.Enem
 
 	hp := g.calculateHP(selectedType.BaseHP, level)
 	attackPower := g.calculateAttackPower(selectedType.BaseAttackPower, level)
-	attackInterval := g.calculateAttackInterval(selectedType.BaseAttackInterval, level)
 
 	return domain.NewEnemy(
 		uuid.New().String(),
@@ -106,7 +96,6 @@ func (g *EnemyGenerator) GenerateWithType(level int, typeID string) *domain.Enem
 		level,
 		hp,
 		attackPower,
-		attackInterval,
 		*selectedType,
 	)
 }
@@ -124,17 +113,15 @@ func (g *EnemyGenerator) SetSeed(seed int64) {
 // generateDefaultEnemy はデフォルトの敵を生成します。
 func (g *EnemyGenerator) generateDefaultEnemy(level int) *domain.EnemyModel {
 	defaultType := domain.EnemyType{
-		ID:                 "default",
-		Name:               "敵",
-		BaseHP:             50,
-		BaseAttackPower:    5,
-		BaseAttackInterval: 3000 * time.Millisecond,
-		AttackType:         "physical",
+		ID:              "default",
+		Name:            "敵",
+		BaseHP:          50,
+		BaseAttackPower: 5,
+		AttackType:      "physical",
 	}
 
 	hp := g.calculateHP(defaultType.BaseHP, level)
 	attackPower := g.calculateAttackPower(defaultType.BaseAttackPower, level)
-	attackInterval := g.calculateAttackInterval(defaultType.BaseAttackInterval, level)
 
 	return domain.NewEnemy(
 		uuid.New().String(),
@@ -142,7 +129,6 @@ func (g *EnemyGenerator) generateDefaultEnemy(level int) *domain.EnemyModel {
 		level,
 		hp,
 		attackPower,
-		attackInterval,
 		defaultType,
 	)
 }
@@ -155,18 +141,6 @@ func (g *EnemyGenerator) calculateHP(baseHP int, level int) int {
 // calculateAttackPower はレベルに応じた攻撃力を計算します。
 func (g *EnemyGenerator) calculateAttackPower(baseAttackPower int, level int) int {
 	return baseAttackPower + (level * AttackPowerPerLevel)
-}
-
-// calculateAttackInterval はレベルに応じた攻撃間隔を計算します。
-func (g *EnemyGenerator) calculateAttackInterval(baseInterval time.Duration, level int) time.Duration {
-	reduction := time.Duration(level*AttackIntervalReductionPerLevel) * time.Millisecond
-	interval := baseInterval - reduction
-
-	if interval < MinAttackInterval {
-		interval = MinAttackInterval
-	}
-
-	return interval
 }
 
 // clampLevel はレベルを有効範囲内にクランプします。

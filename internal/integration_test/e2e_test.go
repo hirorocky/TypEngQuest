@@ -4,7 +4,6 @@ package integration_test
 
 import (
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/infra/masterdata"
@@ -249,12 +248,11 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 	// バトル開始
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "goblin",
-			Name:               "ゴブリン",
-			BaseHP:             50,
-			BaseAttackPower:    5,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "goblin",
+			Name:            "ゴブリン",
+			BaseHP:          50,
+			BaseAttackPower: 5,
+			AttackType:      "physical",
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)
@@ -467,12 +465,11 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "goblin",
-			Name:               "ゴブリン",
-			BaseHP:             20, // 弱めに設定
-			BaseAttackPower:    5,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "goblin",
+			Name:            "ゴブリン",
+			BaseHP:          20, // 弱めに設定
+			BaseAttackPower: 5,
+			AttackType:      "physical",
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)
@@ -593,12 +590,11 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "dragon",
-			Name:               "ドラゴン",
-			BaseHP:             1000, // 強い敵
-			BaseAttackPower:    100,
-			BaseAttackInterval: 1 * time.Second,
-			AttackType:         "magic",
+			ID:              "dragon",
+			Name:            "ドラゴン",
+			BaseHP:          1000, // 強い敵
+			BaseAttackPower: 100,
+			AttackType:      "magic",
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)

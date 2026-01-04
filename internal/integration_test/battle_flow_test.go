@@ -105,12 +105,11 @@ func createTestAgents() []*domain.AgentModel {
 func createTestEnemyTypes() []domain.EnemyType {
 	return []domain.EnemyType{
 		{
-			ID:                 "goblin",
-			Name:               "ゴブリン",
-			BaseHP:             50,
-			BaseAttackPower:    5,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "goblin",
+			Name:            "ゴブリン",
+			BaseHP:          50,
+			BaseAttackPower: 5,
+			AttackType:      "physical",
 		},
 	}
 }
@@ -474,7 +473,6 @@ func createTestEnemyTypesWithPatterns() []domain.EnemyType {
 			Name:                    "ゴブリンリーダー",
 			BaseHP:                  100,
 			BaseAttackPower:         10,
-			BaseAttackInterval:      3 * time.Second,
 			AttackType:              "physical",
 			DefaultLevel:            5,
 			ResolvedNormalActions:   normalActions,
@@ -501,7 +499,7 @@ func TestBattleFlow_LevelSelection_PatternBased(t *testing.T) {
 	}
 
 	// 敵タイプを手動で設定（テスト用）
-	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level, 1000, 30, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level, 1000, 30, enemyTypes[0])
 
 	// 敵が正しく生成されている
 	if state.Enemy == nil {
@@ -548,7 +546,7 @@ func TestBattleFlow_PhaseTransition_PassiveSwitch(t *testing.T) {
 	agents := createTestAgents()
 
 	state, _ := engine.InitializeBattle(10, agents)
-	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", 10, 1000, 30, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", 10, 1000, 30, enemyTypes[0])
 	engine.RegisterEnemyPassive(state)
 
 	// 初期状態：通常フェーズ、通常パッシブ
@@ -613,7 +611,7 @@ func TestBattleFlow_PatternLoopAndProgress(t *testing.T) {
 	agents := createTestAgents()
 
 	state, _ := engine.InitializeBattle(5, agents)
-	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", 5, 500, 20, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", 5, 500, 20, enemyTypes[0])
 
 	// 通常パターンは2つ（斬撃→パワーアップ）
 	if len(state.Enemy.Type.ResolvedNormalActions) != 2 {
@@ -656,7 +654,7 @@ func TestBattleFlow_EnemyDefeatRecordIntegration(t *testing.T) {
 	// 初回バトル（レベル5）
 	level := 5
 	state, _ := engine.InitializeBattle(level, agents)
-	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", level, 500, 20, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", level, 500, 20, enemyTypes[0])
 
 	// バトル終了（勝利）
 	state.Enemy.HP = 0
@@ -679,7 +677,7 @@ func TestBattleFlow_EnemyDefeatRecordIntegration(t *testing.T) {
 	// 2回目のバトル（より高いレベルで挑戦可能）
 	level2 := 10
 	state2, _ := engine.InitializeBattle(level2, agents)
-	state2.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level2, 1000, 30, 3*time.Second, enemyTypes[0])
+	state2.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level2, 1000, 30, enemyTypes[0])
 	state2.Enemy.HP = 0
 	engine.CheckBattleEnd(state2)
 
@@ -712,12 +710,11 @@ func TestBattleFlow_ChargingAndDefenseIntegration(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "defender_goblin",
-			Name:               "ディフェンダーゴブリン",
-			BaseHP:             80,
-			BaseAttackPower:    8,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "defender_goblin",
+			Name:            "ディフェンダーゴブリン",
+			BaseHP:          80,
+			BaseAttackPower: 8,
+			AttackType:      "physical",
 			ResolvedNormalActions: []domain.EnemyAction{
 				{
 					ID:             "attack",
@@ -737,7 +734,7 @@ func TestBattleFlow_ChargingAndDefenseIntegration(t *testing.T) {
 	agents := createTestAgents()
 
 	state, _ := engine.InitializeBattle(10, agents)
-	state.Enemy = domain.NewEnemy("test", "ディフェンダーゴブリン Lv.10", 10, 800, 8, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "ディフェンダーゴブリン Lv.10", 10, 800, 8, enemyTypes[0])
 
 	// 攻撃行動でチャージ開始
 	now := time.Now()
@@ -796,12 +793,11 @@ func TestBattleFlow_ChargingAndDefenseIntegration(t *testing.T) {
 func TestBattleFlow_BuffDebuffPattern(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "buff_goblin",
-			Name:               "バフゴブリン",
-			BaseHP:             60,
-			BaseAttackPower:    6,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "buff_goblin",
+			Name:            "バフゴブリン",
+			BaseHP:          60,
+			BaseAttackPower: 6,
+			AttackType:      "physical",
 			ResolvedNormalActions: []domain.EnemyAction{
 				{
 					ID:          "self_buff",
@@ -827,7 +823,7 @@ func TestBattleFlow_BuffDebuffPattern(t *testing.T) {
 	agents := createTestAgents()
 
 	state, _ := engine.InitializeBattle(5, agents)
-	state.Enemy = domain.NewEnemy("test", "バフゴブリン Lv.5", 5, 300, 6, 3*time.Second, enemyTypes[0])
+	state.Enemy = domain.NewEnemy("test", "バフゴブリン Lv.5", 5, 300, 6, enemyTypes[0])
 
 	// 自己バフ行動を実行
 	buffAction := state.Enemy.GetCurrentAction()

@@ -50,9 +50,9 @@ func CreateDefaultEncyclopediaData() *screens.EncyclopediaData {
 		{ID: "debuff_lv1", Name: "デバフLv1", Icon: "💀", Tags: []string{"debuff_low"}, Description: "敵を弱体化"},
 	}
 	enemyTypes := []domain.EnemyType{
-		{ID: "goblin", Name: "ゴブリン", BaseHP: 100, BaseAttackPower: 10, BaseAttackInterval: 3000000000, AttackType: "physical"},
-		{ID: "orc", Name: "オーク", BaseHP: 200, BaseAttackPower: 15, BaseAttackInterval: 4000000000, AttackType: "physical"},
-		{ID: "dragon", Name: "ドラゴン", BaseHP: 500, BaseAttackPower: 30, BaseAttackInterval: 5000000000, AttackType: "magic"},
+		{ID: "goblin", Name: "ゴブリン", BaseHP: 100, BaseAttackPower: 10, AttackType: "physical"},
+		{ID: "orc", Name: "オーク", BaseHP: 200, BaseAttackPower: 15, AttackType: "physical"},
+		{ID: "dragon", Name: "ドラゴン", BaseHP: 500, BaseAttackPower: 30, AttackType: "magic"},
 	}
 
 	return &screens.EncyclopediaData{

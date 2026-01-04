@@ -4,7 +4,6 @@ package combat
 import (
 	"math"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/usecase/typing"
@@ -64,12 +63,11 @@ func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             50000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          50000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -153,12 +151,11 @@ func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             50000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          50000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -250,12 +247,11 @@ func TestBattleEngine_ComboMaster_ZeroCombo(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             50000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          50000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 

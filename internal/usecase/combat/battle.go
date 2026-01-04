@@ -256,21 +256,12 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 	hp := enemyType.BaseHP * level
 	attackPower := enemyType.BaseAttackPower + (level * 2)
 
-	// 高レベルほど短い攻撃間隔（ただし最低500ms）
-
-	intervalReduction := time.Duration(level*50) * time.Millisecond
-	attackInterval := enemyType.BaseAttackInterval - intervalReduction
-	if attackInterval < config.MinEnemyAttackInterval {
-		attackInterval = config.MinEnemyAttackInterval
-	}
-
 	return domain.NewEnemy(
 		uuid.New().String(),
 		fmt.Sprintf("%s Lv.%d", enemyType.Name, level),
 		level,
 		hp,
 		attackPower,
-		attackInterval,
 		enemyType,
 	)
 }

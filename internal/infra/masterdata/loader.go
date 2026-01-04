@@ -271,13 +271,12 @@ func (m *ModuleDefinitionData) ToDomain() *domain.ModuleModel {
 
 // EnemyTypeData はenemies.jsonから読み込む敵タイプデータの構造体です。
 type EnemyTypeData struct {
-	ID                   string `json:"id"`
-	Name                 string `json:"name"`
-	BaseHP               int    `json:"base_hp"`
-	BaseAttackPower      int    `json:"base_attack_power"`
-	BaseAttackIntervalMS int64  `json:"base_attack_interval_ms"`
-	AttackType           string `json:"attack_type"`
-	ASCIIArt             string `json:"ascii_art"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	BaseHP          int    `json:"base_hp"`
+	BaseAttackPower int    `json:"base_attack_power"`
+	AttackType      string `json:"attack_type"`
+	ASCIIArt        string `json:"ascii_art"`
 
 	// 拡張フィールド
 	DefaultLevel             int      `json:"default_level"`
@@ -292,9 +291,6 @@ type EnemyTypeData struct {
 	// VoltageRisePer10s は10秒あたりのボルテージ上昇量です。
 	// 0の場合はボルテージが上昇しません。未設定時のデフォルト値は10です。
 	VoltageRisePer10s *float64 `json:"voltage_rise_per_10s,omitempty"`
-
-	// 内部で計算されるフィールド
-	BaseAttackInterval time.Duration `json:"-"`
 }
 
 // enemiesFileData はenemies.jsonのルート構造です。
@@ -313,11 +309,6 @@ func (l *DataLoader) LoadEnemyTypes() ([]EnemyTypeData, error) {
 	var fileData enemiesFileData
 	if err := json.Unmarshal(data, &fileData); err != nil {
 		return nil, fmt.Errorf("enemies.jsonのパースに失敗: %w", err)
-	}
-
-	// ミリ秒をtime.Durationに変換
-	for i := range fileData.EnemyTypes {
-		fileData.EnemyTypes[i].BaseAttackInterval = time.Duration(fileData.EnemyTypes[i].BaseAttackIntervalMS) * time.Millisecond
 	}
 
 	return fileData.EnemyTypes, nil
@@ -341,7 +332,6 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 		Name:                     e.Name,
 		BaseHP:                   e.BaseHP,
 		BaseAttackPower:          e.BaseAttackPower,
-		BaseAttackInterval:       e.BaseAttackInterval,
 		AttackType:               e.AttackType,
 		ASCIIArt:                 e.ASCIIArt,
 		DefaultLevel:             e.DefaultLevel,

@@ -4,7 +4,6 @@ package combat
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 )
@@ -62,12 +61,11 @@ func TestBattleEngine_DamageRecv_LastStand(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    50, // 大きなダメージ
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 50, // 大きなダメージ
+			AttackType:      "physical",
 		},
 	}
 
@@ -141,12 +139,11 @@ func TestBattleEngine_DamageRecv_LastStand_HPAbove25(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    50,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 50,
+			AttackType:      "physical",
 		},
 	}
 
@@ -219,12 +216,11 @@ func TestBattleEngine_DamageRecv_CounterCharge(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 

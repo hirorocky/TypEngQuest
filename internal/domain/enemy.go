@@ -75,9 +75,6 @@ type EnemyType struct {
 	// BaseAttackPower は敵の基礎攻撃力です。
 	BaseAttackPower int
 
-	// BaseAttackInterval は敵の基礎攻撃間隔です。
-	BaseAttackInterval time.Duration
-
 	// AttackType は攻撃属性（physical / magic）です。
 	AttackType string
 
@@ -180,9 +177,6 @@ type EnemyModel struct {
 	// AttackPower は敵の攻撃力です。
 	AttackPower int
 
-	// AttackInterval は敵の攻撃間隔です。
-	AttackInterval time.Duration
-
 	// Type は敵の種類（タイプ）です。
 	Type EnemyType
 
@@ -236,7 +230,7 @@ type EnemyModel struct {
 
 // NewEnemy は新しいEnemyModelを作成します。
 // 初期状態は通常フェーズ（PhaseNormal）で、行動インデックスは0、ボルテージは100.0です。
-func NewEnemy(id, name string, level, hp, attackPower int, attackInterval time.Duration, enemyType EnemyType) *EnemyModel {
+func NewEnemy(id, name string, level, hp, attackPower int, enemyType EnemyType) *EnemyModel {
 	return &EnemyModel{
 		ID:              id,
 		Name:            name,
@@ -244,7 +238,6 @@ func NewEnemy(id, name string, level, hp, attackPower int, attackInterval time.D
 		HP:              hp,
 		MaxHP:           hp,
 		AttackPower:     attackPower,
-		AttackInterval:  attackInterval,
 		Type:            enemyType,
 		Phase:           PhaseNormal,
 		EffectTable:     NewEffectTable(),

@@ -30,12 +30,11 @@ func TestEnemyPhase_String(t *testing.T) {
 // TestEnemyType_フィールドの確認 はEnemyType構造体のフィールドが正しく設定されることを確認します。
 func TestEnemyType_フィールドの確認(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                 "goblin",
-		Name:               "ゴブリン",
-		BaseHP:             100,
-		BaseAttackPower:    10,
-		BaseAttackInterval: 3 * time.Second,
-		AttackType:         "physical",
+		ID:              "goblin",
+		Name:            "ゴブリン",
+		BaseHP:          100,
+		BaseAttackPower: 10,
+		AttackType:      "physical",
 	}
 
 	if enemyType.ID != "goblin" {
@@ -50,9 +49,6 @@ func TestEnemyType_フィールドの確認(t *testing.T) {
 	if enemyType.BaseAttackPower != 10 {
 		t.Errorf("BaseAttackPowerが期待値と異なります: got %d, want 10", enemyType.BaseAttackPower)
 	}
-	if enemyType.BaseAttackInterval != 3*time.Second {
-		t.Errorf("BaseAttackIntervalが期待値と異なります: got %v, want 3s", enemyType.BaseAttackInterval)
-	}
 	if enemyType.AttackType != "physical" {
 		t.Errorf("AttackTypeが期待値と異なります: got %s, want physical", enemyType.AttackType)
 	}
@@ -62,24 +58,22 @@ func TestEnemyType_フィールドの確認(t *testing.T) {
 
 func TestEnemyModel_フィールドの確認(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                 "goblin",
-		Name:               "ゴブリン",
-		BaseHP:             100,
-		BaseAttackPower:    10,
-		BaseAttackInterval: 3 * time.Second,
+		ID:              "goblin",
+		Name:            "ゴブリン",
+		BaseHP:          100,
+		BaseAttackPower: 10,
 	}
 
 	enemy := EnemyModel{
-		ID:             "enemy_001",
-		Name:           "ゴブリン兵士",
-		Level:          5,
-		HP:             150,
-		MaxHP:          150,
-		AttackPower:    15,
-		AttackInterval: 2500 * time.Millisecond,
-		Type:           enemyType,
-		Phase:          PhaseNormal,
-		EffectTable:    NewEffectTable(),
+		ID:          "enemy_001",
+		Name:        "ゴブリン兵士",
+		Level:       5,
+		HP:          150,
+		MaxHP:       150,
+		AttackPower: 15,
+		Type:        enemyType,
+		Phase:       PhaseNormal,
+		EffectTable: NewEffectTable(),
 	}
 
 	if enemy.ID != "enemy_001" {
@@ -111,14 +105,13 @@ func TestEnemyModel_フィールドの確認(t *testing.T) {
 // TestNewEnemy_敵作成 はNewEnemy関数で敵が正しく作成されることを確認します。
 func TestNewEnemy_敵作成(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                 "goblin",
-		Name:               "ゴブリン",
-		BaseHP:             100,
-		BaseAttackPower:    10,
-		BaseAttackInterval: 3 * time.Second,
+		ID:              "goblin",
+		Name:            "ゴブリン",
+		BaseHP:          100,
+		BaseAttackPower: 10,
 	}
 
-	enemy := NewEnemy("enemy_001", "ゴブリン兵士", 5, 150, 15, 2500*time.Millisecond, enemyType)
+	enemy := NewEnemy("enemy_001", "ゴブリン兵士", 5, 150, 15, enemyType)
 
 	if enemy.ID != "enemy_001" {
 		t.Errorf("IDが期待値と異なります: got %s, want enemy_001", enemy.ID)
@@ -287,7 +280,7 @@ func TestEnemyModel_強化フェーズ判定(t *testing.T) {
 
 // TestEnemyModel_EffectTable操作 は敵のEffectTableを操作できることを確認します。
 func TestEnemyModel_EffectTable操作(t *testing.T) {
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, EnemyType{ID: "test"})
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, EnemyType{ID: "test"})
 
 	// バフを追加
 	enemy.EffectTable.AddBuff("攻撃力UP", 5.0, map[EffectColumn]float64{
@@ -670,7 +663,6 @@ func TestEnemyType_拡張フィールドの確認(t *testing.T) {
 		Name:                    "スライム",
 		BaseHP:                  50,
 		BaseAttackPower:         5,
-		BaseAttackInterval:      3 * time.Second,
 		AttackType:              "physical",
 		DefaultLevel:            1,
 		ResolvedNormalActions:   []EnemyAction{normalAction},
@@ -813,7 +805,7 @@ func TestEnemyModel_行動管理フィールドの確認(t *testing.T) {
 		},
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// 行動インデックスは0で初期化
 	if enemy.ActionIndex != 0 {
@@ -835,7 +827,7 @@ func TestEnemyModel_GetCurrentAction(t *testing.T) {
 		},
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// 初期状態では最初の行動
 	action := enemy.GetCurrentAction()
@@ -857,7 +849,7 @@ func TestEnemyModel_AdvanceActionIndex(t *testing.T) {
 		},
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// 初期状態
 	if enemy.ActionIndex != 0 {
@@ -893,7 +885,7 @@ func TestEnemyModel_GetCurrentPattern(t *testing.T) {
 		ResolvedEnhancedActions: []EnemyAction{enhancedAction},
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// 通常フェーズでは通常パターン
 	pattern := enemy.GetCurrentPattern()
@@ -918,7 +910,7 @@ func TestEnemyModel_GetCurrentPattern_強化パターン空の場合(t *testing.
 		ResolvedEnhancedActions: []EnemyAction{}, // 空
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 	enemy.Phase = PhaseEnhanced
 
 	// 強化パターンが空の場合は通常パターンを継続
@@ -937,7 +929,7 @@ func TestEnemyModel_ResetActionIndex(t *testing.T) {
 		},
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// インデックスを進める
 	enemy.AdvanceActionIndex()
@@ -958,7 +950,7 @@ func TestEnemyModel_行動パターン空の場合のGetCurrentAction(t *testing
 		ResolvedNormalActions: []EnemyAction{}, // 空
 	}
 
-	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "テスト敵", 5, 100, 15, enemyType)
 
 	// 空パターンの場合はデフォルト攻撃を返す
 	action := enemy.GetCurrentAction()
@@ -1043,13 +1035,12 @@ func TestEnemyPassiveSkill_JSONシリアライズ(t *testing.T) {
 // TestEnemyType拡張フィールド_JSONシリアライズ はEnemyType拡張フィールドのJSONシリアライズを確認します。
 func TestEnemyType拡張フィールド_JSONシリアライズ(t *testing.T) {
 	enemyType := EnemyType{
-		ID:                 "slime",
-		Name:               "スライム",
-		BaseHP:             50,
-		BaseAttackPower:    5,
-		BaseAttackInterval: 3 * time.Second,
-		AttackType:         "physical",
-		DefaultLevel:       1,
+		ID:              "slime",
+		Name:            "スライム",
+		BaseHP:          50,
+		BaseAttackPower: 5,
+		AttackType:      "physical",
+		DefaultLevel:    1,
 		ResolvedNormalActions: []EnemyAction{
 			{ActionType: EnemyActionAttack, AttackType: "physical"},
 		},
@@ -1229,7 +1220,7 @@ func TestEnemyModel_AdvanceActionIndex_境界値(t *testing.T) {
 			enemyType := EnemyType{
 				ResolvedNormalActions: pattern,
 			}
-			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 			// 指定回数進める
 			for i := 0; i < tt.advanceTimes; i++ {
@@ -1260,7 +1251,7 @@ func TestEnemyModel_GetCurrentAction_フェーズ遷移後(t *testing.T) {
 		ResolvedNormalActions:   []EnemyAction{normalAction},
 		ResolvedEnhancedActions: []EnemyAction{enhancedAction},
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 	// 通常フェーズで通常パターンの行動を取得
 	action := enemy.GetCurrentAction()
@@ -1294,7 +1285,7 @@ func TestEnemyModel_ResetActionIndex_フェーズ遷移シナリオ(t *testing.T
 		ResolvedNormalActions:   normalActions,
 		ResolvedEnhancedActions: enhancedActions,
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 	// 通常フェーズで2回進める
 	enemy.AdvanceActionIndex()
@@ -1348,7 +1339,7 @@ func TestEnemyModel_チャージ状態管理(t *testing.T) {
 			},
 		},
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 	action := enemy.GetCurrentAction()
 
 	now := time.Now()
@@ -1401,7 +1392,7 @@ func TestEnemyModel_ディフェンス状態管理(t *testing.T) {
 			{ID: "defense", ActionType: EnemyActionDefense},
 		},
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 	now := time.Now()
 	duration := 5 * time.Second
@@ -1453,7 +1444,7 @@ func TestEnemyModel_ExecuteChargedAction(t *testing.T) {
 	enemyType := EnemyType{
 		ResolvedNormalActions: actions,
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 	// 最初の行動でチャージ開始
 	action := enemy.GetCurrentAction()
@@ -1489,7 +1480,7 @@ func TestEnemyModel_EndDefense(t *testing.T) {
 	enemyType := EnemyType{
 		ResolvedNormalActions: actions,
 	}
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, enemyType)
 
 	// ディフェンス開始
 	enemy.StartDefense(DefenseMagicCut, 0.3, 5*time.Second, time.Now())
@@ -1535,7 +1526,7 @@ func TestEnemyWaitMode_String(t *testing.T) {
 
 // TestEnemyModel_GetDefenseTypeName はディフェンス種別名取得を確認します。
 func TestEnemyModel_GetDefenseTypeName(t *testing.T) {
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, EnemyType{})
 
 	tests := []struct {
 		defenseType EnemyDefenseType
@@ -1566,7 +1557,7 @@ func TestNewEnemy_ボルテージ初期化(t *testing.T) {
 		ID:   "slime",
 		Name: "スライム",
 	}
-	enemy := NewEnemy("enemy_001", "スライム", 1, 100, 10, 3*time.Second, enemyType)
+	enemy := NewEnemy("enemy_001", "スライム", 1, 100, 10, enemyType)
 
 	// ボルテージは100.0で初期化されるべき
 	if enemy.Voltage != 100.0 {
@@ -1576,7 +1567,7 @@ func TestNewEnemy_ボルテージ初期化(t *testing.T) {
 
 // TestEnemyModel_GetVoltage はボルテージ取得メソッドを確認します。
 func TestEnemyModel_GetVoltage(t *testing.T) {
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, EnemyType{})
 
 	// 初期値の取得
 	voltage := enemy.GetVoltage()
@@ -1594,7 +1585,7 @@ func TestEnemyModel_GetVoltage(t *testing.T) {
 
 // TestEnemyModel_SetVoltage はボルテージ設定メソッドを確認します。
 func TestEnemyModel_SetVoltage(t *testing.T) {
-	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, EnemyType{})
 
 	// ボルテージを設定
 	enemy.SetVoltage(175.5)
@@ -1625,7 +1616,7 @@ func TestEnemyModel_GetVoltageMultiplier(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, EnemyType{})
 			enemy.SetVoltage(tt.voltage)
 
 			multiplier := enemy.GetVoltageMultiplier()

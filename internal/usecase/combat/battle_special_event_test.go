@@ -4,7 +4,6 @@ package combat
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 )
@@ -60,12 +59,11 @@ func TestBattleEngine_BattleStart_FirstStrike(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -118,12 +116,11 @@ func TestBattleEngine_BattleStart_FirstStrike_NotEquipped(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -190,12 +187,11 @@ func TestBattleEngine_TypoRecovery(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -264,12 +260,11 @@ func TestBattleEngine_SecondChance(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 

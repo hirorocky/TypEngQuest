@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 )
@@ -157,7 +156,6 @@ func TestLoadEnemyTypes(t *testing.T) {
 				"name": "スライム",
 				"base_hp": 50,
 				"base_attack_power": 5,
-				"base_attack_interval_ms": 3000,
 				"attack_type": "physical",
 				"ascii_art": "  ___\n /   \\\n|     |\n \\___|"
 			},
@@ -166,7 +164,6 @@ func TestLoadEnemyTypes(t *testing.T) {
 				"name": "ゴブリン",
 				"base_hp": 80,
 				"base_attack_power": 10,
-				"base_attack_interval_ms": 2500,
 				"attack_type": "physical",
 				"ascii_art": "  /\\_/\\\n ( o o )\n  > ^ <"
 			}
@@ -197,9 +194,6 @@ func TestLoadEnemyTypes(t *testing.T) {
 	}
 	if enemyTypes[0].BaseHP != 50 {
 		t.Errorf("BaseHP: got %d, want 50", enemyTypes[0].BaseHP)
-	}
-	if enemyTypes[0].BaseAttackInterval != 3000*time.Millisecond {
-		t.Errorf("BaseAttackInterval: got %v, want 3s", enemyTypes[0].BaseAttackInterval)
 	}
 }
 
@@ -327,7 +321,6 @@ func TestLoadAllExternalData(t *testing.T) {
 				"name": "スライム",
 				"base_hp": 50,
 				"base_attack_power": 5,
-				"base_attack_interval_ms": 3000,
 				"attack_type": "physical",
 				"ascii_art": "  ___\n /   \\\n|     |"
 			}
@@ -844,7 +837,6 @@ func TestLoadEnemyTypesWithVoltageRise(t *testing.T) {
 				"name": "スライム",
 				"base_hp": 50,
 				"base_attack_power": 5,
-				"base_attack_interval_ms": 3000,
 				"attack_type": "physical",
 				"ascii_art": "  ___",
 				"voltage_rise_per_10s": 15.0
@@ -854,7 +846,6 @@ func TestLoadEnemyTypesWithVoltageRise(t *testing.T) {
 				"name": "ボス",
 				"base_hp": 500,
 				"base_attack_power": 20,
-				"base_attack_interval_ms": 5000,
 				"attack_type": "physical",
 				"ascii_art": "  BOSS",
 				"voltage_rise_per_10s": 25.5
@@ -896,7 +887,6 @@ func TestLoadEnemyTypesVoltageDefaultValue(t *testing.T) {
 				"name": "スライム",
 				"base_hp": 50,
 				"base_attack_power": 5,
-				"base_attack_interval_ms": 3000,
 				"attack_type": "physical",
 				"ascii_art": "  ___"
 			}
@@ -933,7 +923,6 @@ func TestLoadEnemyTypesVoltageZeroValue(t *testing.T) {
 				"name": "穏やかな敵",
 				"base_hp": 100,
 				"base_attack_power": 10,
-				"base_attack_interval_ms": 5000,
 				"attack_type": "physical",
 				"ascii_art": "  :)",
 				"voltage_rise_per_10s": 0
@@ -975,7 +964,6 @@ func TestEnemyTypeToDomainWithVoltage(t *testing.T) {
 				"name": "高速敵",
 				"base_hp": 80,
 				"base_attack_power": 12,
-				"base_attack_interval_ms": 2000,
 				"attack_type": "magic",
 				"ascii_art": "  FAST",
 				"voltage_rise_per_10s": 20.0

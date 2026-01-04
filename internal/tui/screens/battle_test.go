@@ -449,12 +449,11 @@ func TestBattleScreenResultDisplaysMessage(t *testing.T) {
 
 func createTestEnemy() *domain.EnemyModel {
 	enemyType := domain.EnemyType{
-		ID:                 "test_enemy",
-		Name:               "テストエネミー",
-		BaseHP:             100,
-		BaseAttackPower:    10,
-		BaseAttackInterval: 2 * time.Second,
-		AttackType:         "physical",
+		ID:              "test_enemy",
+		Name:            "テストエネミー",
+		BaseHP:          100,
+		BaseAttackPower: 10,
+		AttackType:      "physical",
 	}
 
 	return domain.NewEnemy(
@@ -463,7 +462,6 @@ func createTestEnemy() *domain.EnemyModel {
 		5,
 		500,
 		20,
-		2*time.Second,
 		enemyType,
 	)
 }
