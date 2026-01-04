@@ -326,8 +326,14 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 	m.gameState.AddEncounteredEnemy(result.EnemyID)
 
 	if result.Victory {
-		// 勝利時：統計を記録し、最高レベルを更新
-		m.gameState.RecordBattleVictory(result.Level)
+		// 敵のデフォルトレベルを取得
+		defaultLevel := 1
+		if result.EnemyType != nil && result.EnemyType.DefaultLevel > 0 {
+			defaultLevel = result.EnemyType.DefaultLevel
+		}
+
+		// 勝利時：統計を記録し、最高レベルをデフォルトレベルで更新
+		m.gameState.RecordBattleVictory(result.Level, defaultLevel)
 
 		// 撃破済み敵情報を記録（敵選択UIで使用）
 		m.gameState.RecordEnemyDefeat(result.EnemyID, result.Level)

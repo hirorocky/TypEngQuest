@@ -601,8 +601,8 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 		t.Fatal("報酬統計の変換に失敗")
 	}
 
-	// 9. GameStateへの統計更新と保存
-	gs.RecordBattleVictory(1)
+	// 9. GameStateへの統計更新と保存（選択レベル1, デフォルトレベル1）
+	gs.RecordBattleVictory(1, 1)
 	reconvertedSaveData := gs.ToSaveData()
 
 	// 10. 最終セーブ

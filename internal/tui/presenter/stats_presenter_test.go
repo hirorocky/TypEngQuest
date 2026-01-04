@@ -15,8 +15,8 @@ func TestCreateStatsData(t *testing.T) {
 	// タイピング結果を記録
 	gs.RecordTypingResult(60, 95.0, 100, 95, 5)
 
-	// バトル勝利を記録
-	gs.RecordBattleVictory(1)
+	// バトル勝利を記録（選択レベル1, デフォルトレベル1）
+	gs.RecordBattleVictory(1, 1)
 
 	data := CreateStatsData(gs)
 

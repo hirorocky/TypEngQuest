@@ -202,7 +202,8 @@ func TestBattleSelectBackNavigation(t *testing.T) {
 
 // mockDefeatedEnemyProvider はテスト用のDefeatedEnemyProvider実装です。
 type mockDefeatedEnemyProvider struct {
-	defeated map[string]int
+	defeated        map[string]int
+	maxLevelReached int // 到達最高レベル（敵のデフォルトレベルで更新）
 }
 
 func (m *mockDefeatedEnemyProvider) GetDefeatedEnemies() map[string]int {
@@ -228,6 +229,10 @@ func (m *mockDefeatedEnemyProvider) GetMaxDefeatedLevel() int {
 	return maxLevel
 }
 
+func (m *mockDefeatedEnemyProvider) GetMaxLevelReached() int {
+	return m.maxLevelReached
+}
+
 // mockEnemyTypeProvider はテスト用のEnemyTypeProvider実装です。
 type mockEnemyTypeProvider struct {
 	enemyTypes []domain.EnemyType
@@ -247,24 +252,25 @@ func createTestEnemyTypes() []domain.EnemyType {
 	}
 }
 
-// createTestEnemyTypesAllVisible は全敵が表示される到達Lvが十分高いテスト用設定です。
-func createTestEnemyTypesAllVisible() ([]domain.EnemyType, map[string]int) {
+// createTestEnemyTypesAllVisible は全敵が表示される設定です（全敵を撃破済みにする）。
+func createTestEnemyTypesAllVisible() ([]domain.EnemyType, map[string]int, int) {
 	enemyTypes := []domain.EnemyType{
 		{ID: "slime", Name: "スライム", DefaultLevel: 1, BaseHP: 50, AttackType: "physical"},
 		{ID: "goblin", Name: "ゴブリン", DefaultLevel: 2, BaseHP: 80, AttackType: "physical"},
 		{ID: "dragon", Name: "ドラゴン", DefaultLevel: 10, BaseHP: 500, AttackType: "magic"},
 	}
-	// slimeをLv.9で撃破していれば、到達Lv=9なので全ての敵（デフォルトLv 1,2,10 <= 10）が表示される
-	defeated := map[string]int{"slime": 9}
-	return enemyTypes, defeated
+	// 全敵を撃破済みにして全敵を表示
+	defeated := map[string]int{"slime": 1, "goblin": 2, "dragon": 10}
+	maxLevelReached := 10 // 最高デフォルトレベル
+	return enemyTypes, defeated, maxLevelReached
 }
 
 // TestBattleSelectCarouselInitialization はカルーセル方式の初期化をテストします。
 func TestBattleSelectCarouselInitialization(t *testing.T) {
-	enemyTypes, defeated := createTestEnemyTypesAllVisible()
+	enemyTypes, defeated, maxLevelReached := createTestEnemyTypesAllVisible()
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: maxLevelReached},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -272,7 +278,7 @@ func TestBattleSelectCarouselInitialization(t *testing.T) {
 		t.Fatal("BattleSelectScreenがnilです")
 	}
 
-	// 到達Lv=9なので全ての敵（デフォルトLv 1,2,10 <= 10）が読み込まれていること
+	// 全敵が撃破済みなので3体全て表示
 	if len(screen.enemyTypes) != 3 {
 		t.Errorf("敵タイプ数: got %d, want 3", len(screen.enemyTypes))
 	}
@@ -285,10 +291,10 @@ func TestBattleSelectCarouselInitialization(t *testing.T) {
 
 // TestBattleSelectCarouselNavigation は左右キーによる敵種類変更をテストします。
 func TestBattleSelectCarouselNavigation(t *testing.T) {
-	enemyTypes, defeated := createTestEnemyTypesAllVisible()
+	enemyTypes, defeated, maxLevelReached := createTestEnemyTypesAllVisible()
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: maxLevelReached},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -314,16 +320,16 @@ func TestBattleSelectCarouselNavigation(t *testing.T) {
 // TestBattleSelectCarouselLevelSelection は上下キーによるレベル変更をテストします。
 func TestBattleSelectCarouselLevelSelection(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
-	// slimeをレベル5で撃破済み
+	// slimeをレベル5で撃破済み、MaxLevelReached=5（撃破済み敵はMaxLevelReachedまで選択可能）
 	defeated := map[string]int{"slime": 5}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 5},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
 	// slime（デフォルトレベル1）が選択されている状態で
-	// 撃破済みなので、レベル1〜6（撃破最高レベル+1）まで選択可能
+	// 撃破済みなので、レベル1〜5（MaxLevelReached）まで選択可能
 	initialLevel := screen.selectedLevel
 	if initialLevel != 1 {
 		t.Errorf("初期レベル: got %d, want 1", initialLevel)
@@ -345,15 +351,16 @@ func TestBattleSelectCarouselLevelSelection(t *testing.T) {
 // TestBattleSelectCarouselUndefeatedEnemy は未撃破敵のレベル制限をテストします。
 func TestBattleSelectCarouselUndefeatedEnemy(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
-	// goblinは未撃破だが、到達Lv=5なのでデフォルトLv=2の敵は表示される
+	// slime（デフォルトLv=1）を撃破済み、MaxLevelReached=1
+	// goblin（デフォルトLv=2）は未撃破で、MaxLevelReached+1=2 以上なので表示される
 	defeated := map[string]int{"slime": 5}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 1},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
-	// 到達Lv=5なので、デフォルトLv 1,2（<= 6）のslimeとgoblinが表示される
+	// slime（撃破済み）とgoblin（未撃破で最小デフォルトLv）の2体が表示される
 	// goblin（インデックス1）を選択
 	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
 
@@ -373,9 +380,10 @@ func TestBattleSelectCarouselUndefeatedEnemy(t *testing.T) {
 func TestBattleSelectCarouselStartBattle(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
 	agent := createTestAgent()
+	// MaxLevelReached=0で未撃破、slime（デフォルトLv=1）が最小なので1体表示
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{agents: []*domain.AgentModel{agent}},
-		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}, maxLevelReached: 0},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -446,9 +454,10 @@ func TestBattleSelectCarouselEnemyInfoPanel(t *testing.T) {
 			},
 		},
 	}
+	// MaxLevelReached=0（未撃破）でslime（デフォルトLv=1）のみ表示
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}, maxLevelReached: 0},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -480,9 +489,10 @@ func TestBattleSelectCarouselEnemyInfoPanel(t *testing.T) {
 // TestBattleSelectCarouselUndefeatedIndicator は未撃破敵の視覚的表示をテストします。
 func TestBattleSelectCarouselUndefeatedIndicator(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
+	// MaxLevelReached=0（未撃破）でslime（デフォルトLv=1）のみ表示
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: map[string]int{}},
+		&mockDefeatedEnemyProvider{defeated: map[string]int{}, maxLevelReached: 0},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -505,10 +515,11 @@ func TestBattleSelectCarouselUndefeatedIndicator(t *testing.T) {
 // TestBattleSelectCarouselDefeatedIndicator は撃破済み敵の視覚的表示をテストします。
 func TestBattleSelectCarouselDefeatedIndicator(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
+	// slimeをレベル5で撃破、MaxLevelReached=1（デフォルトレベル）
 	defeated := map[string]int{"slime": 5}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 1},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -535,15 +546,16 @@ func TestBattleSelectCarouselDefeatedIndicator(t *testing.T) {
 // TestBattleSelectCarouselLevelConstraintUndefeated は未撃破敵のレベル制約をテストします。
 func TestBattleSelectCarouselLevelConstraintUndefeated(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
-	// slimeをLv.1で撃破済みにすれば、到達Lv=1となり、デフォルトLv=2のgoblinも表示される
+	// slimeをLv.1で撃破済み、MaxLevelReached=1（slimeのデフォルトレベル）
+	// goblin（デフォルトLv=2）は未撃破でMaxLevelReached+1=2 以上なので表示される
 	defeated := map[string]int{"slime": 1}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 1},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
-	// goblin（インデックス1）を選択 - goblinは未撃破だがデフォルトLv=2 <= 到達Lv(1)+1 なので表示される
+	// goblin（インデックス1）を選択 - goblinは未撃破だがデフォルトLv=2 >= MaxLevelReached+1=2 なので表示される
 	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
 
 	// デフォルトレベルが設定されていること（goblinはデフォルトLv=2）
@@ -561,22 +573,23 @@ func TestBattleSelectCarouselLevelConstraintUndefeated(t *testing.T) {
 // TestBattleSelectCarouselLevelConstraintDefeated は撃破済み敵のレベル制約をテストします。
 func TestBattleSelectCarouselLevelConstraintDefeated(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
-	// slimeをレベル10で撃破済み（デフォルトレベル1）
+	// slimeをレベル10で撃破済み（デフォルトレベル1）、MaxLevelReached=10
+	// 新ロジック: 撃破済み敵はMaxLevelReachedまで選択可能
 	defeated := map[string]int{"slime": 10}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 10},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
 	// slime（インデックス0）が選択されている
-	// デフォルトレベル1、撃破最高レベル10なので、1〜11まで選択可能
+	// デフォルトレベル1、MaxLevelReached=10なので、1〜10まで選択可能
 	if screen.minSelectableLevel != 1 {
 		t.Errorf("最小選択可能レベル: got %d, want 1", screen.minSelectableLevel)
 	}
 
-	if screen.maxSelectableLevel != 11 {
-		t.Errorf("最大選択可能レベル: got %d, want 11", screen.maxSelectableLevel)
+	if screen.maxSelectableLevel != 10 {
+		t.Errorf("最大選択可能レベル: got %d, want 10", screen.maxSelectableLevel)
 	}
 }
 
@@ -585,11 +598,11 @@ func TestBattleSelectCarouselLevelConstraintMaxLevel(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{ID: "boss", Name: "ボス", DefaultLevel: 50, BaseHP: 1000},
 	}
-	// レベル100で撃破済み
+	// レベル100で撃破済み、MaxLevelReached=100（または100を超える値でテスト）
 	defeated := map[string]int{"boss": 100}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 150},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
@@ -603,17 +616,19 @@ func TestBattleSelectCarouselLevelConstraintMaxLevel(t *testing.T) {
 func TestBattleSelectCarouselStartBattleWithEnemyTypeID(t *testing.T) {
 	enemyTypes := createTestEnemyTypes()
 	agent := createTestAgent()
-	defeated := map[string]int{"goblin": 5}
+	// slime(Lv=1)とgoblin(Lv=2)を撃破済み、MaxLevelReached=5
+	// 表示される敵: slime, goblin（撃破済み）, dragon（未撃破で最小）
+	defeated := map[string]int{"slime": 3, "goblin": 5}
 	screen := NewBattleSelectScreenCarousel(
 		&mockAgentProvider{agents: []*domain.AgentModel{agent}},
-		&mockDefeatedEnemyProvider{defeated: defeated},
+		&mockDefeatedEnemyProvider{defeated: defeated, maxLevelReached: 5},
 		&mockEnemyTypeProvider{enemyTypes: enemyTypes},
 	)
 
 	// goblin（インデックス1）を選択
 	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyRight})
 
-	// レベルを3に設定
+	// レベルを3に設定（デフォルトLv=2から上キーで3に）
 	screen.handleKeyMsg(tea.KeyMsg{Type: tea.KeyUp})
 
 	// Enterでバトル開始

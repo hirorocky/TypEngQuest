@@ -365,22 +365,40 @@ func NewBattleSelectScreenCarousel(
 ) *BattleSelectScreenCarousel {
 	allEnemyTypes := enemyTypeProvider.GetEnemyTypes()
 
-	// 到達Lv（全敵種類を通じた最高撃破レベル）を取得
-	maxDefeatedLevel := defeatedProvider.GetMaxDefeatedLevel()
-
-	// 到達Lv + 1 以下のデフォルトLvを持つ敵のみ表示
-	// 初回プレイ（到達Lv=0）の場合、デフォルトLv=1の敵のみ表示
-	maxAllowedDefaultLevel := maxDefeatedLevel + 1
+	// 到達最高レベル（敵のデフォルトレベルで更新）を取得
+	maxLevelReached := defeatedProvider.GetMaxLevelReached()
 
 	filteredEnemyTypes := make([]domain.EnemyType, 0)
+
+	// 1. 撃破済み敵を全て追加
 	for _, et := range allEnemyTypes {
+		if defeatedProvider.IsEnemyDefeated(et.ID) {
+			filteredEnemyTypes = append(filteredEnemyTypes, et)
+		}
+	}
+
+	// 2. 未撃破敵: MaxLevelReached+1 以上のデフォルトLvを持つ敵の中で最小レベルの1体を追加
+	var nextUndefeated *domain.EnemyType
+	minNextLevel := 101 // 最大レベル+1
+
+	for i := range allEnemyTypes {
+		et := &allEnemyTypes[i]
+		if defeatedProvider.IsEnemyDefeated(et.ID) {
+			continue
+		}
 		defaultLevel := et.DefaultLevel
 		if defaultLevel < 1 {
 			defaultLevel = 1
 		}
-		if defaultLevel <= maxAllowedDefaultLevel {
-			filteredEnemyTypes = append(filteredEnemyTypes, et)
+		// MaxLevelReached+1 以上かつ最小のデフォルトレベルを持つ敵を選択
+		if defaultLevel >= maxLevelReached+1 && defaultLevel < minNextLevel {
+			minNextLevel = defaultLevel
+			nextUndefeated = et
 		}
+	}
+
+	if nextUndefeated != nil {
+		filteredEnemyTypes = append(filteredEnemyTypes, *nextUndefeated)
 	}
 
 	s := &BattleSelectScreenCarousel{
@@ -415,12 +433,16 @@ func (s *BattleSelectScreenCarousel) updateLevelRange() {
 
 	s.minSelectableLevel = defaultLevel
 
-	// 撃破済みの場合は撃破最高レベル+1まで選択可能
+	// 撃破済みの場合は到達最高レベル（MaxLevelReached）まで選択可能
 	if s.defeatedProvider.IsEnemyDefeated(enemyType.ID) {
-		defeatedLevel := s.defeatedProvider.GetDefeatedLevel(enemyType.ID)
-		s.maxSelectableLevel = defeatedLevel + 1
+		maxLevelReached := s.defeatedProvider.GetMaxLevelReached()
+		s.maxSelectableLevel = maxLevelReached
 		if s.maxSelectableLevel > 100 {
 			s.maxSelectableLevel = 100
+		}
+		// minがmaxより大きくならないように調整
+		if s.maxSelectableLevel < s.minSelectableLevel {
+			s.maxSelectableLevel = s.minSelectableLevel
 		}
 	} else {
 		// 未撃破の場合はデフォルトレベルのみ

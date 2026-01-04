@@ -144,14 +144,20 @@ func (g *GameState) UpdateRewardCalculator(coreTypes []domain.CoreType, moduleTy
 }
 
 // RecordBattleVictory はバトル勝利を記録します。
-func (g *GameState) RecordBattleVictory(level int) {
-	g.statistics.RecordBattleResult(true, level)
-	if level > g.MaxLevelReached {
-		g.MaxLevelReached = level
+// selectedLevel は選択したレベル（統計記録用）、defaultLevel は敵のデフォルトレベル（MaxLevelReached更新用）です。
+func (g *GameState) RecordBattleVictory(selectedLevel int, defaultLevel int) {
+	g.statistics.RecordBattleResult(true, selectedLevel)
+	if defaultLevel > g.MaxLevelReached {
+		g.MaxLevelReached = defaultLevel
 	}
 
 	// 実績チェック
 	g.checkAchievements()
+}
+
+// GetMaxLevelReached は到達最高レベルを返します。
+func (g *GameState) GetMaxLevelReached() int {
+	return g.MaxLevelReached
 }
 
 // RecordBattleDefeat はバトル敗北を記録します。
