@@ -84,10 +84,20 @@ func (s *BattleScreen) View() string {
 func (s *BattleScreen) renderEnemyArea() string {
 	var builder strings.Builder
 
-	// 敵名とフェーズ
+	// 敵名とフェーズ、ボルテージ（右上配置のため、スペースで右寄せ）
 	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDamage)
+	nameAndLevel := fmt.Sprintf("%s Lv.%d", s.enemy.Name, s.enemy.Level)
 	builder.WriteString(nameStyle.Render(s.enemy.Name))
 	builder.WriteString(fmt.Sprintf(" Lv.%d", s.enemy.Level))
+
+	// ボルテージ表示（右端に配置するためスペースを挿入）
+	voltageDisplay := s.styles.RenderVoltage(s.enemy.GetVoltage())
+	// 敵名+レベル部分の後に十分なスペースを入れてボルテージを配置
+	spacer := strings.Repeat(" ", 20)
+	builder.WriteString(spacer)
+	builder.WriteString(voltageDisplay)
+	// 改行は敵名+レベル部分の後ではなく、ボルテージの後
+	_ = nameAndLevel // 未使用警告回避
 
 	// パッシブスキル表示（フェーズに応じて通常または強化パッシブを表示）
 	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)

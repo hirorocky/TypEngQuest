@@ -281,3 +281,73 @@ func TestBattleScreen_ChainEffectFeedback(t *testing.T) {
 		}
 	}
 }
+
+// ==================== ボルテージ表示テスト ====================
+
+// TestBattleScreen_VoltageDisplay はボルテージ表示のテストです。
+func TestBattleScreen_VoltageDisplay(t *testing.T) {
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	enemy := createTestEnemy()
+	screen := NewBattleScreen(enemy, createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// ボルテージ表示が含まれていることを確認
+	if !strings.Contains(result, "VOLTAGE") {
+		t.Error("View should contain VOLTAGE display")
+	}
+
+	// 初期値100%が表示されていることを確認
+	if !strings.Contains(result, "100%") {
+		t.Error("View should contain initial voltage value 100%")
+	}
+}
+
+// TestBattleScreen_VoltageDisplayWithHighVoltage は高ボルテージ時の表示テストです。
+func TestBattleScreen_VoltageDisplayWithHighVoltage(t *testing.T) {
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	enemy := createTestEnemy()
+	// ボルテージを150%に設定
+	enemy.SetVoltage(150.0)
+
+	screen := NewBattleScreen(enemy, createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// ボルテージ150%が表示されていることを確認
+	if !strings.Contains(result, "150%") {
+		t.Error("View should contain voltage value 150%")
+	}
+}
+
+// TestBattleScreen_VoltageDisplayWithDangerVoltage は危険レベルボルテージの表示テストです。
+func TestBattleScreen_VoltageDisplayWithDangerVoltage(t *testing.T) {
+	modules := []*domain.ModuleModel{
+		createTestModuleWithChain("攻撃A", nil),
+	}
+	agent := createTestAgentWithPassive(domain.PassiveSkill{}, modules)
+
+	enemy := createTestEnemy()
+	// ボルテージを200%に設定
+	enemy.SetVoltage(200.0)
+
+	screen := NewBattleScreen(enemy, createTestPlayer(), []*domain.AgentModel{agent}, nil)
+
+	// View()を呼び出し
+	result := screen.View()
+
+	// ボルテージ200%が表示されていることを確認
+	if !strings.Contains(result, "200%") {
+		t.Error("View should contain voltage value 200%")
+	}
+}
