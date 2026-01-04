@@ -1114,3 +1114,446 @@ func TestEnemyType拡張フィールド_JSONシリアライズ(t *testing.T) {
 		t.Errorf("DropItemTypeIDが一致しません: got %s, want %s", restored.DropItemTypeID, enemyType.DropItemTypeID)
 	}
 }
+
+// ========== タスク7.1: ドメイン層のユニットテスト ==========
+
+// TestEnemyAction_CalculateDamage はダメージ計算を確認します。
+func TestEnemyAction_CalculateDamage(t *testing.T) {
+	tests := []struct {
+		name           string
+		damageBase     float64
+		damagePerLevel float64
+		level          int
+		expected       int
+	}{
+		{"レベル1基本攻撃", 10.0, 2.0, 1, 12},      // 10 + 1*2 = 12
+		{"レベル10基本攻撃", 10.0, 2.0, 10, 30},    // 10 + 10*2 = 30
+		{"レベル100強力攻撃", 50.0, 5.0, 100, 550}, // 50 + 100*5 = 550
+		{"最低ダメージ保証", 0.0, 0.0, 1, 1},        // 0 + 0*1 = 0 → 最低1
+		{"小数点ダメージ", 5.5, 1.5, 3, 10},        // 5.5 + 3*1.5 = 10.0
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := EnemyAction{
+				ActionType:     EnemyActionAttack,
+				DamageBase:     tt.damageBase,
+				DamagePerLevel: tt.damagePerLevel,
+			}
+			damage := action.CalculateDamage(tt.level)
+			if damage != tt.expected {
+				t.Errorf("CalculateDamage()が期待値と異なります: got %d, want %d", damage, tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyAction_GetChargeTimeMs はチャージタイムをミリ秒で取得する機能を確認します。
+func TestEnemyAction_GetChargeTimeMs(t *testing.T) {
+	tests := []struct {
+		name       string
+		chargeTime time.Duration
+		expected   int64
+	}{
+		{"0秒", 0, 0},
+		{"1秒", 1 * time.Second, 1000},
+		{"3秒", 3 * time.Second, 3000},
+		{"500ミリ秒", 500 * time.Millisecond, 500},
+		{"2.5秒", 2500 * time.Millisecond, 2500},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := EnemyAction{
+				ChargeTime: tt.chargeTime,
+			}
+			result := action.GetChargeTimeMs()
+			if result != tt.expected {
+				t.Errorf("GetChargeTimeMs()が期待値と異なります: got %d, want %d", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyAction_IsDefense はディフェンス行動判定を確認します。
+func TestEnemyAction_IsDefense(t *testing.T) {
+	defense := EnemyAction{ActionType: EnemyActionDefense}
+	attack := EnemyAction{ActionType: EnemyActionAttack}
+
+	if !defense.IsDefense() {
+		t.Error("Defense行動でIsDefense()がtrueを返すべきです")
+	}
+	if attack.IsDefense() {
+		t.Error("Attack行動でIsDefense()がfalseを返すべきです")
+	}
+}
+
+// TestEnemyDefenseType_定数の確認 はEnemyDefenseType定数が正しく定義されていることを確認します。
+func TestEnemyDefenseType_定数の確認(t *testing.T) {
+	if DefensePhysicalCut != "physical_cut" {
+		t.Errorf("DefensePhysicalCutが期待値と異なります: got %s, want physical_cut", DefensePhysicalCut)
+	}
+	if DefenseMagicCut != "magic_cut" {
+		t.Errorf("DefenseMagicCutが期待値と異なります: got %s, want magic_cut", DefenseMagicCut)
+	}
+	if DefenseDebuffEvade != "debuff_evade" {
+		t.Errorf("DefenseDebuffEvadeが期待値と異なります: got %s, want debuff_evade", DefenseDebuffEvade)
+	}
+}
+
+// TestEnemyModel_AdvanceActionIndex_境界値 は行動パターンループの境界値を確認します。
+func TestEnemyModel_AdvanceActionIndex_境界値(t *testing.T) {
+	tests := []struct {
+		name          string
+		patternLen    int
+		advanceTimes  int
+		expectedIndex int
+	}{
+		{"1行動パターン_1回進める", 1, 1, 0},
+		{"1行動パターン_3回進める", 1, 3, 0},
+		{"3行動パターン_2回進める", 3, 2, 2},
+		{"3行動パターン_3回進める_ループ", 3, 3, 0},
+		{"3行動パターン_5回進める_複数ループ", 3, 5, 2},
+		{"5行動パターン_10回進める", 5, 10, 0},
+		{"5行動パターン_7回進める", 5, 7, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// パターンを作成
+			pattern := make([]EnemyAction, tt.patternLen)
+			for i := 0; i < tt.patternLen; i++ {
+				pattern[i] = EnemyAction{ActionType: EnemyActionAttack}
+			}
+
+			enemyType := EnemyType{
+				ResolvedNormalActions: pattern,
+			}
+			enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+			// 指定回数進める
+			for i := 0; i < tt.advanceTimes; i++ {
+				enemy.AdvanceActionIndex()
+			}
+
+			if enemy.ActionIndex != tt.expectedIndex {
+				t.Errorf("ActionIndexが期待値と異なります: got %d, want %d", enemy.ActionIndex, tt.expectedIndex)
+			}
+		})
+	}
+}
+
+// TestEnemyModel_GetCurrentAction_フェーズ遷移後 はフェーズ遷移後に正しいパターンから行動を取得することを確認します。
+func TestEnemyModel_GetCurrentAction_フェーズ遷移後(t *testing.T) {
+	normalAction := EnemyAction{
+		ID:         "normal_attack",
+		ActionType: EnemyActionAttack,
+		AttackType: "physical",
+	}
+	enhancedAction := EnemyAction{
+		ID:         "enhanced_attack",
+		ActionType: EnemyActionAttack,
+		AttackType: "magic",
+	}
+
+	enemyType := EnemyType{
+		ResolvedNormalActions:   []EnemyAction{normalAction},
+		ResolvedEnhancedActions: []EnemyAction{enhancedAction},
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+	// 通常フェーズで通常パターンの行動を取得
+	action := enemy.GetCurrentAction()
+	if action.ID != "normal_attack" {
+		t.Errorf("通常フェーズで通常行動を返すべきです: got %s", action.ID)
+	}
+
+	// フェーズ遷移
+	enemy.TransitionToEnhanced()
+
+	// 強化フェーズで強化パターンの行動を取得
+	action = enemy.GetCurrentAction()
+	if action.ID != "enhanced_attack" {
+		t.Errorf("強化フェーズで強化行動を返すべきです: got %s", action.ID)
+	}
+}
+
+// TestEnemyModel_ResetActionIndex_フェーズ遷移シナリオ はフェーズ遷移時のインデックスリセットを確認します。
+func TestEnemyModel_ResetActionIndex_フェーズ遷移シナリオ(t *testing.T) {
+	normalActions := []EnemyAction{
+		{ID: "normal_1", ActionType: EnemyActionAttack},
+		{ID: "normal_2", ActionType: EnemyActionBuff},
+		{ID: "normal_3", ActionType: EnemyActionDebuff},
+	}
+	enhancedActions := []EnemyAction{
+		{ID: "enhanced_1", ActionType: EnemyActionAttack},
+		{ID: "enhanced_2", ActionType: EnemyActionDefense},
+	}
+
+	enemyType := EnemyType{
+		ResolvedNormalActions:   normalActions,
+		ResolvedEnhancedActions: enhancedActions,
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+	// 通常フェーズで2回進める
+	enemy.AdvanceActionIndex()
+	enemy.AdvanceActionIndex()
+	if enemy.ActionIndex != 2 {
+		t.Fatalf("ActionIndexが2であるべきです: got %d", enemy.ActionIndex)
+	}
+
+	// フェーズ遷移とリセット
+	enemy.TransitionToEnhanced()
+	enemy.ResetActionIndex()
+
+	// インデックスが0にリセットされていること
+	if enemy.ActionIndex != 0 {
+		t.Errorf("ResetActionIndex後はActionIndexが0であるべきです: got %d", enemy.ActionIndex)
+	}
+
+	// 強化パターンの最初の行動を取得
+	action := enemy.GetCurrentAction()
+	if action.ID != "enhanced_1" {
+		t.Errorf("リセット後は強化パターンの最初の行動を返すべきです: got %s", action.ID)
+	}
+}
+
+// TestEnemyPassiveSkill_空のEffects は空の効果マップを持つパッシブスキルを確認します。
+func TestEnemyPassiveSkill_空のEffects(t *testing.T) {
+	passive := EnemyPassiveSkill{
+		ID:      "empty_passive",
+		Name:    "空パッシブ",
+		Effects: map[EffectColumn]float64{},
+	}
+
+	entry := passive.ToEntry()
+
+	if len(entry.Values) != 0 {
+		t.Errorf("Valuesが空であるべきです: got %d entries", len(entry.Values))
+	}
+	if entry.SourceType != SourcePassive {
+		t.Error("SourceTypeがSourcePassiveであるべきです")
+	}
+}
+
+// TestEnemyModel_チャージ状態管理 はチャージ状態管理機能を確認します。
+func TestEnemyModel_チャージ状態管理(t *testing.T) {
+	enemyType := EnemyType{
+		ResolvedNormalActions: []EnemyAction{
+			{
+				ID:         "attack",
+				ActionType: EnemyActionAttack,
+				ChargeTime: 3 * time.Second,
+			},
+		},
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+	action := enemy.GetCurrentAction()
+
+	now := time.Now()
+
+	// チャージ開始
+	enemy.StartCharging(action, now)
+
+	if enemy.WaitMode != WaitModeCharging {
+		t.Error("チャージ開始後はWaitModeChargingであるべきです")
+	}
+	if enemy.PendingAction == nil {
+		t.Error("PendingActionが設定されるべきです")
+	}
+
+	// 進捗確認（開始直後）
+	progress := enemy.GetChargeProgress(now)
+	if progress != 0 {
+		t.Errorf("開始直後は進捗0であるべきです: got %f", progress)
+	}
+
+	// 進捗確認（1.5秒後 = 50%）
+	halfTime := now.Add(1500 * time.Millisecond)
+	progress = enemy.GetChargeProgress(halfTime)
+	if progress < 0.49 || progress > 0.51 {
+		t.Errorf("1.5秒後は約50%%であるべきです: got %f", progress)
+	}
+
+	// 完了チェック（1.5秒後）
+	if enemy.IsChargeComplete(halfTime) {
+		t.Error("1.5秒後はチャージ完了ではないべきです")
+	}
+
+	// 完了チェック（3秒後）
+	completeTime := now.Add(3 * time.Second)
+	if !enemy.IsChargeComplete(completeTime) {
+		t.Error("3秒後はチャージ完了であるべきです")
+	}
+
+	// 進捗確認（完了後は1.0）
+	progress = enemy.GetChargeProgress(completeTime)
+	if progress != 1.0 {
+		t.Errorf("完了後は進捗1.0であるべきです: got %f", progress)
+	}
+}
+
+// TestEnemyModel_ディフェンス状態管理 はディフェンス状態管理機能を確認します。
+func TestEnemyModel_ディフェンス状態管理(t *testing.T) {
+	enemyType := EnemyType{
+		ResolvedNormalActions: []EnemyAction{
+			{ID: "defense", ActionType: EnemyActionDefense},
+		},
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+	now := time.Now()
+	duration := 5 * time.Second
+
+	// ディフェンス開始
+	enemy.StartDefense(DefensePhysicalCut, 0.5, duration, now)
+
+	if enemy.WaitMode != WaitModeDefending {
+		t.Error("ディフェンス開始後はWaitModeDefendingであるべきです")
+	}
+	if enemy.ActiveDefenseType != DefensePhysicalCut {
+		t.Error("ActiveDefenseTypeがDefensePhysicalCutであるべきです")
+	}
+	if enemy.DefenseValue != 0.5 {
+		t.Errorf("DefenseValueが0.5であるべきです: got %f", enemy.DefenseValue)
+	}
+
+	// ディフェンス有効チェック（開始直後）
+	if !enemy.IsDefenseActive(now) {
+		t.Error("開始直後はディフェンス有効であるべきです")
+	}
+
+	// ディフェンス有効チェック（2秒後）
+	midTime := now.Add(2 * time.Second)
+	if !enemy.IsDefenseActive(midTime) {
+		t.Error("2秒後はディフェンス有効であるべきです")
+	}
+
+	// ディフェンス有効チェック（6秒後 = 終了後）
+	afterTime := now.Add(6 * time.Second)
+	if enemy.IsDefenseActive(afterTime) {
+		t.Error("6秒後はディフェンス無効であるべきです")
+	}
+
+	// 残り時間確認（2秒後）
+	remaining := enemy.GetDefenseRemainingTime(midTime)
+	expectedRemaining := 3 * time.Second
+	if remaining != expectedRemaining {
+		t.Errorf("残り時間が3秒であるべきです: got %v", remaining)
+	}
+}
+
+// TestEnemyModel_ExecuteChargedAction はチャージ完了後の行動実行を確認します。
+func TestEnemyModel_ExecuteChargedAction(t *testing.T) {
+	actions := []EnemyAction{
+		{ID: "action_1", ActionType: EnemyActionAttack},
+		{ID: "action_2", ActionType: EnemyActionBuff},
+	}
+	enemyType := EnemyType{
+		ResolvedNormalActions: actions,
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+	// 最初の行動でチャージ開始
+	action := enemy.GetCurrentAction()
+	enemy.StartCharging(action, time.Now())
+
+	// チャージ完了後に行動実行
+	executedAction := enemy.ExecuteChargedAction()
+
+	if executedAction == nil {
+		t.Fatal("ExecuteChargedActionはnilを返すべきではありません")
+	}
+	if executedAction.ID != "action_1" {
+		t.Errorf("実行された行動がaction_1であるべきです: got %s", executedAction.ID)
+	}
+	if enemy.WaitMode != WaitModeNone {
+		t.Error("実行後はWaitModeNoneであるべきです")
+	}
+	if enemy.PendingAction != nil {
+		t.Error("実行後はPendingActionがnilであるべきです")
+	}
+	// 行動インデックスが進んでいること
+	if enemy.ActionIndex != 1 {
+		t.Errorf("実行後はActionIndexが1であるべきです: got %d", enemy.ActionIndex)
+	}
+}
+
+// TestEnemyModel_EndDefense はディフェンス終了処理を確認します。
+func TestEnemyModel_EndDefense(t *testing.T) {
+	actions := []EnemyAction{
+		{ID: "defense_1", ActionType: EnemyActionDefense},
+		{ID: "attack_1", ActionType: EnemyActionAttack},
+	}
+	enemyType := EnemyType{
+		ResolvedNormalActions: actions,
+	}
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, enemyType)
+
+	// ディフェンス開始
+	enemy.StartDefense(DefenseMagicCut, 0.3, 5*time.Second, time.Now())
+
+	// ディフェンス終了
+	enemy.EndDefense()
+
+	if enemy.WaitMode != WaitModeNone {
+		t.Error("終了後はWaitModeNoneであるべきです")
+	}
+	if enemy.ActiveDefenseType != "" {
+		t.Error("終了後はActiveDefenseTypeが空であるべきです")
+	}
+	if enemy.DefenseValue != 0 {
+		t.Error("終了後はDefenseValueが0であるべきです")
+	}
+	// 行動インデックスが進んでいること
+	if enemy.ActionIndex != 1 {
+		t.Errorf("終了後はActionIndexが1であるべきです: got %d", enemy.ActionIndex)
+	}
+}
+
+// TestEnemyWaitMode_String はEnemyWaitModeのString()メソッドを確認します。
+func TestEnemyWaitMode_String(t *testing.T) {
+	tests := []struct {
+		mode     EnemyWaitMode
+		expected string
+	}{
+		{WaitModeNone, "なし"},
+		{WaitModeCharging, "チャージ中"},
+		{WaitModeDefending, "ディフェンス中"},
+		{EnemyWaitMode(99), "不明"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			if tt.mode.String() != tt.expected {
+				t.Errorf("String()が期待値と異なります: got %s, want %s", tt.mode.String(), tt.expected)
+			}
+		})
+	}
+}
+
+// TestEnemyModel_GetDefenseTypeName はディフェンス種別名取得を確認します。
+func TestEnemyModel_GetDefenseTypeName(t *testing.T) {
+	enemy := NewEnemy("test", "テスト敵", 1, 100, 10, 3*time.Second, EnemyType{})
+
+	tests := []struct {
+		defenseType EnemyDefenseType
+		expected    string
+	}{
+		{DefensePhysicalCut, "物理防御"},
+		{DefenseMagicCut, "魔法防御"},
+		{DefenseDebuffEvade, "デバフ回避"},
+		{"", "防御"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			enemy.ActiveDefenseType = tt.defenseType
+			result := enemy.GetDefenseTypeName()
+			if result != tt.expected {
+				t.Errorf("GetDefenseTypeName()が期待値と異なります: got %s, want %s", result, tt.expected)
+			}
+		})
+	}
+}

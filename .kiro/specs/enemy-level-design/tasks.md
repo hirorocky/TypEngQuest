@@ -185,7 +185,7 @@
   - 高レベルでの報酬品質が向上していることを確認
 
 - [ ] 7. テストとバリデーション
-- [ ] 7.1 (P) ドメイン層のユニットテストを実装する
+- [x] 7.1 (P) ドメイン層のユニットテストを実装する
   - EnemyAction、EnemyPassiveSkillの値オブジェクトテスト
   - EnemyModel.GetCurrentAction、AdvanceActionIndexのテスト
   - 行動パターンループの境界値テスト
