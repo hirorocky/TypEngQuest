@@ -29,44 +29,6 @@ func calculateDamage(baseDamage int, damageReduction float64) int {
 	return damage
 }
 
-// 敵自己バフタイプ
-type EnemyBuffType int
-
-const (
-	// EnemyBuffAttackUp は攻撃力UP
-
-	EnemyBuffAttackUp EnemyBuffType = iota
-
-	// EnemyBuffPhysicalDamageDown は物理ダメージ軽減
-
-	EnemyBuffPhysicalDamageDown
-
-	// EnemyBuffMagicDamageDown は魔法ダメージ軽減
-
-	EnemyBuffMagicDamageDown
-)
-
-// プレイヤーデバフタイプ
-type PlayerDebuffType int
-
-const (
-	// PlayerDebuffTypingTimeDown はタイピング制限時間短縮
-
-	PlayerDebuffTypingTimeDown PlayerDebuffType = iota
-
-	// PlayerDebuffTextShuffle はテキストシャッフル
-
-	PlayerDebuffTextShuffle
-
-	// PlayerDebuffDifficultyUp は難易度上昇
-
-	PlayerDebuffDifficultyUp
-
-	// PlayerDebuffCooldownExtend はクールダウン延長
-
-	PlayerDebuffCooldownExtend
-)
-
 // EnemyActionType は敵の行動タイプを表します。
 
 type EnemyActionType int
@@ -94,16 +56,10 @@ type NextEnemyAction struct {
 	// AttackType は攻撃属性（"physical" or "magic"）（攻撃時のみ有効）
 	AttackType string
 
-	// BuffType は自己バフの種類（自己バフ時のみ有効）
-	BuffType EnemyBuffType
-
-	// DebuffType はデバフの種類（デバフ時のみ有効）
-	DebuffType PlayerDebuffType
-
 	// ExpectedValue は予測ダメージまたは効果量
 	ExpectedValue int
 
-	// SourceAction はパターンベース行動のソース（nilの場合はランダム行動）
+	// SourceAction はパターンベース行動のソース
 	SourceAction *domain.EnemyAction
 
 	// ChargeTimeMs はチャージタイム（ミリ秒）
@@ -125,7 +81,7 @@ type EnemyTurnResult struct {
 	Damage int
 
 	// ActionType は実行された行動タイプ
-	ActionType EnemyActionType
+	ActionType domain.EnemyActionType
 
 	// Message は行動結果のメッセージ
 	Message string
@@ -198,13 +154,6 @@ type BattleState struct {
 
 	// Stats はバトル統計です。
 	Stats *BattleStatistics
-
-	// NextAttackTime は敵の次回攻撃時刻です。
-	NextAttackTime time.Time
-
-	// NextAction は敵の次回行動です。
-
-	NextAction NextEnemyAction
 
 	// LastAttackType は直前の攻撃属性です。
 	LastAttackType string
@@ -282,10 +231,11 @@ func (e *BattleEngine) InitializeBattle(level int, agents []*domain.AgentModel) 
 		Stats: &BattleStatistics{
 			StartTime: time.Now(),
 		},
-		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
-	state.NextAction = e.DetermineNextAction(state)
+	// 最初の行動を準備してチャージ開始
+	state.Enemy.PrepareNextAction()
+	e.StartEnemyCharging(state, time.Now())
 
 	return state, nil
 }
@@ -362,13 +312,11 @@ func (e *BattleEngine) applyPostDamagePassives(state *BattleState) {
 				if e.rng.Float64() < def.Probability {
 					// 次攻撃2倍バフを付与（5秒間）
 					duration := 5.0
-					state.Player.EffectTable.AddBuff(
-						"カウンターチャージ",
-						duration,
-						map[domain.EffectColumn]float64{
-							domain.ColDamageMultiplier: def.EffectValue,
-						},
-					)
+					values := map[domain.EffectColumn]float64{
+						domain.ColDamageMultiplier: def.EffectValue,
+					}
+					description := domain.DescribeEffectValues(values)
+					state.Player.EffectTable.AddBuff(description, duration, values)
 				}
 			}
 		}
@@ -401,7 +349,6 @@ func (e *BattleEngine) ProcessEnemyAttackDamage(state *BattleState, attackType s
 
 	// 回避判定
 	if effects.Evasion > 0 && e.rng.Float64() < effects.Evasion {
-		state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
 		return 0
 	}
 
@@ -434,40 +381,46 @@ func (e *BattleEngine) ProcessEnemyAttackDamage(state *BattleState, attackType s
 	// 被ダメージ後のパッシブ効果（バフ付与など）
 	e.applyPostDamagePassives(state)
 
-	// 次回攻撃時刻を更新
-	state.NextAttackTime = time.Now().Add(state.Enemy.AttackInterval)
-
 	return damage
 }
 
 // ProcessEnemyTurn は敵ターン全体を処理し、結果を返します。
 // 攻撃、バフ、デバフ、ディフェンスなどの行動を実行し、フェーズ遷移と次回行動決定も行います。
 func (e *BattleEngine) ProcessEnemyTurn(state *BattleState) EnemyTurnResult {
-	action := state.NextAction
+	action := state.Enemy.GetNextAction()
+	if action == nil {
+		return EnemyTurnResult{Message: "行動なし"}
+	}
 	result := EnemyTurnResult{ActionType: action.ActionType}
 
 	switch action.ActionType {
-	case EnemyActionAttack:
+	case domain.EnemyActionAttack:
 		result.Damage = e.ProcessEnemyAttackDamage(state, action.AttackType)
 		if result.Damage == 0 {
 			result.Evaded = true
 			result.Message = "回避！"
 		} else {
-			result.Message = fmt.Sprintf("%dダメージを受けた！", result.Damage)
+			result.Message = fmt.Sprintf("%s！%dダメージを受けた！", action.Name, result.Damage)
 		}
 
-	case EnemyActionSelfBuff:
-		e.ApplyEnemySelfBuff(state, action.BuffType)
-		result.Message = GetEnemyBuffName(action.BuffType)
+	case domain.EnemyActionBuff:
+		e.ApplyPatternBuff(state, *action)
+		result.Message = fmt.Sprintf("%sが%sを発動！", state.Enemy.Name, action.Name)
 
-	case EnemyActionDebuff:
-		e.ApplyPlayerDebuff(state, action.DebuffType)
-		result.Message = GetPlayerDebuffName(action.DebuffType)
+	case domain.EnemyActionDebuff:
+		if e.CheckDebuffEvasion(state) {
+			result.Message = fmt.Sprintf("%sを回避した！", action.Name)
+		} else {
+			e.ApplyPatternDebuff(state, *action)
+			result.Message = fmt.Sprintf("%sが%sを発動！", state.Enemy.Name, action.Name)
+		}
 
-	case EnemyActionDefense:
-		// ディフェンス行動は現在未実装
-		result.Message = "防御態勢"
+	case domain.EnemyActionDefense:
+		result.Message = fmt.Sprintf("%sが%sを発動！", state.Enemy.Name, action.Name)
 	}
+
+	// 行動インデックスを進める
+	state.Enemy.AdvanceActionIndex()
 
 	// フェーズ遷移判定
 	if e.CheckPhaseTransition(state) {
@@ -475,8 +428,9 @@ func (e *BattleEngine) ProcessEnemyTurn(state *BattleState) EnemyTurnResult {
 		result.PhaseChanged = true
 	}
 
-	// 次回行動決定
-	state.NextAction = e.DetermineNextAction(state)
+	// 次回行動を準備してチャージ開始
+	state.Enemy.PrepareNextAction()
+	e.StartEnemyCharging(state, time.Now())
 
 	return result
 }
@@ -497,20 +451,14 @@ func (e *BattleEngine) evaluateAdaptiveShield(state *BattleState) float64 {
 	return 0.0
 }
 
-// IsAttackReady は敵の攻撃準備が完了しているかを返します。
-
+// IsAttackReady は敵のチャージが完了しているかを返します。
 func (e *BattleEngine) IsAttackReady(state *BattleState) bool {
-	return time.Now().After(state.NextAttackTime)
+	return state.Enemy.IsChargeComplete(time.Now())
 }
 
 // GetTimeUntilNextAttack は次の攻撃までの残り時間を返します。
-
 func (e *BattleEngine) GetTimeUntilNextAttack(state *BattleState) time.Duration {
-	remaining := time.Until(state.NextAttackTime)
-	if remaining < 0 {
-		return 0
-	}
-	return remaining
+	return state.Enemy.GetChargeRemainingTime(time.Now())
 }
 
 // getBuffedAttackPower は敵のバフ効果を適用した攻撃力を返します。
@@ -548,124 +496,16 @@ func (e *BattleEngine) GetAttackType(state *BattleState) string {
 }
 
 // DetermineNextAction は敵の次回行動を決定します。
-
+// パターンベースの行動決定を使用します。
 func (e *BattleEngine) DetermineNextAction(state *BattleState) NextEnemyAction {
-	// 強化フェーズでない場合は攻撃のみ
-	if !state.Enemy.IsEnhanced() {
-		return NextEnemyAction{
-			ActionType:    EnemyActionAttack,
-			AttackType:    state.Enemy.Type.AttackType,
-			ExpectedValue: e.GetExpectedDamage(state),
-		}
-	}
-
-	// 強化フェーズ: 30%確率で特殊行動
-	if e.rng.Float64() > 0.3 {
-		return NextEnemyAction{
-			ActionType:    EnemyActionAttack,
-			AttackType:    state.Enemy.Type.AttackType,
-			ExpectedValue: e.GetExpectedDamage(state),
-		}
-	}
-
-	// 50%で自己バフ、50%でプレイヤーデバフ
-	if e.rng.Float64() < 0.5 {
-		buffTypes := []EnemyBuffType{EnemyBuffAttackUp, EnemyBuffPhysicalDamageDown, EnemyBuffMagicDamageDown}
-		return NextEnemyAction{
-			ActionType: EnemyActionSelfBuff,
-			BuffType:   buffTypes[e.rng.Intn(len(buffTypes))],
-		}
-	}
-
-	debuffTypes := []PlayerDebuffType{PlayerDebuffTypingTimeDown, PlayerDebuffTextShuffle,
-		PlayerDebuffDifficultyUp, PlayerDebuffCooldownExtend}
-	return NextEnemyAction{
-		ActionType: EnemyActionDebuff,
-		DebuffType: debuffTypes[e.rng.Intn(len(debuffTypes))],
-	}
+	return e.DeterminePatternBasedAction(state)
 }
 
-// GetEnemyBuffName は敵自己バフの名前を返します。
-
-func GetEnemyBuffName(buffType EnemyBuffType) string {
-	switch buffType {
-	case EnemyBuffAttackUp:
-		return "攻撃力UP"
-	case EnemyBuffPhysicalDamageDown:
-		return "物理防御UP"
-	case EnemyBuffMagicDamageDown:
-		return "魔法防御UP"
-	default:
-		return "強化"
-	}
-}
-
-// GetPlayerDebuffName はプレイヤーデバフの名前を返します。
-
-func GetPlayerDebuffName(debuffType PlayerDebuffType) string {
-	switch debuffType {
-	case PlayerDebuffTypingTimeDown:
-		return "タイピング時間短縮"
-	case PlayerDebuffTextShuffle:
-		return "テキストシャッフル"
-	case PlayerDebuffDifficultyUp:
-		return "難易度上昇"
-	case PlayerDebuffCooldownExtend:
-		return "クールダウン延長"
-	default:
-		return "デバフ"
-	}
-}
-
-// ==================== 敵フェーズ変化と特殊行動（Task 7.3） ====================
+// ==================== 敵フェーズ変化と特殊行動 ====================
 
 // CheckPhaseTransition はフェーズ変化をチェックし、必要に応じて移行します。
-
 func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
 	return state.Enemy.CheckAndTransitionPhase()
-}
-
-// ApplyEnemySelfBuff は敵に自己バフを付与します。
-func (e *BattleEngine) ApplyEnemySelfBuff(state *BattleState, buffType EnemyBuffType) {
-	values := make(map[domain.EffectColumn]float64)
-	var name string
-
-	switch buffType {
-	case EnemyBuffAttackUp:
-		name = "攻撃力UP"
-		values[domain.ColDamageMultiplier] = 1.3 // 30%攻撃力上昇
-	case EnemyBuffPhysicalDamageDown:
-		name = "物理防御UP"
-		values[domain.ColDamageCut] = 0.3 // 30%軽減
-	case EnemyBuffMagicDamageDown:
-		name = "魔法防御UP"
-		values[domain.ColDamageCut] = 0.3 // 30%軽減
-	}
-
-	state.Enemy.EffectTable.AddBuff(name, config.BuffDuration, values)
-}
-
-// ApplyPlayerDebuff はプレイヤーにデバフを付与します。
-func (e *BattleEngine) ApplyPlayerDebuff(state *BattleState, debuffType PlayerDebuffType) {
-	values := make(map[domain.EffectColumn]float64)
-	var name string
-
-	switch debuffType {
-	case PlayerDebuffTypingTimeDown:
-		name = "タイピング時間短縮"
-		values[domain.ColTimeExtend] = -2.0 // 2秒短縮
-	case PlayerDebuffTextShuffle:
-		name = "テキストシャッフル"
-		// 実際のシャッフル処理はUI側で行う
-	case PlayerDebuffDifficultyUp:
-		name = "難易度上昇"
-		// 実際の難易度変更はチャレンジ生成時に行う
-	case PlayerDebuffCooldownExtend:
-		name = "クールダウン延長"
-		values[domain.ColCooldownReduce] = -0.3 // 30%延長（マイナス値 = 延長）
-	}
-
-	state.Player.EffectTable.AddDebuff(name, config.DebuffDuration, values)
 }
 
 // UpdateEffects はバフ・デバフの時間を更新し、継続効果（Regen等）を適用します。
@@ -687,37 +527,7 @@ func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	}
 }
 
-// GetEnemyBuffMessage は敵自己バフのメッセージを返します。
-func GetEnemyBuffMessage(buffType EnemyBuffType) string {
-	switch buffType {
-	case EnemyBuffAttackUp:
-		return "敵の攻撃力が上昇した！"
-	case EnemyBuffPhysicalDamageDown:
-		return "敵が物理防御を強化した！"
-	case EnemyBuffMagicDamageDown:
-		return "敵が魔法防御を強化した！"
-	default:
-		return "敵が強化された！"
-	}
-}
-
-// GetPlayerDebuffMessage はプレイヤーデバフのメッセージを返します。
-func GetPlayerDebuffMessage(debuffType PlayerDebuffType) string {
-	switch debuffType {
-	case PlayerDebuffTypingTimeDown:
-		return "タイピング時間が短縮された！"
-	case PlayerDebuffTextShuffle:
-		return "テキストがシャッフルされた！"
-	case PlayerDebuffDifficultyUp:
-		return "難易度が上昇した！"
-	case PlayerDebuffCooldownExtend:
-		return "クールダウンが延長された！"
-	default:
-		return "デバフを受けた！"
-	}
-}
-
-// ==================== モジュール効果計算（Task 7.4） ====================
+// ==================== モジュール効果計算 ====================
 
 // getStatValue はステータス参照名に応じたステータス値を取得します。
 func (e *BattleEngine) getStatValue(stats domain.Stats, statRef string) int {
@@ -878,11 +688,12 @@ func (e *BattleEngine) ApplyModuleEffect(
 				duration = config.BuffDuration
 			}
 
+			description := domain.DescribeEffectValues(values)
 			switch effect.Target {
 			case domain.TargetSelf:
-				state.Player.EffectTable.AddBuff(module.Name(), duration, values)
+				state.Player.EffectTable.AddBuff(description, duration, values)
 			case domain.TargetEnemy:
-				state.Enemy.EffectTable.AddDebuff(module.Name(), duration, values)
+				state.Enemy.EffectTable.AddDebuff(description, duration, values)
 			}
 		}
 	}
@@ -1251,29 +1062,36 @@ func (e *BattleEngine) CalculatePatternDamage(state *BattleState, action domain.
 // StartEnemyCharging は敵のチャージを開始します。
 // ディフェンス行動はチャージタイム0なので即座に発動します。
 func (e *BattleEngine) StartEnemyCharging(state *BattleState, now time.Time) {
-	action := state.NextAction
+	action := state.Enemy.GetNextAction()
+	if action == nil {
+		return
+	}
 
 	// ディフェンス行動はチャージタイム0なので即座に発動
-	if action.ActionType == EnemyActionDefense && action.SourceAction != nil {
+	if action.ActionType == domain.EnemyActionDefense {
 		e.ActivateDefense(state, now)
 		return
 	}
 
 	// チャージ開始
-	if action.SourceAction != nil {
-		state.Enemy.StartCharging(*action.SourceAction, now)
-	}
+	state.Enemy.StartCharging(*action, now)
 }
 
 // ActivateDefense はディフェンス行動を発動します。
 func (e *BattleEngine) ActivateDefense(state *BattleState, now time.Time) {
-	action := state.NextAction
-	if action.SourceAction == nil {
+	action := state.Enemy.GetNextAction()
+	if action == nil {
 		return
 	}
 
-	duration := time.Duration(action.DefenseDurationMs) * time.Millisecond
-	state.Enemy.StartDefense(action.DefenseType, action.DefenseValue, duration, now)
+	duration := time.Duration(action.Duration*1000) * time.Millisecond
+	var defenseValue float64
+	if action.DefenseType == domain.DefenseDebuffEvade {
+		defenseValue = action.EvadeRate
+	} else {
+		defenseValue = action.ReductionRate
+	}
+	state.Enemy.StartDefense(action.DefenseType, defenseValue, duration, now)
 
 	// 行動インデックスを進める
 	state.Enemy.AdvanceActionIndex()
@@ -1281,7 +1099,7 @@ func (e *BattleEngine) ActivateDefense(state *BattleState, now time.Time) {
 
 // CheckDefenseExpired はディフェンス終了をチェックし、必要なら終了処理を行います。
 func (e *BattleEngine) CheckDefenseExpired(state *BattleState, now time.Time) bool {
-	if !state.Enemy.IsDefending {
+	if state.Enemy.WaitMode != domain.WaitModeDefending {
 		return false
 	}
 
@@ -1351,10 +1169,12 @@ func (e *BattleEngine) ApplyPatternBuff(state *BattleState, action domain.EnemyA
 		values[domain.ColDamageCut] = action.EffectValue
 	case "cooldown_reduce":
 		values[domain.ColCooldownReduce] = action.EffectValue
+	case "attack_speed":
+		values[domain.ColDamageMultiplier] = action.EffectValue
 	}
 
-	// AddBuff は秒数（float64）を受け取る
-	state.Enemy.EffectTable.AddBuff(action.ID, action.Duration, values)
+	description := domain.DescribeEffectValues(values)
+	state.Enemy.EffectTable.AddBuff(description, action.Duration, values)
 }
 
 // ApplyPatternDebuff はパターンベースのデバフを適用します。
@@ -1368,10 +1188,14 @@ func (e *BattleEngine) ApplyPatternDebuff(state *BattleState, action domain.Enem
 		values[domain.ColCooldownReduce] = -action.EffectValue
 	case "defense_down":
 		values[domain.ColDamageCut] = -action.EffectValue
+	case "cooldown_reduce":
+		values[domain.ColCooldownReduce] = action.EffectValue
+	case "damage_cut":
+		values[domain.ColDamageCut] = action.EffectValue
 	}
 
-	// AddDebuff は秒数（float64）を受け取る
-	state.Player.EffectTable.AddDebuff(action.ID, action.Duration, values)
+	description := domain.DescribeEffectValues(values)
+	state.Player.EffectTable.AddDebuff(description, action.Duration, values)
 }
 
 // CheckDebuffEvasion はデバフ回避を判定します。
@@ -1416,7 +1240,7 @@ func (e *BattleEngine) ApplyDefenseReduction(state *BattleState, baseDamage int,
 
 // IsEnemyCharging は敵がチャージ中かどうかを返します。
 func (e *BattleEngine) IsEnemyCharging(state *BattleState) bool {
-	return state.Enemy.IsCharging
+	return state.Enemy.WaitMode == domain.WaitModeCharging
 }
 
 // IsEnemyDefending は敵がディフェンス中かどうかを返します。
@@ -1426,7 +1250,7 @@ func (e *BattleEngine) IsEnemyDefending(state *BattleState, now time.Time) bool 
 
 // GetChargeInfo はチャージ情報を取得します（UI表示用）。
 func (e *BattleEngine) GetChargeInfo(state *BattleState, now time.Time) (progress float64, remainingMs int, actionName string) {
-	if !state.Enemy.IsCharging {
+	if state.Enemy.WaitMode != domain.WaitModeCharging {
 		return 0, 0, ""
 	}
 

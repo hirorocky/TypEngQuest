@@ -132,6 +132,9 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	var typingDict *typing.Dictionary
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
+		// 敵行動パターンを解決（IDからEnemyActionオブジェクトへ）
+		enemyActions := ConvertEnemyActions(externalData.EnemyActions)
+		ResolveEnemyTypeActions(enemyTypes, enemyActions)
 		passiveSkills = ConvertPassiveSkills(externalData.PassiveSkills)
 		chainEffectDefs := ConvertChainEffects(chainEffects)
 		domainSources = &gamestate.DomainDataSources{

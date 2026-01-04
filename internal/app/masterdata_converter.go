@@ -53,6 +53,41 @@ func ConvertEnemyTypesWithPassives(
 	return result
 }
 
+// ConvertEnemyActions はmasterdata.EnemyActionDataのスライスをドメインモデルに変換します。
+func ConvertEnemyActions(actions []masterdata.EnemyActionData) []domain.EnemyAction {
+	result := make([]domain.EnemyAction, len(actions))
+	for i, a := range actions {
+		result[i] = a.ToDomain()
+	}
+	return result
+}
+
+// ResolveEnemyTypeActions は敵タイプの行動パターンIDを実際のEnemyActionに解決します。
+func ResolveEnemyTypeActions(enemyTypes []domain.EnemyType, actions []domain.EnemyAction) {
+	actionMap := make(map[string]domain.EnemyAction)
+	for _, action := range actions {
+		actionMap[action.ID] = action
+	}
+
+	for i := range enemyTypes {
+		var normalActions []domain.EnemyAction
+		for _, id := range enemyTypes[i].NormalActionPatternIDs {
+			if action, ok := actionMap[id]; ok {
+				normalActions = append(normalActions, action)
+			}
+		}
+
+		var enhancedActions []domain.EnemyAction
+		for _, id := range enemyTypes[i].EnhancedActionPatternIDs {
+			if action, ok := actionMap[id]; ok {
+				enhancedActions = append(enhancedActions, action)
+			}
+		}
+
+		enemyTypes[i].SetResolvedActions(normalActions, enhancedActions)
+	}
+}
+
 // ConvertCoreTypes はmasterdata.CoreTypeDataのスライスをdomain.CoreTypeのスライスに変換します。
 func ConvertCoreTypes(types []masterdata.CoreTypeData) []domain.CoreType {
 	result := make([]domain.CoreType, len(types))

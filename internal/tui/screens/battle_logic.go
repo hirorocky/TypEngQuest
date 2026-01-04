@@ -5,7 +5,6 @@ package screens
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"hirorocky/type-battle/internal/domain"
@@ -105,7 +104,11 @@ func (s *BattleScreen) processLegacyEnemyAttack() {
 		s.player.HP = 0
 	}
 	s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
-	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+	// 次の行動を準備してチャージ開始
+	s.enemy.PrepareNextAction()
+	if action := s.enemy.GetNextAction(); action != nil {
+		s.enemy.StartCharging(*action, time.Now())
+	}
 	s.floatingDamageManager.AddDamage(damage, "player")
 	s.playerHPBar.SetTarget(s.player.HP)
 }
@@ -113,7 +116,7 @@ func (s *BattleScreen) processLegacyEnemyAttack() {
 // updateUIAfterEnemyTurn は敵ターン結果に基づいてUIを更新します。
 func (s *BattleScreen) updateUIAfterEnemyTurn(result combat.EnemyTurnResult) {
 	switch result.ActionType {
-	case combat.EnemyActionAttack:
+	case domain.EnemyActionAttack:
 		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, result.Message)
 		if result.Damage > 0 {
 			s.floatingDamageManager.AddDamage(result.Damage, "player")
@@ -122,13 +125,13 @@ func (s *BattleScreen) updateUIAfterEnemyTurn(result combat.EnemyTurnResult) {
 		// ps_quick_recovery: 被ダメージ時にリキャスト短縮
 		s.evaluateQuickRecovery()
 
-	case combat.EnemyActionSelfBuff:
+	case domain.EnemyActionBuff:
 		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
-	case combat.EnemyActionDebuff:
+	case domain.EnemyActionDebuff:
 		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, result.Message)
 
-	case combat.EnemyActionDefense:
+	case domain.EnemyActionDefense:
 		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
 	default:
@@ -139,9 +142,6 @@ func (s *BattleScreen) updateUIAfterEnemyTurn(result combat.EnemyTurnResult) {
 	if result.PhaseChanged {
 		s.message += " [敵が強化フェーズに突入！]"
 	}
-
-	// 次の行動時間を設定
-	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
 }
 
 // evaluateQuickRecovery はps_quick_recoveryの発動を評価し、リキャストを短縮します。
@@ -676,7 +676,7 @@ func (s *BattleScreen) CancelTyping() {
 
 // ==================== ゲームロジック: 行動表示 ====================
 
-// getActionDisplay は次回行動の表示情報を返します。
+// getActionDisplay はチャージ後行動の表示情報を返します。
 
 func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgloss.Color) {
 	if s.battleState == nil {
@@ -684,102 +684,81 @@ func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgl
 	}
 
 	// チャージ中の場合はチャージ状態を表示
-	if s.enemy != nil && s.enemy.IsCharging {
+	if s.enemy != nil && s.enemy.WaitMode == domain.WaitModeCharging {
 		return s.getChargingActionDisplay()
 	}
 
 	// ディフェンス中の場合はディフェンス状態を表示
-	if s.enemy != nil && s.enemy.IsDefending {
+	if s.enemy != nil && s.enemy.WaitMode == domain.WaitModeDefending {
 		return s.getDefenseActionDisplay()
 	}
 
-	action := s.battleState.NextAction
+	action := s.enemy.GetNextAction()
+	if action == nil {
+		return "?", "不明", styles.ColorSubtle
+	}
 
 	switch action.ActionType {
-	case combat.EnemyActionAttack:
+	case domain.EnemyActionAttack:
 		// 攻撃予告（赤色）- バフ反映のため毎回計算
 		expectedDamage := s.battleEngine.GetExpectedDamage(s.battleState)
-		if action.AttackType == "physical" {
-			return "⚔️", fmt.Sprintf("物理攻撃 %dダメージ", expectedDamage), styles.ColorDamage
+		if action.AttackType == "magic" {
+			return "💥", fmt.Sprintf("魔法%dダメージ", expectedDamage), styles.ColorDamage
 		}
-		return "💥", fmt.Sprintf("魔法攻撃 %dダメージ", expectedDamage), styles.ColorDamage
+		return "⚔️", fmt.Sprintf("物理%dダメージ", expectedDamage), styles.ColorDamage
 
-	case combat.EnemyActionSelfBuff:
-		// 自己バフ予告（黄色）
-		name := combat.GetEnemyBuffName(action.BuffType)
-		return "💪", name, styles.ColorWarning
+	case domain.EnemyActionBuff:
+		// 自己バフ予告（黄色）- 効果内容を表示
+		effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+		return "💪", effectDesc, styles.ColorWarning
 
-	case combat.EnemyActionDebuff:
-		// プレイヤーデバフ予告（青色）
-		name := combat.GetPlayerDebuffName(action.DebuffType)
-		return "💀", name, styles.ColorInfo
-
-	case combat.EnemyActionDefense:
-		// ディフェンス予告（シアン色）
-		return s.getDefensePreviewDisplay(action)
+	case domain.EnemyActionDebuff:
+		// プレイヤーデバフ予告（青色）- 効果内容を表示
+		effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+		return "💀", effectDesc, styles.ColorInfo
 	}
 
 	return "?", "不明", styles.ColorSubtle
 }
 
 // getChargingActionDisplay はチャージ中の行動表示情報を返します。
+// チャージ後行動の効果を表示します（行動名ではなく効果説明）。
 func (s *BattleScreen) getChargingActionDisplay() (icon string, text string, color lipgloss.Color) {
-	now := time.Now()
-	progress := s.enemy.GetChargeProgress(now)
-	remaining := s.enemy.GetChargeRemainingTime(now)
-
-	actionName := "不明"
-	if s.enemy.PendingAction != nil {
-		actionName = s.enemy.PendingAction.Name
+	// チャージ後行動の効果を表示
+	if action := s.enemy.PendingAction; action != nil {
+		switch action.ActionType {
+		case domain.EnemyActionAttack:
+			expectedDamage := s.battleEngine.GetExpectedDamage(s.battleState)
+			if action.AttackType == "magic" {
+				return "💥", fmt.Sprintf("魔法ダメージ%d", expectedDamage), styles.ColorDamage
+			}
+			return "⚔️", fmt.Sprintf("物理ダメージ%d", expectedDamage), styles.ColorDamage
+		case domain.EnemyActionBuff:
+			effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+			return "💪", effectDesc, styles.ColorWarning
+		case domain.EnemyActionDebuff:
+			effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+			return "💀", effectDesc, styles.ColorInfo
+		default:
+			return "?", action.Name, styles.ColorSubtle
+		}
 	}
-
-	// チャージ進捗バーを生成
-	progressBar := s.renderChargeProgressBar(progress)
-
-	text = fmt.Sprintf("チャージ中: %s %s (%.1fs)", actionName, progressBar, remaining.Seconds())
-	return "⏳", text, styles.ColorWarning
+	return "?", "不明", styles.ColorSubtle
 }
 
 // getDefenseActionDisplay はディフェンス中の行動表示情報を返します。
 func (s *BattleScreen) getDefenseActionDisplay() (icon string, text string, color lipgloss.Color) {
-	now := time.Now()
-	remaining := s.enemy.GetDefenseRemainingTime(now)
-	typeName := s.enemy.GetDefenseTypeName()
-
-	text = fmt.Sprintf("%s発動中 (残り%.1fs)", typeName, remaining.Seconds())
-	return "🛡️", text, styles.ColorBuff
-}
-
-// getDefensePreviewDisplay はディフェンス予告の表示情報を返します。
-func (s *BattleScreen) getDefensePreviewDisplay(action combat.NextEnemyAction) (icon string, text string, color lipgloss.Color) {
-	var defenseName string
-	switch action.DefenseType {
+	// 現在発動中のディフェンス効果を表示
+	switch s.enemy.ActiveDefenseType {
 	case domain.DefensePhysicalCut:
-		defenseName = fmt.Sprintf("物理防御 (%.0f%%軽減)", action.DefenseValue*100)
+		return "🛡️", fmt.Sprintf("物理ダメージ%.0f%%カット", s.enemy.DefenseValue*100), styles.ColorInfo
 	case domain.DefenseMagicCut:
-		defenseName = fmt.Sprintf("魔法防御 (%.0f%%軽減)", action.DefenseValue*100)
+		return "🛡️", fmt.Sprintf("魔法ダメージ%.0f%%カット", s.enemy.DefenseValue*100), styles.ColorInfo
 	case domain.DefenseDebuffEvade:
-		defenseName = fmt.Sprintf("デバフ回避 (%.0f%%)", action.DefenseValue*100)
+		return "🛡️", fmt.Sprintf("デバフ%.0f%%回避", s.enemy.DefenseValue*100), styles.ColorInfo
 	default:
-		defenseName = "防御"
+		return "🛡️", "防御中", styles.ColorInfo
 	}
-
-	text = fmt.Sprintf("%s (%.1fs)", defenseName, float64(action.DefenseDurationMs)/1000)
-	return "🛡️", text, styles.ColorBuff
-}
-
-// renderChargeProgressBar はチャージ進捗バーを描画します。
-func (s *BattleScreen) renderChargeProgressBar(progress float64) string {
-	barWidth := 10
-	filledWidth := int(float64(barWidth) * progress)
-	if filledWidth > barWidth {
-		filledWidth = barWidth
-	}
-
-	filled := strings.Repeat("█", filledWidth)
-	empty := strings.Repeat("░", barWidth-filledWidth)
-
-	return "[" + filled + empty + "]"
 }
 
 // ==================== ゲームロジック: モジュール選択ナビゲーション ====================

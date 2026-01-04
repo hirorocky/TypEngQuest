@@ -7,7 +7,16 @@
       "attack_type": "physical",
       "damage_base": 5,
       "damage_per_level": 1.0,
-      "charge_time_ms": 3000
+      "charge_time_ms": 1000
+    },
+    {
+      "id": "act_slime_defense_phys",
+      "name": "硬化",
+      "action_type": "defense",
+      "defense_type": "physical_cut",
+      "reduction_rate": 0.4,
+      "duration_seconds": 3.0,
+      "charge_time_ms": 0
     },
     {
       "id": "act_slime_attack_magic",

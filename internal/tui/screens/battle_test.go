@@ -251,15 +251,23 @@ func TestBattleScreenTickHandlesEnemyAttack(t *testing.T) {
 
 	screen := NewBattleScreen(enemy, player, agents, nil)
 
-	// 敵攻撃時間を過去に設定
-	screen.nextEnemyAttack = time.Now().Add(-1 * time.Second)
+	// チャージを開始し、完了状態にする（過去の時刻でStartCharging）
+	enemy.PrepareNextAction()
+	if action := enemy.GetNextAction(); action != nil {
+		enemy.StartCharging(*action, time.Now().Add(-2*time.Second))
+	}
+
+	initialHP := player.HP
 
 	// TickMsgを送信
 	_, _ = screen.Update(BattleTickMsg{})
 
-	// プレイヤーがダメージを受けているか、または次の攻撃時間が更新されているはず
-	if screen.nextEnemyAttack.Before(time.Now()) {
-		t.Error("敵攻撃後に次の攻撃時間が更新されていません")
+	// プレイヤーがダメージを受けているか、または新しいチャージが開始されているはず
+	hpDecreased := player.HP < initialHP
+	newChargeStarted := enemy.WaitMode == domain.WaitModeCharging && !enemy.IsChargeComplete(time.Now())
+
+	if !hpDecreased && !newChargeStarted {
+		t.Error("敵攻撃後にダメージが発生していないか、次のチャージが開始されていません")
 	}
 }
 
@@ -327,8 +335,11 @@ func TestBattleScreenDefeatAfterEnemyAttack(t *testing.T) {
 
 	screen := NewBattleScreen(enemy, player, agents, nil)
 
-	// 敵攻撃時間を過去に設定
-	screen.nextEnemyAttack = time.Now().Add(-1 * time.Second)
+	// チャージを開始し、完了状態にする（過去の時刻でStartCharging）
+	enemy.PrepareNextAction()
+	if action := enemy.GetNextAction(); action != nil {
+		enemy.StartCharging(*action, time.Now().Add(-2*time.Second))
+	}
 
 	// TickMsgを送信（敵攻撃が発生）
 	_, _ = screen.Update(BattleTickMsg{})
@@ -561,14 +572,25 @@ func TestBattleScreenEnemyAttackTimerDisplay(t *testing.T) {
 	player := createTestPlayer()
 	agents := createTestAgents()
 
+	// 行動パターンを設定して次の行動を準備
+	action := domain.EnemyAction{
+		ID:         "attack",
+		ActionType: domain.EnemyActionAttack,
+		AttackType: "physical",
+		ChargeTime: 2 * time.Second,
+	}
+	enemy.SetNextAction(&action)
+	enemy.StartCharging(action, time.Now())
+
 	screen := NewBattleScreen(enemy, player, agents, nil)
 	screen.width = 120
 	screen.height = 40
 
 	rendered := screen.View()
 
-	// 行動予告（物理攻撃/魔法攻撃など）の表示が含まれること
-	if !strings.Contains(rendered, "ダメージ") {
+	// 物理ダメージの表示が含まれること（チャージ中は攻撃効果を表示）
+	if !strings.Contains(rendered, "物理ダメージ") {
+		t.Logf("レンダリング結果:\n%s", rendered)
 		t.Error("敵攻撃タイマー表示がありません")
 	}
 }

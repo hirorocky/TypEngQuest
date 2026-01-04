@@ -31,6 +31,35 @@ func (p EnemyPhase) String() string {
 	}
 }
 
+// EnemyWaitMode は敵の待機状態を表す型です。
+// 敵はチャージ中（行動実行待ち）またはディフェンス中（防御状態）のどちらかの状態しか持ちません。
+type EnemyWaitMode int
+
+const (
+	// WaitModeNone は待機状態ではない（行動実行中）ことを示します。
+	WaitModeNone EnemyWaitMode = iota
+
+	// WaitModeCharging はチャージ中（行動実行待ち）であることを示します。
+	WaitModeCharging
+
+	// WaitModeDefending はディフェンス中（防御状態）であることを示します。
+	WaitModeDefending
+)
+
+// String はEnemyWaitModeの日本語表示名を返します。
+func (m EnemyWaitMode) String() string {
+	switch m {
+	case WaitModeNone:
+		return "なし"
+	case WaitModeCharging:
+		return "チャージ中"
+	case WaitModeDefending:
+		return "ディフェンス中"
+	default:
+		return "不明"
+	}
+}
+
 // EnemyType は敵の種類（タイプ）を定義する構造体です。
 // 外部データファイル（enemies.json）から読み込まれます。
 type EnemyType struct {
@@ -157,10 +186,10 @@ type EnemyModel struct {
 	// ActivePassiveID は現在適用中のパッシブスキルIDです（解除時に使用）。
 	ActivePassiveID string
 
-	// ========== チャージ状態管理フィールド ==========
+	// ========== 待機状態管理フィールド ==========
 
-	// IsCharging はチャージ中かどうかを示します。
-	IsCharging bool
+	// WaitMode は敵の現在の待機状態を示します（チャージ中/ディフェンス中）。
+	WaitMode EnemyWaitMode
 
 	// ChargeStartTime はチャージ開始時刻です。
 	ChargeStartTime time.Time
@@ -168,13 +197,8 @@ type EnemyModel struct {
 	// CurrentChargeTime は現在の行動のチャージタイムです。
 	CurrentChargeTime time.Duration
 
-	// PendingAction はチャージ中の行動です。
+	// PendingAction はチャージ後に実行する行動です。
 	PendingAction *EnemyAction
-
-	// ========== ディフェンス状態管理フィールド ==========
-
-	// IsDefending はディフェンス中かどうかを示します。
-	IsDefending bool
 
 	// DefenseStartTime はディフェンス開始時刻です。
 	DefenseStartTime time.Time
@@ -306,11 +330,32 @@ func (e *EnemyModel) ResetActionIndex() {
 	e.ActionIndex = 0
 }
 
+// ========== 次回行動管理メソッド ==========
+
+// GetNextAction は次回実行予定の行動を返します。
+// PendingActionがnilの場合はnilを返します。
+func (e *EnemyModel) GetNextAction() *EnemyAction {
+	return e.PendingAction
+}
+
+// SetNextAction は次回実行予定の行動を設定します。
+func (e *EnemyModel) SetNextAction(action *EnemyAction) {
+	e.PendingAction = action
+}
+
+// PrepareNextAction は現在の行動パターンから次の行動を取得し、PendingActionに設定します。
+// この関数はチャージ開始前に呼ばれることを想定しています。
+func (e *EnemyModel) PrepareNextAction() {
+	action := e.GetCurrentAction()
+	e.PendingAction = &action
+	e.CurrentChargeTime = action.ChargeTime
+}
+
 // ========== チャージ状態管理メソッド ==========
 
 // StartCharging はチャージを開始します。
 func (e *EnemyModel) StartCharging(action EnemyAction, now time.Time) {
-	e.IsCharging = true
+	e.WaitMode = WaitModeCharging
 	e.ChargeStartTime = now
 	e.CurrentChargeTime = action.ChargeTime
 	e.PendingAction = &action
@@ -318,7 +363,7 @@ func (e *EnemyModel) StartCharging(action EnemyAction, now time.Time) {
 
 // GetChargeProgress はチャージ進捗（0.0〜1.0）を返します。
 func (e *EnemyModel) GetChargeProgress(now time.Time) float64 {
-	if !e.IsCharging || e.CurrentChargeTime == 0 {
+	if e.WaitMode != WaitModeCharging || e.CurrentChargeTime == 0 {
 		return 0
 	}
 	elapsed := now.Sub(e.ChargeStartTime)
@@ -331,7 +376,7 @@ func (e *EnemyModel) GetChargeProgress(now time.Time) float64 {
 
 // GetChargeRemainingTime はチャージ残り時間を返します。
 func (e *EnemyModel) GetChargeRemainingTime(now time.Time) time.Duration {
-	if !e.IsCharging {
+	if e.WaitMode != WaitModeCharging {
 		return 0
 	}
 	elapsed := now.Sub(e.ChargeStartTime)
@@ -344,7 +389,7 @@ func (e *EnemyModel) GetChargeRemainingTime(now time.Time) time.Duration {
 
 // IsChargeComplete はチャージ完了かどうかを返します。
 func (e *EnemyModel) IsChargeComplete(now time.Time) bool {
-	if !e.IsCharging {
+	if e.WaitMode != WaitModeCharging {
 		return false
 	}
 	return now.Sub(e.ChargeStartTime) >= e.CurrentChargeTime
@@ -357,7 +402,7 @@ func (e *EnemyModel) ExecuteChargedAction() *EnemyAction {
 		return nil
 	}
 	action := e.PendingAction
-	e.IsCharging = false
+	e.WaitMode = WaitModeNone
 	e.PendingAction = nil
 	e.AdvanceActionIndex()
 	return action
@@ -365,7 +410,7 @@ func (e *EnemyModel) ExecuteChargedAction() *EnemyAction {
 
 // CancelCharge はチャージをキャンセルします。
 func (e *EnemyModel) CancelCharge() {
-	e.IsCharging = false
+	e.WaitMode = WaitModeNone
 	e.PendingAction = nil
 }
 
@@ -373,7 +418,7 @@ func (e *EnemyModel) CancelCharge() {
 
 // StartDefense はディフェンスを開始します。
 func (e *EnemyModel) StartDefense(defenseType EnemyDefenseType, value float64, duration time.Duration, now time.Time) {
-	e.IsDefending = true
+	e.WaitMode = WaitModeDefending
 	e.DefenseStartTime = now
 	e.DefenseDuration = duration
 	e.ActiveDefenseType = defenseType
@@ -382,7 +427,7 @@ func (e *EnemyModel) StartDefense(defenseType EnemyDefenseType, value float64, d
 
 // IsDefenseActive はディフェンスが有効かどうかを返します。
 func (e *EnemyModel) IsDefenseActive(now time.Time) bool {
-	if !e.IsDefending {
+	if e.WaitMode != WaitModeDefending {
 		return false
 	}
 	return now.Sub(e.DefenseStartTime) < e.DefenseDuration
@@ -390,7 +435,7 @@ func (e *EnemyModel) IsDefenseActive(now time.Time) bool {
 
 // GetDefenseRemainingTime はディフェンス残り時間を返します。
 func (e *EnemyModel) GetDefenseRemainingTime(now time.Time) time.Duration {
-	if !e.IsDefending {
+	if e.WaitMode != WaitModeDefending {
 		return 0
 	}
 	elapsed := now.Sub(e.DefenseStartTime)
@@ -403,7 +448,7 @@ func (e *EnemyModel) GetDefenseRemainingTime(now time.Time) time.Duration {
 
 // EndDefense はディフェンスを終了し、行動インデックスを進めます。
 func (e *EnemyModel) EndDefense() {
-	e.IsDefending = false
+	e.WaitMode = WaitModeNone
 	e.ActiveDefenseType = ""
 	e.DefenseValue = 0
 	e.AdvanceActionIndex()

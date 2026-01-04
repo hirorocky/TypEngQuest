@@ -351,7 +351,6 @@ func TestEnemyPhaseTransition(t *testing.T) {
 }
 
 // TestEnemySelfBuff は敵の自己バフ行動をテストします。
-
 func TestEnemySelfBuff(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -384,8 +383,16 @@ func TestEnemySelfBuff(t *testing.T) {
 	engine := NewBattleEngine(enemyTypes)
 	state, _ := engine.InitializeBattle(5, agents)
 
-	// 敵に自己バフを付与
-	engine.ApplyEnemySelfBuff(state, EnemyBuffAttackUp)
+	// 敵に自己バフを付与（パターンベース）
+	buffAction := domain.EnemyAction{
+		ID:          "test_buff",
+		Name:        "攻撃力UP",
+		ActionType:  domain.EnemyActionBuff,
+		EffectType:  "damage_mult",
+		EffectValue: 1.3,
+		Duration:    5.0,
+	}
+	engine.ApplyPatternBuff(state, buffAction)
 
 	// バフが適用されていることを確認
 	buffs := state.Enemy.EffectTable.FindBySourceType(domain.SourceBuff)
@@ -395,7 +402,6 @@ func TestEnemySelfBuff(t *testing.T) {
 }
 
 // TestPlayerDebuff はプレイヤーへのデバフ付与をテストします。
-
 func TestPlayerDebuff(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
@@ -428,8 +434,16 @@ func TestPlayerDebuff(t *testing.T) {
 	engine := NewBattleEngine(enemyTypes)
 	state, _ := engine.InitializeBattle(5, agents)
 
-	// プレイヤーにデバフを付与
-	engine.ApplyPlayerDebuff(state, PlayerDebuffCooldownExtend)
+	// プレイヤーにデバフを付与（パターンベース）
+	debuffAction := domain.EnemyAction{
+		ID:          "test_debuff",
+		Name:        "クールダウン延長",
+		ActionType:  domain.EnemyActionDebuff,
+		EffectType:  "cooldown_reduce",
+		EffectValue: -0.3,
+		Duration:    5.0,
+	}
+	engine.ApplyPatternDebuff(state, debuffAction)
 
 	// デバフが適用されていることを確認
 	debuffs := state.Player.EffectTable.FindBySourceType(domain.SourceDebuff)
@@ -1162,7 +1176,6 @@ func TestPassiveSkillEffectContinuesDuringRecast(t *testing.T) {
 	engine.UpdateEffects(state, 5.0) // 5秒経過
 
 	// 2回目の攻撃（リキャスト中でもパッシブスキルは有効）
-	state.NextAttackTime = time.Now().Add(-1 * time.Second) // 攻撃可能に
 	damage2 := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// 両方とも同じダメージ（パッシブスキルが継続適用されている）
@@ -1486,7 +1499,6 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 	})
 
 	// バフ適用中のダメージ（新システムではmax取りなので、max(25%, 10%) = 25%軽減）
-	state.NextAttackTime = time.Now().Add(-1 * time.Second)
 	buffedDamage := engine.ProcessEnemyAttackDamage(state, "physical")
 	// max取りなので元の25%軽減と同じになる
 	if buffedDamage != initialDamage {
@@ -1497,7 +1509,6 @@ func TestPassiveSkillIntegration_RecastPersistence(t *testing.T) {
 	engine.UpdateEffects(state, 5.0) // 5秒経過
 
 	// バフ切れ後のダメージ（パッシブスキルの25%軽減のみ）
-	state.NextAttackTime = time.Now().Add(-1 * time.Second)
 	afterBuffExpiredDamage := engine.ProcessEnemyAttackDamage(state, "physical")
 	if afterBuffExpiredDamage != expectedDamage {
 		t.Errorf("バフ切れ後ダメージが不正: 期待 %d, 実際 %d (パッシブスキル効果が消えている可能性)", expectedDamage, afterBuffExpiredDamage)
