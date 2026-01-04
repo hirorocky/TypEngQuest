@@ -3,75 +3,44 @@
 package styles
 
 import (
-	"hirorocky/type-battle/internal/domain"
-
 	"github.com/charmbracelet/lipgloss"
 )
 
-// モジュールカテゴリに対応するアイコン（フォールバック用）
-
-var moduleIcons = map[domain.ModuleCategory]string{
-	domain.PhysicalAttack: "⚔️", // 剣（物理攻撃）
-	domain.MagicAttack:    "💥",  // 爆発（魔法攻撃）
-	domain.Heal:           "💚",  // 緑ハート（回復）
-	domain.Buff:           "💪",  // 筋肉（バフ）
-	domain.Debuff:         "💀",  // ドクロ（デバフ）
+// 効果タイプ別のデフォルトカラー
+var effectColors = map[string]lipgloss.Color{
+	"damage":  ColorDamage, // ダメージ系は赤
+	"heal":    ColorHPHigh, // 回復系は緑
+	"buff":    ColorBuff,   // バフ系は青
+	"debuff":  ColorDebuff, // デバフ系はピンク
+	"default": ColorSubtle, // その他
 }
 
-// モジュールカテゴリに対応するカラー
-var moduleCategoryColors = map[domain.ModuleCategory]lipgloss.Color{
-	domain.PhysicalAttack: ColorDamage, // 赤系
-	domain.MagicAttack:    ColorInfo,   // 青系
-	domain.Heal:           ColorHPHigh, // 緑系
-	domain.Buff:           ColorBuff,   // 青系
-	domain.Debuff:         ColorDebuff, // ピンク系
-}
-
-// GetModuleIcon はモジュールカテゴリに対応するアイコンを返します。
-
-func GetModuleIcon(category domain.ModuleCategory) string {
-	if icon, ok := moduleIcons[category]; ok {
-		return icon
+// GetEffectColor は効果タイプに対応するカラーを返します。
+func GetEffectColor(effectType string) lipgloss.Color {
+	if color, ok := effectColors[effectType]; ok {
+		return color
 	}
-	// 不明なカテゴリの場合はデフォルトアイコン
-	return "?"
+	return effectColors["default"]
 }
 
-// GetModuleIconColored はカラー付きアイコンを返します。
-
-func GetModuleIconColored(category domain.ModuleCategory, styles *GameStyles) string {
-	icon := GetModuleIcon(category)
-	color, ok := moduleCategoryColors[category]
-	if !ok {
-		color = ColorSubtle
-	}
-
+// RenderColoredIcon はカラー付きアイコンを返します。
+func RenderColoredIcon(icon string, color lipgloss.Color) string {
 	style := lipgloss.NewStyle().Foreground(color)
 	return style.Render(icon)
 }
 
-// GetModuleIcons は複数のカテゴリに対応するアイコンのスライスを返します。
-func GetModuleIcons(categories []domain.ModuleCategory) []string {
-	icons := make([]string, len(categories))
-	for i, cat := range categories {
-		icons[i] = GetModuleIcon(cat)
-	}
-	return icons
+// RenderModuleIcon はモジュールのアイコンをカラー付きで描画します。
+// effectType: "damage", "heal", "buff", "debuff" のいずれか
+func RenderModuleIcon(icon string, effectType string) string {
+	color := GetEffectColor(effectType)
+	return RenderColoredIcon(icon, color)
 }
 
-// GetModuleIconsColored は複数のカテゴリに対応するカラー付きアイコンのスライスを返します。
-func GetModuleIconsColored(categories []domain.ModuleCategory, styles *GameStyles) []string {
-	icons := make([]string, len(categories))
-	for i, cat := range categories {
-		icons[i] = GetModuleIconColored(cat, styles)
+// RenderIcons は複数のアイコンを描画します。
+func RenderIcons(icons []string, color lipgloss.Color) []string {
+	result := make([]string, len(icons))
+	for i, icon := range icons {
+		result[i] = RenderColoredIcon(icon, color)
 	}
-	return icons
-}
-
-// GetCategoryColor はカテゴリに対応するカラーを返します。
-func GetCategoryColor(category domain.ModuleCategory) lipgloss.Color {
-	if color, ok := moduleCategoryColors[category]; ok {
-		return color
-	}
-	return ColorSubtle
+	return result
 }

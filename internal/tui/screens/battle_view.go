@@ -89,10 +89,23 @@ func (s *BattleScreen) renderEnemyArea() string {
 	builder.WriteString(nameStyle.Render(s.enemy.Name))
 	builder.WriteString(fmt.Sprintf(" Lv.%d", s.enemy.Level))
 
+	// パッシブスキル表示（フェーズに応じて通常または強化パッシブを表示）
+	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 	if s.enemy.IsEnhanced() {
 		phaseStyle := lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
 		builder.WriteString("  ")
 		builder.WriteString(phaseStyle.Render("[強化フェーズ]"))
+		// 強化パッシブを表示
+		if s.enemy.Type.EnhancedPassive != nil {
+			builder.WriteString("  ")
+			builder.WriteString(passiveStyle.Render("★" + s.enemy.Type.EnhancedPassive.Description))
+		}
+	} else {
+		// 通常パッシブを表示
+		if s.enemy.Type.NormalPassive != nil {
+			builder.WriteString("  ")
+			builder.WriteString(passiveStyle.Render("★" + s.enemy.Type.NormalPassive.Description))
+		}
 	}
 	builder.WriteString("\n")
 
@@ -132,22 +145,50 @@ func (s *BattleScreen) renderEnemyArea() string {
 		builder.WriteString("\n")
 	}
 
-	// 行動予告
+	// チャージ後行動
 	icon, actionText, actionColor := s.getActionDisplay()
 	actionStyle := lipgloss.NewStyle().Foreground(actionColor).Bold(true)
 	builder.WriteString(actionStyle.Render(fmt.Sprintf("%s %s", icon, actionText)))
 	builder.WriteString("\n")
 
-	// 次の敵攻撃までの時間（プログレスバー）
-	remaining := time.Until(s.nextEnemyAttack)
+	// 待機状態のプログレスバー（チャージ中/ディフェンス中で計算を分岐）
+	now := time.Now()
+	var remaining time.Duration
+	var ratio float64
+	var barColor lipgloss.Color
+
+	switch s.enemy.WaitMode {
+	case domain.WaitModeCharging:
+		remaining = s.enemy.GetChargeRemainingTime(now)
+		ratio = 1.0 - s.enemy.GetChargeProgress(now)
+		barColor = styles.ColorSubtle
+	case domain.WaitModeDefending:
+		remaining = s.enemy.GetDefenseRemainingTime(now)
+		// ディフェンス進捗を計算
+		if s.enemy.DefenseDuration > 0 {
+			elapsed := now.Sub(s.enemy.DefenseStartTime)
+			progress := float64(elapsed) / float64(s.enemy.DefenseDuration)
+			ratio = 1.0 - progress
+		} else {
+			ratio = 0
+		}
+		barColor = styles.ColorInfo // ディフェンス中は青
+	default:
+		remaining = 0
+		ratio = 0
+		barColor = styles.ColorSubtle
+	}
+
 	if remaining < 0 {
 		remaining = 0
 	}
-	ratio := remaining.Seconds() / s.enemy.AttackInterval.Seconds()
+	if ratio < 0 {
+		ratio = 0
+	}
 	if ratio > 1 {
 		ratio = 1
 	}
-	builder.WriteString(s.renderEnemyActionBar(remaining.Seconds(), ratio))
+	builder.WriteString(s.renderEnemyActionBar(remaining.Seconds(), ratio, barColor))
 
 	// エリアボックス
 	areaStyle := lipgloss.NewStyle().
@@ -545,7 +586,7 @@ func (s *BattleScreen) renderTimeProgressBar(remainingSeconds float64, ratio flo
 }
 
 // renderEnemyActionBar は敵の次回行動までのプログレスバーを描画します。
-func (s *BattleScreen) renderEnemyActionBar(remainingSeconds float64, ratio float64) string {
+func (s *BattleScreen) renderEnemyActionBar(remainingSeconds float64, ratio float64, barColor lipgloss.Color) string {
 	barWidth := 40
 	timeText := fmt.Sprintf("%.1fs", remainingSeconds)
 
@@ -574,10 +615,10 @@ func (s *BattleScreen) renderEnemyActionBar(remainingSeconds float64, ratio floa
 		textEnd = barWidth
 	}
 
-	// スタイル定義
-	barStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	// スタイル定義（バー色はパラメータで指定）
+	barStyle := lipgloss.NewStyle().Foreground(barColor)
 	textStyle := lipgloss.NewStyle().Foreground(styles.ColorSelectedFg).Bold(true)
-	bracketStyle := lipgloss.NewStyle().Foreground(styles.ColorSubtle)
+	bracketStyle := lipgloss.NewStyle().Foreground(barColor)
 
 	// バーを3つの部分に分けてレンダリング（前半バー + テキスト + 後半バー）
 	beforeText := string(barRunes[:textStart])

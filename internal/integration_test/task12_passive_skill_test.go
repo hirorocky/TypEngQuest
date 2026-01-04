@@ -16,7 +16,7 @@ import (
 func TestPassiveSkill_PermanentEffect(t *testing.T) {
 	t.Run("ps_buff_extender", func(t *testing.T) {
 		// バフエクステンダー: バフ効果時間+50%が常時適用されること
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_buff_extender",
 			Name:        "バフエクステンダー",
 			Description: "バフ効果時間+50%",
@@ -50,7 +50,7 @@ func TestPassiveSkill_PermanentEffect(t *testing.T) {
 func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 	t.Run("ps_perfect_rhythm", func(t *testing.T) {
 		// パーフェクトリズム: 正確性100%時のみ効果1.5倍
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_perfect_rhythm",
 			Name:        "パーフェクトリズム",
 			Description: "正確性100%でスキル効果1.5倍",
@@ -89,7 +89,7 @@ func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 
 	t.Run("ps_speed_break", func(t *testing.T) {
 		// スピードブレイク: WPM80以上で25%追加ダメージ
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_speed_break",
 			Name:        "スピードブレイク",
 			Description: "WPM80以上で25%追加ダメージ",
@@ -125,7 +125,7 @@ func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 
 	t.Run("ps_endgame_specialist", func(t *testing.T) {
 		// エンドゲームスペシャリスト: 敵HP30%以下で全ダメージ+25%
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_endgame_specialist",
 			Name:        "エンドゲームスペシャリスト",
 			Description: "敵HP30%以下で全ダメージ+25%",
@@ -161,7 +161,7 @@ func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 
 	t.Run("ps_weak_point", func(t *testing.T) {
 		// ウィークポイント: デバフ中の敵へダメージ+20%
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_weak_point",
 			Name:        "ウィークポイント",
 			Description: "デバフ中の敵へダメージ+20%",
@@ -196,7 +196,7 @@ func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 
 	t.Run("ps_overdrive", func(t *testing.T) {
 		// オーバードライブ: HP50%以下でリキャスト-30%、被ダメ+20%
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_overdrive",
 			Name:        "オーバードライブ",
 			Description: "HP50%以下でリキャスト-30%、被ダメ+20%",
@@ -235,7 +235,7 @@ func TestPassiveSkill_ConditionalMultiplier(t *testing.T) {
 func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 	t.Run("ps_last_stand", func(t *testing.T) {
 		// ラストスタンド: HP25%以下で30%の確率で被ダメージ1
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_last_stand",
 			Name:        "ラストスタンド",
 			Description: "HP25%以下で30%の確率で被ダメージ1",
@@ -277,7 +277,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_counter_charge", func(t *testing.T) {
 		// カウンターチャージ: 被ダメージ時20%で次の攻撃2倍
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_counter_charge",
 			Name:        "カウンターチャージ",
 			Description: "被ダメージ時20%で次の攻撃2倍",
@@ -306,7 +306,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_miracle_heal", func(t *testing.T) {
 		// ミラクルヒール: 回復スキル時10%でHP全回復
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_miracle_heal",
 			Name:        "ミラクルヒール",
 			Description: "回復スキル時10%でHP全回復",
@@ -335,7 +335,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_chain_reaction", func(t *testing.T) {
 		// チェインリアクション: バフ/デバフ使用時30%で効果時間2倍
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_chain_reaction",
 			Name:        "チェインリアクション",
 			Description: "バフ/デバフ使用時30%で効果時間2倍",
@@ -361,7 +361,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_echo_skill", func(t *testing.T) {
 		// エコースキル: 15%の確率でスキル2回発動
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_echo_skill",
 			Name:        "エコースキル",
 			Description: "15%の確率でスキル2回発動",
@@ -390,7 +390,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_shadow_step", func(t *testing.T) {
 		// シャドウステップ: 物理攻撃成功時20%で敵攻撃タイマーリセット
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_shadow_step",
 			Name:        "シャドウステップ",
 			Description: "物理攻撃成功時20%で敵攻撃タイマーリセット",
@@ -416,7 +416,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_debuff_reflect", func(t *testing.T) {
 		// デバフリフレクト: デバフ受け時30%で敵にも同効果
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_debuff_reflect",
 			Name:        "デバフリフレクト",
 			Description: "デバフ受け時30%で敵にも同効果",
@@ -442,7 +442,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 
 	t.Run("ps_second_chance", func(t *testing.T) {
 		// セカンドチャンス: 時間切れ時50%で再挑戦（制限時間半分）
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_second_chance",
 			Name:        "セカンドチャンス",
 			Description: "時間切れ時50%で再挑戦（制限時間半分）",
@@ -474,7 +474,7 @@ func TestPassiveSkill_ProbabilityTrigger(t *testing.T) {
 func TestPassiveSkill_StackType(t *testing.T) {
 	t.Run("ps_combo_master", func(t *testing.T) {
 		// コンボマスター: ミスなし連続タイピングでダメージ累積+10%（最大+50%）
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:             "ps_combo_master",
 			Name:           "コンボマスター",
 			Description:    "ミスなし連続タイピングでダメージ累積+10%（最大+50%）",
@@ -538,7 +538,7 @@ func TestPassiveSkill_StackType(t *testing.T) {
 
 	t.Run("ps_adaptive_shield", func(t *testing.T) {
 		// アダプティブシールド: 同種攻撃3回目以降ダメージ-25%
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_adaptive_shield",
 			Name:        "アダプティブシールド",
 			Description: "同種攻撃3回目以降ダメージ-25%",
@@ -583,7 +583,7 @@ func TestPassiveSkill_StackType(t *testing.T) {
 func TestPassiveSkill_ReactiveType(t *testing.T) {
 	t.Run("ps_debuff_absorber", func(t *testing.T) {
 		// デバフアブソーバー: デバフ効果時間半減＋小回復
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_debuff_absorber",
 			Name:        "デバフアブソーバー",
 			Description: "デバフ効果時間半減＋小回復",
@@ -620,7 +620,7 @@ func TestPassiveSkill_ReactiveType(t *testing.T) {
 
 	t.Run("ps_typo_recovery", func(t *testing.T) {
 		// タイポリカバリー: ミス時制限時間+1秒（1回/チャレンジ）
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:            "ps_typo_recovery",
 			Name:          "タイポリカバリー",
 			Description:   "ミス時制限時間+1秒（1回/チャレンジ）",
@@ -658,7 +658,7 @@ func TestPassiveSkill_ReactiveType(t *testing.T) {
 
 	t.Run("ps_first_strike", func(t *testing.T) {
 		// ファーストストライク: 戦闘開始時、最初のスキルが即発動
-		def := domain.PassiveSkillDefinition{
+		def := domain.PassiveSkill{
 			ID:          "ps_first_strike",
 			Name:        "ファーストストライク",
 			Description: "戦闘開始時、最初のスキルが即発動",
@@ -694,53 +694,16 @@ func TestPassiveSkill_ReactiveType(t *testing.T) {
 	})
 }
 
-// TestPassiveSkill_LevelScaling はパッシブスキルのレベルスケーリングを検証します。
-func TestPassiveSkill_LevelScaling(t *testing.T) {
-	passiveSkill := domain.PassiveSkill{
-		ID:          "test_passive",
-		Name:        "テストパッシブ",
-		Description: "テスト説明",
-		BaseModifiers: domain.StatModifiers{
-			STR_Add:  10,
-			STR_Mult: 1.2,
-		},
-		ScalePerLevel: 0.1,
-	}
-
-	// レベル1の場合（スケールなし）
-	modLv1 := passiveSkill.CalculateModifiers(1)
-	if modLv1.STR_Add != 10 {
-		t.Errorf("Level 1 STR_Add expected 10, got %d", modLv1.STR_Add)
-	}
-	if modLv1.STR_Mult != 1.2 {
-		t.Errorf("Level 1 STR_Mult expected 1.2, got %f", modLv1.STR_Mult)
-	}
-
-	// レベル5の場合（1 + 0.1 * 4 = 1.4倍）
-	modLv5 := passiveSkill.CalculateModifiers(5)
-	expectedSTR5 := int(10 * 1.4) // 14
-	if modLv5.STR_Add != expectedSTR5 {
-		t.Errorf("Level 5 STR_Add expected %d, got %d", expectedSTR5, modLv5.STR_Add)
-	}
-
-	// レベル10の場合（1 + 0.1 * 9 = 1.9倍）
-	modLv10 := passiveSkill.CalculateModifiers(10)
-	expectedSTR10 := int(10 * 1.9) // 19
-	if modLv10.STR_Add != expectedSTR10 {
-		t.Errorf("Level 10 STR_Add expected %d, got %d", expectedSTR10, modLv10.STR_Add)
-	}
-}
-
 // TestPassiveSkill_DefinitionHelpers はパッシブスキル定義のヘルパーメソッドを検証します。
 func TestPassiveSkill_DefinitionHelpers(t *testing.T) {
-	permanentDef := domain.PassiveSkillDefinition{
+	permanentDef := domain.PassiveSkill{
 		TriggerType: domain.PassiveTriggerPermanent,
 	}
 	if !permanentDef.IsPermanent() {
 		t.Error("IsPermanent() should return true for permanent trigger")
 	}
 
-	probabilityDef := domain.PassiveSkillDefinition{
+	probabilityDef := domain.PassiveSkill{
 		TriggerType: domain.PassiveTriggerProbability,
 		Probability: 0.3,
 	}
@@ -748,7 +711,7 @@ func TestPassiveSkill_DefinitionHelpers(t *testing.T) {
 		t.Error("HasProbability() should return true when probability > 0")
 	}
 
-	stackDef := domain.PassiveSkillDefinition{
+	stackDef := domain.PassiveSkill{
 		TriggerType: domain.PassiveTriggerStack,
 		MaxStacks:   5,
 	}
@@ -769,7 +732,7 @@ func TestPassiveSkill_AllTriggerTypes(t *testing.T) {
 
 	for _, triggerType := range triggerTypes {
 		t.Run(string(triggerType), func(t *testing.T) {
-			def := domain.PassiveSkillDefinition{
+			def := domain.PassiveSkill{
 				ID:          "test_" + string(triggerType),
 				Name:        "テスト",
 				TriggerType: triggerType,

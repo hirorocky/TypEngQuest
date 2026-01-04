@@ -23,40 +23,64 @@ func createTestExternalData() *masterdata.ExternalData {
 		},
 		ModuleDefinitions: []masterdata.ModuleDefinitionData{
 			{
-				ID:            "physical_strike_lv1",
-				Name:          "物理打撃Lv1",
-				Category:      "physical_attack",
-				Tags:          []string{"physical_low"},
-				BaseEffect:    10.0,
-				StatReference: "STR",
-				Description:   "物理ダメージを与える基本攻撃",
+				ID:          "physical_strike_lv1",
+				Name:        "物理打撃Lv1",
+				Icon:        "⚔️",
+				Tags:        []string{"physical_low"},
+				Description: "物理ダメージを与える基本攻撃",
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "enemy",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "fireball_lv1",
-				Name:          "ファイアボールLv1",
-				Category:      "magic_attack",
-				Tags:          []string{"magic_low"},
-				BaseEffect:    12.0,
-				StatReference: "MAG",
-				Description:   "魔法ダメージを与える基本魔法",
+				ID:          "fireball_lv1",
+				Name:        "ファイアボールLv1",
+				Icon:        "🔥",
+				Tags:        []string{"magic_low"},
+				Description: "魔法ダメージを与える基本魔法",
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "enemy",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 1.2, StatRef: "MAG"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "heal_lv1",
-				Name:          "ヒールLv1",
-				Category:      "heal",
-				Tags:          []string{"heal_low"},
-				BaseEffect:    8.0,
-				StatReference: "MAG",
-				Description:   "HPを回復する基本回復魔法",
+				ID:          "heal_lv1",
+				Name:        "ヒールLv1",
+				Icon:        "💚",
+				Tags:        []string{"heal_low"},
+				Description: "HPを回復する基本回復魔法",
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "self",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 0.8, StatRef: "MAG"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "attack_buff_lv1",
-				Name:          "攻撃バフLv1",
-				Category:      "buff",
-				Tags:          []string{"buff_low"},
-				BaseEffect:    5.0,
-				StatReference: "SPD",
-				Description:   "一時的に攻撃力を上昇させる",
+				ID:          "attack_buff_lv1",
+				Name:        "攻撃バフLv1",
+				Icon:        "⬆️",
+				Tags:        []string{"buff_low"},
+				Description: "一時的に攻撃力を上昇させる",
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target: "self",
+						EffectColumn: &masterdata.EffectColumnData{
+							Column:   "damage_bonus",
+							Value:    10.0,
+							Duration: 10.0,
+						},
+						Probability: 1.0,
+					},
+				},
 			},
 		},
 		EnemyTypes: []masterdata.EnemyTypeData{
@@ -74,15 +98,30 @@ func createTestExternalData() *masterdata.ExternalData {
 				Description: "連続タイピングでダメージ増加",
 			},
 		},
-		FirstAgent: &masterdata.FirstAgentData{
-			ID:         "agent_first",
-			CoreTypeID: "all_rounder",
-			CoreLevel:  1,
-			Modules: []masterdata.FirstAgentModuleData{
-				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
-				{TypeID: "fireball_lv1"},
-				{TypeID: "heal_lv1"},
-				{TypeID: "attack_buff_lv1"},
+		FirstAgents: []masterdata.FirstAgentData{
+			{
+				ID:         "agent_first_1",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "physical_strike_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_2",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "heal_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_3",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "attack_buff_lv1"},
+				},
 			},
 		},
 	}
@@ -92,32 +131,39 @@ func createTestExternalData() *masterdata.ExternalData {
 // Task 14.1: 新規ゲーム初期化テスト
 // ==================================================
 
-func TestNewGameInitializer_CreateInitialAgent(t *testing.T) {
+func TestNewGameInitializer_CreateInitialAgents(t *testing.T) {
 	initializer := NewNewGameInitializer(createTestExternalData())
 
-	agent := initializer.CreateInitialAgent()
-	if agent == nil {
+	agents := initializer.CreateInitialAgents()
+	if agents == nil {
 		t.Fatal("初期エージェントが作成されるべきです")
 	}
 
-	// エージェントがコアを持つこと
-	if agent.Core == nil {
-		t.Error("初期エージェントはコアを持つべきです")
+	// 3体のエージェントが作成されること
+	if len(agents) != 3 {
+		t.Fatalf("初期エージェントは3体作成されるべきです: got %d", len(agents))
 	}
 
-	// エージェントが4つのモジュールを持つこと
-	if len(agent.Modules) != 4 {
-		t.Errorf("初期エージェントは4つのモジュールを持つべきです: got %d", len(agent.Modules))
-	}
+	for i, agent := range agents {
+		// エージェントがコアを持つこと
+		if agent.Core == nil {
+			t.Errorf("初期エージェント%dはコアを持つべきです", i+1)
+		}
 
-	// エージェントレベルがコアレベルと一致すること
-	if agent.Level != agent.Core.Level {
-		t.Error("エージェントレベルはコアレベルと一致するべきです")
-	}
+		// エージェントが1つのモジュールを持つこと
+		if len(agent.Modules) != 1 {
+			t.Errorf("初期エージェント%dは1つのモジュールを持つべきです: got %d", i+1, len(agent.Modules))
+		}
 
-	// オールラウンダー特性であること（FirstAgentから作成）
-	if agent.Core.Type.ID != "all_rounder" {
-		t.Errorf("初期コアはオールラウンダー特性であるべきです: got %s", agent.Core.Type.ID)
+		// エージェントレベルがコアレベルと一致すること
+		if agent.Level != agent.Core.Level {
+			t.Errorf("エージェント%dのレベルはコアレベルと一致するべきです", i+1)
+		}
+
+		// オールラウンダー特性であること
+		if agent.Core.Type.ID != "all_rounder" {
+			t.Errorf("初期エージェント%dのコアはオールラウンダー特性であるべきです: got %s", i+1, agent.Core.Type.ID)
+		}
 	}
 }
 
@@ -131,33 +177,37 @@ func TestNewGameInitializer_InitializeNewGame(t *testing.T) {
 	}
 
 	// インベントリに初期コアが含まれている（エージェント合成で消費されるため0）
-	// 初期エージェントが作成されていること（ID化された構造）
-	if len(saveData.Inventory.AgentInstances) != 1 {
-		t.Errorf("初期エージェントが1体存在するべきです: got %d", len(saveData.Inventory.AgentInstances))
+	// 初期エージェントが3体作成されていること（ID化された構造）
+	if len(saveData.Inventory.AgentInstances) != 3 {
+		t.Errorf("初期エージェントが3体存在するべきです: got %d", len(saveData.Inventory.AgentInstances))
 	}
 
-	// 初期エージェントが装備されていること（スロット0に装備）
+	// 初期エージェントが3体装備されていること
 	equippedCount := 0
 	for _, id := range saveData.Player.EquippedAgentIDs {
 		if id != "" {
 			equippedCount++
 		}
 	}
-	if equippedCount != 1 {
-		t.Errorf("初期エージェントが1体装備されているべきです: got %d", equippedCount)
+	if equippedCount != 3 {
+		t.Errorf("初期エージェントが3体装備されているべきです: got %d", equippedCount)
 	}
 
 	// 装備されているエージェントIDがインベントリのエージェントと一致すること
-	equippedID := saveData.Player.EquippedAgentIDs[0]
-	found := false
-	for _, a := range saveData.Inventory.AgentInstances {
-		if a.ID == equippedID {
-			found = true
-			break
+	for _, equippedID := range saveData.Player.EquippedAgentIDs {
+		if equippedID == "" {
+			continue
 		}
-	}
-	if !found {
-		t.Error("装備エージェントIDがインベントリ内のエージェントと一致するべきです")
+		found := false
+		for _, a := range saveData.Inventory.AgentInstances {
+			if a.ID == equippedID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("装備エージェントID %s がインベントリ内のエージェントと一致するべきです", equippedID)
+		}
 	}
 }
 
@@ -193,11 +243,13 @@ func TestInitialAgent_ModulesCompatibleWithCore(t *testing.T) {
 	// 初期エージェントのモジュールがコアと互換性があること
 	initializer := NewNewGameInitializer(createTestExternalData())
 
-	agent := initializer.CreateInitialAgent()
+	agents := initializer.CreateInitialAgents()
 
-	for i, module := range agent.Modules {
-		if !module.IsCompatibleWithCore(agent.Core) {
-			t.Errorf("モジュール%dはコアと互換性があるべきです", i)
+	for agentIdx, agent := range agents {
+		for i, module := range agent.Modules {
+			if !module.IsCompatibleWithCore(agent.Core) {
+				t.Errorf("エージェント%dのモジュール%dはコアと互換性があるべきです", agentIdx+1, i)
+			}
 		}
 	}
 }

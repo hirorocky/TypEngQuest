@@ -48,10 +48,11 @@ func (s *BattleScreen) checkGameOver() bool {
 // createGameOverCmd はゲーム終了時のコマンドを作成します。
 func (s *BattleScreen) createGameOverCmd() tea.Cmd {
 	result := BattleResultMsg{
-		Victory: s.victory,
-		Level:   s.enemy.Level,
-		Stats:   s.battleState.Stats,
-		EnemyID: s.enemy.Type.ID,
+		Victory:   s.victory,
+		Level:     s.enemy.Level,
+		Stats:     s.battleState.Stats,
+		EnemyID:   s.enemy.Type.ID,
+		EnemyType: &s.enemy.Type,
 	}
 	return func() tea.Msg {
 		return result
@@ -80,72 +81,67 @@ func (s *BattleScreen) IsShowingResult() bool {
 
 // ==================== ゲームロジック: 敵攻撃処理 ====================
 
-// processEnemyAttack は敵の行動を処理します。
-// パッシブスキル（ps_last_stand, ps_counter_charge, ps_adaptive_shield, ps_quick_recovery）を統合。
+// processEnemyAttack は敵のターンを処理します。
+// ビジネスロジックは BattleEngine.ProcessEnemyTurn() に委譲し、UI更新のみを担当します。
 func (s *BattleScreen) processEnemyAttack() {
 	if s.battleEngine == nil || s.battleState == nil {
-		// フォールバック: 従来の攻撃処理
-		damage := s.enemy.AttackPower
-		s.player.HP -= damage
-		if s.player.HP < 0 {
-			s.player.HP = 0
-		}
-		s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
-		s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
-		// UI改善: フローティングダメージとHPアニメーション
-		s.floatingDamageManager.AddDamage(damage, "player")
-		s.playerHPBar.SetTarget(s.player.HP)
+		s.processLegacyEnemyAttack()
 		return
 	}
 
-	action := s.battleState.NextAction
-	var damage int
-	var msg string
+	// ビジネスロジックはエンジンに委譲
+	result := s.battleEngine.ProcessEnemyTurn(s.battleState)
 
-	switch action.ActionType {
-	case combat.EnemyActionAttack:
-		// パッシブスキル対応版の攻撃処理を使用
-		// ps_last_stand, ps_counter_charge, ps_adaptive_shield が評価される
-		attackType := action.AttackType
-		if attackType == "" {
-			attackType = s.enemy.Type.AttackType
-		}
-		damage = s.battleEngine.ProcessEnemyAttackWithPassiveAndPattern(s.battleState, attackType)
-		msg = fmt.Sprintf("%dダメージを受けた！", damage)
+	// UI更新
+	s.updateUIAfterEnemyTurn(result)
+}
 
-		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, msg)
-		if damage > 0 {
-			s.floatingDamageManager.AddDamage(damage, "player")
+// processLegacyEnemyAttack はフォールバック用の従来攻撃処理です。
+func (s *BattleScreen) processLegacyEnemyAttack() {
+	damage := s.enemy.AttackPower
+	s.player.HP -= damage
+	if s.player.HP < 0 {
+		s.player.HP = 0
+	}
+	s.message = fmt.Sprintf("%sの攻撃！ %dダメージを受けた！", s.enemy.Name, damage)
+	// 次の行動を準備してチャージ開始
+	s.enemy.PrepareNextAction()
+	if action := s.enemy.GetNextAction(); action != nil {
+		s.enemy.StartCharging(*action, time.Now())
+	}
+	s.floatingDamageManager.AddDamage(damage, "player")
+	s.playerHPBar.SetTarget(s.player.HP)
+}
+
+// updateUIAfterEnemyTurn は敵ターン結果に基づいてUIを更新します。
+func (s *BattleScreen) updateUIAfterEnemyTurn(result combat.EnemyTurnResult) {
+	switch result.ActionType {
+	case domain.EnemyActionAttack:
+		s.message = fmt.Sprintf("%sの攻撃！ %s", s.enemy.Name, result.Message)
+		if result.Damage > 0 {
+			s.floatingDamageManager.AddDamage(result.Damage, "player")
 			s.playerHPBar.SetTarget(s.player.HP)
 		}
-
 		// ps_quick_recovery: 被ダメージ時にリキャスト短縮
 		s.evaluateQuickRecovery()
 
-	case combat.EnemyActionSelfBuff:
-		s.battleEngine.ApplyEnemySelfBuff(s.battleState, action.BuffType)
-		msg = combat.GetEnemyBuffName(action.BuffType)
-		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, msg)
+	case domain.EnemyActionBuff:
+		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
-	case combat.EnemyActionDebuff:
-		s.battleEngine.ApplyPlayerDebuff(s.battleState, action.DebuffType)
-		msg = combat.GetPlayerDebuffName(action.DebuffType)
-		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, msg)
+	case domain.EnemyActionDebuff:
+		s.message = fmt.Sprintf("%sが%s", s.enemy.Name, result.Message)
+
+	case domain.EnemyActionDefense:
+		s.message = fmt.Sprintf("%sが%s！", s.enemy.Name, result.Message)
 
 	default:
 		s.message = "敵の行動"
 	}
 
-	// フェーズ変化をチェック
-	if s.battleEngine.CheckPhaseTransition(s.battleState) {
+	// フェーズ変化をUIに反映
+	if result.PhaseChanged {
 		s.message += " [敵が強化フェーズに突入！]"
 	}
-
-	// 次回行動を決定
-	s.battleState.NextAction = s.battleEngine.DetermineNextAction(s.battleState)
-
-	// 次の行動時間を設定
-	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
 }
 
 // evaluateQuickRecovery はps_quick_recoveryの発動を評価し、リキャストを短縮します。
@@ -279,13 +275,13 @@ func (s *BattleScreen) startAgentRecast(agentIndex int, module *domain.ModuleMod
 }
 
 // triggerChainEffects はモジュール使用時に他エージェントのチェイン効果を発動します。
-func (s *BattleScreen) triggerChainEffects(usingAgentIndex int, moduleCategory domain.ModuleCategory) {
+func (s *BattleScreen) triggerChainEffects(usingAgentIndex int, effectFlags chain.ModuleEffectFlags) {
 	if s.chainEffectManager == nil {
 		return
 	}
 
 	// チェイン効果の発動をチェック
-	triggered := s.chainEffectManager.CheckAndTrigger(usingAgentIndex, moduleCategory)
+	triggered := s.chainEffectManager.CheckAndTrigger(usingAgentIndex, effectFlags)
 
 	// 発動した効果を適用
 	for _, effect := range triggered {
@@ -545,8 +541,11 @@ func (s *BattleScreen) CompleteTyping() {
 	module := slot.Module
 	agentIndex := slot.AgentIndex
 
+	// モジュールの効果フラグを取得
+	effectFlags := getModuleEffectFlags(module)
+
 	// 他エージェントの待機中チェイン効果を発動（モジュール効果適用前）
-	s.triggerChainEffects(agentIndex, module.Category())
+	s.triggerChainEffects(agentIndex, effectFlags)
 
 	// DoubleCast判定
 	doubleCastTriggered := false
@@ -608,12 +607,11 @@ func (s *BattleScreen) CompleteTyping() {
 
 	// UI改善: フローティングダメージ/回復とHPアニメーション
 	if effectAmount > 0 {
-		switch module.Category() {
-		case domain.PhysicalAttack, domain.MagicAttack:
+		if effectFlags.HasDamage {
 			// 敵へのダメージ
 			s.floatingDamageManager.AddDamage(effectAmount, "enemy")
 			s.enemyHPBar.SetTarget(s.enemy.HP)
-		case domain.Heal:
+		} else if effectFlags.HasHeal {
 			// プレイヤーへの回復
 			s.floatingDamageManager.AddHeal(effectAmount, "player")
 			s.playerHPBar.SetTarget(s.player.HP)
@@ -621,7 +619,7 @@ func (s *BattleScreen) CompleteTyping() {
 	}
 
 	// メッセージを表示
-	s.message = s.formatEffectMessage(module, effectAmount, typingResult)
+	s.message = s.formatEffectMessage(module, effectAmount, typingResult, effectFlags)
 	if s.comboCount > 0 {
 		s.message += fmt.Sprintf(" [コンボ:%d]", s.comboCount)
 	}
@@ -644,24 +642,25 @@ func (s *BattleScreen) CompleteTyping() {
 	// フェーズ変化をチェック
 	if s.battleEngine != nil && s.battleState != nil {
 		if s.battleEngine.CheckPhaseTransition(s.battleState) {
+			// 敵のパッシブを強化パッシブに切り替え
+			s.battleEngine.SwitchEnemyPassive(s.battleState)
 			s.message += " [敵が強化フェーズに突入！]"
 		}
 	}
 }
 
 // formatEffectMessage は効果メッセージをフォーマットします。
-func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult) string {
+func (s *BattleScreen) formatEffectMessage(module *domain.ModuleModel, effectAmount int, result *typing.TypingResult, flags chain.ModuleEffectFlags) string {
 	var action string
-	switch module.Category() {
-	case domain.PhysicalAttack, domain.MagicAttack:
+	if flags.HasDamage {
 		action = fmt.Sprintf("%dダメージを与えた！", effectAmount)
-	case domain.Heal:
+	} else if flags.HasHeal {
 		action = fmt.Sprintf("%d回復した！", effectAmount)
-	case domain.Buff:
+	} else if flags.HasBuff {
 		action = fmt.Sprintf("%sを付与した！", module.Name())
-	case domain.Debuff:
+	} else if flags.HasDebuff {
 		action = fmt.Sprintf("敵に%sを付与した！", module.Name())
-	default:
+	} else {
 		action = "効果を発動した！"
 	}
 
@@ -677,35 +676,89 @@ func (s *BattleScreen) CancelTyping() {
 
 // ==================== ゲームロジック: 行動表示 ====================
 
-// getActionDisplay は次回行動の表示情報を返します。
+// getActionDisplay はチャージ後行動の表示情報を返します。
 
 func (s *BattleScreen) getActionDisplay() (icon string, text string, color lipgloss.Color) {
 	if s.battleState == nil {
 		return "?", "不明", styles.ColorSubtle
 	}
 
-	action := s.battleState.NextAction
+	// チャージ中の場合はチャージ状態を表示
+	if s.enemy != nil && s.enemy.WaitMode == domain.WaitModeCharging {
+		return s.getChargingActionDisplay()
+	}
+
+	// ディフェンス中の場合はディフェンス状態を表示
+	if s.enemy != nil && s.enemy.WaitMode == domain.WaitModeDefending {
+		return s.getDefenseActionDisplay()
+	}
+
+	action := s.enemy.GetNextAction()
+	if action == nil {
+		return "?", "不明", styles.ColorSubtle
+	}
 
 	switch action.ActionType {
-	case combat.EnemyActionAttack:
-		// 攻撃予告（赤色）
-		if action.AttackType == "physical" {
-			return "⚔️", fmt.Sprintf("物理攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+	case domain.EnemyActionAttack:
+		// 攻撃予告（赤色）- バフ反映のため毎回計算
+		expectedDamage := s.battleEngine.GetExpectedDamage(s.battleState)
+		if action.AttackType == "magic" {
+			return "💥", fmt.Sprintf("魔法%dダメージ", expectedDamage), styles.ColorDamage
 		}
-		return "💥", fmt.Sprintf("魔法攻撃 %dダメージ", action.ExpectedValue), styles.ColorDamage
+		return "⚔️", fmt.Sprintf("物理%dダメージ", expectedDamage), styles.ColorDamage
 
-	case combat.EnemyActionSelfBuff:
-		// 自己バフ予告（黄色）
-		name := combat.GetEnemyBuffName(action.BuffType)
-		return "💪", name, styles.ColorWarning
+	case domain.EnemyActionBuff:
+		// 自己バフ予告（黄色）- 効果内容を表示
+		effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+		return "💪", effectDesc, styles.ColorWarning
 
-	case combat.EnemyActionDebuff:
-		// プレイヤーデバフ予告（青色）
-		name := combat.GetPlayerDebuffName(action.DebuffType)
-		return "💀", name, styles.ColorInfo
+	case domain.EnemyActionDebuff:
+		// プレイヤーデバフ予告（青色）- 効果内容を表示
+		effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+		return "💀", effectDesc, styles.ColorInfo
 	}
 
 	return "?", "不明", styles.ColorSubtle
+}
+
+// getChargingActionDisplay はチャージ中の行動表示情報を返します。
+// チャージ後行動の効果を表示します（行動名ではなく効果説明）。
+func (s *BattleScreen) getChargingActionDisplay() (icon string, text string, color lipgloss.Color) {
+	// チャージ後行動の効果を表示
+	if action := s.enemy.PendingAction; action != nil {
+		switch action.ActionType {
+		case domain.EnemyActionAttack:
+			expectedDamage := s.battleEngine.GetExpectedDamage(s.battleState)
+			if action.AttackType == "magic" {
+				return "💥", fmt.Sprintf("魔法ダメージ%d", expectedDamage), styles.ColorDamage
+			}
+			return "⚔️", fmt.Sprintf("物理ダメージ%d", expectedDamage), styles.ColorDamage
+		case domain.EnemyActionBuff:
+			effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+			return "💪", effectDesc, styles.ColorWarning
+		case domain.EnemyActionDebuff:
+			effectDesc := domain.DescribeSingleEffect(action.EffectType, action.EffectValue)
+			return "💀", effectDesc, styles.ColorInfo
+		default:
+			return "?", action.Name, styles.ColorSubtle
+		}
+	}
+	return "?", "不明", styles.ColorSubtle
+}
+
+// getDefenseActionDisplay はディフェンス中の行動表示情報を返します。
+func (s *BattleScreen) getDefenseActionDisplay() (icon string, text string, color lipgloss.Color) {
+	// 現在発動中のディフェンス効果を表示
+	switch s.enemy.ActiveDefenseType {
+	case domain.DefensePhysicalCut:
+		return "🛡️", fmt.Sprintf("物理ダメージ%.0f%%カット", s.enemy.DefenseValue*100), styles.ColorInfo
+	case domain.DefenseMagicCut:
+		return "🛡️", fmt.Sprintf("魔法ダメージ%.0f%%カット", s.enemy.DefenseValue*100), styles.ColorInfo
+	case domain.DefenseDebuffEvade:
+		return "🛡️", fmt.Sprintf("デバフ%.0f%%回避", s.enemy.DefenseValue*100), styles.ColorInfo
+	default:
+		return "🛡️", "防御中", styles.ColorInfo
+	}
 }
 
 // ==================== ゲームロジック: モジュール選択ナビゲーション ====================
@@ -789,4 +842,26 @@ func (s *BattleScreen) getModuleIndicesForAgent(agentIdx int) []int {
 		}
 	}
 	return indices
+}
+
+// getModuleEffectFlags はモジュールが持つ効果の種別フラグを取得します。
+func getModuleEffectFlags(module *domain.ModuleModel) chain.ModuleEffectFlags {
+	flags := chain.ModuleEffectFlags{}
+
+	for _, effect := range module.Type.Effects {
+		if effect.IsDamageEffect() {
+			flags.HasDamage = true
+		}
+		if effect.IsHealEffect() {
+			flags.HasHeal = true
+		}
+		if effect.IsBuffEffect() {
+			flags.HasBuff = true
+		}
+		if effect.IsDebuffEffect() {
+			flags.HasDebuff = true
+		}
+	}
+
+	return flags
 }

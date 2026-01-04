@@ -6,6 +6,7 @@ import (
 	"hirorocky/type-battle/internal/tui/presenter"
 	"hirorocky/type-battle/internal/tui/screens"
 	gamestate "hirorocky/type-battle/internal/usecase/session"
+	"hirorocky/type-battle/internal/usecase/spawning"
 )
 
 // InventoryProvider は画面に必要なインベントリ操作を提供するインターフェースです。
@@ -24,13 +25,15 @@ type InventoryProvider interface {
 // ScreenFactory は画面インスタンスを生成します。
 // GameStateから必要なデータを取得して各画面を初期化します。
 type ScreenFactory struct {
-	gameState *gamestate.GameState
+	gameState      *gamestate.GameState
+	enemyGenerator *spawning.EnemyGenerator
 }
 
 // NewScreenFactory は新しいScreenFactoryを作成します。
 func NewScreenFactory(gs *gamestate.GameState) *ScreenFactory {
 	return &ScreenFactory{
-		gameState: gs,
+		gameState:      gs,
+		enemyGenerator: gs.EnemyGenerator(),
 	}
 }
 
@@ -39,9 +42,19 @@ func (f *ScreenFactory) CreateHomeScreen(maxLevelReached int, invProvider Invent
 	return screens.NewHomeScreen(maxLevelReached, invProvider)
 }
 
-// CreateBattleSelectScreen はバトル選択画面を作成します。
+// CreateBattleSelectScreen はバトル選択画面を作成します（旧：入力フィールド方式）。
+// 後方互換性のために残していますが、新規開発ではCreateBattleSelectScreenCarouselを使用してください。
 func (f *ScreenFactory) CreateBattleSelectScreen(maxLevelReached int, invProvider InventoryProvider) *screens.BattleSelectScreen {
 	return screens.NewBattleSelectScreen(maxLevelReached, invProvider)
+}
+
+// CreateBattleSelectScreenCarousel はカルーセル方式のバトル選択画面を作成します。
+// 敵タイプを左右キーで選択し、レベルを上下キーで調整できます。
+func (f *ScreenFactory) CreateBattleSelectScreenCarousel(
+	invProvider InventoryProvider,
+	defeatedProvider screens.DefeatedEnemyProvider,
+) *screens.BattleSelectScreenCarousel {
+	return screens.NewBattleSelectScreenCarousel(invProvider, defeatedProvider, f.enemyGenerator)
 }
 
 // CreateAgentManagementScreen はエージェント管理画面を作成します。

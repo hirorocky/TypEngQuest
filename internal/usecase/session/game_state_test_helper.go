@@ -12,7 +12,7 @@ func NewGameStateForTest() *GameState {
 		{
 			ID:             "all_rounder",
 			Name:           "オールラウンダー",
-			StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+			StatWeights:    map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 			AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
 			PassiveSkillID: "test_skill",
 			MinDropLevel:   1,
@@ -20,13 +20,20 @@ func NewGameStateForTest() *GameState {
 	}
 	moduleTypes := []rewarding.ModuleDropInfo{
 		{
-			ID:           "test_module",
-			Name:         "テストモジュール",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			BaseEffect:   10.0,
-			StatRef:      "STR",
-			Description:  "テスト用モジュール",
+			ID:          "test_module",
+			Name:        "テストモジュール",
+			Icon:        "⚔️",
+			Tags:        []string{"physical_low"},
+			Description: "テスト用モジュール",
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+					LUKFactor:   0,
+					Icon:        "⚔️",
+				},
+			},
 			MinDropLevel: 1,
 		},
 	}

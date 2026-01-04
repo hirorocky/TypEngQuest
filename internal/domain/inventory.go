@@ -229,13 +229,29 @@ func (inv *ModuleInventory) List() []*ModuleModel {
 	return result
 }
 
-// FilterByCategory は指定されたカテゴリでフィルタリングします。
-
-func (inv *ModuleInventory) FilterByCategory(category ModuleCategory) []*ModuleModel {
+// FilterByDamageEffect はダメージ効果を持つモジュールをフィルタリングします。
+func (inv *ModuleInventory) FilterByDamageEffect() []*ModuleModel {
 	result := make([]*ModuleModel, 0)
 	for _, module := range inv.modules {
-		if module.Category() == category {
-			result = append(result, module)
+		for _, effect := range module.Effects() {
+			if effect.IsDamageEffect() {
+				result = append(result, module)
+				break
+			}
+		}
+	}
+	return result
+}
+
+// FilterByHealEffect は回復効果を持つモジュールをフィルタリングします。
+func (inv *ModuleInventory) FilterByHealEffect() []*ModuleModel {
+	result := make([]*ModuleModel, 0)
+	for _, module := range inv.modules {
+		for _, effect := range module.Effects() {
+			if effect.IsHealEffect() {
+				result = append(result, module)
+				break
+			}
 		}
 	}
 	return result
@@ -261,19 +277,6 @@ func (inv *ModuleInventory) FilterCompatibleWithCore(core *CoreModel) []*ModuleM
 			result = append(result, module)
 		}
 	}
-	return result
-}
-
-// SortByCategory はカテゴリでソートしたモジュールリストを返します。
-
-func (inv *ModuleInventory) SortByCategory(ascending bool) []*ModuleModel {
-	result := inv.List()
-	sort.Slice(result, func(i, j int) bool {
-		if ascending {
-			return result[i].Category() < result[j].Category()
-		}
-		return result[i].Category() > result[j].Category()
-	})
 	return result
 }
 

@@ -86,7 +86,7 @@ type PassiveEvaluationResult struct {
 }
 
 // EvaluatePassive はパッシブスキル定義とコンテキストから評価結果を計算します。
-func EvaluatePassive(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
+func EvaluatePassive(def PassiveSkill, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
 	result := PassiveEvaluationResult{
 		IsActive:         false,
 		EffectMultiplier: 1.0,
@@ -110,7 +110,7 @@ func EvaluatePassive(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) 
 }
 
 // evaluatePermanent は永続効果タイプを評価します。
-func evaluatePermanent(def PassiveSkillDefinition, _ *PassiveEvaluationContext) PassiveEvaluationResult {
+func evaluatePermanent(def PassiveSkill, _ *PassiveEvaluationContext) PassiveEvaluationResult {
 	return PassiveEvaluationResult{
 		IsActive:         true,
 		EffectMultiplier: def.EffectValue, // 永続効果の場合、EffectValueが倍率
@@ -119,7 +119,7 @@ func evaluatePermanent(def PassiveSkillDefinition, _ *PassiveEvaluationContext) 
 }
 
 // evaluateConditional は条件付き効果タイプを評価します。
-func evaluateConditional(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
+func evaluateConditional(def PassiveSkill, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
 	result := PassiveEvaluationResult{
 		IsActive:         false,
 		EffectMultiplier: 1.0,
@@ -140,7 +140,7 @@ func evaluateConditional(def PassiveSkillDefinition, ctx *PassiveEvaluationConte
 }
 
 // evaluateProbability は確率トリガータイプを評価します。
-func evaluateProbability(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
+func evaluateProbability(def PassiveSkill, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
 	result := PassiveEvaluationResult{
 		IsActive:              false,
 		EffectMultiplier:      def.EffectValue,
@@ -164,7 +164,7 @@ func evaluateProbability(def PassiveSkillDefinition, ctx *PassiveEvaluationConte
 }
 
 // evaluateStack はスタック型を評価します。
-func evaluateStack(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
+func evaluateStack(def PassiveSkill, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
 	result := PassiveEvaluationResult{
 		IsActive:         false,
 		EffectMultiplier: 1.0,
@@ -196,7 +196,7 @@ func evaluateStack(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) Pa
 }
 
 // evaluateReactive は反応型を評価します。
-func evaluateReactive(def PassiveSkillDefinition, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
+func evaluateReactive(def PassiveSkill, ctx *PassiveEvaluationContext) PassiveEvaluationResult {
 	result := PassiveEvaluationResult{
 		IsActive:         false,
 		EffectMultiplier: 1.0,

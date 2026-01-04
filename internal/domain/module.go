@@ -1,71 +1,12 @@
 // Package domain はゲームのドメインモデルを定義します。
 package domain
 
-// ModuleCategory はモジュールのカテゴリを表す型です。
-// カテゴリによって効果の種類と参照するステータスが決まります。
-type ModuleCategory string
-
-const (
-	// PhysicalAttack は物理攻撃カテゴリを表します。
-	// STR参照、敵に物理ダメージを与えます。
-	PhysicalAttack ModuleCategory = "physical_attack"
-
-	// MagicAttack は魔法攻撃カテゴリを表します。
-	// MAG参照、敵に魔法ダメージを与えます。
-	MagicAttack ModuleCategory = "magic_attack"
-
-	// Heal は回復カテゴリを表します。
-	// MAG参照、プレイヤーのHPを回復します。
-	Heal ModuleCategory = "heal"
-
-	// Buff はバフカテゴリを表します。
-	// SPD参照、プレイヤーに有利な効果を付与します。
-	Buff ModuleCategory = "buff"
-
-	// Debuff はデバフカテゴリを表します。
-	// SPD参照、敵に不利な効果を付与します。
-	Debuff ModuleCategory = "debuff"
-)
-
-// String はModuleCategoryの日本語表示名を返します。
-func (c ModuleCategory) String() string {
-	switch c {
-	case PhysicalAttack:
-		return "物理攻撃"
-	case MagicAttack:
-		return "魔法攻撃"
-	case Heal:
-		return "回復"
-	case Buff:
-		return "バフ"
-	case Debuff:
-		return "デバフ"
-	default:
-		return "不明"
-	}
-}
-
-// Icon はモジュールカテゴリのデフォルトアイコンを返します。
-// マスターデータにアイコンが設定されていない場合のフォールバック用です。
-func (c ModuleCategory) Icon() string {
-	switch c {
-	case PhysicalAttack:
-		return "⚔️"
-	case MagicAttack:
-		return "💥"
-	case Heal:
-		return "💚"
-	case Buff:
-		return "💪"
-	case Debuff:
-		return "💀"
-	default:
-		return "•"
-	}
-}
+// defaultModuleIcon はモジュールのデフォルトアイコンを返します。
+const defaultModuleIcon = "•"
 
 // ModuleType はモジュールの種別（タイプ）を定義する構造体です。
 // 外部データファイル（modules.json）から読み込まれ、ゲーム内のモジュール種別を定義します。
+// 各モジュールは複数の効果（Effects）を持ち、使用時に各効果が確率で発動します。
 type ModuleType struct {
 	// ID はモジュール種別の一意識別子です。
 	ID string
@@ -76,18 +17,9 @@ type ModuleType struct {
 	// Icon はモジュールのアイコン（絵文字）です。
 	Icon string
 
-	// Category はモジュールのカテゴリです（物理攻撃、魔法攻撃、回復、バフ、デバフ）。
-	Category ModuleCategory
-
 	// Tags はモジュールのタグリストです。
 	// コア特性との互換性チェックに使用されます。
 	Tags []string
-
-	// BaseEffect はモジュールの基礎効果値です。
-	BaseEffect float64
-
-	// StatRef は効果計算時に参照するステータスです（STR, MAG, SPD, LUK）。
-	StatRef string
 
 	// Description はモジュールの効果説明です。
 	Description string
@@ -100,6 +32,10 @@ type ModuleType struct {
 
 	// MinDropLevel はこのモジュールがドロップする最低敵レベルです。
 	MinDropLevel int
+
+	// Effects はこのモジュールが持つ効果のリストです。
+	// 使用時に各効果が確率（Probability + LUK補正）で発動します。
+	Effects []ModuleEffect
 }
 
 // HasTag は指定されたタグがこのモジュールタイプに含まれているかを返します。
@@ -134,24 +70,9 @@ func (m *ModuleModel) Name() string {
 	return m.Type.Name
 }
 
-// Category はモジュールのカテゴリを返します。
-func (m *ModuleModel) Category() ModuleCategory {
-	return m.Type.Category
-}
-
 // Tags はモジュールのタグリストを返します。
 func (m *ModuleModel) Tags() []string {
 	return m.Type.Tags
-}
-
-// BaseEffect はモジュールの基礎効果値を返します。
-func (m *ModuleModel) BaseEffect() float64 {
-	return m.Type.BaseEffect
-}
-
-// StatRef は効果計算時に参照するステータスを返します。
-func (m *ModuleModel) StatRef() string {
-	return m.Type.StatRef
 }
 
 // Description はモジュールの効果説明を返します。
@@ -160,12 +81,16 @@ func (m *ModuleModel) Description() string {
 }
 
 // Icon はモジュールのアイコンを返します。
-// マスターデータで定義されたアイコンがあればそれを、なければカテゴリのデフォルトアイコンを返します。
 func (m *ModuleModel) Icon() string {
 	if m.Type.Icon != "" {
 		return m.Type.Icon
 	}
-	return m.Type.Category.Icon()
+	return defaultModuleIcon
+}
+
+// Effects はモジュールの効果リストを返します。
+func (m *ModuleModel) Effects() []ModuleEffect {
+	return m.Type.Effects
 }
 
 // CooldownSeconds はモジュールのクールダウン時間を返します。

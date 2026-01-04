@@ -70,6 +70,35 @@ const (
 
 	// ColDoubleCast は2回発動確率（%）を表します。
 	ColDoubleCast EffectColumn = "double_cast"
+
+	// ========== ステータス系 ==========
+
+	// ColCritRate はクリティカル率加算（%）を表します。
+	ColCritRate EffectColumn = "crit_rate"
+
+	// ColSTRBonus はSTR加算（固定値）を表します。
+	ColSTRBonus EffectColumn = "str_bonus"
+
+	// ColINTBonus はINT加算（固定値）を表します。
+	ColINTBonus EffectColumn = "int_bonus"
+
+	// ColWILBonus はWIL加算（固定値）を表します。
+	ColWILBonus EffectColumn = "wil_bonus"
+
+	// ColLUKBonus はLUK加算（固定値）を表します。
+	ColLUKBonus EffectColumn = "luk_bonus"
+
+	// ColSTRMultiplier はSTR倍率を表します。
+	ColSTRMultiplier EffectColumn = "str_mult"
+
+	// ColINTMultiplier はINT倍率を表します。
+	ColINTMultiplier EffectColumn = "int_mult"
+
+	// ColWILMultiplier はWIL倍率を表します。
+	ColWILMultiplier EffectColumn = "wil_mult"
+
+	// ColLUKMultiplier はLUK倍率を表します。
+	ColLUKMultiplier EffectColumn = "luk_mult"
 )
 
 // AggregationType は列ごとの集計方法を表します。
@@ -121,6 +150,17 @@ var ColumnAggregation = map[EffectColumn]AggregationType{
 
 	// 特殊系
 	ColDoubleCast: AggMax, // 最大の確率を採用
+
+	// ステータス系
+	ColCritRate:      AggAdd,  // クリティカル率は加算
+	ColSTRBonus:      AggAdd,  // STR加算は加算
+	ColINTBonus:      AggAdd,  // INT加算は加算
+	ColWILBonus:      AggAdd,  // WIL加算は加算
+	ColLUKBonus:      AggAdd,  // LUK加算は加算
+	ColSTRMultiplier: AggMult, // STR倍率は乗算
+	ColINTMultiplier: AggMult, // INT倍率は乗算
+	ColWILMultiplier: AggMult, // WIL倍率は乗算
+	ColLUKMultiplier: AggMult, // LUK倍率は乗算
 }
 
 // ColumnDefault は集計の初期値を返します。

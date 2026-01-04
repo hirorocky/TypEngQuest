@@ -32,10 +32,11 @@ type BattleTickMsg struct{}
 
 // BattleResultMsg はバトル結果メッセージです。
 type BattleResultMsg struct {
-	Victory bool
-	Level   int
-	Stats   *combat.BattleStatistics // バトル統計
-	EnemyID string                   // 敵図鑑更新用
+	Victory   bool
+	Level     int
+	Stats     *combat.BattleStatistics // バトル統計
+	EnemyID   string                   // 敵図鑑更新用
+	EnemyType *domain.EnemyType        // 確定ドロップ設定参照用
 }
 
 // ==================== モジュールスロット ====================
@@ -55,11 +56,11 @@ func (s *ModuleSlot) IsReady() bool {
 	return s.CooldownRemaining <= 0
 }
 
-// SetPassiveSkillDefinitions はパッシブスキル定義を設定します。
+// SetPassiveSkills はパッシブスキル定義を設定します。
 // これにより、RegisterPassiveSkills で条件付きパッシブスキルが EffectTable に登録されます。
-func (s *BattleScreen) SetPassiveSkillDefinitions(defs map[string]domain.PassiveSkillDefinition) {
+func (s *BattleScreen) SetPassiveSkills(skills map[string]domain.PassiveSkill) {
 	if s.battleEngine != nil {
-		s.battleEngine.SetPassiveSkillDefinitions(defs)
+		s.battleEngine.SetPassiveSkills(skills)
 	}
 }
 
@@ -109,9 +110,6 @@ type BattleScreen struct {
 	typoRecoveryUsed      bool // ps_typo_recovery使用済みフラグ（チャレンジ毎にリセット）
 	secondChanceUsed      bool // ps_second_chance使用済みフラグ（チャレンジ毎にリセット）
 	firstStrikeAgentIndex int  // ps_first_strike発動エージェント（-1は無効）
-
-	// 敵攻撃
-	nextEnemyAttack time.Time
 
 	// ゲーム終了状態
 	gameOver      bool
@@ -180,10 +178,14 @@ func NewBattleScreen(enemy *domain.EnemyModel, player *domain.PlayerModel, agent
 		Stats: &combat.BattleStatistics{
 			StartTime: time.Now(),
 		},
-		NextAttackTime: time.Now().Add(enemy.AttackInterval),
 	}
 
-	screen.battleState.NextAction = screen.battleEngine.DetermineNextAction(screen.battleState)
+	// 最初の行動を準備してチャージ開始
+	screen.battleState.Enemy.PrepareNextAction()
+	screen.battleEngine.StartEnemyCharging(screen.battleState, time.Now())
+
+	// 敵のパッシブスキルを登録
+	screen.battleEngine.RegisterEnemyPassive(screen.battleState)
 
 	// モジュールスロットを初期化
 
@@ -234,7 +236,7 @@ func createDefaultDictionary() *typing.Dictionary {
 
 // Init は画面の初期化を行います。
 func (s *BattleScreen) Init() tea.Cmd {
-	s.nextEnemyAttack = time.Now().Add(s.enemy.AttackInterval)
+	// チャージシステムはInitBattleで初期化済み（PrepareNextAction + StartCharging）
 
 	// ps_first_strike: バトル開始時に最初のスキル即発動を評価
 	s.evaluateFirstStrike()
@@ -348,8 +350,20 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// 敵攻撃チェック
-	if time.Now().After(s.nextEnemyAttack) {
+	// ディフェンス終了チェック
+	now := time.Now()
+	if s.enemy.WaitMode == domain.WaitModeDefending && !s.enemy.IsDefenseActive(now) {
+		s.enemy.EndDefense()
+		// 次の行動を準備してチャージ開始
+		s.enemy.PrepareNextAction()
+		if action := s.enemy.GetNextAction(); action != nil {
+			s.battleEngine.StartEnemyCharging(s.battleState, now)
+		}
+		s.message = fmt.Sprintf("%sのディフェンスが終了した", s.enemy.Name)
+	}
+
+	// 敵攻撃チェック（チャージ完了判定）
+	if s.enemy.IsChargeComplete(now) {
 		s.processEnemyAttack()
 
 		// 攻撃後の敗北判定（結果表示状態に入る）

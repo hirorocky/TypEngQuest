@@ -55,10 +55,18 @@ func TestInventoryProviderAdapter_WithData(t *testing.T) {
 	gs.Inventory().AddCore(core)
 
 	module := domain.NewModuleFromType(domain.ModuleType{
-		ID:       "test_module",
-		Name:     "テストモジュール",
-		Category: domain.PhysicalAttack,
-		Tags:     []string{"physical_low"},
+		ID:   "test_module",
+		Name: "テストモジュール",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, nil)
 	gs.Inventory().AddModule(module)
 

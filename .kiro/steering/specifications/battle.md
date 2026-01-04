@@ -26,14 +26,14 @@ When プレイヤーがバトルを開始する, the battle system shall:
 **種別**: Ubiquitous
 
 The battle system shall calculate module effects using:
-- 基礎効果値 x ステータス値 x スケール係数(0.1)
-- 速度係数（制限時間/完了時間、上限2.0）
-- 正確性係数（正確性がそのまま乗算）
+- HP変化量 = (base + stat_coef × STAT) × SpeedFactor × AccuracyFactor
+- 各モジュールは複数のEffectsを持ち、それぞれが独立して発動判定される
+- LUKによる確率補正: 補正後確率 = ベース確率 + (LUK - 10) × luk_factor
 
 **受け入れ基準**:
 1. 正確性50%未満で効果半減
 2. ダメージは最低1保証
-3. カテゴリに応じた対象（攻撃→敵、回復→自分）
+3. Effectのtargetに応じた対象（enemy→敵、self→自分）
 
 ### REQ-BATTLE-3: 敵攻撃システム
 **種別**: State-Driven
@@ -83,8 +83,8 @@ When 敵HP=0, the battle system shall end with victory.
 
 **ルール**:
 1. 乱数生成器は初期化時にシード設定
-2. 効果スケール係数は0.1固定
-3. 正確性ペナルティ閾値は0.5固定
+2. 正確性ペナルティ閾値は0.5固定
+3. モジュールはEffects配列で複数効果を持つ（カテゴリ廃止）
 
 ### BattleState
 
@@ -119,4 +119,4 @@ stateDiagram-v2
 - **Game Loop**: 報酬画面/ホームへのシーン遷移
 
 ---
-_updated_at: 2025-12-01_
+_updated_at: 2026-01-01_

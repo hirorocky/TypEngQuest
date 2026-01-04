@@ -48,6 +48,10 @@ type GameState struct {
 
 	// encounteredEnemies はエンカウントした敵のIDリストです（敵図鑑用）。
 	encounteredEnemies []string
+
+	// defeatedEnemies は撃破済み敵の情報を管理します。
+	// キーは敵タイプID、値は撃破した最高レベルです。
+	defeatedEnemies map[string]int
 }
 
 // NewGameState はマスタデータを使用して新しいGameStateを作成します。
@@ -86,6 +90,7 @@ func NewGameState(
 		rewardCalculator: rewardCalc,
 		tempStorage:      &rewarding.TempStorage{},
 		enemyGenerator:   enemyGen,
+		defeatedEnemies:  make(map[string]int),
 	}
 }
 
@@ -139,14 +144,20 @@ func (g *GameState) UpdateRewardCalculator(coreTypes []domain.CoreType, moduleTy
 }
 
 // RecordBattleVictory はバトル勝利を記録します。
-func (g *GameState) RecordBattleVictory(level int) {
-	g.statistics.RecordBattleResult(true, level)
-	if level > g.MaxLevelReached {
-		g.MaxLevelReached = level
+// selectedLevel は選択したレベル（統計記録用）、defaultLevel は敵のデフォルトレベル（MaxLevelReached更新用）です。
+func (g *GameState) RecordBattleVictory(selectedLevel int, defaultLevel int) {
+	g.statistics.RecordBattleResult(true, selectedLevel)
+	if defaultLevel > g.MaxLevelReached {
+		g.MaxLevelReached = defaultLevel
 	}
 
 	// 実績チェック
 	g.checkAchievements()
+}
+
+// GetMaxLevelReached は到達最高レベルを返します。
+func (g *GameState) GetMaxLevelReached() int {
+	return g.MaxLevelReached
 }
 
 // RecordBattleDefeat はバトル敗北を記録します。
@@ -248,4 +259,82 @@ func (g *GameState) AddRewardsToInventory(result *rewarding.RewardResult) *rewar
 		g.inventory.Modules(),
 		g.tempStorage,
 	)
+}
+
+// ========== 撃破済み敵情報の管理 ==========
+
+// RecordEnemyDefeat は敵の撃破を記録します。
+// 既に記録されている敵の場合、より高いレベルで撃破した場合のみ更新します。
+func (g *GameState) RecordEnemyDefeat(enemyTypeID string, level int) {
+	if enemyTypeID == "" {
+		return
+	}
+
+	if g.defeatedEnemies == nil {
+		g.defeatedEnemies = make(map[string]int)
+	}
+
+	currentLevel, exists := g.defeatedEnemies[enemyTypeID]
+	if !exists || level > currentLevel {
+		g.defeatedEnemies[enemyTypeID] = level
+	}
+}
+
+// GetDefeatedEnemies は撃破済み敵のマップを返します。
+// キーは敵タイプID、値は撃破した最高レベルです。
+func (g *GameState) GetDefeatedEnemies() map[string]int {
+	if g.defeatedEnemies == nil {
+		return make(map[string]int)
+	}
+	// 安全のためコピーを返す
+	result := make(map[string]int)
+	for k, v := range g.defeatedEnemies {
+		result[k] = v
+	}
+	return result
+}
+
+// IsEnemyDefeated は指定した敵タイプが一度でも撃破されているかどうかを返します。
+func (g *GameState) IsEnemyDefeated(enemyTypeID string) bool {
+	if g.defeatedEnemies == nil {
+		return false
+	}
+	_, exists := g.defeatedEnemies[enemyTypeID]
+	return exists
+}
+
+// GetDefeatedLevel は指定した敵タイプの撃破最高レベルを返します。
+// 未撃破の場合は0を返します。
+func (g *GameState) GetDefeatedLevel(enemyTypeID string) int {
+	if g.defeatedEnemies == nil {
+		return 0
+	}
+	return g.defeatedEnemies[enemyTypeID]
+}
+
+// SetDefeatedEnemies は撃破済み敵情報を設定します（セーブデータロード用）。
+func (g *GameState) SetDefeatedEnemies(defeated map[string]int) {
+	if defeated == nil {
+		g.defeatedEnemies = make(map[string]int)
+		return
+	}
+	g.defeatedEnemies = make(map[string]int)
+	for k, v := range defeated {
+		g.defeatedEnemies[k] = v
+	}
+}
+
+// GetMaxDefeatedLevel は全敵種類を通じた最高撃破レベル（到達Lv）を返します。
+// 一度も敵を撃破していない場合は0を返します。
+func (g *GameState) GetMaxDefeatedLevel() int {
+	if g.defeatedEnemies == nil {
+		return 0
+	}
+	maxLevel := 0
+	for _, level := range g.defeatedEnemies {
+		if level > maxLevel {
+			maxLevel = level
+		}
+	}
+	return maxLevel
 }

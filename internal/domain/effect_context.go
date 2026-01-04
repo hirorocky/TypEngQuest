@@ -100,11 +100,17 @@ type EffectContext struct {
 
 	// ========== モジュール情報 ==========
 
-	// ModuleCategory は使用したモジュールのカテゴリです。
-	ModuleCategory ModuleCategory
+	// IsDamageModule はダメージ効果を持つモジュールかを表します。
+	IsDamageModule bool
+
+	// IsHealModule は回復効果を持つモジュールかを表します。
+	IsHealModule bool
 
 	// IsPhysical は物理攻撃かどうかを表します。
 	IsPhysical bool
+
+	// HasBuffDebuffEffect はバフまたはデバフ効果を持つモジュールかを表します。
+	HasBuffDebuffEffect bool
 
 	// ========== 状態カウンタ ==========
 
@@ -180,11 +186,13 @@ func (ctx *EffectContext) SetHeal(amount int) {
 }
 
 // SetModuleUse はモジュール使用イベントを設定します。
-func (ctx *EffectContext) SetModuleUse(agentIndex int, category ModuleCategory, isPhysical bool) {
+func (ctx *EffectContext) SetModuleUse(agentIndex int, isDamage, isHeal, isPhysical, hasBuffDebuff bool) {
 	ctx.EventType = EventOnModuleUse
 	ctx.LastModuleAgent = agentIndex
-	ctx.ModuleCategory = category
+	ctx.IsDamageModule = isDamage
+	ctx.IsHealModule = isHeal
 	ctx.IsPhysical = isPhysical
+	ctx.HasBuffDebuffEffect = hasBuffDebuff
 }
 
 // Clone はコンテキストのコピーを作成します。

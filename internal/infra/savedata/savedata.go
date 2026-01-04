@@ -176,6 +176,9 @@ type StatisticsSaveData struct {
 
 	// EncounteredEnemies はエンカウントした敵のIDリストです（敵図鑑用）。
 	EncounteredEnemies []string `json:"encountered_enemies"`
+
+	// DefeatedEnemies は撃破済み敵の情報です（敵タイプID→撃破最高レベル）。
+	DefeatedEnemies map[string]int `json:"defeated_enemies,omitempty"`
 }
 
 // AchievementsSaveData は実績のセーブデータです。

@@ -71,7 +71,7 @@ type RootModel struct {
 
 	// 各シーンの画面インスタンス
 	homeScreen              *screens.HomeScreen
-	battleSelectScreen      *screens.BattleSelectScreen
+	battleSelectScreen      *screens.BattleSelectScreenCarousel
 	battleScreen            *screens.BattleScreen
 	agentManagementScreen   *screens.AgentManagementScreen
 	encyclopediaScreen      *screens.EncyclopediaScreen
@@ -80,7 +80,7 @@ type RootModel struct {
 	rewardScreen            *screens.RewardScreen
 
 	// パッシブスキル定義（バトル開始時に BattleEngine へ渡す）
-	passiveSkillDefs map[string]domain.PassiveSkillDefinition
+	passiveSkills map[string]domain.PassiveSkill
 
 	// タイピング辞書（words.jsonからロード）
 	typingDictionary *typing.Dictionary
@@ -123,26 +123,26 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	}
 	externalData, loadErr := dataLoader.LoadAllExternalData()
 
-	// チェイン効果データをロード（デバッグモードで使用）
-	var chainEffects []masterdata.ChainEffectData
-	if debugMode {
-		chainEffects, _ = dataLoader.LoadChainEffects()
-	}
+	// チェイン効果データをロード
+	chainEffects, _ := dataLoader.LoadChainEffects()
 
 	// masterdata → domain型への変換（app層で変換を行う）
 	var domainSources *gamestate.DomainDataSources
-	var passiveSkillDefs map[string]domain.PassiveSkillDefinition
+	var passiveSkills map[string]domain.PassiveSkill
 	var typingDict *typing.Dictionary
 	if loadErr == nil && externalData != nil {
 		enemyTypes, coreTypes, moduleTypes := ConvertExternalDataToDomain(externalData)
-		passiveSkills := ConvertPassiveSkills(externalData.PassiveSkills)
-		passiveSkillDefs = ConvertPassiveSkillDefinitions(externalData.PassiveSkills)
+		// 敵行動パターンを解決（IDからEnemyActionオブジェクトへ）
+		enemyActions := ConvertEnemyActions(externalData.EnemyActions)
+		ResolveEnemyTypeActions(enemyTypes, enemyActions)
+		passiveSkills = ConvertPassiveSkills(externalData.PassiveSkills)
+		chainEffectDefs := ConvertChainEffects(chainEffects)
 		domainSources = &gamestate.DomainDataSources{
-			CoreTypes:               coreTypes,
-			ModuleTypes:             moduleTypes,
-			EnemyTypes:              enemyTypes,
-			PassiveSkills:           passiveSkills,
-			PassiveSkillDefinitions: passiveSkillDefs,
+			CoreTypes:              coreTypes,
+			ModuleTypes:            moduleTypes,
+			EnemyTypes:             enemyTypes,
+			PassiveSkills:          passiveSkills,
+			ChainEffectDefinitions: chainEffectDefs,
 		}
 		// タイピング辞書を変換
 		if externalData.TypingDictionary != nil {
@@ -182,6 +182,12 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	if domainSources != nil {
 		gs.UpdateEnemyGenerator(domainSources.EnemyTypes)
 		gs.UpdateRewardCalculator(domainSources.CoreTypes, domainSources.ModuleTypes, domainSources.PassiveSkills)
+
+		// チェイン効果プールを設定（UpdateRewardCalculatorで新しいRewardCalculatorが作成されるため再設定が必要）
+		if len(domainSources.ChainEffectDefinitions) > 0 {
+			chainEffectPool := rewarding.NewChainEffectPool(domainSources.ChainEffectDefinitions)
+			gs.RewardCalculator().SetChainEffectPool(chainEffectPool)
+		}
 	}
 
 	// インベントリプロバイダーを作成（デバッグモードに応じて切り替え）
@@ -225,8 +231,8 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 	homeScreen := screenFactory.CreateHomeScreen(gs.MaxLevelReached, invProvider)
 	homeScreen.SetStatusMessage(statusMessage)
 
-	// バトル選択画面を初期化
-	battleSelectScreen := screenFactory.CreateBattleSelectScreen(gs.MaxLevelReached, invProvider)
+	// バトル選択画面を初期化（カルーセル方式）
+	battleSelectScreen := screenFactory.CreateBattleSelectScreenCarousel(invProvider, gs)
 
 	// エージェント管理画面を初期化
 	agentManagementScreen := screenFactory.CreateAgentManagementScreen(invProvider, debugMode, debugInvProvider)
@@ -255,7 +261,7 @@ func NewRootModel(dataDir string, embeddedFS fs.FS, debugMode bool) *RootModel {
 		encyclopediaScreen:      encyclopediaScreen,
 		statsAchievementsScreen: statsAchievementsScreen,
 		settingsScreen:          settingsScreen,
-		passiveSkillDefs:        passiveSkillDefs,
+		passiveSkills:           passiveSkills,
 		typingDictionary:        typingDict,
 		debugMode:               debugMode,
 		invProvider:             invProvider,
@@ -320,8 +326,17 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 	m.gameState.AddEncounteredEnemy(result.EnemyID)
 
 	if result.Victory {
-		// 勝利時：統計を記録し、最高レベルを更新
-		m.gameState.RecordBattleVictory(result.Level)
+		// 敵のデフォルトレベルを取得
+		defaultLevel := 1
+		if result.EnemyType != nil && result.EnemyType.DefaultLevel > 0 {
+			defaultLevel = result.EnemyType.DefaultLevel
+		}
+
+		// 勝利時：統計を記録し、最高レベルをデフォルトレベルで更新
+		m.gameState.RecordBattleVictory(result.Level, defaultLevel)
+
+		// 撃破済み敵情報を記録（敵選択UIで使用）
+		m.gameState.RecordEnemyDefeat(result.EnemyID, result.Level)
 
 		// ノーダメージ判定付きで実績チェック
 		noDamage := result.Stats != nil && result.Stats.TotalDamageTaken == 0
@@ -337,11 +352,11 @@ func (m *RootModel) handleBattleResult(result screens.BattleResultMsg) {
 			TotalHealAmount:  result.Stats.TotalHealAmount,
 		}
 
-		// 報酬を計算（ドメイン型API）
-		rewardResult := m.gameState.RewardCalculator().CalculateRewards(
-			true,
+		// 確定報酬を計算（敵タイプのドロップ設定に基づく）
+		rewardResult := m.gameState.RewardCalculator().CalculateGuaranteedReward(
 			rewardStats,
 			result.Level,
+			*result.EnemyType,
 		)
 
 		// 報酬をインベントリに追加
@@ -451,9 +466,15 @@ func (m *RootModel) handleSaveRequest() {
 }
 
 // startBattle はバトルを開始します。
-func (m *RootModel) startBattle(level int) tea.Cmd {
-	// 敵を生成
-	enemy := m.gameState.EnemyGenerator().Generate(level)
+// enemyTypeID が空でない場合は指定された敵タイプで生成し、空の場合はランダム生成します。
+func (m *RootModel) startBattle(level int, enemyTypeID string) tea.Cmd {
+	// 敵を生成（タイプが指定されている場合はそのタイプで、なければランダム）
+	var enemy *domain.EnemyModel
+	if enemyTypeID != "" {
+		enemy = m.gameState.EnemyGenerator().GenerateWithType(level, enemyTypeID)
+	} else {
+		enemy = m.gameState.EnemyGenerator().Generate(level)
+	}
 
 	// プレイヤーを準備し、インベントリプロバイダーから装備エージェントを取得
 	m.gameState.PreparePlayerForBattle()
@@ -464,8 +485,8 @@ func (m *RootModel) startBattle(level int) tea.Cmd {
 	m.battleScreen = screens.NewBattleScreen(enemy, player, agents, m.typingDictionary)
 
 	// パッシブスキル定義を設定（EffectTable登録に使用）
-	if m.passiveSkillDefs != nil {
-		m.battleScreen.SetPassiveSkillDefinitions(m.passiveSkillDefs)
+	if m.passiveSkills != nil {
+		m.battleScreen.SetPassiveSkills(m.passiveSkills)
 	}
 
 	// シーンを切り替え
@@ -496,11 +517,10 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 		// ホーム画面の最高到達レベルを更新
 		m.homeScreen.SetMaxLevelReached(m.gameState.MaxLevelReached)
 	case "battle_select":
-		// バトル選択画面を再初期化してリセット
-		invAdapter := m.createInventoryAdapter()
-		m.battleSelectScreen = m.screenFactory.CreateBattleSelectScreen(
-			m.gameState.MaxLevelReached,
-			invAdapter,
+		// バトル選択画面を再初期化してリセット（カルーセル方式）
+		m.battleSelectScreen = m.screenFactory.CreateBattleSelectScreenCarousel(
+			m.invProvider,
+			m.gameState,
 		)
 	case "encyclopedia":
 		// 最新の図鑑データで画面を再初期化
@@ -509,15 +529,6 @@ func (m *RootModel) prepareSceneTransition(sceneName string) {
 		// 最新の統計データで画面を再初期化
 		m.statsAchievementsScreen = m.screenFactory.CreateStatsAchievementsScreen()
 	}
-}
-
-// createInventoryAdapter はインベントリプロバイダーアダプターを作成します。
-func (m *RootModel) createInventoryAdapter() *presenter.InventoryProviderAdapter {
-	return presenter.NewInventoryProviderAdapter(
-		m.gameState.Inventory(),
-		m.gameState.AgentManager(),
-		m.gameState.Player(),
-	)
 }
 
 // View はアプリケーションの現在の状態を文字列としてレンダリングします。

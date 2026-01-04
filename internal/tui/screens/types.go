@@ -78,8 +78,8 @@ type EncyclopediaData struct {
 type ModuleTypeInfo struct {
 	ID          string
 	Name        string
-	Category    domain.ModuleCategory
-	Level       int
+	Icon        string
+	Tags        []string
 	Description string
 }
 

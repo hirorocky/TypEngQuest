@@ -25,80 +25,101 @@ func NewNewGameInitializer(externalData *masterdata.ExternalData) *NewGameInitia
 	}
 }
 
-// CreateInitialAgent は初期エージェントを作成します。
+// CreateInitialAgents は初期エージェントを作成します。
 // マスタデータから初期エージェントを構築します。
-func (i *NewGameInitializer) CreateInitialAgent() *domain.AgentModel {
-	if i.externalData == nil || i.externalData.FirstAgent == nil {
+func (i *NewGameInitializer) CreateInitialAgents() []*domain.AgentModel {
+	if i.externalData == nil || len(i.externalData.FirstAgents) == 0 {
 		slog.Error("初期エージェントデータがありません")
 		return nil
 	}
 
-	firstAgentData := i.externalData.FirstAgent
+	agents := make([]*domain.AgentModel, 0, len(i.externalData.FirstAgents))
 
-	// コア特性を検索
-	var coreType domain.CoreType
-	for _, ct := range i.externalData.CoreTypes {
-		if ct.ID == firstAgentData.CoreTypeID {
-			coreType = ct.ToDomain()
-			break
-		}
-	}
-
-	// パッシブスキルを検索
-	var passiveSkill domain.PassiveSkill
-	for _, ps := range i.externalData.PassiveSkills {
-		if ps.ID == coreType.PassiveSkillID {
-			passiveSkill = domain.PassiveSkill{
-				ID:          ps.ID,
-				Name:        ps.Name,
-				Description: ps.Description,
-			}
-			break
-		}
-	}
-
-	// コアを作成
-	core := domain.NewCoreWithTypeID(
-		firstAgentData.CoreTypeID,
-		firstAgentData.CoreLevel,
-		coreType,
-		passiveSkill,
-	)
-
-	// モジュールを作成
-	modules := make([]*domain.ModuleModel, 0, len(firstAgentData.Modules))
-	for _, modData := range firstAgentData.Modules {
-		// モジュール定義を検索
-		var moduleDef *masterdata.ModuleDefinitionData
-		for j := range i.externalData.ModuleDefinitions {
-			if i.externalData.ModuleDefinitions[j].ID == modData.TypeID {
-				moduleDef = &i.externalData.ModuleDefinitions[j]
+	for _, firstAgentData := range i.externalData.FirstAgents {
+		// コア特性を検索
+		var coreType domain.CoreType
+		for _, ct := range i.externalData.CoreTypes {
+			if ct.ID == firstAgentData.CoreTypeID {
+				coreType = ct.ToDomain()
 				break
 			}
 		}
-		if moduleDef == nil {
-			slog.Warn("モジュール定義が見つかりません",
-				slog.String("type_id", modData.TypeID),
-			)
-			continue
+
+		// パッシブスキルを検索
+		var passiveSkill domain.PassiveSkill
+		for _, ps := range i.externalData.PassiveSkills {
+			if ps.ID == coreType.PassiveSkillID {
+				passiveSkill = domain.PassiveSkill{
+					ID:          ps.ID,
+					Name:        ps.Name,
+					Description: ps.Description,
+				}
+				break
+			}
 		}
 
-		// チェイン効果を作成
-		var chainEffect *domain.ChainEffect
-		if modData.HasChainEffect() {
-			ce := domain.NewChainEffect(
-				convertChainEffectType(modData.ChainEffectType),
-				modData.ChainEffectValue,
-			)
-			chainEffect = &ce
-		}
+		// コアを作成
+		core := domain.NewCoreWithTypeID(
+			firstAgentData.CoreTypeID,
+			firstAgentData.CoreLevel,
+			coreType,
+			passiveSkill,
+		)
 
 		// モジュールを作成
-		module := domain.NewModuleFromType(moduleDef.ToDomainType(), chainEffect)
-		modules = append(modules, module)
+		modules := make([]*domain.ModuleModel, 0, len(firstAgentData.Modules))
+		for _, modData := range firstAgentData.Modules {
+			// モジュール定義を検索
+			var moduleDef *masterdata.ModuleDefinitionData
+			for j := range i.externalData.ModuleDefinitions {
+				if i.externalData.ModuleDefinitions[j].ID == modData.TypeID {
+					moduleDef = &i.externalData.ModuleDefinitions[j]
+					break
+				}
+			}
+			if moduleDef == nil {
+				slog.Warn("モジュール定義が見つかりません",
+					slog.String("type_id", modData.TypeID),
+				)
+				continue
+			}
+
+			// チェイン効果を作成
+			var chainEffect *domain.ChainEffect
+			if modData.HasChainEffect() {
+				// チェイン効果定義を検索して説明文テンプレートを取得
+				var chainEffectDef *masterdata.ChainEffectData
+				for j := range i.externalData.ChainEffects {
+					if i.externalData.ChainEffects[j].EffectType == modData.ChainEffectType {
+						chainEffectDef = &i.externalData.ChainEffects[j]
+						break
+					}
+				}
+				if chainEffectDef != nil {
+					ce := domain.NewChainEffectWithTemplate(
+						convertChainEffectType(modData.ChainEffectType),
+						modData.ChainEffectValue,
+						chainEffectDef.Description,
+						chainEffectDef.ShortDescription,
+					)
+					chainEffect = &ce
+				} else {
+					slog.Warn("チェイン効果定義が見つかりません",
+						slog.String("effect_type", modData.ChainEffectType),
+					)
+				}
+			}
+
+			// モジュールを作成
+			module := domain.NewModuleFromType(moduleDef.ToDomainType(), chainEffect)
+			modules = append(modules, module)
+		}
+
+		agent := domain.NewAgent(firstAgentData.ID, core, modules)
+		agents = append(agents, agent)
 	}
 
-	return domain.NewAgent(firstAgentData.ID, core, modules)
+	return agents
 }
 
 // convertChainEffectType は文字列をChainEffectTypeに変換します。
@@ -155,32 +176,43 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	saveData := savedata.NewSaveData()
 
 	// 初期エージェントを作成
-	initialAgent := i.CreateInitialAgent()
+	initialAgents := i.CreateInitialAgents()
 
 	// インベントリにエージェントを追加（コア情報を直接埋め込み）
-	modules := make([]savedata.ModuleInstanceSave, len(initialAgent.Modules))
-	for idx, m := range initialAgent.Modules {
-		modules[idx] = savedata.ModuleInstanceSave{
-			TypeID: m.TypeID,
-		}
-		// チェイン効果があれば変換
-		if m.ChainEffect != nil {
-			modules[idx].ChainEffect = &savedata.ChainEffectSave{
-				Type:  string(m.ChainEffect.Type),
-				Value: m.ChainEffect.Value,
+	agentInstances := make([]savedata.AgentInstanceSave, 0, len(initialAgents))
+	equippedAgentIDs := [3]string{"", "", ""}
+
+	for idx, agent := range initialAgents {
+		modules := make([]savedata.ModuleInstanceSave, len(agent.Modules))
+		for modIdx, m := range agent.Modules {
+			modules[modIdx] = savedata.ModuleInstanceSave{
+				TypeID: m.TypeID,
+			}
+			// チェイン効果があれば変換
+			if m.ChainEffect != nil {
+				modules[modIdx].ChainEffect = &savedata.ChainEffectSave{
+					Type:  string(m.ChainEffect.Type),
+					Value: m.ChainEffect.Value,
+				}
 			}
 		}
-	}
-	saveData.Inventory.AgentInstances = []savedata.AgentInstanceSave{
-		{
-			ID: initialAgent.ID,
+
+		agentInstances = append(agentInstances, savedata.AgentInstanceSave{
+			ID: agent.ID,
 			Core: savedata.CoreInstanceSave{
-				CoreTypeID: initialAgent.Core.TypeID,
-				Level:      initialAgent.Core.Level,
+				CoreTypeID: agent.Core.TypeID,
+				Level:      agent.Core.Level,
 			},
 			Modules: modules,
-		},
+		})
+
+		// 最大3体まで装備スロットに設定
+		if idx < 3 {
+			equippedAgentIDs[idx] = agent.ID
+		}
 	}
+
+	saveData.Inventory.AgentInstances = agentInstances
 
 	// インベントリのコアは空（エージェントのコアはエージェント内に保持される）
 	saveData.Inventory.CoreInstances = []savedata.CoreInstanceSave{}
@@ -188,8 +220,8 @@ func (i *NewGameInitializer) InitializeNewGame() *savedata.SaveData {
 	// コアとモジュールはエージェント合成で消費されるため、インベントリには追加しない
 	// （エージェントに含まれているコアとモジュールは参照として保持される）
 
-	// 初期エージェントを装備（スロット0に装備）
-	saveData.Player.EquippedAgentIDs = [3]string{initialAgent.ID, "", ""}
+	// 初期エージェントを装備
+	saveData.Player.EquippedAgentIDs = equippedAgentIDs
 
 	return saveData
 }
@@ -201,10 +233,13 @@ func (i *NewGameInitializer) CreateNewGameWithExtraItems() *savedata.SaveData {
 	saveData := i.InitializeNewGame()
 
 	// 追加のエージェントから情報を取得（初期エージェントと同じ構成を使用）
-	extraAgent := i.CreateInitialAgent()
-	if extraAgent == nil {
+	extraAgents := i.CreateInitialAgents()
+	if len(extraAgents) == 0 {
 		return saveData
 	}
+
+	// 最初のエージェントから追加素材を作成
+	extraAgent := extraAgents[0]
 
 	// 追加のコアをインベントリに追加
 	saveData.Inventory.CoreInstances = append(saveData.Inventory.CoreInstances, savedata.CoreInstanceSave{

@@ -381,3 +381,170 @@ func TestEnemyGenerator_GetEnemyTypes(t *testing.T) {
 		t.Errorf("Expected 2 enemy types, got %d", len(types))
 	}
 }
+
+// ==================== Task 6.1: 敵生成フロー統合テスト ====================
+
+// TestEnemyGenerator_GenerateWithType_ActionPatternIntegration は行動パターン付き敵タイプからの生成をテストします。
+func TestEnemyGenerator_GenerateWithType_ActionPatternIntegration(t *testing.T) {
+	// 行動パターンとパッシブを持つ敵タイプを定義
+	normalActions := []domain.EnemyAction{
+		{
+			ID:             "act_attack",
+			Name:           "攻撃",
+			ActionType:     domain.EnemyActionAttack,
+			AttackType:     "physical",
+			DamageBase:     5.0,
+			DamagePerLevel: 1.0,
+			ChargeTime:     2 * time.Second,
+		},
+	}
+	enhancedActions := []domain.EnemyAction{
+		{
+			ID:             "act_attack_enhanced",
+			Name:           "強化攻撃",
+			ActionType:     domain.EnemyActionAttack,
+			AttackType:     "physical",
+			DamageBase:     10.0,
+			DamagePerLevel: 2.0,
+			ChargeTime:     3 * time.Second,
+		},
+	}
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "passive_normal",
+		Name:        "通常パッシブ",
+		Description: "通常時のパッシブ効果",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 1.1,
+		},
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                      "test_enemy",
+			Name:                    "テスト敵",
+			BaseHP:                  100,
+			BaseAttackPower:         10,
+			BaseAttackInterval:      3 * time.Second,
+			AttackType:              "physical",
+			DefaultLevel:            1,
+			ResolvedNormalActions:   normalActions,
+			ResolvedEnhancedActions: enhancedActions,
+			NormalPassive:           normalPassive,
+			DropItemCategory:        "core",
+			DropItemTypeID:          "attack_balance",
+		},
+	}
+
+	gen := NewEnemyGenerator(enemyTypes)
+
+	// 敵タイプ指定で生成
+	enemy := gen.GenerateWithType(5, "test_enemy")
+
+	if enemy == nil {
+		t.Fatal("敵の生成に失敗")
+	}
+
+	// ActionIndexが0で初期化されていること
+	if enemy.ActionIndex != 0 {
+		t.Errorf("ActionIndexは0で初期化されるべき: got %d", enemy.ActionIndex)
+	}
+
+	// 行動パターンが正しくコピーされていること
+	if len(enemy.Type.ResolvedNormalActions) != 1 {
+		t.Errorf("通常行動パターンが正しくコピーされていない: got %d, want 1", len(enemy.Type.ResolvedNormalActions))
+	}
+	if len(enemy.Type.ResolvedEnhancedActions) != 1 {
+		t.Errorf("強化行動パターンが正しくコピーされていない: got %d, want 1", len(enemy.Type.ResolvedEnhancedActions))
+	}
+
+	// パッシブスキルが正しくコピーされていること
+	if enemy.Type.NormalPassive == nil {
+		t.Error("通常パッシブがコピーされていない")
+	} else if enemy.Type.NormalPassive.ID != "passive_normal" {
+		t.Errorf("通常パッシブIDが不正: got %s", enemy.Type.NormalPassive.ID)
+	}
+
+	// GetCurrentActionで最初の行動が取得できること
+	action := enemy.GetCurrentAction()
+	if action.ID != "act_attack" {
+		t.Errorf("最初の行動が不正: got %s, want act_attack", action.ID)
+	}
+}
+
+// TestEnemyGenerator_GenerateWithType_PassedFromBattleSelect はバトル選択画面から渡されるEnemyTypeIDの受け渡しをテストします。
+func TestEnemyGenerator_GenerateWithType_PassedFromBattleSelect(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			DefaultLevel:       1,
+		},
+		{
+			ID:                 "dragon",
+			Name:               "ドラゴン",
+			BaseHP:             200,
+			BaseAttackPower:    20,
+			BaseAttackInterval: 5 * time.Second,
+			AttackType:         "magic",
+			DefaultLevel:       10,
+		},
+	}
+
+	gen := NewEnemyGenerator(enemyTypes)
+
+	// dragonを指定して生成
+	enemy := gen.GenerateWithType(10, "dragon")
+
+	if enemy == nil {
+		t.Fatal("敵の生成に失敗")
+	}
+
+	// 正しいタイプが選択されていること
+	if enemy.Type.ID != "dragon" {
+		t.Errorf("指定した敵タイプが生成されていない: got %s, want dragon", enemy.Type.ID)
+	}
+
+	// レベルが正しく設定されていること
+	if enemy.Level != 10 {
+		t.Errorf("レベルが正しく設定されていない: got %d, want 10", enemy.Level)
+	}
+
+	// 名前にレベルが含まれていること
+	expectedName := "ドラゴン Lv.10"
+	if enemy.Name != expectedName {
+		t.Errorf("名前が不正: got %s, want %s", enemy.Name, expectedName)
+	}
+}
+
+// TestEnemyGenerator_GenerateWithType_InvalidID は存在しないTypeIDの場合のフォールバックをテストします。
+func TestEnemyGenerator_GenerateWithType_InvalidID(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "slime",
+			Name:               "スライム",
+			BaseHP:             50,
+			BaseAttackPower:    5,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	gen := NewEnemyGenerator(enemyTypes)
+	gen.SetSeed(42) // ランダム選択を固定
+
+	// 存在しないIDを指定
+	enemy := gen.GenerateWithType(5, "invalid_id")
+
+	if enemy == nil {
+		t.Fatal("存在しないIDでも敵が生成されるべき（フォールバック）")
+	}
+
+	// 既存の敵タイプからランダムに選択されること
+	if enemy.Type.ID != "slime" {
+		t.Errorf("フォールバックでslimeが選択されるべき: got %s", enemy.Type.ID)
+	}
+}

@@ -56,12 +56,13 @@ func TestRegisterChainEffect(t *testing.T) {
 func TestCheckAndTrigger(t *testing.T) {
 	cem := NewChainEffectManager()
 
-	// エージェント0のチェイン効果を登録
-	effect := domain.NewChainEffect(domain.ChainEffectDamageBonus, 25.0)
+	// エージェント0のチェイン効果を登録（説明文テンプレート付き）
+	effect := domain.NewChainEffectWithTemplate(domain.ChainEffectDamageBonus, 25.0,
+		"次の攻撃のダメージ+%.0f%%", "次攻撃ダメ+%.0f%%")
 	cem.RegisterChainEffect(0, &effect, "slash_lv1")
 
 	// エージェント1がモジュールを使用（チェイン効果が発動）
-	triggered := cem.CheckAndTrigger(1, domain.PhysicalAttack)
+	triggered := cem.CheckAndTrigger(1, ModuleEffectFlags{HasDamage: true})
 
 	// 発動した効果を確認
 	if len(triggered) != 1 {
@@ -95,7 +96,7 @@ func TestCheckAndTriggerSameAgent(t *testing.T) {
 	cem.RegisterChainEffect(0, &effect, "slash_lv1")
 
 	// 同じエージェント0がモジュールを使用（発動しない）
-	triggered := cem.CheckAndTrigger(0, domain.PhysicalAttack)
+	triggered := cem.CheckAndTrigger(0, ModuleEffectFlags{HasDamage: true})
 
 	// 発動しない
 	if len(triggered) != 0 {
@@ -223,7 +224,7 @@ func TestDamageAmpEffect(t *testing.T) {
 	cem.RegisterChainEffect(0, &effect, "amp_skill")
 
 	// 他エージェントが攻撃（発動）
-	triggered := cem.CheckAndTrigger(1, domain.PhysicalAttack)
+	triggered := cem.CheckAndTrigger(1, ModuleEffectFlags{HasDamage: true})
 
 	if len(triggered) != 1 {
 		t.Fatalf("発動した効果数: got %d, want 1", len(triggered))
@@ -242,7 +243,7 @@ func TestHealBonusEffect(t *testing.T) {
 	cem.RegisterChainEffect(0, &effect, "heal_amp")
 
 	// 他エージェントが回復（発動）
-	triggered := cem.CheckAndTrigger(1, domain.Heal)
+	triggered := cem.CheckAndTrigger(1, ModuleEffectFlags{HasHeal: true})
 
 	if len(triggered) != 1 {
 		t.Fatalf("発動した効果数: got %d, want 1", len(triggered))
@@ -261,7 +262,7 @@ func TestBuffExtendEffect(t *testing.T) {
 	cem.RegisterChainEffect(0, &effect, "buff_extend")
 
 	// 他エージェントがバフ（発動）
-	triggered := cem.CheckAndTrigger(1, domain.Buff)
+	triggered := cem.CheckAndTrigger(1, ModuleEffectFlags{HasBuff: true})
 
 	if len(triggered) != 1 {
 		t.Fatalf("発動した効果数: got %d, want 1", len(triggered))
@@ -271,30 +272,29 @@ func TestBuffExtendEffect(t *testing.T) {
 	}
 }
 
-// TestEffectCategoryMatching は効果カテゴリとモジュールカテゴリのマッチングをテストします。
+// TestEffectCategoryMatching は効果カテゴリとモジュール効果フラグのマッチングをテストします。
 func TestEffectCategoryMatching(t *testing.T) {
 	tests := []struct {
-		name           string
-		effectType     domain.ChainEffectType
-		moduleCategory domain.ModuleCategory
-		shouldTrigger  bool
+		name          string
+		effectType    domain.ChainEffectType
+		moduleFlags   ModuleEffectFlags
+		shouldTrigger bool
 	}{
 		// 攻撃強化効果は攻撃モジュールで発動
-		{"DamageBonus-Physical", domain.ChainEffectDamageBonus, domain.PhysicalAttack, true},
-		{"DamageBonus-Magic", domain.ChainEffectDamageBonus, domain.MagicAttack, true},
-		{"DamageBonus-Heal", domain.ChainEffectDamageBonus, domain.Heal, false},
+		{"DamageBonus-Damage", domain.ChainEffectDamageBonus, ModuleEffectFlags{HasDamage: true}, true},
+		{"DamageBonus-Heal", domain.ChainEffectDamageBonus, ModuleEffectFlags{HasHeal: true}, false},
 
 		// 回復強化効果は回復モジュールで発動
-		{"HealBonus-Heal", domain.ChainEffectHealBonus, domain.Heal, true},
-		{"HealBonus-Physical", domain.ChainEffectHealBonus, domain.PhysicalAttack, false},
+		{"HealBonus-Heal", domain.ChainEffectHealBonus, ModuleEffectFlags{HasHeal: true}, true},
+		{"HealBonus-Damage", domain.ChainEffectHealBonus, ModuleEffectFlags{HasDamage: true}, false},
 
 		// バフ延長効果はバフモジュールで発動
-		{"BuffExtend-Buff", domain.ChainEffectBuffExtend, domain.Buff, true},
-		{"BuffExtend-Debuff", domain.ChainEffectBuffExtend, domain.Debuff, false},
+		{"BuffExtend-Buff", domain.ChainEffectBuffExtend, ModuleEffectFlags{HasBuff: true}, true},
+		{"BuffExtend-Debuff", domain.ChainEffectBuffExtend, ModuleEffectFlags{HasDebuff: true}, false},
 
 		// デバフ延長効果はデバフモジュールで発動
-		{"DebuffExtend-Debuff", domain.ChainEffectDebuffExtend, domain.Debuff, true},
-		{"DebuffExtend-Buff", domain.ChainEffectDebuffExtend, domain.Buff, false},
+		{"DebuffExtend-Debuff", domain.ChainEffectDebuffExtend, ModuleEffectFlags{HasDebuff: true}, true},
+		{"DebuffExtend-Buff", domain.ChainEffectDebuffExtend, ModuleEffectFlags{HasBuff: true}, false},
 	}
 
 	for _, tt := range tests {
@@ -303,7 +303,7 @@ func TestEffectCategoryMatching(t *testing.T) {
 			effect := domain.NewChainEffect(tt.effectType, 10.0)
 			cem.RegisterChainEffect(0, &effect, "test_module")
 
-			triggered := cem.CheckAndTrigger(1, tt.moduleCategory)
+			triggered := cem.CheckAndTrigger(1, tt.moduleFlags)
 
 			if tt.shouldTrigger && len(triggered) == 0 {
 				t.Error("発動すべきなのに発動しませんでした")

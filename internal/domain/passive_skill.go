@@ -107,9 +107,9 @@ type TriggerCondition struct {
 	Value float64
 }
 
-// PassiveSkillDefinition はマスタデータ用のパッシブスキル定義構造体です。
-// passive_skills.jsonから読み込まれ、ゲーム内のパッシブスキルの仕様を定義します。
-type PassiveSkillDefinition struct {
+// PassiveSkill はパッシブスキルを表す構造体です。
+// コア特性に紐づくパッシブスキルの仕様を定義します。
+type PassiveSkill struct {
 	// ID はパッシブスキルの一意識別子です。
 	ID string
 
@@ -118,6 +118,10 @@ type PassiveSkillDefinition struct {
 
 	// Description はパッシブスキルの効果説明です。
 	Description string
+
+	// ShortDescription はパッシブスキルの短い効果説明です（最大16文字程度）。
+	// UI上でコンパクトに表示する際に使用します。
+	ShortDescription string
 
 	// TriggerType はトリガータイプです。
 	TriggerType PassiveTriggerType
@@ -130,6 +134,10 @@ type PassiveSkillDefinition struct {
 
 	// EffectValue は効果量です（倍率、加算値など）。
 	EffectValue float64
+
+	// Effects は効果値のマップです（EffectColumn → 値）。
+	// StatModifiersの代替として使用します。
+	Effects map[EffectColumn]float64
 
 	// Probability は発動確率です（確率トリガーの場合のみ使用、0.0〜1.0）。
 	Probability float64
@@ -145,44 +153,44 @@ type PassiveSkillDefinition struct {
 }
 
 // IsPermanent は永続効果かどうかを判定します。
-func (d PassiveSkillDefinition) IsPermanent() bool {
-	return d.TriggerType == PassiveTriggerPermanent
+func (p PassiveSkill) IsPermanent() bool {
+	return p.TriggerType == PassiveTriggerPermanent
 }
 
 // HasProbability は確率判定があるかどうかを判定します。
-func (d PassiveSkillDefinition) HasProbability() bool {
-	return d.Probability > 0
+func (p PassiveSkill) HasProbability() bool {
+	return p.Probability > 0
 }
 
 // IsStackable はスタック可能かどうかを判定します。
-func (d PassiveSkillDefinition) IsStackable() bool {
-	return d.TriggerType == PassiveTriggerStack && d.MaxStacks > 0
+func (p PassiveSkill) IsStackable() bool {
+	return p.TriggerType == PassiveTriggerStack && p.MaxStacks > 0
 }
 
-// ToEntry は PassiveSkillDefinition を EffectEntry に変換します。
-// 効果テーブルV2に登録可能な形式に変換します。
-func (d PassiveSkillDefinition) ToEntry() EffectEntry {
+// ToEntry は PassiveSkill を EffectEntry に変換します。
+// 効果テーブルに登録可能な形式に変換します。
+func (p PassiveSkill) ToEntry() EffectEntry {
 	entry := EffectEntry{
 		SourceType:      SourcePassive,
-		SourceID:        d.ID,
-		Name:            d.Name,
-		EnableCondition: d.buildCondition(),
-		Values:          d.buildValues(),
-		Flags:           d.buildFlags(),
-		Probability:     d.Probability,
-		MaxStacks:       d.MaxStacks,
-		StackIncrement:  d.StackIncrement,
+		SourceID:        p.ID,
+		Name:            p.Name,
+		EnableCondition: p.buildCondition(),
+		Values:          p.buildValues(),
+		Flags:           p.buildFlags(),
+		Probability:     p.Probability,
+		MaxStacks:       p.MaxStacks,
+		StackIncrement:  p.StackIncrement,
 	}
 	return entry
 }
 
 // buildCondition はトリガー条件を EnableCondition 関数に変換します。
-func (d PassiveSkillDefinition) buildCondition() func(*EffectContext) bool {
-	if d.TriggerCondition == nil {
+func (p PassiveSkill) buildCondition() func(*EffectContext) bool {
+	if p.TriggerCondition == nil {
 		return nil // 常に有効
 	}
 
-	cond := d.TriggerCondition
+	cond := p.TriggerCondition
 	switch cond.Type {
 	case TriggerConditionHPBelowPercent:
 		threshold := cond.Value / 100.0 // パーセントを0-1に変換
@@ -255,8 +263,7 @@ func (d PassiveSkillDefinition) buildCondition() func(*EffectContext) bool {
 
 	case TriggerConditionOnBuffDebuffUse:
 		return func(ctx *EffectContext) bool {
-			return ctx.EventType == EventOnModuleUse &&
-				(ctx.ModuleCategory == Buff || ctx.ModuleCategory == Debuff)
+			return ctx.EventType == EventOnModuleUse && ctx.HasBuffDebuffEffect
 		}
 
 	case TriggerConditionSameAttackCount:
@@ -271,27 +278,31 @@ func (d PassiveSkillDefinition) buildCondition() func(*EffectContext) bool {
 }
 
 // buildValues は効果を EffectColumn の map に変換します。
-func (d PassiveSkillDefinition) buildValues() map[EffectColumn]float64 {
+func (p PassiveSkill) buildValues() map[EffectColumn]float64 {
+	// Effectsが設定されている場合はそれを使用
+	if len(p.Effects) > 0 {
+		return p.Effects
+	}
+
+	// 後方互換性: EffectTypeとEffectValueから変換
 	values := make(map[EffectColumn]float64)
 
-	switch d.EffectType {
+	switch p.EffectType {
 	case PassiveEffectMultiplier:
 		// 効果倍率はダメージ倍率として扱う
-		values[ColDamageMultiplier] = d.EffectValue
+		values[ColDamageMultiplier] = p.EffectValue
 	case PassiveEffectModifier:
 		// ステータス修正は固定ダメージボーナスとして扱う
-		values[ColDamageBonus] = d.EffectValue
+		values[ColDamageBonus] = p.EffectValue
 	case PassiveEffectSpecial:
 		// 特殊効果は個別に判定
-		// 例: ダメージ軽減、回避、CD短縮など
-		// 今後必要に応じて拡張
 	}
 
 	return values
 }
 
 // buildFlags は bool 型効果を map に変換します。
-func (d PassiveSkillDefinition) buildFlags() map[EffectColumn]bool {
+func (p PassiveSkill) buildFlags() map[EffectColumn]bool {
 	// 現時点では bool 型効果なし
 	return nil
 }

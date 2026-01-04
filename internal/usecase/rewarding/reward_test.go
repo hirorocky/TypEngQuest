@@ -9,29 +9,41 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
-// newTestModule はテスト用モジュールを作成するヘルパー関数です。
-func newTestModule(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+// newTestModule はテスト用ダメージモジュールを作成するヘルパー関数です。
+func newTestModule(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, nil)
 }
 
 // newTestModuleWithChainEffect はチェイン効果付きモジュールを作成するヘルパー関数です。
-func newTestModuleWithChainEffect(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
+func newTestModuleWithChainEffect(id, name string, tags []string, statCoef float64, statRef, description string, chainEffect *domain.ChainEffect) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}, chainEffect)
 }
 
@@ -106,240 +118,6 @@ func TestBattleReward_Defeat_NoRewardScreen(t *testing.T) {
 	}
 }
 
-// TestCoreDrop_Judgment はコアドロップ判定が正しく動作することをテストします。
-func TestCoreDrop_Judgment(t *testing.T) {
-	coreTypes := []domain.CoreType{
-		{
-			ID:           "test_core",
-			Name:         "テストコア",
-			MinDropLevel: 1,
-			AllowedTags:  []string{"test"},
-			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		},
-	}
-	calculator := NewRewardCalculator(coreTypes, nil, nil)
-
-	// ドロップ率100%で確認
-	calculator.SetCoreDropRate(1.0)
-
-	droppedCore := calculator.RollCoreDrop(10)
-
-	if droppedCore == nil {
-		t.Error("ドロップ率100%でコアがドロップすべき")
-	}
-}
-
-// TestCoreDrop_LevelInRange はコアレベルが敵レベル±範囲内であることをテストします。
-func TestCoreDrop_LevelInRange(t *testing.T) {
-	coreTypes := []domain.CoreType{
-		{
-			ID:           "test_core",
-			Name:         "テストコア",
-			MinDropLevel: 1,
-			AllowedTags:  []string{"test"},
-			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		},
-	}
-	calculator := NewRewardCalculator(coreTypes, nil, nil)
-	calculator.SetCoreDropRate(1.0)
-
-	enemyLevel := 20
-	levelRange := calculator.GetCoreLevelRange()
-
-	// 複数回テストして範囲内であることを確認
-	for i := 0; i < 50; i++ {
-		droppedCore := calculator.RollCoreDrop(enemyLevel)
-		if droppedCore == nil {
-			continue
-		}
-
-		minLevel := enemyLevel - levelRange
-		if minLevel < 1 {
-			minLevel = 1
-		}
-		maxLevel := enemyLevel + levelRange
-
-		if droppedCore.Level < minLevel || droppedCore.Level > maxLevel {
-			t.Errorf("コアレベルが範囲外: got %d, want %d-%d", droppedCore.Level, minLevel, maxLevel)
-		}
-	}
-}
-
-// TestCoreDrop_MinDropLevel は特性別ドロップ最低敵レベル制限をテストします。
-func TestCoreDrop_MinDropLevel(t *testing.T) {
-	coreTypes := []domain.CoreType{
-		{
-			ID:           "common_core",
-			Name:         "一般コア",
-			MinDropLevel: 1,
-			AllowedTags:  []string{"test"},
-			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		},
-		{
-			ID:           "rare_core",
-			Name:         "レアコア",
-			MinDropLevel: 10,
-			AllowedTags:  []string{"test"},
-			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		},
-		{
-			ID:           "epic_core",
-			Name:         "エピックコア",
-			MinDropLevel: 20,
-			AllowedTags:  []string{"test"},
-			StatWeights:  map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
-		},
-	}
-	calculator := NewRewardCalculator(coreTypes, nil, nil)
-	calculator.SetCoreDropRate(1.0)
-
-	// レベル5の敵からはMinDropLevel <= 5のコアのみドロップ可能
-	eligibleTypes := calculator.GetEligibleCoreTypes(5)
-	if len(eligibleTypes) != 1 {
-		t.Errorf("レベル5では1種類のコアのみがドロップ可能: got %d", len(eligibleTypes))
-	}
-	if eligibleTypes[0].ID != "common_core" {
-		t.Errorf("レベル5ではcommon_coreのみドロップ可能: got %s", eligibleTypes[0].ID)
-	}
-
-	// レベル15の敵からはMinDropLevel <= 15のコアがドロップ可能
-	eligibleTypes = calculator.GetEligibleCoreTypes(15)
-	if len(eligibleTypes) != 2 {
-		t.Errorf("レベル15では2種類のコアがドロップ可能: got %d", len(eligibleTypes))
-	}
-}
-
-// TestCoreDrop_InitialCoreTypes は初期コア特性のドロップ最低敵レベルをテストします。
-func TestCoreDrop_InitialCoreTypes(t *testing.T) {
-	// cores.jsonから読み込まれる初期設定を再現
-	coreTypes := []domain.CoreType{
-		{ID: "attack_balance", Name: "攻撃バランス", MinDropLevel: 1},
-		{ID: "all_rounder", Name: "オールラウンダー", MinDropLevel: 1},
-		{ID: "healer", Name: "ヒーラー", MinDropLevel: 3},
-		{ID: "paladin", Name: "パラディン", MinDropLevel: 5},
-	}
-	calculator := NewRewardCalculator(coreTypes, nil, nil)
-
-	// レベル1では2種類
-	eligibleTypes := calculator.GetEligibleCoreTypes(1)
-	if len(eligibleTypes) != 2 {
-		t.Errorf("レベル1では2種類のコアがドロップ可能: got %d", len(eligibleTypes))
-	}
-
-	// レベル3では3種類
-	eligibleTypes = calculator.GetEligibleCoreTypes(3)
-	if len(eligibleTypes) != 3 {
-		t.Errorf("レベル3では3種類のコアがドロップ可能: got %d", len(eligibleTypes))
-	}
-
-	// レベル5では4種類
-	eligibleTypes = calculator.GetEligibleCoreTypes(5)
-	if len(eligibleTypes) != 4 {
-		t.Errorf("レベル5では4種類のコアがドロップ可能: got %d", len(eligibleTypes))
-	}
-}
-
-// TestModuleDrop_Judgment はモジュールドロップ判定が正しく動作することをテストします。
-func TestModuleDrop_Judgment(t *testing.T) {
-	moduleTypes := []ModuleDropInfo{
-		{
-			ID:           "test_module",
-			Name:         "テストモジュール",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			MinDropLevel: 1,
-		},
-	}
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-
-	// ドロップ率100%で確認
-	calculator.SetModuleDropRate(1.0)
-
-	droppedModules := calculator.RollModuleDrop(10, 2)
-
-	if len(droppedModules) == 0 {
-		t.Error("ドロップ率100%でモジュールがドロップすべき")
-	}
-}
-
-// TestModuleDrop_MinDropLevel はカテゴリ×レベル別ドロップ最低敵レベル制限をテストします。
-func TestModuleDrop_MinDropLevel(t *testing.T) {
-	moduleTypes := []ModuleDropInfo{
-		{
-			ID:           "physical_lv1",
-			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			MinDropLevel: 1,
-		},
-		{
-			ID:           "physical_lv2",
-			Name:         "物理攻撃Lv2",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_mid"},
-			MinDropLevel: 10,
-		},
-		{
-			ID:           "physical_lv3",
-			Name:         "物理攻撃Lv3",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_high"},
-			MinDropLevel: 20,
-		},
-	}
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-
-	// レベル5の敵からはMinDropLevel <= 5のモジュールのみドロップ可能
-	eligibleTypes := calculator.GetEligibleModuleTypes(5)
-	if len(eligibleTypes) != 1 {
-		t.Errorf("レベル5では1種類のモジュールのみがドロップ可能: got %d", len(eligibleTypes))
-	}
-
-	// レベル15の敵からはMinDropLevel <= 15のモジュールがドロップ可能
-	eligibleTypes = calculator.GetEligibleModuleTypes(15)
-	if len(eligibleTypes) != 2 {
-		t.Errorf("レベル15では2種類のモジュールがドロップ可能: got %d", len(eligibleTypes))
-	}
-
-	// レベル25の敵からは全モジュールがドロップ可能
-	eligibleTypes = calculator.GetEligibleModuleTypes(25)
-	if len(eligibleTypes) != 3 {
-		t.Errorf("レベル25では3種類のモジュールがドロップ可能: got %d", len(eligibleTypes))
-	}
-}
-
-// TestModuleDrop_HighLevelProgression は高レベルモジュールの段階的ドロップ設定をテストします。
-func TestModuleDrop_HighLevelProgression(t *testing.T) {
-	// modules.jsonから読み込まれる設定を再現
-	moduleTypes := []ModuleDropInfo{
-		{ID: "physical_lv1", Name: "物理打撃Lv1", MinDropLevel: 1},
-		{ID: "physical_lv2", Name: "物理打撃Lv2", MinDropLevel: 10},
-		{ID: "physical_lv3", Name: "物理打撃Lv3", MinDropLevel: 20},
-		{ID: "magic_lv1", Name: "ファイアボールLv1", MinDropLevel: 1},
-		{ID: "magic_lv2", Name: "ファイアボールLv2", MinDropLevel: 10},
-		{ID: "magic_lv3", Name: "ファイアボールLv3", MinDropLevel: 20},
-	}
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-
-	// Lv1モジュールは敵Lv1以上でドロップ
-	eligibleLv1 := calculator.GetEligibleModuleTypes(1)
-	for _, m := range eligibleLv1 {
-		if m.MinDropLevel > 1 {
-			t.Errorf("レベル1で不正なモジュールがドロップ可能: %s", m.ID)
-		}
-	}
-
-	// 高レベルほど高レベルの敵からのみドロップ
-	for level := 1; level <= 30; level += 5 {
-		eligible := calculator.GetEligibleModuleTypes(level)
-		for _, m := range eligible {
-			if m.MinDropLevel > level {
-				t.Errorf("レベル%dでMinDropLevel=%dのモジュールがドロップ可能になっている", level, m.MinDropLevel)
-			}
-		}
-	}
-}
-
 // TestInventoryFull_Warning はインベントリ満杯時に警告を表示することをテストします。
 func TestInventoryFull_Warning(t *testing.T) {
 	coreInv := domain.NewCoreInventory(2)
@@ -370,7 +148,7 @@ func TestInventoryFull_TempStorage(t *testing.T) {
 
 	// ドロップしたアイテムを一時保管
 	droppedCore := domain.NewCore("temp_core", "一時コア", 10, domain.CoreType{}, domain.PassiveSkill{})
-	droppedModule := newTestModule("temp_module", "一時モジュール", domain.PhysicalAttack, 1, []string{}, 10.0, "STR", "テスト")
+	droppedModule := newTestModule("temp_module", "一時モジュール", []string{}, 10.0, "STR", "テスト")
 
 	storage := calculator.CreateTempStorage()
 	storage.AddCore(droppedCore)
@@ -516,107 +294,21 @@ func TestChainEffectPool_GenerateWithNilProbability(t *testing.T) {
 	}
 }
 
-// TestModuleDrop_WithChainEffect はモジュールドロップ時にチェイン効果が付与されることをテストします。
-func TestModuleDrop_WithChainEffect(t *testing.T) {
-	moduleTypes := []ModuleDropInfo{
-		{
-			ID:           "physical_lv1",
-			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			MinDropLevel: 1,
-		},
-	}
-
-	skillEffects := []ChainEffectDefinition{
-		{
-			ID:         "damage_amp",
-			Name:       "ダメージアンプ",
-			Category:   "attack",
-			EffectType: domain.ChainEffectDamageAmp,
-			MinValue:   10,
-			MaxValue:   30,
-		},
-	}
-
-	pool := NewChainEffectPool(skillEffects)
-	pool.SetNoEffectProbability(0.0) // チェイン効果を必ず付与
-
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-	calculator.SetModuleDropRate(1.0)
-	calculator.SetChainEffectPool(pool)
-
-	droppedModules := calculator.RollModuleDrop(10, 2)
-
-	if len(droppedModules) == 0 {
-		t.Fatal("モジュールがドロップすべき")
-	}
-
-	for _, module := range droppedModules {
-		if !module.HasChainEffect() {
-			t.Error("nil確率0%でモジュールにチェイン効果が付与されるべき")
-		}
-	}
-}
-
-// TestModuleDrop_ChainEffectValueInRange はチェイン効果の値が範囲内であることをテストします。
-func TestModuleDrop_ChainEffectValueInRange(t *testing.T) {
-	moduleTypes := []ModuleDropInfo{
-		{
-			ID:           "physical_lv1",
-			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			MinDropLevel: 1,
-		},
-	}
-
-	skillEffects := []ChainEffectDefinition{
-		{
-			ID:         "damage_amp",
-			Name:       "ダメージアンプ",
-			Category:   "attack",
-			EffectType: domain.ChainEffectDamageAmp,
-			MinValue:   15,
-			MaxValue:   25,
-		},
-	}
-
-	pool := NewChainEffectPool(skillEffects)
-	pool.SetNoEffectProbability(0.0)
-
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-	calculator.SetModuleDropRate(1.0)
-	calculator.SetChainEffectPool(pool)
-
-	// 複数回テストして値が範囲内であることを確認
-	for i := 0; i < 50; i++ {
-		droppedModules := calculator.RollModuleDrop(10, 1)
-		if len(droppedModules) == 0 {
-			continue
-		}
-
-		for _, module := range droppedModules {
-			if module.ChainEffect == nil {
-				continue
-			}
-			if module.ChainEffect.Value < 15 || module.ChainEffect.Value > 25 {
-				t.Errorf("チェイン効果値が範囲外: got %.0f, want 15-25", module.ChainEffect.Value)
-			}
-		}
-	}
-}
-
 // TestModuleDropInfo_ToDomainWithRandomChainEffect はチェイン効果付きドメイン変換をテストします。
 func TestModuleDropInfo_ToDomainWithRandomChainEffect(t *testing.T) {
 	dropInfo := ModuleDropInfo{
 		ID:          "physical_lv1",
 		Name:        "物理攻撃Lv1",
-		Category:    domain.PhysicalAttack,
+		Icon:        "⚔️",
 		Tags:        []string{"physical_low"},
-		BaseEffect:  10.0,
-		StatRef:     "STR",
 		Description: "テスト",
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 10.0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+			},
+		},
 	}
 
 	effect := domain.NewChainEffect(domain.ChainEffectDamageAmp, 20)
@@ -639,59 +331,6 @@ func TestModuleDropInfo_ToDomainWithRandomChainEffect(t *testing.T) {
 
 // ==================== タスク11.2: モジュール入手処理更新テスト ====================
 
-// TestCalculateRewards_WithChainEffectPool はCalculateRewardsがチェイン効果プールを使用することをテストします。
-func TestCalculateRewards_WithChainEffectPool(t *testing.T) {
-	moduleTypes := []ModuleDropInfo{
-		{
-			ID:           "physical_lv1",
-			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
-			MinDropLevel: 1,
-		},
-	}
-
-	skillEffects := []ChainEffectDefinition{
-		{
-			ID:         "damage_amp",
-			Name:       "ダメージアンプ",
-			Category:   "attack",
-			EffectType: domain.ChainEffectDamageAmp,
-			MinValue:   10,
-			MaxValue:   30,
-		},
-	}
-
-	pool := NewChainEffectPool(skillEffects)
-	pool.SetNoEffectProbability(0.0)
-
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-	calculator.SetModuleDropRate(1.0)
-	calculator.SetChainEffectPool(pool)
-
-	stats := &BattleStatistics{
-		TotalWPM:         80.0,
-		TotalAccuracy:    0.95,
-		TotalTypingCount: 10,
-	}
-
-	result := calculator.CalculateRewards(true, stats, 10)
-
-	if result == nil {
-		t.Fatal("報酬結果がnilであってはならない")
-	}
-	if len(result.DroppedModules) == 0 {
-		t.Fatal("モジュールがドロップすべき")
-	}
-
-	// ドロップしたモジュールにチェイン効果が付与されていることを確認
-	for _, module := range result.DroppedModules {
-		if !module.HasChainEffect() {
-			t.Error("nil確率0%でモジュールにチェイン効果が付与されるべき")
-		}
-	}
-}
-
 // TestAddRewardsToInventory_WithChainEffect はチェイン効果付きモジュールがインベントリに追加されることをテストします。
 func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
 	// チェイン効果付きモジュールを作成
@@ -699,8 +338,6 @@ func TestAddRewardsToInventory_WithChainEffect(t *testing.T) {
 	module := newTestModuleWithChainEffect(
 		"physical_lv1",
 		"物理攻撃Lv1",
-		domain.PhysicalAttack,
-		1,
 		[]string{"physical_low"},
 		10.0,
 		"STR",
@@ -808,32 +445,586 @@ func TestChainEffectPool_EmptyEffects(t *testing.T) {
 	}
 }
 
-// TestModuleDrop_NoChainEffectPool はチェイン効果プールなしでドロップした場合をテストします。
-func TestModuleDrop_NoChainEffectPool(t *testing.T) {
+// ==================== タスク5.1: 確定ドロップの基本ロジックテスト ====================
+
+// TestCalculateGuaranteedReward_EnemyWithDropCategory は敵にドロップカテゴリ設定がある場合に確定ドロップすることをテストします。
+func TestCalculateGuaranteedReward_EnemyWithDropCategory(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			AllowedTags:  []string{"physical_low"},
+			StatWeights:  map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		},
+	}
 	moduleTypes := []ModuleDropInfo{
 		{
 			ID:           "physical_lv1",
 			Name:         "物理攻撃Lv1",
-			Category:     domain.PhysicalAttack,
-			Tags:         []string{"physical_low"},
 			MinDropLevel: 1,
 		},
 	}
 
-	// チェイン効果プールなしでCalculator作成
-	calculator := NewRewardCalculator(nil, moduleTypes, nil)
-	calculator.SetModuleDropRate(1.0)
+	calculator := NewRewardCalculator(coreTypes, moduleTypes, nil)
 
-	droppedModules := calculator.RollModuleDrop(10, 2)
-
-	if len(droppedModules) == 0 {
-		t.Fatal("モジュールがドロップすべき")
+	stats := &BattleStatistics{
+		TotalWPM:         80.0,
+		TotalAccuracy:    0.95,
+		TotalTypingCount: 10,
 	}
 
-	// チェイン効果プールなしではチェイン効果なし
-	for _, module := range droppedModules {
-		if module.HasChainEffect() {
-			t.Error("チェイン効果プールなしではチェイン効果がnilであるべき")
+	// コアドロップ設定の敵タイプ
+	enemyType := domain.EnemyType{
+		ID:               "slime",
+		Name:             "スライム",
+		DropItemCategory: "core",
+		DropItemTypeID:   "attack_balance",
+	}
+
+	result := calculator.CalculateGuaranteedReward(stats, 10, enemyType)
+
+	if result == nil {
+		t.Fatal("報酬結果がnilであってはならない")
+	}
+	if !result.IsVictory {
+		t.Error("勝利フラグがtrueであるべき")
+	}
+
+	// 必ず1つのアイテムがドロップすること
+	totalItems := len(result.DroppedCores) + len(result.DroppedModules)
+	if totalItems != 1 {
+		t.Errorf("確定ドロップで1つのアイテムがドロップすべき: got %d", totalItems)
+	}
+
+	// コアがドロップすること
+	if len(result.DroppedCores) != 1 {
+		t.Errorf("コアがドロップすべき: got %d cores", len(result.DroppedCores))
+	}
+
+	// ドロップしたコアがTypeIDに対応していること
+	if len(result.DroppedCores) > 0 {
+		core := result.DroppedCores[0]
+		if core.Type.ID != "attack_balance" {
+			t.Errorf("コアTypeIDが期待と異なる: got %s, want attack_balance", core.Type.ID)
 		}
+	}
+}
+
+// TestCalculateGuaranteedReward_ModuleDrop はモジュールドロップ設定の敵からモジュールがドロップすることをテストします。
+func TestCalculateGuaranteedReward_ModuleDrop(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{Target: domain.TargetEnemy, Probability: 1.0},
+			},
+		},
+	}
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+
+	stats := &BattleStatistics{
+		TotalWPM:         80.0,
+		TotalAccuracy:    0.95,
+		TotalTypingCount: 10,
+	}
+
+	// モジュールドロップ設定の敵タイプ
+	enemyType := domain.EnemyType{
+		ID:               "goblin",
+		Name:             "ゴブリン",
+		DropItemCategory: "module",
+		DropItemTypeID:   "physical_lv1",
+	}
+
+	result := calculator.CalculateGuaranteedReward(stats, 10, enemyType)
+
+	// 必ず1つのアイテムがドロップすること
+	totalItems := len(result.DroppedCores) + len(result.DroppedModules)
+	if totalItems != 1 {
+		t.Errorf("確定ドロップで1つのアイテムがドロップすべき: got %d", totalItems)
+	}
+
+	// モジュールがドロップすること
+	if len(result.DroppedModules) != 1 {
+		t.Errorf("モジュールがドロップすべき: got %d modules", len(result.DroppedModules))
+	}
+
+	// ドロップしたモジュールがTypeIDに対応していること
+	if len(result.DroppedModules) > 0 {
+		module := result.DroppedModules[0]
+		if module.TypeID != "physical_lv1" {
+			t.Errorf("モジュールTypeIDが期待と異なる: got %s, want physical_lv1", module.TypeID)
+		}
+	}
+}
+
+// TestCalculateGuaranteedReward_PanicOnMissingDropConfig はドロップ設定がない場合にpanicすることをテストします。
+func TestCalculateGuaranteedReward_PanicOnMissingDropConfig(t *testing.T) {
+	calculator := NewRewardCalculator(nil, nil, nil)
+
+	stats := &BattleStatistics{
+		TotalWPM:         80.0,
+		TotalAccuracy:    0.95,
+		TotalTypingCount: 10,
+	}
+
+	// ドロップ設定がない敵タイプ
+	enemyType := domain.EnemyType{
+		ID:               "unknown_enemy",
+		Name:             "不明な敵",
+		DropItemCategory: "", // 空
+		DropItemTypeID:   "", // 空
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("ドロップ設定がない場合にpanicすべき")
+		}
+	}()
+
+	calculator.CalculateGuaranteedReward(stats, 10, enemyType)
+}
+
+// TestCalculateGuaranteedReward_PanicOnInvalidTypeID は不正なTypeIDの場合にpanicすることをテストします。
+func TestCalculateGuaranteedReward_PanicOnInvalidTypeID(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			StatWeights:  map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		},
+	}
+
+	calculator := NewRewardCalculator(coreTypes, nil, nil)
+
+	stats := &BattleStatistics{
+		TotalWPM:         80.0,
+		TotalAccuracy:    0.95,
+		TotalTypingCount: 10,
+	}
+
+	// 存在しないTypeID
+	enemyType := domain.EnemyType{
+		ID:               "unknown_enemy",
+		Name:             "不明な敵",
+		DropItemCategory: "core",
+		DropItemTypeID:   "non_existent_core",
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("存在しないTypeIDの場合にpanicすべき")
+		}
+	}()
+
+	calculator.CalculateGuaranteedReward(stats, 10, enemyType)
+}
+
+// ==================== タスク5.2: コアドロップの品質計算テスト ====================
+
+// TestRollCoreDropWithTypeID_GeneratesCorrectType は指定したTypeIDのコアが生成されることをテストします。
+func TestRollCoreDropWithTypeID_GeneratesCorrectType(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			AllowedTags:  []string{"physical_low"},
+			StatWeights:  map[string]float64{"STR": 1.2, "INT": 1.0, "WIL": 0.8, "LUK": 1.0},
+		},
+		{
+			ID:           "healer",
+			Name:         "ヒーラー",
+			MinDropLevel: 3,
+			AllowedTags:  []string{"heal_low"},
+			StatWeights:  map[string]float64{"STR": 0.5, "INT": 1.5, "WIL": 0.8, "LUK": 1.2},
+		},
+	}
+
+	calculator := NewRewardCalculator(coreTypes, nil, nil)
+
+	// attack_balance を指定
+	core := calculator.RollCoreDropWithTypeID("attack_balance", 10)
+
+	if core == nil {
+		t.Fatal("コアがnilであってはならない")
+	}
+	if core.Type.ID != "attack_balance" {
+		t.Errorf("コアTypeIDが期待と異なる: got %s, want attack_balance", core.Type.ID)
+	}
+	if core.Type.Name != "攻撃バランス" {
+		t.Errorf("コアType.Nameが期待と異なる: got %s, want 攻撃バランス", core.Type.Name)
+	}
+	// core.Nameはレベルを含む表示用名前
+	expectedName := "攻撃バランス Lv.10"
+	if core.Name != expectedName {
+		t.Errorf("コア名が期待と異なる: got %s, want %s", core.Name, expectedName)
+	}
+}
+
+// TestRollCoreDropWithTypeID_LevelEqualsEnemyLevel はコアレベルが敵レベルと同じであることをテストします。
+func TestRollCoreDropWithTypeID_LevelEqualsEnemyLevel(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			StatWeights:  map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		},
+	}
+
+	calculator := NewRewardCalculator(coreTypes, nil, nil)
+
+	// 様々なレベルでテスト
+	testLevels := []int{1, 5, 10, 20, 50, 100}
+	for _, enemyLevel := range testLevels {
+		core := calculator.RollCoreDropWithTypeID("attack_balance", enemyLevel)
+		if core == nil {
+			t.Fatal("コアがnilであってはならない")
+		}
+
+		if core.Level != enemyLevel {
+			t.Errorf("コアレベルは敵レベルと同じであるべき: got %d, expected %d", core.Level, enemyLevel)
+		}
+	}
+}
+
+// TestRollCoreDropWithTypeID_InvalidTypeID は存在しないTypeIDでnilを返すことをテストします。
+func TestRollCoreDropWithTypeID_InvalidTypeID(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			StatWeights:  map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		},
+	}
+
+	calculator := NewRewardCalculator(coreTypes, nil, nil)
+
+	core := calculator.RollCoreDropWithTypeID("non_existent_core", 10)
+
+	if core != nil {
+		t.Error("存在しないTypeIDの場合はnilを返すべき")
+	}
+}
+
+// TestRollCoreDropWithTypeID_LevelOne は敵レベル1の場合にレベル1のコアが生成されることをテストします。
+func TestRollCoreDropWithTypeID_LevelOne(t *testing.T) {
+	coreTypes := []domain.CoreType{
+		{
+			ID:           "attack_balance",
+			Name:         "攻撃バランス",
+			MinDropLevel: 1,
+			StatWeights:  map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		},
+	}
+
+	calculator := NewRewardCalculator(coreTypes, nil, nil)
+
+	// 敵レベル1の場合
+	for i := 0; i < 10; i++ {
+		core := calculator.RollCoreDropWithTypeID("attack_balance", 1)
+		if core == nil {
+			t.Fatal("コアがnilであってはならない")
+		}
+		if core.Level != 1 {
+			t.Errorf("敵レベル1の場合はコアレベルも1であるべき: got %d", core.Level)
+		}
+	}
+}
+
+// ==================== タスク5.3: モジュールドロップの品質計算テスト ====================
+
+// TestRollModuleDropWithTypeID_GeneratesCorrectType は指定したTypeIDのモジュールが生成されることをテストします。
+func TestRollModuleDropWithTypeID_GeneratesCorrectType(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			Icon:         "⚔️",
+			MinDropLevel: 1,
+		},
+		{
+			ID:           "heal_lv1",
+			Name:         "応急手当",
+			Icon:         "💚",
+			MinDropLevel: 1,
+		},
+	}
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+
+	// physical_lv1 を指定
+	module := calculator.RollModuleDropWithTypeID("physical_lv1", 10)
+
+	if module == nil {
+		t.Fatal("モジュールがnilであってはならない")
+	}
+	if module.TypeID != "physical_lv1" {
+		t.Errorf("モジュールTypeIDが期待と異なる: got %s, want physical_lv1", module.TypeID)
+	}
+	if module.Name() != "物理攻撃Lv1" {
+		t.Errorf("モジュール名が期待と異なる: got %s, want 物理攻撃Lv1", module.Name())
+	}
+}
+
+// TestRollModuleDropWithTypeID_ChainEffectWithPool はチェイン効果プールがある場合にチェイン効果が付与されることをテストします。
+func TestRollModuleDropWithTypeID_ChainEffectWithPool(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   30,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0) // チェイン効果を必ず付与
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetChainEffectPool(pool)
+
+	module := calculator.RollModuleDropWithTypeID("physical_lv1", 10)
+
+	if module == nil {
+		t.Fatal("モジュールがnilであってはならない")
+	}
+	if !module.HasChainEffect() {
+		t.Error("チェイン効果プールがある場合はチェイン効果が付与されるべき")
+	}
+}
+
+// TestRollModuleDropWithTypeID_HighLevelBetterChainEffect は高レベル敵ほど高品質チェイン効果の確率が上がることをテストします。
+func TestRollModuleDropWithTypeID_HighLevelBetterChainEffect(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:         "damage_amp",
+			Name:       "ダメージアンプ",
+			Category:   "attack",
+			EffectType: domain.ChainEffectDamageAmp,
+			MinValue:   10,
+			MaxValue:   50,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+	pool.SetNoEffectProbability(0.0) // チェイン効果を必ず付与
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetChainEffectPool(pool)
+
+	// 低レベル敵（レベル10）のチェイン効果値の平均
+	lowLevelSum := 0.0
+	lowLevelCount := 100
+	for i := 0; i < lowLevelCount; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 10)
+		if module != nil && module.HasChainEffect() {
+			lowLevelSum += module.ChainEffect.Value
+		}
+	}
+	lowLevelAvg := lowLevelSum / float64(lowLevelCount)
+
+	// 高レベル敵（レベル100）のチェイン効果値の平均
+	highLevelSum := 0.0
+	highLevelCount := 100
+	for i := 0; i < highLevelCount; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 100)
+		if module != nil && module.HasChainEffect() {
+			highLevelSum += module.ChainEffect.Value
+		}
+	}
+	highLevelAvg := highLevelSum / float64(highLevelCount)
+
+	// 高レベル敵からのモジュールのチェイン効果値の平均が高いことを確認
+	if highLevelAvg <= lowLevelAvg {
+		t.Errorf("高レベル敵からのモジュールのチェイン効果値の平均が低レベル敵より高くなるべき: lowLevelAvg=%.2f, highLevelAvg=%.2f", lowLevelAvg, highLevelAvg)
+	}
+}
+
+// TestRollModuleDropWithTypeID_AlwaysHasChainEffect はモジュールに必ずチェイン効果がつくことをテストします。
+func TestRollModuleDropWithTypeID_AlwaysHasChainEffect(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:           "damage_amp",
+			Name:         "ダメージアンプ",
+			Category:     "attack",
+			EffectType:   domain.ChainEffectDamageAmp,
+			MinValue:     10,
+			MaxValue:     30,
+			MinDropLevel: 1,
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetChainEffectPool(pool)
+
+	// 低レベル敵（レベル1）でも100%チェイン効果がつく
+	for i := 0; i < 10; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 1)
+		if module == nil {
+			t.Error("モジュールがnilであるべきではない")
+			continue
+		}
+		if !module.HasChainEffect() {
+			t.Error("モジュールには必ずチェイン効果がつくべき")
+		}
+	}
+
+	// 高レベル敵（レベル100）でも100%チェイン効果がつく
+	for i := 0; i < 10; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 100)
+		if module == nil {
+			t.Error("モジュールがnilであるべきではない")
+			continue
+		}
+		if !module.HasChainEffect() {
+			t.Error("モジュールには必ずチェイン効果がつくべき")
+		}
+	}
+}
+
+// TestRollModuleDropWithTypeID_ChainEffectLevelFiltering はチェイン効果のMinDropLevelでフィルタリングされることをテストします。
+func TestRollModuleDropWithTypeID_ChainEffectLevelFiltering(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	skillEffects := []ChainEffectDefinition{
+		{
+			ID:           "damage_bonus",
+			Name:         "ダメージボーナス",
+			Category:     "attack",
+			EffectType:   domain.ChainEffectDamageBonus,
+			MinValue:     10,
+			MaxValue:     50,
+			MinDropLevel: 1, // レベル1からドロップ
+		},
+		{
+			ID:           "double_cast",
+			Name:         "ダブルキャスト",
+			Category:     "special",
+			EffectType:   domain.ChainEffectDoubleCast,
+			MinValue:     10,
+			MaxValue:     25,
+			MinDropLevel: 10, // レベル10からドロップ
+		},
+	}
+
+	pool := NewChainEffectPool(skillEffects)
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+	calculator.SetChainEffectPool(pool)
+
+	// レベル1の敵からはdamage_bonusのみドロップ可能
+	for i := 0; i < 20; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 1)
+		if module == nil || !module.HasChainEffect() {
+			t.Error("モジュールにはチェイン効果があるべき")
+			continue
+		}
+		if module.ChainEffect.Type != domain.ChainEffectDamageBonus {
+			t.Errorf("レベル1の敵からはdamage_bonusのみドロップすべき: got %s", module.ChainEffect.Type)
+		}
+	}
+
+	// レベル10以上の敵からは両方ドロップ可能
+	foundDamageBonus := false
+	foundDoubleCast := false
+	for i := 0; i < 100; i++ {
+		module := calculator.RollModuleDropWithTypeID("physical_lv1", 10)
+		if module == nil || !module.HasChainEffect() {
+			t.Error("モジュールにはチェイン効果があるべき")
+			continue
+		}
+		if module.ChainEffect.Type == domain.ChainEffectDamageBonus {
+			foundDamageBonus = true
+		}
+		if module.ChainEffect.Type == domain.ChainEffectDoubleCast {
+			foundDoubleCast = true
+		}
+	}
+	if !foundDamageBonus || !foundDoubleCast {
+		t.Errorf("レベル10以上の敵からは両方のチェイン効果がドロップすべき: foundDamageBonus=%v, foundDoubleCast=%v", foundDamageBonus, foundDoubleCast)
+	}
+}
+
+// TestRollModuleDropWithTypeID_InvalidTypeID は存在しないTypeIDでnilを返すことをテストします。
+func TestRollModuleDropWithTypeID_InvalidTypeID(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+
+	module := calculator.RollModuleDropWithTypeID("non_existent_module", 10)
+
+	if module != nil {
+		t.Error("存在しないTypeIDの場合はnilを返すべき")
+	}
+}
+
+// TestRollModuleDropWithTypeID_NoChainEffectPool はチェイン効果プールがない場合にチェイン効果なしのモジュールが生成されることをテストします。
+func TestRollModuleDropWithTypeID_NoChainEffectPool(t *testing.T) {
+	moduleTypes := []ModuleDropInfo{
+		{
+			ID:           "physical_lv1",
+			Name:         "物理攻撃Lv1",
+			MinDropLevel: 1,
+		},
+	}
+
+	// チェイン効果プールなし
+	calculator := NewRewardCalculator(nil, moduleTypes, nil)
+
+	module := calculator.RollModuleDropWithTypeID("physical_lv1", 10)
+
+	if module == nil {
+		t.Fatal("モジュールがnilであってはならない")
+	}
+	if module.HasChainEffect() {
+		t.Error("チェイン効果プールがない場合はチェイン効果がnilであるべき")
 	}
 }

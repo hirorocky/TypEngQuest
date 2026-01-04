@@ -8,6 +8,21 @@ import (
 	"hirorocky/type-battle/internal/domain"
 )
 
+// ModuleEffectFlags はモジュールが持つ効果の種別を表します。
+type ModuleEffectFlags struct {
+	// HasDamage はダメージ効果を持つかを表します。
+	HasDamage bool
+
+	// HasHeal は回復効果を持つかを表します。
+	HasHeal bool
+
+	// HasBuff はバフ効果を持つかを表します。
+	HasBuff bool
+
+	// HasDebuff はデバフ効果を持つかを表します。
+	HasDebuff bool
+}
+
 // PendingChainEffect は待機中のチェイン効果を表す構造体です。
 type PendingChainEffect struct {
 	// AgentIndex はこの効果を登録したエージェントのインデックスです。
@@ -68,9 +83,9 @@ func (m *ChainEffectManager) RegisterChainEffect(agentIndex int, effect *domain.
 
 // CheckAndTrigger は他エージェントのモジュール使用時に発動条件をチェックし、発動を実行します。
 // usingAgentIndexはモジュールを使用したエージェントのインデックスです。
-// moduleCategoryは使用したモジュールのカテゴリです。
+// effectFlagsは使用したモジュールが持つ効果の種別です。
 // 発動した効果のリストを返します。
-func (m *ChainEffectManager) CheckAndTrigger(usingAgentIndex int, moduleCategory domain.ModuleCategory) []TriggeredChainEffect {
+func (m *ChainEffectManager) CheckAndTrigger(usingAgentIndex int, effectFlags ModuleEffectFlags) []TriggeredChainEffect {
 	triggered := make([]TriggeredChainEffect, 0)
 	expiredAgents := make([]int, 0)
 
@@ -80,8 +95,8 @@ func (m *ChainEffectManager) CheckAndTrigger(usingAgentIndex int, moduleCategory
 			continue
 		}
 
-		// カテゴリマッチングをチェック
-		if !m.isEffectTriggeredBy(pending.Effect.Type, moduleCategory) {
+		// 効果種別マッチングをチェック
+		if !m.isEffectTriggeredBy(pending.Effect.Type, effectFlags) {
 			continue
 		}
 
@@ -105,18 +120,18 @@ func (m *ChainEffectManager) CheckAndTrigger(usingAgentIndex int, moduleCategory
 	return triggered
 }
 
-// isEffectTriggeredBy はチェイン効果がモジュールカテゴリによって発動するかを判定します。
-func (m *ChainEffectManager) isEffectTriggeredBy(effectType domain.ChainEffectType, moduleCategory domain.ModuleCategory) bool {
+// isEffectTriggeredBy はチェイン効果がモジュールの効果種別によって発動するかを判定します。
+func (m *ChainEffectManager) isEffectTriggeredBy(effectType domain.ChainEffectType, flags ModuleEffectFlags) bool {
 	effectCategory := effectType.Category()
 
 	switch effectCategory {
 	case domain.ChainEffectCategoryAttack:
-		// 攻撃強化効果は攻撃モジュールで発動
-		return moduleCategory == domain.PhysicalAttack || moduleCategory == domain.MagicAttack
+		// 攻撃強化効果はダメージモジュールで発動
+		return flags.HasDamage
 
 	case domain.ChainEffectCategoryHeal:
 		// 回復強化効果は回復モジュールで発動
-		return moduleCategory == domain.Heal
+		return flags.HasHeal
 
 	case domain.ChainEffectCategoryDefense:
 		// 防御強化効果は任意のモジュールで発動
@@ -134,9 +149,9 @@ func (m *ChainEffectManager) isEffectTriggeredBy(effectType domain.ChainEffectTy
 		// 効果延長カテゴリは効果種別で判定
 		switch effectType {
 		case domain.ChainEffectBuffExtend, domain.ChainEffectBuffDuration:
-			return moduleCategory == domain.Buff
+			return flags.HasBuff
 		case domain.ChainEffectDebuffExtend, domain.ChainEffectDebuffDuration:
-			return moduleCategory == domain.Debuff
+			return flags.HasDebuff
 		}
 		return false
 

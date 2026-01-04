@@ -81,26 +81,40 @@ func TestLoadModuleDefinitions(t *testing.T) {
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
-				"category": "physical_attack",
+				"icon": "⚔️",
 				"tags": ["physical_low"],
-				"base_effect": 10.0,
-				"stat_reference": "STR",
 				"description": "基本的な物理攻撃",
 				"cooldown_seconds": 2.0,
 				"difficulty": 1,
-				"min_drop_level": 1
+				"min_drop_level": 1,
+				"effects": [
+					{
+						"target": "enemy",
+						"hp_formula": {"base": 0, "stat_coef": 1.0, "stat_ref": "STR"},
+						"probability": 1.0,
+						"luk_factor": 0,
+						"icon": "⚔️"
+					}
+				]
 			},
 			{
 				"id": "fireball_lv2",
 				"name": "ファイアボールLv2",
-				"category": "magic_attack",
+				"icon": "🔥",
 				"tags": ["magic_mid"],
-				"base_effect": 20.0,
-				"stat_reference": "MAG",
 				"description": "中級の魔法攻撃",
 				"cooldown_seconds": 3.5,
 				"difficulty": 2,
-				"min_drop_level": 10
+				"min_drop_level": 10,
+				"effects": [
+					{
+						"target": "enemy",
+						"hp_formula": {"base": 0, "stat_coef": 1.5, "stat_ref": "MAG"},
+						"probability": 1.0,
+						"luk_factor": 0,
+						"icon": "🔥"
+					}
+				]
 			}
 		]
 	}`
@@ -124,11 +138,11 @@ func TestLoadModuleDefinitions(t *testing.T) {
 	if modules[0].ID != "physical_strike_lv1" {
 		t.Errorf("ID: got %s, want physical_strike_lv1", modules[0].ID)
 	}
-	if modules[0].Category != "physical_attack" {
-		t.Errorf("Category: got %s, want physical_attack", modules[0].Category)
+	if len(modules[0].Effects) != 1 {
+		t.Errorf("Effects length: got %d, want 1", len(modules[0].Effects))
 	}
-	if modules[0].BaseEffect != 10.0 {
-		t.Errorf("BaseEffect: got %f, want 10.0", modules[0].BaseEffect)
+	if modules[0].Effects[0].Target != "enemy" {
+		t.Errorf("Effects[0].Target: got %s, want enemy", modules[0].Effects[0].Target)
 	}
 }
 
@@ -285,14 +299,21 @@ func TestLoadAllExternalData(t *testing.T) {
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
-				"category": "physical_attack",
+				"icon": "⚔️",
 				"tags": ["physical_low"],
-				"base_effect": 10.0,
-				"stat_reference": "STR",
 				"description": "基本的な物理攻撃",
 				"cooldown_seconds": 2.0,
 				"difficulty": 1,
-				"min_drop_level": 1
+				"min_drop_level": 1,
+				"effects": [
+					{
+						"target": "enemy",
+						"hp_formula": {"base": 0, "stat_coef": 1.0, "stat_ref": "STR"},
+						"probability": 1.0,
+						"luk_factor": 0,
+						"icon": "⚔️"
+					}
+				]
 			}
 		]
 	}`
@@ -338,16 +359,35 @@ func TestLoadAllExternalData(t *testing.T) {
 
 	// first_agent.json
 	firstAgentJSON := `{
-		"first_agent": {
-			"id": "agent_first",
-			"core_type_id": "attack_balance",
-			"core_level": 1,
-			"modules": [
-				{"type_id": "physical_strike_lv1"}
-			]
-		}
+		"first_agents": [
+			{
+				"id": "agent_first",
+				"core_type_id": "attack_balance",
+				"core_level": 1,
+				"modules": [
+					{"type_id": "physical_strike_lv1"}
+				]
+			}
+		]
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "first_agent.json"), []byte(firstAgentJSON), 0644)
+
+	// chain_effects.json
+	chainEffectsJSON := `{
+		"chain_effects": [
+			{
+				"id": "damage_bonus",
+				"name": "ダメージボーナス",
+				"description": "次の攻撃のダメージ+%.0f%%",
+				"short_description": "次攻撃ダメ+%.0f%%",
+				"category": "attack",
+				"min_value": 10,
+				"max_value": 50,
+				"value_step": 5
+			}
+		]
+	}`
+	os.WriteFile(filepath.Join(tmpDir, "chain_effects.json"), []byte(chainEffectsJSON), 0644)
 
 	loader := NewDataLoader(tmpDir)
 	externalData, err := loader.LoadAllExternalData()
@@ -370,8 +410,8 @@ func TestLoadAllExternalData(t *testing.T) {
 	if externalData.TypingDictionary == nil {
 		t.Error("TypingDictionary should not be nil")
 	}
-	if externalData.FirstAgent == nil {
-		t.Error("FirstAgent should not be nil")
+	if len(externalData.FirstAgents) == 0 {
+		t.Error("FirstAgents should not be empty")
 	}
 }
 
@@ -419,14 +459,21 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 			{
 				"id": "physical_strike_lv1",
 				"name": "物理打撃Lv1",
-				"category": "physical_attack",
+				"icon": "⚔️",
 				"tags": ["physical_low"],
-				"base_effect": 10.0,
-				"stat_reference": "STR",
 				"description": "基本的な物理攻撃",
 				"cooldown_seconds": 2.0,
 				"difficulty": 1,
-				"min_drop_level": 1
+				"min_drop_level": 1,
+				"effects": [
+					{
+						"target": "enemy",
+						"hp_formula": {"base": 0, "stat_coef": 1.0, "stat_ref": "STR"},
+						"probability": 1.0,
+						"luk_factor": 0,
+						"icon": "⚔️"
+					}
+				]
 			}
 		]
 	}`
@@ -444,8 +491,13 @@ func TestConvertToDomainModuleModel(t *testing.T) {
 	if domainModule.TypeID != "physical_strike_lv1" {
 		t.Errorf("TypeID: got %s, want physical_strike_lv1", domainModule.TypeID)
 	}
-	if domainModule.Category() != domain.PhysicalAttack {
-		t.Errorf("Category: got %v, want %v", domainModule.Category(), domain.PhysicalAttack)
+	// 効果がダメージ効果であることを確認
+	effects := domainModule.Effects()
+	if len(effects) != 1 {
+		t.Errorf("Effects length: got %d, want 1", len(effects))
+	}
+	if !effects[0].IsDamageEffect() {
+		t.Error("Effect should be a damage effect")
 	}
 }
 
@@ -569,8 +621,8 @@ func TestLoadPassiveSkills(t *testing.T) {
 	}
 }
 
-// TestConvertToDomainPassiveSkillDefinition はパッシブスキルデータからドメインモデルへの変換をテストします。
-func TestConvertToDomainPassiveSkillDefinition(t *testing.T) {
+// TestConvertToDomainPassiveSkill はパッシブスキルデータからドメインモデルへの変換をテストします。
+func TestConvertToDomainPassiveSkill(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	passiveSkillsJSON := `{

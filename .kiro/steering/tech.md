@@ -39,6 +39,7 @@
 - **ルーターパターン**: シーン遷移を`SceneRouter`に委譲
 - **型変換のapp層集約**: infra→domain型変換はapp層で実施し、usecase層のinfra依存を排除
 - **EffectTableパターン**: 複数種の効果（バフ、デバフ、パッシブ、チェイン）を統一テーブルで管理し、列（EffectColumn）ベースで集計
+- **Managerパターン**: usecase層でXxxManager構造体を使用し、状態管理とビジネスロジックをカプセル化（例: RecastManager, ChainEffectManager, AchievementManager）
 
 ---
-_updated_at: 2025-12-31_
+_updated_at: 2026-01-04_

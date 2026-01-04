@@ -30,22 +30,23 @@ The agent system shall manage cores with:
 - ステータス計算: 基礎値(10) x レベル x 重み
 
 **受け入れ基準**:
-1. STR/MAG/SPD/LUKの4ステータス
+1. STR/INT/WIL/LUKの4ステータス
 2. 特性ごとに異なるステータス重み
 3. 許可タグでモジュール互換性を制限
+4. LUKはレベルに依存せず、基礎値10 × 重みで計算
 
 ### REQ-AGENT-3: モジュールシステム
 **種別**: Ubiquitous
 
 The agent system shall manage modules with:
-- カテゴリ: 物理攻撃/魔法攻撃/回復/バフ/デバフ
-- レベル: 種類ごとに固定
-- 基礎効果値: 同じ種類は同じ効果
+- Effects配列: 複数の効果を持つ（カテゴリ廃止）
+- hp_formula: base + stat_coef × STAT でHP変化量を計算
+- タグ: コア特性との互換性判定に使用
 
 **受け入れ基準**:
-1. カテゴリごとに参照ステータスが異なる
+1. 各Effectはtarget（enemy/self）で対象を指定
 2. タグでコア特性との互換性を判定
-3. レベルで難易度が変化（low/mid/high）
+3. LUKとluk_factorで確率補正
 
 ### REQ-AGENT-4: 装備管理
 **種別**: Event-Driven
@@ -99,14 +100,19 @@ The agent system shall validate module-core compatibility:
 
 **責務**: エージェントに装備可能なスキルエンティティを表現
 
-**カテゴリと参照ステータス**:
-| カテゴリ | 参照ステータス | 効果 |
-|---------|---------------|------|
-| physical_attack | STR | 敵にダメージ |
-| magic_attack | MAG | 敵にダメージ |
-| heal | MAG | HP回復 |
-| buff | SPD | 自己強化 |
-| debuff | SPD | 敵弱体化 |
+**Effectsベースシステム**:
+| stat_ref | 用途 | 例 |
+|----------|------|-----|
+| STR | 物理攻撃ダメージ | 軽斬撃、強斬撃 |
+| INT | 魔法攻撃/デバフ | ファイアボール、毒デバフ |
+| WIL | 回復/バフ | ヒール、攻撃バフ |
+
+**Effect構造**:
+- target: enemy（敵対象）/ self（自分対象）
+- hp_formula: `{base, stat_coef, stat_ref}`
+- effect_column: バフ/デバフ効果
+- probability: 発動確率（0.0-1.0）
+- luk_factor: LUKによる確率補正係数
 
 ### AgentManager
 
@@ -128,4 +134,4 @@ stateDiagram-v2
 - **Collection**: 合成時の図鑑更新
 
 ---
-_updated_at: 2025-12-01_
+_updated_at: 2026-01-01_

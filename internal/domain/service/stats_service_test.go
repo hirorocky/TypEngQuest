@@ -16,8 +16,8 @@ func TestCalculateStats_Basic(t *testing.T) {
 		Name: "テスト特性",
 		StatWeights: map[string]float64{
 			"STR": 1.0,
-			"MAG": 1.0,
-			"SPD": 1.0,
+			"INT": 1.0,
+			"WIL": 1.0,
 			"LUK": 1.0,
 		},
 	}
@@ -29,12 +29,13 @@ func TestCalculateStats_Basic(t *testing.T) {
 	if stats.STR != 10 {
 		t.Errorf("STR expected 10, got %d", stats.STR)
 	}
-	if stats.MAG != 10 {
-		t.Errorf("MAG expected 10, got %d", stats.MAG)
+	if stats.INT != 10 {
+		t.Errorf("INT expected 10, got %d", stats.INT)
 	}
-	if stats.SPD != 10 {
-		t.Errorf("SPD expected 10, got %d", stats.SPD)
+	if stats.WIL != 10 {
+		t.Errorf("WIL expected 10, got %d", stats.WIL)
 	}
+	// LUKはレベルに依存せず、10 × 重み(1.0) = 10
 	if stats.LUK != 10 {
 		t.Errorf("LUK expected 10, got %d", stats.LUK)
 	}
@@ -46,32 +47,33 @@ func TestCalculateStats_WithWeights(t *testing.T) {
 		ID:   "weighted-type",
 		Name: "重み付き特性",
 		StatWeights: map[string]float64{
-			"STR": 1.5,  // 50%増加
-			"MAG": 0.5,  // 50%減少
-			"SPD": 2.0,  // 2倍
-			"LUK": 0.25, // 25%
+			"STR": 1.5, // 50%増加
+			"INT": 0.5, // 50%減少
+			"WIL": 2.0, // 2倍
+			"LUK": 0.5, // 50%（LUK基準値の影響）
 		},
 	}
 
 	// レベル2でテスト
 	stats := CalculateStats(2, coreType)
 
-	// 基礎値(10) × レベル(2) × 重み
+	// STR, INT, WIL: 基礎値(10) × レベル(2) × 重み
+	// LUK: 基礎値(10) × 重み（レベル無関係）
 	expected := map[string]int{
 		"STR": 30, // 20 × 1.5 = 30
-		"MAG": 10, // 20 × 0.5 = 10
-		"SPD": 40, // 20 × 2.0 = 40
-		"LUK": 5,  // 20 × 0.25 = 5
+		"INT": 10, // 20 × 0.5 = 10
+		"WIL": 40, // 20 × 2.0 = 40
+		"LUK": 5,  // 10 × 0.5 = 5 (レベル無関係)
 	}
 
 	if stats.STR != expected["STR"] {
 		t.Errorf("STR expected %d, got %d", expected["STR"], stats.STR)
 	}
-	if stats.MAG != expected["MAG"] {
-		t.Errorf("MAG expected %d, got %d", expected["MAG"], stats.MAG)
+	if stats.INT != expected["INT"] {
+		t.Errorf("INT expected %d, got %d", expected["INT"], stats.INT)
 	}
-	if stats.SPD != expected["SPD"] {
-		t.Errorf("SPD expected %d, got %d", expected["SPD"], stats.SPD)
+	if stats.WIL != expected["WIL"] {
+		t.Errorf("WIL expected %d, got %d", expected["WIL"], stats.WIL)
 	}
 	if stats.LUK != expected["LUK"] {
 		t.Errorf("LUK expected %d, got %d", expected["LUK"], stats.LUK)
@@ -85,8 +87,8 @@ func TestCalculateStats_HighLevel(t *testing.T) {
 		Name: "高レベルテスト",
 		StatWeights: map[string]float64{
 			"STR": 1.2,
-			"MAG": 0.8,
-			"SPD": 1.0,
+			"INT": 0.8,
+			"WIL": 1.0,
 			"LUK": 1.0,
 		},
 	}
@@ -94,20 +96,20 @@ func TestCalculateStats_HighLevel(t *testing.T) {
 	// レベル10でテスト
 	stats := CalculateStats(10, coreType)
 
-	// 基礎値(10) × レベル(10) = 100
-	// STR: 100 × 1.2 = 120
-	// MAG: 100 × 0.8 = 80
+	// STR, INT, WIL: 基礎値(10) × レベル(10) = 100
+	// LUK: 基礎値(10) × 重み（レベル無関係）
 	if stats.STR != 120 {
 		t.Errorf("STR expected 120, got %d", stats.STR)
 	}
-	if stats.MAG != 80 {
-		t.Errorf("MAG expected 80, got %d", stats.MAG)
+	if stats.INT != 80 {
+		t.Errorf("INT expected 80, got %d", stats.INT)
 	}
-	if stats.SPD != 100 {
-		t.Errorf("SPD expected 100, got %d", stats.SPD)
+	if stats.WIL != 100 {
+		t.Errorf("WIL expected 100, got %d", stats.WIL)
 	}
-	if stats.LUK != 100 {
-		t.Errorf("LUK expected 100, got %d", stats.LUK)
+	// LUKはレベルに依存しない
+	if stats.LUK != 10 {
+		t.Errorf("LUK expected 10, got %d", stats.LUK)
 	}
 }
 
@@ -118,8 +120,8 @@ func TestCalculateStats_ZeroWeight(t *testing.T) {
 		Name: "ゼロ重み",
 		StatWeights: map[string]float64{
 			"STR": 0.0, // ゼロ
-			"MAG": 1.0,
-			"SPD": 0.0,
+			"INT": 1.0,
+			"WIL": 0.0,
 			"LUK": 1.0,
 		},
 	}
@@ -130,14 +132,16 @@ func TestCalculateStats_ZeroWeight(t *testing.T) {
 	if stats.STR != 0 {
 		t.Errorf("STR expected 0, got %d", stats.STR)
 	}
-	if stats.SPD != 0 {
-		t.Errorf("SPD expected 0, got %d", stats.SPD)
+	if stats.WIL != 0 {
+		t.Errorf("WIL expected 0, got %d", stats.WIL)
 	}
 	// 通常重みは計算される
-	if stats.MAG != 50 {
-		t.Errorf("MAG expected 50, got %d", stats.MAG)
+	// INT: 10 × 5 × 1.0 = 50
+	if stats.INT != 50 {
+		t.Errorf("INT expected 50, got %d", stats.INT)
 	}
-	if stats.LUK != 50 {
-		t.Errorf("LUK expected 50, got %d", stats.LUK)
+	// LUK: 10 × 1.0 = 10 (レベル無関係)
+	if stats.LUK != 10 {
+		t.Errorf("LUK expected 10, got %d", stats.LUK)
 	}
 }

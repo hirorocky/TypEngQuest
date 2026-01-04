@@ -23,59 +23,85 @@ func createTestExternalData() *masterdata.ExternalData {
 				ID:             "all_rounder",
 				Name:           "オールラウンダー",
 				AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low", "debuff_low"},
-				StatWeights:    map[string]float64{"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0},
+				StatWeights:    map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
 				PassiveSkillID: "adaptability",
 				MinDropLevel:   1,
 			},
 		},
 		ModuleDefinitions: []masterdata.ModuleDefinitionData{
 			{
-				ID:            "physical_strike_lv1",
-				Name:          "物理打撃Lv1",
-				Category:      "physical_attack",
-				Tags:          []string{"physical_low"},
-				BaseEffect:    10.0,
-				StatReference: "STR",
-				Description:   "物理ダメージを与える基本攻撃",
-				MinDropLevel:  1,
+				ID:           "physical_strike_lv1",
+				Name:         "物理打撃Lv1",
+				Icon:         "⚔️",
+				Tags:         []string{"physical_low"},
+				Description:  "物理ダメージを与える基本攻撃",
+				MinDropLevel: 1,
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "enemy",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "fireball_lv1",
-				Name:          "ファイアボールLv1",
-				Category:      "magic_attack",
-				Tags:          []string{"magic_low"},
-				BaseEffect:    12.0,
-				StatReference: "MAG",
-				Description:   "魔法ダメージを与える基本魔法",
-				MinDropLevel:  1,
+				ID:           "fireball_lv1",
+				Name:         "ファイアボールLv1",
+				Icon:         "🔥",
+				Tags:         []string{"magic_low"},
+				Description:  "魔法ダメージを与える基本魔法",
+				MinDropLevel: 1,
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "enemy",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 1.0, StatRef: "INT"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "heal_lv1",
-				Name:          "ヒールLv1",
-				Category:      "heal",
-				Tags:          []string{"heal_low"},
-				BaseEffect:    8.0,
-				StatReference: "MAG",
-				Description:   "HPを回復する基本回復魔法",
-				MinDropLevel:  1,
+				ID:           "heal_lv1",
+				Name:         "ヒールLv1",
+				Icon:         "💚",
+				Tags:         []string{"heal_low"},
+				Description:  "HPを回復する基本回復魔法",
+				MinDropLevel: 1,
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target:      "self",
+						HPFormula:   &masterdata.HPFormulaData{Base: 0, StatCoef: 0.8, StatRef: "INT"},
+						Probability: 1.0,
+					},
+				},
 			},
 			{
-				ID:            "attack_buff_lv1",
-				Name:          "攻撃バフLv1",
-				Category:      "buff",
-				Tags:          []string{"buff_low"},
-				BaseEffect:    5.0,
-				StatReference: "SPD",
-				Description:   "一時的に攻撃力を上昇させる",
-				MinDropLevel:  1,
+				ID:           "attack_buff_lv1",
+				Name:         "攻撃バフLv1",
+				Icon:         "⬆️",
+				Tags:         []string{"buff_low"},
+				Description:  "一時的に攻撃力を上昇させる",
+				MinDropLevel: 1,
+				Effects: []masterdata.ModuleEffectData{
+					{
+						Target: "self",
+						EffectColumn: &masterdata.EffectColumnData{
+							Column:   "damage_bonus",
+							Value:    10.0,
+							Duration: 10.0,
+						},
+						Probability: 1.0,
+					},
+				},
 			},
 		},
 		EnemyTypes: []masterdata.EnemyTypeData{
 			{
-				ID:              "slime",
-				Name:            "スライム",
-				BaseHP:          50,
-				BaseAttackPower: 5,
+				ID:               "slime",
+				Name:             "スライム",
+				BaseHP:           50,
+				BaseAttackPower:  5,
+				DropItemCategory: "core",
+				DropItemTypeID:   "all_rounder",
 			},
 		},
 		PassiveSkills: []masterdata.PassiveSkillData{
@@ -85,15 +111,30 @@ func createTestExternalData() *masterdata.ExternalData {
 				Description: "連続タイピングでダメージ増加",
 			},
 		},
-		FirstAgent: &masterdata.FirstAgentData{
-			ID:         "agent_first",
-			CoreTypeID: "all_rounder",
-			CoreLevel:  1,
-			Modules: []masterdata.FirstAgentModuleData{
-				{TypeID: "physical_strike_lv1", ChainEffectType: "damage_amp", ChainEffectValue: 20.0},
-				{TypeID: "fireball_lv1"},
-				{TypeID: "heal_lv1"},
-				{TypeID: "attack_buff_lv1"},
+		FirstAgents: []masterdata.FirstAgentData{
+			{
+				ID:         "agent_first_1",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "physical_strike_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_2",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "heal_lv1"},
+				},
+			},
+			{
+				ID:         "agent_first_3",
+				CoreTypeID: "all_rounder",
+				CoreLevel:  1,
+				Modules: []masterdata.FirstAgentModuleData{
+					{TypeID: "attack_buff_lv1"},
+				},
 			},
 		},
 	}
@@ -106,7 +147,7 @@ func createTestRewardCalculator() *rewarding.RewardCalculator {
 			ID:   "all_rounder",
 			Name: "オールラウンダー",
 			StatWeights: map[string]float64{
-				"STR": 1.0, "MAG": 1.0, "SPD": 1.0, "LUK": 1.0,
+				"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0,
 			},
 			PassiveSkillID: "balanced_power",
 			AllowedTags:    []string{"physical_low", "magic_low", "heal_low", "buff_low"},
@@ -118,12 +159,18 @@ func createTestRewardCalculator() *rewarding.RewardCalculator {
 		{
 			ID:           "physical_attack_1",
 			Name:         "物理打撃Lv1",
-			Category:     domain.PhysicalAttack,
+			Icon:         "⚔️",
 			Tags:         []string{"physical_low"},
-			BaseEffect:   10.0,
-			StatRef:      "STR",
 			Description:  "物理ダメージを与える",
 			MinDropLevel: 1,
+			Effects: []domain.ModuleEffect{
+				{
+					Target:      domain.TargetEnemy,
+					HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+					Probability: 1.0,
+					Icon:        "⚔️",
+				},
+			},
 		},
 	}
 
@@ -191,8 +238,7 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 	saveData := initializer.InitializeNewGame()
 
 	// ホーム画面（シミュレート）- 装備エージェントを取得（ドメインオブジェクトを直接作成）
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 	if len(agents) == 0 {
 		t.Fatal("エージェントがいません")
 	}
@@ -251,7 +297,14 @@ func TestE2E_BattleVictoryFlow(t *testing.T) {
 		TotalAccuracy:    result.Stats.TotalAccuracy,
 		TotalTypingCount: result.Stats.TotalTypingCount,
 	}
-	rewards := rewardCalc.CalculateRewards(result.IsVictory, battleStats, battleLevel)
+	// 敵タイプを作成（確定ドロップ用）
+	enemyType := domain.EnemyType{
+		ID:               "slime",
+		Name:             "スライム",
+		DropItemCategory: "core",
+		DropItemTypeID:   "all_rounder",
+	}
+	rewards := rewardCalc.CalculateGuaranteedReward(battleStats, battleLevel, enemyType)
 
 	// 報酬画面（シミュレート）- WPM、正確性を表示
 	avgWPM := result.Stats.GetAverageWPM()
@@ -319,20 +372,21 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	if len(saveData.Inventory.CoreInstances) == 0 {
 		t.Fatal("コアがありません")
 	}
-	if len(saveData.Inventory.ModuleInstances) < 4 {
-		t.Fatalf("モジュールが4個未満です: got %d", len(saveData.Inventory.ModuleInstances))
+	if len(saveData.Inventory.ModuleInstances) < 1 {
+		t.Fatalf("モジュールがありません: got %d", len(saveData.Inventory.ModuleInstances))
 	}
 
 	// テスト用にドメインオブジェクトを作成（マスタデータから初期エージェントを使用）
-	firstAgent := initializer.CreateInitialAgent()
-	if firstAgent == nil {
+	firstAgents := initializer.CreateInitialAgents()
+	if len(firstAgents) == 0 {
 		t.Fatal("初期エージェントの作成に失敗しました")
 	}
+	firstAgent := firstAgents[0]
 	core := firstAgent.Core
 	selectedModules := firstAgent.Modules
 
-	if len(selectedModules) != 4 {
-		t.Fatalf("初期モジュールが4個必要です: got %d", len(selectedModules))
+	if len(selectedModules) < 1 {
+		t.Fatalf("初期モジュールが1個以上必要です: got %d", len(selectedModules))
 	}
 
 	// エージェント合成
@@ -342,8 +396,8 @@ func TestE2E_AgentSynthesisFlow(t *testing.T) {
 	if newAgent.Level != core.Level {
 		t.Error("エージェントレベルはコアレベルと一致するべきです")
 	}
-	if len(newAgent.Modules) != 4 {
-		t.Error("エージェントは4つのモジュールを持つべきです")
+	if len(newAgent.Modules) != len(selectedModules) {
+		t.Errorf("エージェントは%d個のモジュールを持つべきです", len(selectedModules))
 	}
 
 	// インベントリに追加（v1.0.0形式: コア情報とチェイン効果を埋め込み）
@@ -409,8 +463,7 @@ func TestE2E_ProgressionFlow(t *testing.T) {
 
 	saveData := initializer.InitializeNewGame()
 	// ドメインオブジェクトを直接作成
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 
 	enemyTypes := []domain.EnemyType{
 		{
@@ -536,8 +589,7 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 
 	saveData := initializer.InitializeNewGame()
 	// ドメインオブジェクトを直接作成
-	agent := initializer.CreateInitialAgent()
-	agents := []*domain.AgentModel{agent}
+	agents := initializer.CreateInitialAgents()
 
 	enemyTypes := []domain.EnemyType{
 		{
@@ -556,7 +608,7 @@ func TestE2E_DefeatAndRetry(t *testing.T) {
 
 	// 敵の攻撃を受け続けて敗北
 	for battleState.Player.IsAlive() {
-		engine.ProcessEnemyAttack(battleState)
+		engine.ProcessEnemyAttackDamage(battleState, "physical")
 	}
 
 	// 敗北確認

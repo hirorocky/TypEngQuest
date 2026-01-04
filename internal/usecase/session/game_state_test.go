@@ -45,8 +45,8 @@ func TestNewGameState(t *testing.T) {
 func TestRecordBattleVictory(t *testing.T) {
 	gs := NewGameStateForTest()
 
-	// レベル1で勝利
-	gs.RecordBattleVictory(1)
+	// デフォルトレベル1の敵をレベル1で撃破
+	gs.RecordBattleVictory(1, 1)
 
 	if gs.MaxLevelReached != 1 {
 		t.Errorf("MaxLevelReached expected 1, got %d", gs.MaxLevelReached)
@@ -57,14 +57,14 @@ func TestRecordBattleVictory(t *testing.T) {
 		t.Errorf("Wins expected 1, got %d", stats.Battle().Wins)
 	}
 
-	// レベル3で勝利（MaxLevelReachedが更新される）
-	gs.RecordBattleVictory(3)
+	// デフォルトレベル3の敵をレベル5で撃破（MaxLevelReachedはデフォルトレベル3で更新される）
+	gs.RecordBattleVictory(5, 3)
 	if gs.MaxLevelReached != 3 {
 		t.Errorf("MaxLevelReached expected 3, got %d", gs.MaxLevelReached)
 	}
 
-	// レベル2で勝利（MaxLevelReachedは更新されない）
-	gs.RecordBattleVictory(2)
+	// デフォルトレベル2の敵を撃破（MaxLevelReachedは更新されない）
+	gs.RecordBattleVictory(4, 2)
 	if gs.MaxLevelReached != 3 {
 		t.Errorf("MaxLevelReached expected 3, got %d", gs.MaxLevelReached)
 	}

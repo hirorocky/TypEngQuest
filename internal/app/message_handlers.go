@@ -130,7 +130,7 @@ func (mh *MessageHandlers) handleSceneChangeMsg(msg tea.Msg) (tea.Model, tea.Cmd
 // handleStartBattleMsg はバトル開始メッセージを処理します。
 func (mh *MessageHandlers) handleStartBattleMsg(msg tea.Msg) (tea.Model, tea.Cmd) {
 	startMsg := msg.(screens.StartBattleMsg)
-	cmd := mh.model.startBattle(startMsg.Level)
+	cmd := mh.model.startBattle(startMsg.Level, startMsg.EnemyTypeID)
 	return mh.model, cmd
 }
 

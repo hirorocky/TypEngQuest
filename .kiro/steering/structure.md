@@ -57,8 +57,10 @@ config       ← 横断的関心事（全層から参照可能）
 - **効果システム**: effect_table.go, effect_column.go, effect_context.go, effect_entry.go
   - EffectTableパターン: バフ、デバフ、パッシブ、チェイン効果を統一的に管理
   - 列指向設計: 効果種別を EffectColumn として定義
+- **効果説明**: effect_description.go（EffectColumn/効果値からUI向け説明テキストを生成）
 - **チェイン効果**: chain_effect.go（モジュール使用後のリキャスト中に発動する追加効果）
 - **パッシブスキル**: passive_evaluator.go, passive_skill_definition.go（条件付き自動発動効果）
+- **敵行動システム**: enemy.go 内に行動パターン（EnemyAction）、フェーズ遷移、チャージ/ディフェンス状態管理を含む
 
 **サブパッケージ**:
 - `/internal/domain/service/` - ドメインサービス
@@ -69,6 +71,8 @@ config       ← 横断的関心事（全層から参照可能）
 **目的**: ドメインオブジェクト + ドメインサービスを組み合わせたアプリケーション固有の処理フロー
 **サブパッケージ**（動詞形でユースケースを表現）:
 - `combat`: バトル実行（旧battle）
+  - `combat/chain`: チェイン効果管理（ChainEffectManager）
+  - `combat/recast`: リキャスト管理（RecastManager）
 - `typing`: タイピング評価
 - `synthesize`: エージェント合成・装備管理（旧agent）
 - `spawning`: 敵生成（旧enemy）
@@ -171,4 +175,4 @@ import (
 
 ---
 _パターンを記述。新規ファイルがパターンに従えばsteeringの更新は不要_
-_updated_at: 2025-12-31_
+_updated_at: 2026-01-04_

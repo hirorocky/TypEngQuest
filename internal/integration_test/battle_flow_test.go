@@ -11,16 +11,64 @@ import (
 	"hirorocky/type-battle/internal/usecase/typing"
 )
 
-// newTestModuleBattle はテスト用モジュールを作成するヘルパー関数です。
-func newTestModuleBattle(id, name string, category domain.ModuleCategory, level int, tags []string, baseEffect float64, statRef, description string) *domain.ModuleModel {
+// newTestDamageModuleBattle はテスト用のダメージモジュールを作成するヘルパー関数です。
+func newTestDamageModuleBattle(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
 	return domain.NewModuleFromType(domain.ModuleType{
 		ID:          id,
 		Name:        name,
-		Category:    category,
+		Icon:        "⚔️",
 		Tags:        tags,
-		BaseEffect:  baseEffect,
-		StatRef:     statRef,
 		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
+	}, nil)
+}
+
+// newTestHealModuleBattle はテスト用の回復モジュールを作成するヘルパー関数です。
+func newTestHealModuleBattle(id, name string, tags []string, statCoef float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "💚",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetSelf,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: statCoef, StatRef: statRef},
+				Probability: 1.0,
+				Icon:        "💚",
+			},
+		},
+	}, nil)
+}
+
+// newTestBuffModuleBattle はテスト用のバフモジュールを作成するヘルパー関数です。
+func newTestBuffModuleBattle(id, name string, tags []string, value float64, statRef, description string) *domain.ModuleModel {
+	return domain.NewModuleFromType(domain.ModuleType{
+		ID:          id,
+		Name:        name,
+		Icon:        "⬆️",
+		Tags:        tags,
+		Description: description,
+		Effects: []domain.ModuleEffect{
+			{
+				Target: domain.TargetSelf,
+				ColumnSpec: &domain.EffectColumnSpec{
+					Column:   domain.ColDamageBonus,
+					Value:    value,
+					Duration: 10.0,
+				},
+				Probability: 1.0,
+				Icon:        "⬆️",
+			},
+		},
 	}, nil)
 }
 
@@ -42,10 +90,10 @@ func createTestAgents() []*domain.AgentModel {
 	core := domain.NewCore("core_1", "テストコア", 5, coreType, passiveSkill)
 
 	modules := []*domain.ModuleModel{
-		newTestModuleBattle("m1", "物理打撃Lv1", domain.PhysicalAttack, 1, []string{"physical_low"}, 10.0, "STR", ""),
-		newTestModuleBattle("m2", "ファイアボールLv1", domain.MagicAttack, 1, []string{"magic_low"}, 10.0, "MAG", ""),
-		newTestModuleBattle("m3", "ヒールLv1", domain.Heal, 1, []string{"heal_low"}, 8.0, "MAG", ""),
-		newTestModuleBattle("m4", "バフLv1", domain.Buff, 1, []string{"buff_low"}, 5.0, "SPD", ""),
+		newTestDamageModuleBattle("m1", "物理打撃Lv1", []string{"physical_low"}, 1.0, "STR", ""),
+		newTestDamageModuleBattle("m2", "ファイアボールLv1", []string{"magic_low"}, 1.0, "MAG", ""),
+		newTestHealModuleBattle("m3", "ヒールLv1", []string{"heal_low"}, 0.8, "MAG", ""),
+		newTestBuffModuleBattle("m4", "バフLv1", []string{"buff_low"}, 5.0, "SPD", ""),
 	}
 
 	return []*domain.AgentModel{
@@ -102,7 +150,7 @@ func TestBattleFlow_EnemyAttack(t *testing.T) {
 	initialHP := state.Player.HP
 
 	// 敵攻撃を処理
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// ダメージが与えられた
 	if damage <= 0 {
@@ -302,7 +350,7 @@ func TestBattleFlow_BuffDebuffInteraction(t *testing.T) {
 	})
 
 	// 敵攻撃
-	damage := engine.ProcessEnemyAttack(state)
+	damage := engine.ProcessEnemyAttackDamage(state, "physical")
 	expectedMaxDamage := state.Enemy.AttackPower // バフなしの場合
 
 	// ダメージが軽減されている
@@ -316,7 +364,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 	engine := combat.NewBattleEngine(createTestEnemyTypes())
 	agents := createTestAgents()
 
-	// バトル初期化（stateは使用しないが、エンジン初期化のために呼び出す）
+	// バトル初期化
 	_, _ = engine.InitializeBattle(1, agents)
 
 	agent := agents[0]
@@ -328,7 +376,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 		SpeedFactor:    1.0,
 		AccuracyFactor: 0.95,
 	}
-	highDamage := engine.CalculateModuleEffect(agent, module, highAccuracyResult)
+	highDamage := engine.CalculateModuleEffectWithPassive(agent, module, highAccuracyResult)
 
 	// 低い正確性（50%未満）
 	lowAccuracyResult := &typing.TypingResult{
@@ -336,7 +384,7 @@ func TestBattleFlow_AccuracyPenalty(t *testing.T) {
 		SpeedFactor:    1.0,
 		AccuracyFactor: 0.4,
 	}
-	lowDamage := engine.CalculateModuleEffect(agent, module, lowAccuracyResult)
+	lowDamage := engine.CalculateModuleEffectWithPassive(agent, module, lowAccuracyResult)
 
 	// 低い正確性の方が効果が低い（半減ペナルティ適用）
 	if lowDamage >= highDamage {
@@ -364,5 +412,454 @@ func TestBattleFlow_Statistics(t *testing.T) {
 	}
 	if state.Stats.TotalWPM != 100 {
 		t.Error("WPMが記録されるべきです")
+	}
+}
+
+// ==================== Task 7.3: バトルシステム統合テスト ====================
+
+// createTestEnemyTypesWithPatterns は行動パターンとパッシブを持つ敵タイプを作成します。
+func createTestEnemyTypesWithPatterns() []domain.EnemyType {
+	normalActions := []domain.EnemyAction{
+		{
+			ID:             "slash",
+			Name:           "斬撃",
+			ActionType:     domain.EnemyActionAttack,
+			AttackType:     "physical",
+			DamageBase:     10.0,
+			DamagePerLevel: 2.0,
+			ChargeTime:     500 * time.Millisecond,
+		},
+		{
+			ID:          "power_up",
+			Name:        "パワーアップ",
+			ActionType:  domain.EnemyActionBuff,
+			EffectType:  "damage_mult",
+			EffectValue: 1.5,
+			Duration:    10.0,
+			ChargeTime:  300 * time.Millisecond,
+		},
+	}
+	enhancedActions := []domain.EnemyAction{
+		{
+			ID:             "rage_strike",
+			Name:           "怒りの一撃",
+			ActionType:     domain.EnemyActionAttack,
+			AttackType:     "physical",
+			DamageBase:     20.0,
+			DamagePerLevel: 4.0,
+			ChargeTime:     1 * time.Second,
+		},
+	}
+
+	normalPassive := &domain.EnemyPassiveSkill{
+		ID:          "defensive_stance",
+		Name:        "防御姿勢",
+		Description: "ダメージ10%軽減",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageCut: 0.1,
+		},
+	}
+	enhancedPassive := &domain.EnemyPassiveSkill{
+		ID:          "berserker_rage",
+		Name:        "バーサーカーの怒り",
+		Description: "攻撃力50%上昇",
+		Effects: map[domain.EffectColumn]float64{
+			domain.ColDamageMultiplier: 1.5,
+		},
+	}
+
+	return []domain.EnemyType{
+		{
+			ID:                      "boss_goblin",
+			Name:                    "ゴブリンリーダー",
+			BaseHP:                  100,
+			BaseAttackPower:         10,
+			BaseAttackInterval:      3 * time.Second,
+			AttackType:              "physical",
+			DefaultLevel:            5,
+			ResolvedNormalActions:   normalActions,
+			ResolvedEnhancedActions: enhancedActions,
+			NormalPassive:           normalPassive,
+			EnhancedPassive:         enhancedPassive,
+			DropItemCategory:        "core",
+			DropItemTypeID:          "attack_balance",
+		},
+	}
+}
+
+// TestBattleFlow_LevelSelection_PatternBased はレベル選択→パターンベースバトル→報酬の一連フローをテストします。
+func TestBattleFlow_LevelSelection_PatternBased(t *testing.T) {
+	enemyTypes := createTestEnemyTypesWithPatterns()
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	// レベル10でバトル開始
+	level := 10
+	state, err := engine.InitializeBattle(level, agents)
+	if err != nil {
+		t.Fatalf("バトル初期化に失敗: %v", err)
+	}
+
+	// 敵タイプを手動で設定（テスト用）
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level, 1000, 30, 3*time.Second, enemyTypes[0])
+
+	// 敵が正しく生成されている
+	if state.Enemy == nil {
+		t.Fatal("敵が生成されるべきです")
+	}
+	if state.Enemy.Level != level {
+		t.Errorf("敵レベルが不正: got %d, want %d", state.Enemy.Level, level)
+	}
+	if state.Enemy.Type.ID != "boss_goblin" {
+		t.Errorf("敵タイプIDが不正: got %s, want boss_goblin", state.Enemy.Type.ID)
+	}
+
+	// 行動パターンが設定されている
+	if len(state.Enemy.Type.ResolvedNormalActions) == 0 {
+		t.Error("通常行動パターンが設定されるべきです")
+	}
+
+	// 敵パッシブスキルを登録
+	engine.RegisterEnemyPassive(state)
+
+	// パッシブスキルが適用されている
+	passives := state.Enemy.EffectTable.FindBySourceType(domain.SourcePassive)
+	if len(passives) == 0 {
+		t.Error("敵のパッシブスキルが登録されるべきです")
+	}
+	if state.Enemy.ActivePassiveID != "defensive_stance" {
+		t.Errorf("ActivePassiveIDが不正: got %s", state.Enemy.ActivePassiveID)
+	}
+
+	// 行動決定がパターンベース
+	nextAction := engine.DeterminePatternBasedAction(state)
+	if nextAction.SourceAction == nil {
+		t.Error("パターンベースの行動が決定されるべきです")
+	}
+	if nextAction.SourceAction.ID != "slash" {
+		t.Errorf("最初の行動は斬撃であるべき: got %s", nextAction.SourceAction.ID)
+	}
+}
+
+// TestBattleFlow_PhaseTransition_PassiveSwitch はフェーズ遷移とパッシブ切り替えの連携をテストします。
+func TestBattleFlow_PhaseTransition_PassiveSwitch(t *testing.T) {
+	enemyTypes := createTestEnemyTypesWithPatterns()
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	state, _ := engine.InitializeBattle(10, agents)
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", 10, 1000, 30, 3*time.Second, enemyTypes[0])
+	engine.RegisterEnemyPassive(state)
+
+	// 初期状態：通常フェーズ、通常パッシブ
+	if state.Enemy.Phase != domain.PhaseNormal {
+		t.Error("初期フェーズは通常であるべきです")
+	}
+	if state.Enemy.ActivePassiveID != "defensive_stance" {
+		t.Errorf("初期パッシブが不正: got %s", state.Enemy.ActivePassiveID)
+	}
+
+	// 通常パッシブ効果の確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageCut != 0.1 {
+		t.Errorf("通常パッシブ効果が不正: DamageCut got %f, want 0.1", effects.DamageCut)
+	}
+
+	// HP50%以下に設定してフェーズ遷移
+	state.Enemy.HP = state.Enemy.MaxHP / 2
+
+	if !engine.CheckPhaseTransition(state) {
+		t.Error("フェーズ遷移が発生するべきです")
+	}
+
+	// パッシブ切り替え
+	state.Enemy.ResetActionIndex() // 行動パターンリセット
+	engine.SwitchEnemyPassive(state)
+
+	// 強化フェーズ、強化パッシブに変更
+	if state.Enemy.Phase != domain.PhaseEnhanced {
+		t.Error("フェーズが強化になるべきです")
+	}
+	if state.Enemy.ActivePassiveID != "berserker_rage" {
+		t.Errorf("強化パッシブが適用されるべき: got %s", state.Enemy.ActivePassiveID)
+	}
+
+	// 強化パッシブ効果の確認
+	effects = state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageMultiplier != 1.5 {
+		t.Errorf("強化パッシブ効果が不正: DamageMultiplier got %f, want 1.5", effects.DamageMultiplier)
+	}
+	if effects.DamageCut != 0.0 {
+		t.Errorf("通常パッシブが無効化されるべき: DamageCut got %f, want 0.0", effects.DamageCut)
+	}
+
+	// 行動インデックスがリセットされている
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("行動インデックスがリセットされるべき: got %d", state.Enemy.ActionIndex)
+	}
+
+	// 強化パターンの行動を取得
+	nextAction := state.Enemy.GetCurrentAction()
+	if nextAction.ID != "rage_strike" {
+		t.Errorf("強化パターンの行動が取得されるべき: got %s", nextAction.ID)
+	}
+}
+
+// TestBattleFlow_PatternLoopAndProgress は行動パターンのループと進行をテストします。
+func TestBattleFlow_PatternLoopAndProgress(t *testing.T) {
+	enemyTypes := createTestEnemyTypesWithPatterns()
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	state, _ := engine.InitializeBattle(5, agents)
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", 5, 500, 20, 3*time.Second, enemyTypes[0])
+
+	// 通常パターンは2つ（斬撃→パワーアップ）
+	if len(state.Enemy.Type.ResolvedNormalActions) != 2 {
+		t.Fatalf("通常パターンは2つあるべき: got %d", len(state.Enemy.Type.ResolvedNormalActions))
+	}
+
+	// 行動1: 斬撃
+	action1 := state.Enemy.GetCurrentAction()
+	if action1.ID != "slash" {
+		t.Errorf("1回目は斬撃であるべき: got %s", action1.ID)
+	}
+	state.Enemy.AdvanceActionIndex()
+
+	// 行動2: パワーアップ
+	action2 := state.Enemy.GetCurrentAction()
+	if action2.ID != "power_up" {
+		t.Errorf("2回目はパワーアップであるべき: got %s", action2.ID)
+	}
+	state.Enemy.AdvanceActionIndex()
+
+	// 行動3: 斬撃（ループ）
+	action3 := state.Enemy.GetCurrentAction()
+	if action3.ID != "slash" {
+		t.Errorf("3回目は斬撃（ループ）であるべき: got %s", action3.ID)
+	}
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("ActionIndexは0にループするべき: got %d", state.Enemy.ActionIndex)
+	}
+}
+
+// TestBattleFlow_EnemyDefeatRecordIntegration は敵撃破記録の一連のフローをテストします。
+func TestBattleFlow_EnemyDefeatRecordIntegration(t *testing.T) {
+	// 撃破記録マップ
+	defeatRecords := make(map[string]int)
+
+	enemyTypes := createTestEnemyTypesWithPatterns()
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	// 初回バトル（レベル5）
+	level := 5
+	state, _ := engine.InitializeBattle(level, agents)
+	state.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.5", level, 500, 20, 3*time.Second, enemyTypes[0])
+
+	// バトル終了（勝利）
+	state.Enemy.HP = 0
+	ended, result := engine.CheckBattleEnd(state)
+
+	if !ended || !result.IsVictory {
+		t.Fatal("勝利であるべきです")
+	}
+
+	// 撃破記録を更新
+	enemyTypeID := state.Enemy.Type.ID
+	if currentMax, ok := defeatRecords[enemyTypeID]; !ok || level > currentMax {
+		defeatRecords[enemyTypeID] = level
+	}
+
+	if defeatRecords["boss_goblin"] != 5 {
+		t.Errorf("撃破記録が不正: got %d, want 5", defeatRecords["boss_goblin"])
+	}
+
+	// 2回目のバトル（より高いレベルで挑戦可能）
+	level2 := 10
+	state2, _ := engine.InitializeBattle(level2, agents)
+	state2.Enemy = domain.NewEnemy("test", "ゴブリンリーダー Lv.10", level2, 1000, 30, 3*time.Second, enemyTypes[0])
+	state2.Enemy.HP = 0
+	engine.CheckBattleEnd(state2)
+
+	// 撃破記録を更新
+	if currentMax, ok := defeatRecords[enemyTypeID]; !ok || level2 > currentMax {
+		defeatRecords[enemyTypeID] = level2
+	}
+
+	if defeatRecords["boss_goblin"] != 10 {
+		t.Errorf("撃破記録が更新されるべき: got %d, want 10", defeatRecords["boss_goblin"])
+	}
+
+	// 次回選択可能レベルの範囲確認
+	maxSelectableLevel := defeatRecords["boss_goblin"] + 1
+	if maxSelectableLevel != 11 {
+		t.Errorf("次回選択可能な最大レベルは11であるべき: got %d", maxSelectableLevel)
+	}
+}
+
+// TestBattleFlow_ChargingAndDefenseIntegration はチャージングとディフェンスの統合テストです。
+func TestBattleFlow_ChargingAndDefenseIntegration(t *testing.T) {
+	defenseAction := domain.EnemyAction{
+		ID:          "guard",
+		Name:        "ガード",
+		ActionType:  domain.EnemyActionDefense,
+		DefenseType: domain.DefensePhysicalCut,
+		EffectValue: 0.5,
+		Duration:    5.0,
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "defender_goblin",
+			Name:               "ディフェンダーゴブリン",
+			BaseHP:             80,
+			BaseAttackPower:    8,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			ResolvedNormalActions: []domain.EnemyAction{
+				{
+					ID:             "attack",
+					Name:           "攻撃",
+					ActionType:     domain.EnemyActionAttack,
+					AttackType:     "physical",
+					DamageBase:     10.0,
+					DamagePerLevel: 2.0,
+					ChargeTime:     1 * time.Second,
+				},
+				defenseAction,
+			},
+		},
+	}
+
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	state, _ := engine.InitializeBattle(10, agents)
+	state.Enemy = domain.NewEnemy("test", "ディフェンダーゴブリン Lv.10", 10, 800, 8, 3*time.Second, enemyTypes[0])
+
+	// 攻撃行動でチャージ開始
+	now := time.Now()
+	attackAction := state.Enemy.GetCurrentAction()
+	state.Enemy.StartCharging(attackAction, now)
+
+	if state.Enemy.WaitMode != domain.WaitModeCharging {
+		t.Error("チャージモードになるべきです")
+	}
+
+	// チャージ進捗確認
+	progress := state.Enemy.GetChargeProgress(now)
+	if progress != 0 {
+		t.Errorf("開始直後の進捗は0であるべき: got %f", progress)
+	}
+
+	// チャージ完了後、行動実行
+	executedAction := state.Enemy.ExecuteChargedAction()
+	if executedAction == nil || executedAction.ID != "attack" {
+		t.Error("攻撃行動が実行されるべきです")
+	}
+
+	// 次の行動はディフェンス
+	nextAction := state.Enemy.GetCurrentAction()
+	if nextAction.ID != "guard" {
+		t.Errorf("次の行動はガードであるべき: got %s", nextAction.ID)
+	}
+
+	// ディフェンス発動
+	state.Enemy.StartDefense(
+		defenseAction.DefenseType,
+		defenseAction.EffectValue,
+		time.Duration(defenseAction.Duration*float64(time.Second)),
+		now,
+	)
+
+	if state.Enemy.WaitMode != domain.WaitModeDefending {
+		t.Error("ディフェンスモードになるべきです")
+	}
+
+	// ディフェンス中のダメージ軽減確認
+	baseDamage := 100
+	reducedDamage := engine.ApplyDefenseReduction(state, baseDamage, "physical")
+	if reducedDamage != 50 {
+		t.Errorf("ダメージが50%%軽減されるべき: got %d", reducedDamage)
+	}
+
+	// 魔法ダメージは軽減されない
+	magicDamage := engine.ApplyDefenseReduction(state, baseDamage, "magic")
+	if magicDamage != baseDamage {
+		t.Errorf("魔法ダメージは軽減されないべき: got %d", magicDamage)
+	}
+}
+
+// TestBattleFlow_BuffDebuffPattern はバフ・デバフ行動パターンの統合テストです。
+func TestBattleFlow_BuffDebuffPattern(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "buff_goblin",
+			Name:               "バフゴブリン",
+			BaseHP:             60,
+			BaseAttackPower:    6,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			ResolvedNormalActions: []domain.EnemyAction{
+				{
+					ID:          "self_buff",
+					Name:        "自己強化",
+					ActionType:  domain.EnemyActionBuff,
+					EffectType:  "damage_mult",
+					EffectValue: 2.0,
+					Duration:    10.0,
+				},
+				{
+					ID:          "slow_curse",
+					Name:        "スロウの呪い",
+					ActionType:  domain.EnemyActionDebuff,
+					EffectType:  "cooldown_reduce",
+					EffectValue: -0.3,
+					Duration:    8.0,
+				},
+			},
+		},
+	}
+
+	engine := combat.NewBattleEngine(enemyTypes)
+	agents := createTestAgents()
+
+	state, _ := engine.InitializeBattle(5, agents)
+	state.Enemy = domain.NewEnemy("test", "バフゴブリン Lv.5", 5, 300, 6, 3*time.Second, enemyTypes[0])
+
+	// 自己バフ行動を実行
+	buffAction := state.Enemy.GetCurrentAction()
+	if buffAction.ID != "self_buff" {
+		t.Errorf("最初の行動は自己強化であるべき: got %s", buffAction.ID)
+	}
+	engine.ApplyPatternBuff(state, buffAction)
+
+	// バフが敵のEffectTableに登録されている
+	buffs := state.Enemy.EffectTable.FindBySourceType(domain.SourceBuff)
+	if len(buffs) == 0 {
+		t.Error("バフがEffectTableに登録されるべきです")
+	}
+
+	// バフ効果の確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effects := state.Enemy.EffectTable.Aggregate(ctx)
+	if effects.DamageMultiplier != 2.0 {
+		t.Errorf("DamageMultiplierが適用されるべき: got %f", effects.DamageMultiplier)
+	}
+
+	// 次の行動（デバフ）
+	state.Enemy.AdvanceActionIndex()
+	debuffAction := state.Enemy.GetCurrentAction()
+	if debuffAction.ID != "slow_curse" {
+		t.Errorf("次の行動はスロウの呪いであるべき: got %s", debuffAction.ID)
+	}
+	engine.ApplyPatternDebuff(state, debuffAction)
+
+	// デバフがプレイヤーのEffectTableに登録されている
+	debuffs := state.Player.EffectTable.FindBySourceType(domain.SourceDebuff)
+	if len(debuffs) == 0 {
+		t.Error("デバフがプレイヤーのEffectTableに登録されるべきです")
 	}
 }

@@ -22,6 +22,21 @@ type AgentProvider interface {
 	GetEquippedAgents() []*domain.AgentModel
 }
 
+// DefeatedEnemyProvider は撃破済み敵情報を提供するインターフェースです。
+// BattleSelectScreenがレベル選択の制約を判断するために使用します。
+type DefeatedEnemyProvider interface {
+	// GetDefeatedEnemies は敵タイプIDをキー、撃破最高レベルを値とするマップを返します。
+	GetDefeatedEnemies() map[string]int
+	// IsEnemyDefeated は指定した敵タイプが撃破済みかどうかを返します。
+	IsEnemyDefeated(enemyTypeID string) bool
+	// GetDefeatedLevel は指定した敵タイプの撃破最高レベルを返します。
+	GetDefeatedLevel(enemyTypeID string) int
+	// GetMaxDefeatedLevel は全敵種類を通じた最高撃破レベル（到達Lv）を返します。
+	GetMaxDefeatedLevel() int
+	// GetMaxLevelReached は到達最高レベル（敵のデフォルトレベルで更新）を返します。
+	GetMaxLevelReached() int
+}
+
 // HomeScreen はホーム画面を表します。
 
 // UI-Improvement Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6

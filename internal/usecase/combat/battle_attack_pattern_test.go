@@ -24,12 +24,18 @@ func TestBattleState_SameAttackCount_Track(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 50,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -78,12 +84,18 @@ func TestBattleState_SameAttackCount_Reset(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 50,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -122,7 +134,7 @@ func TestBattleState_SameAttackCount_Reset(t *testing.T) {
 // TestBattleEngine_AdaptiveShield は同種攻撃3回以上でダメージ軽減をテストします。
 func TestBattleEngine_AdaptiveShield(t *testing.T) {
 	// Arrange
-	adaptiveShieldDef := domain.PassiveSkillDefinition{
+	adaptiveShieldDef := domain.PassiveSkill{
 		ID:          "ps_adaptive_shield",
 		Name:        "アダプティブシールド",
 		TriggerType: domain.PassiveTriggerConditional,
@@ -135,7 +147,7 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 		Probability: 1.0,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_adaptive_shield": adaptiveShieldDef,
 	}
 
@@ -149,12 +161,18 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 50,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -172,24 +190,24 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	engine.SetRng(rand.New(rand.NewSource(42)))
 
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
 	// 1-2回目の物理攻撃（まだ軽減なし）
-	damage1 := engine.ProcessEnemyAttackWithPassiveAndPattern(state, "physical") // count=1
-	state.Player.HP = state.Player.MaxHP                                         // HPリセット
-	damage2 := engine.ProcessEnemyAttackWithPassiveAndPattern(state, "physical") // count=2
-	state.Player.HP = state.Player.MaxHP                                         // HPリセット
+	damage1 := engine.ProcessEnemyAttackDamage(state, "physical") // count=1
+	state.Player.HP = state.Player.MaxHP                          // HPリセット
+	damage2 := engine.ProcessEnemyAttackDamage(state, "physical") // count=2
+	state.Player.HP = state.Player.MaxHP                          // HPリセット
 
 	// 3回目の物理攻撃（count=3で軽減発動）
-	damage3 := engine.ProcessEnemyAttackWithPassiveAndPattern(state, "physical")
+	damage3 := engine.ProcessEnemyAttackDamage(state, "physical")
 	state.Player.HP = state.Player.MaxHP // HPリセット
 
 	// 4回目の物理攻撃（引き続き軽減）
-	damage4 := engine.ProcessEnemyAttackWithPassiveAndPattern(state, "physical")
+	damage4 := engine.ProcessEnemyAttackDamage(state, "physical")
 
 	// Assert: 1-2回目は軽減なし、3回目以降は25%軽減
 	// damage1, damage2は同じはず（軽減なし）

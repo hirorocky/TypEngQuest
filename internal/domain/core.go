@@ -15,91 +15,23 @@ type Stats struct {
 	// 物理攻撃モジュールのダメージ計算に使用されます。
 	STR int
 
-	// MAG は魔法攻撃力を表します。
-	// 魔法攻撃モジュールと回復モジュールの効果計算に使用されます。
-	MAG int
+	// INT は魔法攻撃力を表します。
+	// 攻撃魔法モジュールとデバフモジュールの効果計算に使用されます。
+	INT int
 
-	// SPD は速度を表します。
-	// 行動間隔やクールダウンに影響します。
-	SPD int
+	// WIL は意志力を表します。
+	// 回復魔法モジュールとバフモジュールの効果計算に使用されます。
+	WIL int
 
 	// LUK は運を表します。
-	// クリティカル率や回避に影響します。
+	// 確率系効果の発動率に影響します。
+	// コアレベルでは変化せず、stat_weightsの影響のみ受けます。
 	LUK int
 }
 
 // Total はステータスの合計値を返します。
 func (s Stats) Total() int {
-	return s.STR + s.MAG + s.SPD + s.LUK
-}
-
-// PassiveSkill はコア特性に紐づくパッシブスキルを表す構造体です。
-// 各コア特性は1つの固有パッシブスキルを持ちます。
-// 効果量はコアレベルに応じてスケーリングされます。
-type PassiveSkill struct {
-	// ID はパッシブスキルの一意識別子です。
-	ID string
-
-	// Name はパッシブスキルの表示名です。
-	Name string
-
-	// Description はパッシブスキルの効果説明です。
-	Description string
-
-	// ShortDescription はパッシブスキルの短い効果説明です（最大16文字程度）。
-	// UI上でコンパクトに表示する際に使用します。
-	ShortDescription string
-
-	// BaseModifiers はレベル1時点の基礎効果です。
-	BaseModifiers StatModifiers
-
-	// ScalePerLevel はレベルごとのスケール係数です。
-	// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
-	ScalePerLevel float64
-}
-
-// CalculateModifiers はコアレベルに応じた効果量を計算します。
-// 計算式: 基礎効果 × (1 + ScalePerLevel × (Level - 1))
-// レベルが0以下の場合はレベル1として扱います。
-func (p PassiveSkill) CalculateModifiers(coreLevel int) StatModifiers {
-	// レベル0以下はレベル1として扱う
-	if coreLevel < 1 {
-		coreLevel = 1
-	}
-
-	// スケール計算: 1 + ScalePerLevel × (Level - 1)
-	scale := 1.0 + p.ScalePerLevel*float64(coreLevel-1)
-
-	// 乗算フィールドはオフセット（1.0からの差分）をスケールする
-	scaleMultiplier := func(baseMult float64) float64 {
-		if baseMult == 0 {
-			return 0
-		}
-		offset := baseMult - 1.0
-		return 1.0 + (offset * scale)
-	}
-
-	return StatModifiers{
-		// 加算フィールドはそのままスケール
-		STR_Add: int(float64(p.BaseModifiers.STR_Add) * scale),
-		MAG_Add: int(float64(p.BaseModifiers.MAG_Add) * scale),
-		SPD_Add: int(float64(p.BaseModifiers.SPD_Add) * scale),
-		LUK_Add: int(float64(p.BaseModifiers.LUK_Add) * scale),
-
-		// 乗算フィールドはオフセットをスケール
-		STR_Mult: scaleMultiplier(p.BaseModifiers.STR_Mult),
-		MAG_Mult: scaleMultiplier(p.BaseModifiers.MAG_Mult),
-		SPD_Mult: scaleMultiplier(p.BaseModifiers.SPD_Mult),
-		LUK_Mult: scaleMultiplier(p.BaseModifiers.LUK_Mult),
-
-		// 特殊効果フィールドはそのままスケール
-		CDReduction:     p.BaseModifiers.CDReduction * scale,
-		TypingTimeExt:   p.BaseModifiers.TypingTimeExt * scale,
-		DamageReduction: p.BaseModifiers.DamageReduction * scale,
-		CritRate:        p.BaseModifiers.CritRate * scale,
-		PhysicalEvade:   p.BaseModifiers.PhysicalEvade * scale,
-		MagicEvade:      p.BaseModifiers.MagicEvade * scale,
-	}
+	return s.STR + s.INT + s.WIL + s.LUK
 }
 
 // CoreType はコアの特性（タイプ）を定義する構造体です。
@@ -113,7 +45,7 @@ type CoreType struct {
 	Name string
 
 	// StatWeights はステータス計算に使用する重みのマップです。
-	// キーは "STR", "MAG", "SPD", "LUK" で、値は重み係数（例: 1.2）です。
+	// キーは "STR", "INT", "WIL", "LUK" で、値は重み係数（例: 1.2）です。
 	StatWeights map[string]float64
 
 	// PassiveSkillID はこのコア特性に紐づくパッシブスキルのIDです。
@@ -173,23 +105,25 @@ func (c *CoreModel) Equals(other *CoreModel) bool {
 }
 
 // CalculateStats はコアレベルとコア特性からステータス値を計算します。
-// 計算式: 基礎値(10) × レベル × ステータス重み
+// STR, INT, WIL: 基礎値(10) × レベル × ステータス重み
+// LUK: 基礎値(10) × ステータス重み（レベルに依存しない）
 // 結果は整数に切り捨てられます。
 func CalculateStats(level int, coreType CoreType) Stats {
 	// 各ステータスの重みを取得（未設定の場合はデフォルト1.0）
 	strWeight := coreType.StatWeights["STR"]
-	magWeight := coreType.StatWeights["MAG"]
-	spdWeight := coreType.StatWeights["SPD"]
+	intWeight := coreType.StatWeights["INT"]
+	wilWeight := coreType.StatWeights["WIL"]
 	lukWeight := coreType.StatWeights["LUK"]
 
-	// 計算式: 基礎値 × レベル × 重み
+	// 計算式: 基礎値 × レベル × 重み（STR, INT, WIL）
 	baseValue := float64(BaseStatValue * level)
 
 	return Stats{
 		STR: int(baseValue * strWeight),
-		MAG: int(baseValue * magWeight),
-		SPD: int(baseValue * spdWeight),
-		LUK: int(baseValue * lukWeight),
+		INT: int(baseValue * intWeight),
+		WIL: int(baseValue * wilWeight),
+		// LUKはレベルに依存せず、基礎値10 × 重みで計算
+		LUK: int(float64(BaseStatValue) * lukWeight),
 	}
 }
 

@@ -156,6 +156,24 @@ func (t *EffectTable) aggregateValue(result *EffectResult, col EffectColumn, val
 		if val > result.DoubleCast {
 			result.DoubleCast = val
 		}
+	case ColSTRBonus:
+		result.STRBonus += int(val)
+	case ColSTRMultiplier:
+		result.STRMultiplier += val // 増加率として加算（0.25 = +25%）
+	case ColINTBonus:
+		result.INTBonus += int(val)
+	case ColINTMultiplier:
+		result.INTMultiplier += val // 増加率として加算
+	case ColWILBonus:
+		result.WILBonus += int(val)
+	case ColWILMultiplier:
+		result.WILMultiplier += val // 増加率として加算
+	case ColLUKBonus:
+		result.LUKBonus += int(val)
+	case ColLUKMultiplier:
+		result.LUKMultiplier += val // 増加率として加算
+	case ColCritRate:
+		result.CritRate += val
 	}
 }
 

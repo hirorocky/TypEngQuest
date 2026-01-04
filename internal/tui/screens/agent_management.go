@@ -198,6 +198,13 @@ func (s *AgentManagementScreen) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd
 		s.moveDown()
 	case "enter":
 		return s.handleEnter()
+	case "tab":
+		// 合成タブでモジュール選択中、1個以上選択済みなら確認画面へ
+		if s.currentTab == TabSynthesis && s.synthesisState.step == 1 {
+			if len(s.synthesisState.selectedModules) >= domain.MinModuleSlotCount {
+				s.synthesisState.step = 2
+			}
+		}
 	case "d":
 		return s.handleDelete()
 	}
@@ -389,10 +396,11 @@ func (s *AgentManagementScreen) handleSynthesisEnter() (tea.Model, tea.Cmd) {
 			if s.synthesisState.selectedCore != nil &&
 				s.isModuleCompatible(module) &&
 				!s.isModuleAlreadySelected(module) {
-				if len(s.synthesisState.selectedModules) < 4 {
+				if len(s.synthesisState.selectedModules) < domain.MaxModuleSlotCount {
 					s.synthesisState.selectedModules = append(s.synthesisState.selectedModules, module)
 				}
-				if len(s.synthesisState.selectedModules) == 4 {
+				// 最大数に達したら確認画面へ自動遷移
+				if len(s.synthesisState.selectedModules) == domain.MaxModuleSlotCount {
 					s.synthesisState.step = 2
 				}
 			}
@@ -541,7 +549,8 @@ func (s *AgentManagementScreen) isModuleCompatible(module *domain.ModuleModel) b
 // canSynthesize は合成可能かどうかを返します。
 func (s *AgentManagementScreen) canSynthesize() bool {
 	return s.synthesisState.selectedCore != nil &&
-		len(s.synthesisState.selectedModules) == 4
+		len(s.synthesisState.selectedModules) >= domain.MinModuleSlotCount &&
+		len(s.synthesisState.selectedModules) <= domain.MaxModuleSlotCount
 }
 
 // executeSynthesis は合成を実行します。
@@ -790,8 +799,8 @@ func (s *AgentManagementScreen) renderCorePreview() string {
 	panel.AddItem("レベル", fmt.Sprintf("Lv.%d", core.Level))
 	panel.AddItem("特性", core.Type.Name)
 	panel.AddItem("STR", fmt.Sprintf("%d", core.Stats.STR))
-	panel.AddItem("MAG", fmt.Sprintf("%d", core.Stats.MAG))
-	panel.AddItem("SPD", fmt.Sprintf("%d", core.Stats.SPD))
+	panel.AddItem("INT", fmt.Sprintf("%d", core.Stats.INT))
+	panel.AddItem("WIL", fmt.Sprintf("%d", core.Stats.WIL))
 	panel.AddItem("LUK", fmt.Sprintf("%d", core.Stats.LUK))
 
 	// パッシブスキル情報を追加
@@ -857,7 +866,7 @@ func (s *AgentManagementScreen) renderModuleListItems() string {
 				Background(styles.ColorSelectedBg)
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s [%s]", module.Name(), module.Category().String())
+		item := fmt.Sprintf("%s %s", module.Icon(), module.Name())
 		items = append(items, style.Render(prefix+item))
 	}
 	return strings.Join(items, "\n")
@@ -872,10 +881,14 @@ func (s *AgentManagementScreen) renderModulePreview() string {
 	}
 
 	panel := components.NewInfoPanel(module.Name())
-	panel.AddItem("カテゴリ", module.Category().String())
-	panel.AddItem("基礎効果", fmt.Sprintf("%.0f", module.BaseEffect()))
-	panel.AddItem("参照ステータス", module.StatRef())
+	panel.AddItem("タイプ", module.Icon()+" "+strings.Join(module.Tags(), ", "))
 	panel.AddItem("説明", module.Description())
+
+	// 効果の概要を表示
+	effectSummary := getModuleEffectSummary(module)
+	if effectSummary != "" {
+		panel.AddItem("効果", effectSummary)
+	}
 
 	// チェイン効果情報を追加
 	if module.HasChainEffect() {
@@ -1039,8 +1052,8 @@ func (s *AgentManagementScreen) formatCoreDetail(core *domain.CoreModel) string 
 	builder.WriteString(labelStyle.Render("特性: "))
 	builder.WriteString(core.Type.Name)
 	builder.WriteString("\n")
-	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d  SPD: %-3d  LUK: %-3d",
-		core.Stats.STR, core.Stats.MAG, core.Stats.SPD, core.Stats.LUK))
+	builder.WriteString(fmt.Sprintf("STR: %-3d  INT: %-3d  WIL: %-3d  LUK: %-3d",
+		core.Stats.STR, core.Stats.INT, core.Stats.WIL, core.Stats.LUK))
 
 	return builder.String()
 }
@@ -1053,14 +1066,17 @@ func (s *AgentManagementScreen) formatModuleDetail(module *domain.ModuleModel) s
 
 	builder.WriteString(nameStyle.Render(module.Name()))
 	builder.WriteString("\n")
-	builder.WriteString(labelStyle.Render("カテゴリ: "))
-	builder.WriteString(module.Icon() + " " + module.Category().String())
-	builder.WriteString("\n")
-	builder.WriteString(labelStyle.Render("基礎効果: "))
-	builder.WriteString(fmt.Sprintf("%.0f", module.BaseEffect()))
+	builder.WriteString(labelStyle.Render("タイプ: "))
+	builder.WriteString(module.Icon() + " " + strings.Join(module.Tags(), ", "))
 	builder.WriteString("\n")
 	builder.WriteString(labelStyle.Render("説明: "))
 	builder.WriteString(module.Description())
+	builder.WriteString("\n")
+	effectSummary := getModuleEffectSummary(module)
+	if effectSummary != "" {
+		builder.WriteString(labelStyle.Render("効果: "))
+		builder.WriteString(effectSummary)
+	}
 
 	return builder.String()
 }
@@ -1090,8 +1106,8 @@ func (s *AgentManagementScreen) renderSynthesisPreview() string {
 
 	// ステータス
 	stats := core.Stats
-	builder.WriteString(fmt.Sprintf("STR: %-3d  MAG: %-3d\n", stats.STR, stats.MAG))
-	builder.WriteString(fmt.Sprintf("SPD: %-3d  LUK: %-3d\n", stats.SPD, stats.LUK))
+	builder.WriteString(fmt.Sprintf("STR: %-3d  INT: %-3d\n", stats.STR, stats.INT))
+	builder.WriteString(fmt.Sprintf("WIL: %-3d  LUK: %-3d\n", stats.WIL, stats.LUK))
 
 	// パッシブスキル情報
 	if core.PassiveSkill.ID != "" {
@@ -1329,8 +1345,8 @@ func (s *AgentManagementScreen) renderEquipAgentDetail() string {
 
 	// ステータス（コアから取得）
 	stats := selectedAgent.Core.Stats
-	builder.WriteString(fmt.Sprintf("STR: %-4d  MAG: %-4d  SPD: %-4d  LUK: %-4d\n",
-		stats.STR, stats.MAG, stats.SPD, stats.LUK))
+	builder.WriteString(fmt.Sprintf("STR: %-4d  INT: %-4d  WIL: %-4d  LUK: %-4d\n",
+		stats.STR, stats.INT, stats.WIL, stats.LUK))
 
 	// 区切り線
 	builder.WriteString(lipgloss.NewStyle().Foreground(styles.ColorSubtle).Render("────────────────────────────────────"))
@@ -1562,6 +1578,12 @@ func (s *AgentManagementScreen) handleDebugModuleTypeSelection(msg tea.KeyMsg) (
 			s.debugSynthesisState.step = 3 // チェイン効果選択へ
 			s.selectedIndex = 0
 		}
+	case "tab":
+		// Tabキーで確認画面へ遷移（1個以上選択済みの場合）
+		if len(s.debugSynthesisState.selectedModules) >= domain.MinModuleSlotCount {
+			s.debugSynthesisState.step = 4 // 確認画面へ
+			s.selectedIndex = 0
+		}
 	}
 	return s, nil
 }
@@ -1595,18 +1617,32 @@ func (s *AgentManagementScreen) handleDebugChainEffectSelection(msg tea.KeyMsg) 
 		} else {
 			ce := chainEffects[s.selectedIndex-1]
 			// 効果値はmax_valueを使用（デバッグモードなので最大値）
-			chainEffect := domain.NewChainEffect(ce.ToDomainEffectType(), ce.MaxValue)
+			chainEffect := domain.NewChainEffectWithTemplate(
+				ce.ToDomainEffectType(),
+				ce.MaxValue,
+				ce.Description,
+				ce.ShortDescription,
+			)
 			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = &chainEffect
 		}
 
 		// 次のモジュールスロットへ、または確認画面へ
-		if s.debugSynthesisState.currentModuleIdx < 3 {
+		if s.debugSynthesisState.currentModuleIdx < domain.MaxModuleSlotCount-1 {
 			s.debugSynthesisState.currentModuleIdx++
 			s.debugSynthesisState.step = 2 // モジュール選択に戻る
 		} else {
 			s.debugSynthesisState.step = 4 // 確認画面へ
 		}
 		s.selectedIndex = 0
+	case "tab":
+		// Tabキーで確認画面へ遷移（1個以上選択済みの場合）
+		if len(s.debugSynthesisState.selectedModules) >= domain.MinModuleSlotCount {
+			// 現在のモジュールにチェイン効果なしを設定
+			moduleIdx := s.debugSynthesisState.currentModuleIdx
+			s.debugSynthesisState.selectedModules[moduleIdx].ChainEffect = nil
+			s.debugSynthesisState.step = 4 // 確認画面へ
+			s.selectedIndex = 0
+		}
 	}
 	return s, nil
 }
@@ -1617,7 +1653,7 @@ func (s *AgentManagementScreen) handleDebugConfirmation(msg tea.KeyMsg) (tea.Mod
 	case "esc", "backspace":
 		// 最後のチェイン効果選択に戻る
 		s.debugSynthesisState.step = 3
-		s.debugSynthesisState.currentModuleIdx = 3
+		s.debugSynthesisState.currentModuleIdx = len(s.debugSynthesisState.selectedModules) - 1
 		s.selectedIndex = 0
 	case "enter":
 		// 合成を実行
@@ -1776,7 +1812,7 @@ func (s *AgentManagementScreen) renderDebugModuleTypeList() string {
 		if i == s.selectedIndex {
 			prefix = "> "
 		}
-		item := fmt.Sprintf("%s%s [%s]", prefix, mt.Name, mt.Category)
+		item := fmt.Sprintf("%s%s %s", prefix, mt.Icon, mt.Name)
 		if i == s.selectedIndex {
 			b.WriteString(s.styles.Text.Bold.Render(item))
 		} else {
@@ -1856,4 +1892,30 @@ func (s *AgentManagementScreen) renderDebugConfirmation() string {
 	b.WriteString("\n")
 	b.WriteString(s.styles.Text.Subtle.Render("Enter: 合成実行  Backspace/Esc: 戻る"))
 	return b.String()
+}
+
+// getModuleEffectSummary はモジュールの効果を要約した文字列を返します。
+func getModuleEffectSummary(module *domain.ModuleModel) string {
+	var parts []string
+
+	for _, effect := range module.Type.Effects {
+		if effect.IsDamageEffect() {
+			if effect.HPFormula != nil {
+				parts = append(parts, fmt.Sprintf("ダメージ(%.1f×%s)", effect.HPFormula.StatCoef, effect.HPFormula.StatRef))
+			}
+		} else if effect.IsHealEffect() {
+			if effect.HPFormula != nil {
+				parts = append(parts, fmt.Sprintf("回復(%.1f×%s)", effect.HPFormula.StatCoef, effect.HPFormula.StatRef))
+			}
+		} else if effect.IsBuffEffect() {
+			parts = append(parts, "バフ")
+		} else if effect.IsDebuffEffect() {
+			parts = append(parts, "デバフ")
+		}
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, ", ")
 }

@@ -16,7 +16,7 @@ import (
 func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 	// Arrange: ps_combo_masterの定義
 	// ミスなし連続でダメージ+10%累積（最大+50%）
-	comboMasterDef := domain.PassiveSkillDefinition{
+	comboMasterDef := domain.PassiveSkill{
 		ID:          "ps_combo_master",
 		Name:        "コンボマスター",
 		TriggerType: domain.PassiveTriggerStack,
@@ -30,7 +30,7 @@ func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 		StackIncrement: 0.1, // スタックごとに+10%
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_combo_master": comboMasterDef,
 	}
 
@@ -45,12 +45,18 @@ func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -68,7 +74,7 @@ func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
@@ -100,7 +106,7 @@ func TestBattleEngine_ComboMaster_StackedDamage(t *testing.T) {
 // TestBattleEngine_ComboMaster_MaxStacks はコンボ上限（5スタック）をテストします。
 func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 	// Arrange
-	comboMasterDef := domain.PassiveSkillDefinition{
+	comboMasterDef := domain.PassiveSkill{
 		ID:          "ps_combo_master",
 		Name:        "コンボマスター",
 		TriggerType: domain.PassiveTriggerStack,
@@ -114,7 +120,7 @@ func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 		StackIncrement: 0.1,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_combo_master": comboMasterDef,
 	}
 
@@ -128,12 +134,18 @@ func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -151,7 +163,7 @@ func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
@@ -191,7 +203,7 @@ func TestBattleEngine_ComboMaster_MaxStacks(t *testing.T) {
 // TestBattleEngine_ComboMaster_ZeroCombo はコンボ0で通常ダメージをテストします。
 func TestBattleEngine_ComboMaster_ZeroCombo(t *testing.T) {
 	// Arrange
-	comboMasterDef := domain.PassiveSkillDefinition{
+	comboMasterDef := domain.PassiveSkill{
 		ID:          "ps_combo_master",
 		Name:        "コンボマスター",
 		TriggerType: domain.PassiveTriggerStack,
@@ -205,7 +217,7 @@ func TestBattleEngine_ComboMaster_ZeroCombo(t *testing.T) {
 		StackIncrement: 0.1,
 	}
 
-	passiveSkillDefs := map[string]domain.PassiveSkillDefinition{
+	passiveSkillDefs := map[string]domain.PassiveSkill{
 		"ps_combo_master": comboMasterDef,
 	}
 
@@ -219,12 +231,18 @@ func TestBattleEngine_ComboMaster_ZeroCombo(t *testing.T) {
 	core := domain.NewCore("core_001", "テストコア", 10, coreType, passiveSkill)
 
 	moduleType := domain.ModuleType{
-		ID:         "test_attack",
-		Name:       "テスト攻撃",
-		Category:   domain.PhysicalAttack,
-		Tags:       []string{"physical_low"},
-		BaseEffect: 100,
-		StatRef:    "STR",
+		ID:   "test_attack",
+		Name: "テスト攻撃",
+		Icon: "⚔️",
+		Tags: []string{"physical_low"},
+		Effects: []domain.ModuleEffect{
+			{
+				Target:      domain.TargetEnemy,
+				HPFormula:   &domain.HPFormula{Base: 0, StatCoef: 1.0, StatRef: "STR"},
+				Probability: 1.0,
+				Icon:        "⚔️",
+			},
+		},
 	}
 	module := domain.NewModuleFromType(moduleType, nil)
 	agent := domain.NewAgent("agent_001", core, []*domain.ModuleModel{module})
@@ -242,7 +260,7 @@ func TestBattleEngine_ComboMaster_ZeroCombo(t *testing.T) {
 	}
 
 	engine := NewBattleEngine(enemyTypes)
-	engine.SetPassiveSkillDefinitions(passiveSkillDefs)
+	engine.SetPassiveSkills(passiveSkillDefs)
 	state, _ := engine.InitializeBattle(1, agents)
 	engine.RegisterPassiveSkills(state, agents)
 
