@@ -1635,3 +1635,45 @@ func TestEnemyModel_GetVoltageMultiplier(t *testing.T) {
 		})
 	}
 }
+
+// TestEnemyType_VoltageRisePer10s はEnemyTypeのボルテージ上昇率フィールドを確認します。
+func TestEnemyType_VoltageRisePer10s(t *testing.T) {
+	enemyType := EnemyType{
+		ID:                "slime",
+		Name:              "スライム",
+		VoltageRisePer10s: 15.0, // 10秒あたり15ポイント上昇
+	}
+
+	if enemyType.VoltageRisePer10s != 15.0 {
+		t.Errorf("VoltageRisePer10sが期待値と異なります: got %f, want 15.0", enemyType.VoltageRisePer10s)
+	}
+}
+
+// TestEnemyType_GetVoltageRisePer10s は負の値が設定された場合に0を返すことを確認します。
+func TestEnemyType_GetVoltageRisePer10s(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    float64
+		expected float64
+	}{
+		{"正の値", 10.0, 10.0},
+		{"ゼロ", 0.0, 0.0},
+		{"負の値は0として扱う", -5.0, 0.0},
+		{"大きな負の値", -100.0, 0.0},
+		{"小数値", 7.5, 7.5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enemyType := EnemyType{
+				ID:                "test",
+				VoltageRisePer10s: tt.value,
+			}
+
+			result := enemyType.GetVoltageRisePer10s()
+			if result != tt.expected {
+				t.Errorf("GetVoltageRisePer10s()が期待値と異なります: got %f, want %f", result, tt.expected)
+			}
+		})
+	}
+}

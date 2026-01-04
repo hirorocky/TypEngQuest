@@ -112,6 +112,12 @@ type EnemyType struct {
 
 	// DropItemTypeID はドロップアイテムのTypeIDです。
 	DropItemTypeID string
+
+	// ========== ボルテージシステム ==========
+
+	// VoltageRisePer10s は10秒間でのボルテージ上昇量です。
+	// 0の場合はボルテージが上昇しません。デフォルト値は10（infra層で設定）。
+	VoltageRisePer10s float64
 }
 
 // IsValidDefaultLevel はデフォルトレベルが有効範囲（1〜100）かどうかを判定します。
@@ -143,6 +149,15 @@ func (e EnemyType) GetEnhancedActions() []EnemyAction {
 // IsValidDropItemCategory はドロップカテゴリが有効かどうかを判定します。
 func (e EnemyType) IsValidDropItemCategory() bool {
 	return e.DropItemCategory == "core" || e.DropItemCategory == "module"
+}
+
+// GetVoltageRisePer10s は10秒あたりのボルテージ上昇量を返します。
+// 負の値が設定されている場合は0を返します。
+func (e EnemyType) GetVoltageRisePer10s() float64 {
+	if e.VoltageRisePer10s < 0 {
+		return 0
+	}
+	return e.VoltageRisePer10s
 }
 
 // EnemyModel はゲーム内の敵エンティティを表す構造体です。
