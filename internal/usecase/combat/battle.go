@@ -10,6 +10,7 @@ import (
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/usecase/combat/voltage"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	"github.com/google/uuid"
@@ -181,13 +182,17 @@ type BattleEngine struct {
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
+
+	// voltageManager はボルテージ管理を担当します。
+	voltageManager *voltage.VoltageManager
 }
 
 // NewBattleEngine は新しいBattleEngineを作成します。
 func NewBattleEngine(enemyTypes []domain.EnemyType) *BattleEngine {
 	return &BattleEngine{
-		enemyTypes: enemyTypes,
-		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		enemyTypes:     enemyTypes,
+		rng:            rand.New(rand.NewSource(time.Now().UnixNano())),
+		voltageManager: voltage.NewVoltageManager(),
 	}
 }
 
@@ -500,10 +505,14 @@ func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
 }
 
 // UpdateEffects はバフ・デバフの時間を更新し、継続効果（Regen等）を適用します。
+// ボルテージの時間経過更新も行います。
 func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	// 持続時間の更新
 	state.Player.EffectTable.UpdateDurations(deltaSeconds)
 	state.Enemy.EffectTable.UpdateDurations(deltaSeconds)
+
+	// ボルテージの時間経過更新
+	e.voltageManager.Update(state.Enemy, deltaSeconds)
 
 	// Regen 処理（プレイヤー）
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)

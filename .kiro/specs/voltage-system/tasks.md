@@ -34,7 +34,7 @@
   - ボルテージを100%にリセットするメソッドを実装
   - _Requirements: 2.1, 2.4, 6.1, 6.2, 6.3_
 
-- [ ] 3.2 BattleEngineへのVoltageManager統合
+- [x] 3.2 BattleEngineへのVoltageManager統合
   - BattleEngineにVoltageManagerを組み込み
   - バトル初期化時にボルテージを100%に設定する処理を追加
   - リトライ時にもボルテージを100%にリセットする処理を確認
