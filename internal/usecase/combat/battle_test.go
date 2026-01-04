@@ -2276,3 +2276,491 @@ func TestBattleEngine_ProcessEnemyTurn_AdvanceActionIndex(t *testing.T) {
 		t.Errorf("ループ後の行動が不正: got %s, want act_1", action.ID)
 	}
 }
+
+// ==================== Task 7.2: 敵行動パターン実行テスト ====================
+
+// TestBattleEngine_ApplyPatternBuff は敵の自己バフ行動をテストします。
+func TestBattleEngine_ApplyPatternBuff(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "boss",
+			Name:               "ボス",
+			BaseHP:             200,
+			BaseAttackPower:    20,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	// バフ前の敵の攻撃力乗算を確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effectsBefore := state.Enemy.EffectTable.Aggregate(ctx)
+	initialMultiplier := effectsBefore.DamageMultiplier
+
+	// 敵の自己バフ行動を実行
+	buffAction := domain.EnemyAction{
+		ID:          "buff_attack_up",
+		Name:        "攻撃力強化",
+		ActionType:  domain.EnemyActionBuff,
+		EffectType:  "damage_mult",
+		EffectValue: 1.5,
+		Duration:    10.0,
+	}
+	engine.ApplyPatternBuff(state, buffAction)
+
+	// バフ後の敵の攻撃力乗算を確認
+	effectsAfter := state.Enemy.EffectTable.Aggregate(ctx)
+
+	// バフが適用されていること
+	if effectsAfter.DamageMultiplier <= initialMultiplier {
+		t.Errorf("バフが適用されていない: before=%f, after=%f", initialMultiplier, effectsAfter.DamageMultiplier)
+	}
+
+	// バフが敵のEffectTableに登録されていること
+	buffs := state.Enemy.EffectTable.FindBySourceType(domain.SourceBuff)
+	if len(buffs) == 0 {
+		t.Error("バフがEffectTableに登録されていない")
+	}
+}
+
+// TestBattleEngine_ApplyPatternDebuff はプレイヤーへのデバフ行動をテストします。
+func TestBattleEngine_ApplyPatternDebuff(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "boss",
+			Name:               "ボス",
+			BaseHP:             200,
+			BaseAttackPower:    20,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 5, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	// デバフ前のプレイヤーのクールダウン短縮を確認
+	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
+	effectsBefore := state.Player.EffectTable.Aggregate(ctx)
+	initialCooldownReduce := effectsBefore.CooldownReduce
+
+	// プレイヤーへのデバフ行動を実行
+	debuffAction := domain.EnemyAction{
+		ID:          "debuff_slow",
+		Name:        "スロウ",
+		ActionType:  domain.EnemyActionDebuff,
+		EffectType:  "cooldown_reduce",
+		EffectValue: -0.3,
+		Duration:    8.0,
+	}
+	engine.ApplyPatternDebuff(state, debuffAction)
+
+	// デバフ後のプレイヤーのクールダウン短縮を確認
+	effectsAfter := state.Player.EffectTable.Aggregate(ctx)
+
+	// デバフが適用されていること（クールダウン短縮がマイナスになる）
+	if effectsAfter.CooldownReduce >= initialCooldownReduce {
+		t.Errorf("デバフが適用されていない: before=%f, after=%f", initialCooldownReduce, effectsAfter.CooldownReduce)
+	}
+
+	// デバフがプレイヤーのEffectTableに登録されていること
+	debuffs := state.Player.EffectTable.FindBySourceType(domain.SourceDebuff)
+	if len(debuffs) == 0 {
+		t.Error("デバフがEffectTableに登録されていない")
+	}
+}
+
+// TestBattleEngine_ProcessDefenseAction はディフェンス行動の即時発動をテストします。
+func TestBattleEngine_ProcessDefenseAction(t *testing.T) {
+	defenseAction := domain.EnemyAction{
+		ID:          "defense_physical",
+		Name:        "物理防御",
+		ActionType:  domain.EnemyActionDefense,
+		DefenseType: domain.DefensePhysicalCut,
+		EffectValue: 0.5,
+		Duration:    5.0,
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "defender",
+			Name:               "ディフェンダー",
+			BaseHP:             200,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			ResolvedNormalActions: []domain.EnemyAction{
+				defenseAction,
+			},
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+	state.Enemy = domain.NewEnemy("test", "ディフェンダー Lv.10", 10, 200, 10, 3*time.Second, enemyTypes[0])
+
+	// ディフェンス行動の発動（ドメインメソッドを直接使用）
+	now := time.Now()
+	duration := time.Duration(defenseAction.Duration * float64(time.Second))
+	state.Enemy.StartDefense(defenseAction.DefenseType, defenseAction.EffectValue, duration, now)
+
+	// ディフェンスモードになっていること
+	if state.Enemy.WaitMode != domain.WaitModeDefending {
+		t.Errorf("WaitModeがDefendingになっていない: got %v", state.Enemy.WaitMode)
+	}
+
+	// ディフェンスタイプが設定されていること
+	if state.Enemy.ActiveDefenseType != domain.DefensePhysicalCut {
+		t.Errorf("ActiveDefenseTypeが不正: got %s", state.Enemy.ActiveDefenseType)
+	}
+
+	// ディフェンス値が設定されていること
+	if state.Enemy.DefenseValue != 0.5 {
+		t.Errorf("DefenseValueが不正: got %f, want 0.5", state.Enemy.DefenseValue)
+	}
+
+	// ディフェンスが有効であること
+	if !state.Enemy.IsDefenseActive(now) {
+		t.Error("ディフェンスが有効になっていない")
+	}
+}
+
+// TestBattleEngine_ApplyDefenseReduction_PhysicalCut は物理ディフェンスによるダメージ軽減をテストします。
+func TestBattleEngine_ApplyDefenseReduction_PhysicalCut(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "defender",
+			Name:               "ディフェンダー",
+			BaseHP:             200,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	// 物理ディフェンスを発動（50%軽減）
+	now := time.Now()
+	state.Enemy.StartDefense(domain.DefensePhysicalCut, 0.5, 5*time.Second, now)
+
+	// 物理攻撃のダメージ計算
+	baseDamage := 100
+	reducedDamage := engine.ApplyDefenseReduction(state, baseDamage, "physical")
+
+	// 50%軽減されていること
+	expectedDamage := 50
+	if reducedDamage != expectedDamage {
+		t.Errorf("物理ダメージ軽減が不正: got %d, want %d", reducedDamage, expectedDamage)
+	}
+
+	// 魔法攻撃には軽減が適用されないこと
+	magicDamage := engine.ApplyDefenseReduction(state, baseDamage, "magic")
+	if magicDamage != baseDamage {
+		t.Errorf("魔法ダメージに軽減が適用された: got %d, want %d", magicDamage, baseDamage)
+	}
+}
+
+// TestBattleEngine_ApplyDefenseReduction_MagicCut は魔法ディフェンスによるダメージ軽減をテストします。
+func TestBattleEngine_ApplyDefenseReduction_MagicCut(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "defender",
+			Name:               "ディフェンダー",
+			BaseHP:             200,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "magic",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"magic_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"magic_low"}, 1.0, "INT", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	// 魔法ディフェンスを発動（30%軽減）
+	now := time.Now()
+	state.Enemy.StartDefense(domain.DefenseMagicCut, 0.3, 5*time.Second, now)
+
+	// 魔法攻撃のダメージ計算
+	baseDamage := 100
+	reducedDamage := engine.ApplyDefenseReduction(state, baseDamage, "magic")
+
+	// 30%軽減されていること
+	expectedDamage := 70
+	if reducedDamage != expectedDamage {
+		t.Errorf("魔法ダメージ軽減が不正: got %d, want %d", reducedDamage, expectedDamage)
+	}
+
+	// 物理攻撃には軽減が適用されないこと
+	physicalDamage := engine.ApplyDefenseReduction(state, baseDamage, "physical")
+	if physicalDamage != baseDamage {
+		t.Errorf("物理ダメージに軽減が適用された: got %d, want %d", physicalDamage, baseDamage)
+	}
+}
+
+// TestBattleEngine_CheckDebuffEvasion はデバフ回避ディフェンスをテストします。
+func TestBattleEngine_CheckDebuffEvasion(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "evader",
+			Name:               "イベーダー",
+			BaseHP:             150,
+			BaseAttackPower:    15,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDebuffModule("m1", "デバフモジュール", []string{"physical_low"}, ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	// デバフ回避ディフェンスを発動
+	now := time.Now()
+	state.Enemy.StartDefense(domain.DefenseDebuffEvade, 1.0, 5*time.Second, now)
+
+	// デバフ回避チェック（回避率100%なので必ず回避）
+	evaded := engine.CheckDebuffEvasion(state)
+	if !evaded {
+		t.Error("デバフ回避が発動しなかった")
+	}
+
+	// ディフェンス終了
+	state.Enemy.EndDefense()
+
+	// ディフェンス終了後はデバフが通ること
+	evaded = engine.CheckDebuffEvasion(state)
+	if evaded {
+		t.Error("ディフェンス終了後にデバフ回避が発動した")
+	}
+}
+
+// TestBattleEngine_DefenseExpiration はディフェンス終了後の行動進行をテストします。
+func TestBattleEngine_DefenseExpiration(t *testing.T) {
+	defenseAction := domain.EnemyAction{
+		ID:          "defense_magic",
+		Name:        "魔法防御",
+		ActionType:  domain.EnemyActionDefense,
+		DefenseType: domain.DefenseMagicCut,
+		EffectValue: 0.4,
+		Duration:    3.0,
+	}
+	attackAction := domain.EnemyAction{
+		ID:         "attack",
+		Name:       "攻撃",
+		ActionType: domain.EnemyActionAttack,
+		AttackType: "physical",
+	}
+
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "defender",
+			Name:               "ディフェンダー",
+			BaseHP:             200,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+			ResolvedNormalActions: []domain.EnemyAction{
+				defenseAction,
+				attackAction,
+			},
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+	state.Enemy = domain.NewEnemy("test", "ディフェンダー Lv.10", 10, 200, 10, 3*time.Second, enemyTypes[0])
+
+	// 初期ActionIndexが0であること
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("初期ActionIndexが0でない: got %d", state.Enemy.ActionIndex)
+	}
+
+	// ディフェンス行動開始（ドメインメソッドを直接使用）
+	now := time.Now()
+	duration := time.Duration(defenseAction.Duration * float64(time.Second))
+	state.Enemy.StartDefense(defenseAction.DefenseType, defenseAction.EffectValue, duration, now)
+
+	// ディフェンス中はActionIndexが変わらない
+	if state.Enemy.ActionIndex != 0 {
+		t.Errorf("ディフェンス中にActionIndexが変わった: got %d", state.Enemy.ActionIndex)
+	}
+
+	// ディフェンス終了
+	state.Enemy.EndDefense()
+
+	// ActionIndexが進んでいること
+	if state.Enemy.ActionIndex != 1 {
+		t.Errorf("ディフェンス終了後にActionIndexが進んでいない: got %d", state.Enemy.ActionIndex)
+	}
+
+	// 次の行動が攻撃であること
+	nextAction := state.Enemy.GetCurrentAction()
+	if nextAction.ID != "attack" {
+		t.Errorf("次の行動が不正: got %s, want attack", nextAction.ID)
+	}
+}
+
+// TestBattleEngine_CalculatePatternDamage はパターンベースダメージ計算をテストします。
+func TestBattleEngine_CalculatePatternDamage(t *testing.T) {
+	enemyTypes := []domain.EnemyType{
+		{
+			ID:                 "attacker",
+			Name:               "アタッカー",
+			BaseHP:             100,
+			BaseAttackPower:    10,
+			BaseAttackInterval: 3 * time.Second,
+			AttackType:         "physical",
+		},
+	}
+
+	coreType := domain.CoreType{
+		ID:          "test_core",
+		Name:        "テストコア",
+		StatWeights: map[string]float64{"STR": 1.0, "INT": 1.0, "WIL": 1.0, "LUK": 1.0},
+		AllowedTags: []string{"physical_low"},
+	}
+	passiveSkill := domain.PassiveSkill{ID: "test", Name: "テスト"}
+	core := domain.NewCore("core_001", "コア", 10, coreType, passiveSkill)
+	modules := []*domain.ModuleModel{
+		newTestDamageModule("m1", "モジュール", []string{"physical_low"}, 1.0, "STR", ""),
+	}
+	agent := domain.NewAgent("agent_001", core, modules)
+	agents := []*domain.AgentModel{agent}
+
+	engine := NewBattleEngine(enemyTypes)
+	state, _ := engine.InitializeBattle(10, agents)
+
+	tests := []struct {
+		name           string
+		damageBase     float64
+		damagePerLevel float64
+		level          int
+		expected       int
+	}{
+		{"基本ダメージ", 10.0, 2.0, 10, 30},   // 10 + 10*2 = 30
+		{"高レベル", 20.0, 3.0, 50, 170},    // 20 + 50*3 = 170
+		{"低レベル", 5.0, 1.0, 1, 6},        // 5 + 1*1 = 6
+		{"レベル係数なし", 50.0, 0.0, 100, 50}, // 50 + 100*0 = 50
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := domain.EnemyAction{
+				ID:             "test_attack",
+				Name:           "テスト攻撃",
+				ActionType:     domain.EnemyActionAttack,
+				DamageBase:     tt.damageBase,
+				DamagePerLevel: tt.damagePerLevel,
+			}
+
+			// レベルを変更してダメージ計算
+			state.Enemy.Level = tt.level
+			damage := engine.CalculatePatternDamage(state, action)
+			if damage != tt.expected {
+				t.Errorf("ダメージ計算が不正: got %d, want %d", damage, tt.expected)
+			}
+		})
+	}
+}
