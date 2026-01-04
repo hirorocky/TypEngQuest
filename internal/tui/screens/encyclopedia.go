@@ -367,8 +367,8 @@ func (s *EncyclopediaScreen) renderCorePreview() string {
 	panel := components.NewInfoPanel(ct.Name)
 	panel.AddItem("ID", ct.ID)
 	panel.AddItem("STR重み", fmt.Sprintf("%.1f", ct.StatWeights["STR"]))
-	panel.AddItem("MAG重み", fmt.Sprintf("%.1f", ct.StatWeights["MAG"]))
-	panel.AddItem("SPD重み", fmt.Sprintf("%.1f", ct.StatWeights["SPD"]))
+	panel.AddItem("INT重み", fmt.Sprintf("%.1f", ct.StatWeights["INT"]))
+	panel.AddItem("WIL重み", fmt.Sprintf("%.1f", ct.StatWeights["WIL"]))
 	panel.AddItem("LUK重み", fmt.Sprintf("%.1f", ct.StatWeights["LUK"]))
 
 	return panel.Render(45)
