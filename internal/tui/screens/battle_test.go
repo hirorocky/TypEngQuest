@@ -1404,6 +1404,11 @@ func TestCooldownReduce_MinimumLimit(t *testing.T) {
 
 // TestDoubleCast_DoublesDamageEffect はダブルキャストによる2回発動をテストします。
 func TestDoubleCast_DoublesDamageEffect(t *testing.T) {
+	// 乱数を固定して確率判定を決定的にする
+	originalRandFloat := randFloat
+	randFloat = func() float64 { return 0.0 } // 常に0を返す（100%確率は必ず成功）
+	defer func() { randFloat = originalRandFloat }()
+
 	// まず、DoubleCastなしでの基準ダメージを計測
 	enemy1 := createTestEnemy()
 	enemy1.HP = 1000
