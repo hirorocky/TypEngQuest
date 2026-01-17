@@ -30,11 +30,11 @@ GitHub Issue #10「怒りシステム」より:
 3. The battle system shall ボルテージを小数点以下の精度で管理する（例: 100.0%, 115.5%）
 4. The battle system shall ボルテージの上限を999.9%とする
 
-### Requirement 3: ボルテージによるダメージ乗算
-**Objective:** プレイヤーとして、高いボルテージ時により大きなダメージを与えることで、時間経過を戦略的に活用したい
+### Requirement 3: ボルテージによる敵攻撃ダメージ乗算
+**Objective:** プレイヤーとして、高いボルテージ時に敵からより大きなダメージを受けることで、迅速なバトル遂行へのプレッシャーを感じたい
 
 #### Acceptance Criteria
-1. When プレイヤーがダメージを与える, the battle system shall 最終ダメージ = 基礎ダメージ × (ボルテージ / 100) で計算する
+1. When 敵がプレイヤーにダメージを与える, the battle system shall 最終ダメージ = 基礎ダメージ × (ボルテージ / 100) で計算する
 2. The battle system shall ボルテージが100%のとき等倍ダメージ（×1.0）を適用する
 3. The battle system shall ボルテージが150%のとき1.5倍ダメージを適用する
 

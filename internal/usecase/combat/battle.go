@@ -358,6 +358,10 @@ func (e *BattleEngine) ProcessEnemyAttackDamage(state *BattleState, attackType s
 	}
 	damage := calculateDamage(attackPower, totalDamageCut)
 
+	// ボルテージ乗算を適用（敵の怒りによるダメージ増加）
+	voltageMultiplier := state.Enemy.GetVoltageMultiplier()
+	damage = int(float64(damage) * voltageMultiplier)
+
 	// 被ダメージ時パッシブの評価
 	damage = e.evaluateDamageRecvPassives(state, damage)
 
@@ -472,12 +476,18 @@ func (e *BattleEngine) getBuffedAttackPower(state *BattleState) int {
 }
 
 // CalculateEnemyDamage は敵の基本攻撃ダメージを計算します。
-// 敵のバフ（damage_mult）とプレイヤーの防御効果（damage_cut）を考慮します。
+// 敵のバフ（damage_mult）とプレイヤーの防御効果（damage_cut）、ボルテージを考慮します。
 func (e *BattleEngine) CalculateEnemyDamage(state *BattleState) int {
 	attackPower := e.getBuffedAttackPower(state)
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
 	playerEffects := state.Player.EffectTable.Aggregate(ctx)
-	return calculateDamage(attackPower, playerEffects.DamageCut)
+	damage := calculateDamage(attackPower, playerEffects.DamageCut)
+
+	// ボルテージ乗算を適用
+	voltageMultiplier := state.Enemy.GetVoltageMultiplier()
+	damage = int(float64(damage) * voltageMultiplier)
+
+	return damage
 }
 
 // GetExpectedDamage は次の攻撃の予測ダメージを返します。
@@ -639,10 +649,6 @@ func (e *BattleEngine) ApplyModuleEffect(
 				if !playerEffects.ArmorPierce {
 					damage = calculateDamage(damage, enemyEffects.DamageCut)
 				}
-
-				// ボルテージ乗算を適用（最終段階）
-				voltageMultiplier := state.Enemy.GetVoltageMultiplier()
-				damage = int(float64(damage) * voltageMultiplier)
 
 				state.Enemy.TakeDamage(damage)
 				state.Stats.TotalDamageDealt += damage
