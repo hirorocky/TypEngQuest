@@ -321,12 +321,6 @@ const DefaultVoltageRisePer10s = 10.0
 // actionMap が指定された場合、行動パターンIDを解決します。
 // VoltageRisePer10sが未設定の場合はデフォルト値（10）を適用します。
 func (e *EnemyTypeData) ToDomain() domain.EnemyType {
-	// ボルテージ上昇率の決定（未設定時はデフォルト値を適用）
-	voltageRise := DefaultVoltageRisePer10s
-	if e.VoltageRisePer10s != nil {
-		voltageRise = *e.VoltageRisePer10s
-	}
-
 	return domain.EnemyType{
 		ID:                       e.ID,
 		Name:                     e.Name,
@@ -339,7 +333,7 @@ func (e *EnemyTypeData) ToDomain() domain.EnemyType {
 		EnhancedActionPatternIDs: e.EnhancedActionPatternIDs,
 		DropItemCategory:         e.DropItemCategory,
 		DropItemTypeID:           e.DropItemTypeID,
-		VoltageRisePer10s:        voltageRise,
+		VoltageRisePer10s:        e.GetVoltageRisePer10s(),
 	}
 }
 
