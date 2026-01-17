@@ -4,7 +4,6 @@ package combat
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 )
@@ -43,12 +42,11 @@ func TestBattleState_SameAttackCount_Track(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    50,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 50,
+			AttackType:      "physical",
 		},
 	}
 
@@ -103,12 +101,11 @@ func TestBattleState_SameAttackCount_Reset(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    50,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 50,
+			AttackType:      "physical",
 		},
 	}
 
@@ -180,12 +177,11 @@ func TestBattleEngine_AdaptiveShield(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    100, // 100ダメージ
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 100, // 100ダメージ
+			AttackType:      "physical",
 		},
 	}
 

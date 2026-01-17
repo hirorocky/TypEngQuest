@@ -10,6 +10,7 @@ import (
 
 	"hirorocky/type-battle/internal/config"
 	"hirorocky/type-battle/internal/domain"
+	"hirorocky/type-battle/internal/usecase/combat/voltage"
 	"hirorocky/type-battle/internal/usecase/typing"
 
 	"github.com/google/uuid"
@@ -181,13 +182,17 @@ type BattleEngine struct {
 
 	// rng は乱数生成器です。
 	rng *rand.Rand
+
+	// voltageManager はボルテージ管理を担当します。
+	voltageManager *voltage.VoltageManager
 }
 
 // NewBattleEngine は新しいBattleEngineを作成します。
 func NewBattleEngine(enemyTypes []domain.EnemyType) *BattleEngine {
 	return &BattleEngine{
-		enemyTypes: enemyTypes,
-		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		enemyTypes:     enemyTypes,
+		rng:            rand.New(rand.NewSource(time.Now().UnixNano())),
+		voltageManager: voltage.NewVoltageManager(),
 	}
 }
 
@@ -256,21 +261,12 @@ func (e *BattleEngine) generateEnemy(level int) *domain.EnemyModel {
 	hp := enemyType.BaseHP * level
 	attackPower := enemyType.BaseAttackPower + (level * 2)
 
-	// 高レベルほど短い攻撃間隔（ただし最低500ms）
-
-	intervalReduction := time.Duration(level*50) * time.Millisecond
-	attackInterval := enemyType.BaseAttackInterval - intervalReduction
-	if attackInterval < config.MinEnemyAttackInterval {
-		attackInterval = config.MinEnemyAttackInterval
-	}
-
 	return domain.NewEnemy(
 		uuid.New().String(),
 		fmt.Sprintf("%s Lv.%d", enemyType.Name, level),
 		level,
 		hp,
 		attackPower,
-		attackInterval,
 		enemyType,
 	)
 }
@@ -361,6 +357,9 @@ func (e *BattleEngine) ProcessEnemyAttackDamage(state *BattleState, attackType s
 		totalDamageCut = 1.0 // 最大100%軽減
 	}
 	damage := calculateDamage(attackPower, totalDamageCut)
+
+	// ボルテージ乗算を適用（敵の怒りによるダメージ増加）
+	damage = e.applyVoltageMultiplier(state, damage)
 
 	// 被ダメージ時パッシブの評価
 	damage = e.evaluateDamageRecvPassives(state, damage)
@@ -475,13 +474,24 @@ func (e *BattleEngine) getBuffedAttackPower(state *BattleState) int {
 	return attackPower
 }
 
+// applyVoltageMultiplier はボルテージ乗算をダメージに適用します。
+func (e *BattleEngine) applyVoltageMultiplier(state *BattleState, damage int) int {
+	voltageMultiplier := state.Enemy.GetVoltageMultiplier()
+	return int(float64(damage) * voltageMultiplier)
+}
+
 // CalculateEnemyDamage は敵の基本攻撃ダメージを計算します。
-// 敵のバフ（damage_mult）とプレイヤーの防御効果（damage_cut）を考慮します。
+// 敵のバフ（damage_mult）とプレイヤーの防御効果（damage_cut）、ボルテージを考慮します。
 func (e *BattleEngine) CalculateEnemyDamage(state *BattleState) int {
 	attackPower := e.getBuffedAttackPower(state)
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)
 	playerEffects := state.Player.EffectTable.Aggregate(ctx)
-	return calculateDamage(attackPower, playerEffects.DamageCut)
+	damage := calculateDamage(attackPower, playerEffects.DamageCut)
+
+	// ボルテージ乗算を適用
+	damage = e.applyVoltageMultiplier(state, damage)
+
+	return damage
 }
 
 // GetExpectedDamage は次の攻撃の予測ダメージを返します。
@@ -509,10 +519,14 @@ func (e *BattleEngine) CheckPhaseTransition(state *BattleState) bool {
 }
 
 // UpdateEffects はバフ・デバフの時間を更新し、継続効果（Regen等）を適用します。
+// ボルテージの時間経過更新も行います。
 func (e *BattleEngine) UpdateEffects(state *BattleState, deltaSeconds float64) {
 	// 持続時間の更新
 	state.Player.EffectTable.UpdateDurations(deltaSeconds)
 	state.Enemy.EffectTable.UpdateDurations(deltaSeconds)
+
+	// ボルテージの時間経過更新
+	e.voltageManager.Update(state.Enemy, deltaSeconds)
 
 	// Regen 処理（プレイヤー）
 	ctx := domain.NewEffectContext(state.Player.HP, state.Player.MaxHP, state.Enemy.HP, state.Enemy.MaxHP)

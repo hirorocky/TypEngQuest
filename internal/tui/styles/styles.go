@@ -384,3 +384,49 @@ func (gs *GameStyles) RenderProgressBar(progress float64, width int, filledColor
 	return filledStyle.Render(strings.Repeat(" ", filledWidth)) +
 		emptyStyle.Render(strings.Repeat(" ", emptyWidth))
 }
+
+// ==================== ボルテージ表示 ====================
+
+// ボルテージ色分けの閾値
+const (
+	// VoltageWarningThreshold はボルテージ警告（黄色）の閾値（150%以上）
+	VoltageWarningThreshold = 150.0
+	// VoltageDangerThreshold はボルテージ危険（赤）の閾値（200%以上）
+	VoltageDangerThreshold = 200.0
+)
+
+// GetVoltageColorType はボルテージ値に応じた色タイプを返します。
+// 100-149%: "normal", 150-199%: "warning", 200%以上: "danger"
+func (gs *GameStyles) GetVoltageColorType(voltage float64) string {
+	if voltage >= VoltageDangerThreshold {
+		return "danger"
+	} else if voltage >= VoltageWarningThreshold {
+		return "warning"
+	}
+	return "normal"
+}
+
+// GetVoltageColor はボルテージ値に応じた色を返します。
+// 100-149%: ColorSecondary（白）, 150-199%: ColorWarning（黄）, 200%以上: ColorDamage（赤）
+func (gs *GameStyles) GetVoltageColor(voltage float64) lipgloss.Color {
+	if voltage >= VoltageDangerThreshold {
+		return ColorDamage
+	} else if voltage >= VoltageWarningThreshold {
+		return ColorWarning
+	}
+	return ColorSecondary
+}
+
+// RenderVoltage はボルテージ値を色付きでレンダリングします。
+// 小数点以下は切り捨てて整数パーセントで表示します（例: "VOLTAGE: 150%"）。
+func (gs *GameStyles) RenderVoltage(voltage float64) string {
+	color := gs.GetVoltageColor(voltage)
+	percentValue := int(voltage) // 小数点以下切り捨て
+	voltageText := fmt.Sprintf("VOLTAGE: %d%%", percentValue)
+
+	style := lipgloss.NewStyle().
+		Foreground(color).
+		Bold(true)
+
+	return style.Render(voltageText)
+}

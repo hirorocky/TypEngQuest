@@ -5,7 +5,6 @@
       "name": "スライム",
       "base_hp": 50,
       "base_attack_power": 5,
-      "base_attack_interval_ms": 10000,
       "attack_type": "physical",
       "ascii_art": "   ___\n  /   \\\n |     |\n  \\___/",
       "default_level": 1,
@@ -21,14 +20,14 @@
       "normal_passive_id": "slime_normal",
       "enhanced_passive_id": "slime_enhanced",
       "drop_item_category": "core",
-      "drop_item_type_id": "attack_balance"
+      "drop_item_type_id": "attack_balance",
+      "voltage_rise_per_10s": 100
     },
     {
       "id": "bat",
       "name": "コウモリ",
       "base_hp": 40,
       "base_attack_power": 6,
-      "base_attack_interval_ms": 12000,
       "attack_type": "physical",
       "ascii_art": " /V   V\\\n(  ' '  )\n  \\   /",
       "default_level": 2,
@@ -40,14 +39,14 @@
         "act_bat_buff_speed"
       ],
       "drop_item_category": "module",
-      "drop_item_type_id": "heal_lv1"
+      "drop_item_type_id": "heal_lv1",
+      "voltage_rise_per_10s": 12
     },
     {
       "id": "goblin",
       "name": "ゴブリン",
       "base_hp": 80,
       "base_attack_power": 8,
-      "base_attack_interval_ms": 10000,
       "attack_type": "physical",
       "ascii_art": "  /\\_/\\\n ( o.o )\n  > ^ <",
       "default_level": 3,
@@ -62,14 +61,14 @@
         "act_goblin_debuff_slow"
       ],
       "drop_item_category": "module",
-      "drop_item_type_id": "physical_strike_lv1"
+      "drop_item_type_id": "physical_strike_lv1",
+      "voltage_rise_per_10s": 15
     },
     {
       "id": "skeleton",
       "name": "スケルトン",
       "base_hp": 70,
       "base_attack_power": 10,
-      "base_attack_interval_ms": 12800,
       "attack_type": "physical",
       "ascii_art": "  _____\n /     \\\n | x x |\n |  ^  |\n  \\___/",
       "default_level": 10,
@@ -80,7 +79,8 @@
         "act_skeleton_debuff_defense"
       ],
       "drop_item_category": "core",
-      "drop_item_type_id": "magic_balance"
+      "drop_item_type_id": "magic_balance",
+      "voltage_rise_per_10s": 20
     }
   ]
 }

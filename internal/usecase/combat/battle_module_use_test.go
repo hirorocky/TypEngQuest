@@ -4,7 +4,6 @@ package combat
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/usecase/typing"
@@ -61,12 +60,11 @@ func TestBattleEngine_ModuleUse_EchoSkill(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -159,12 +157,11 @@ func TestBattleEngine_ModuleUse_MiracleHeal(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -246,12 +243,11 @@ func TestBattleEngine_ModuleUse_MiracleHeal_NotHealSkill(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             1000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          1000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 

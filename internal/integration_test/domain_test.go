@@ -237,7 +237,6 @@ func TestEnemyModel_PhaseChange(t *testing.T) {
 		5,
 		100,
 		10,
-		2000,
 		domain.EnemyType{ID: "test", Name: "テスト"},
 	)
 

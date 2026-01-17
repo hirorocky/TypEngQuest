@@ -2,6 +2,7 @@
 package styles
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -276,5 +277,102 @@ func TestProgressBarStyle(t *testing.T) {
 	progressBar := styles.RenderProgressBar(0.5, 20, ColorPrimary, ColorSubtle)
 	if progressBar == "" {
 		t.Error("プログレスバーがレンダリングできません")
+	}
+}
+
+// ==================== ボルテージ表示テスト ====================
+
+// TestRenderVoltage はボルテージ表示をテストします。
+func TestRenderVoltage(t *testing.T) {
+	styles := NewGameStyles()
+
+	tests := []struct {
+		name    string
+		voltage float64
+		want    string
+	}{
+		{"100%", 100.0, "100%"},
+		{"150%", 150.0, "150%"},
+		{"200%", 200.0, "200%"},
+		{"150.5%は整数表示", 150.5, "150%"},
+		{"999.9%は整数表示", 999.9, "999%"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := styles.RenderVoltage(tt.voltage)
+			if result == "" {
+				t.Error("ボルテージ表示が空です")
+			}
+			// パーセント表示が含まれていることを確認
+			if !strings.Contains(result, tt.want) {
+				t.Errorf("RenderVoltage(%v) = %v, should contain %v", tt.voltage, result, tt.want)
+			}
+		})
+	}
+}
+
+// TestGetVoltageColor はボルテージ色分けをテストします。
+func TestGetVoltageColor(t *testing.T) {
+	styles := NewGameStyles()
+
+	tests := []struct {
+		name         string
+		voltage      float64
+		expectedType string // "normal", "warning", "danger"
+	}{
+		{"100%は通常", 100.0, "normal"},
+		{"149%は通常", 149.0, "normal"},
+		{"150%は警告", 150.0, "warning"},
+		{"199%は警告", 199.0, "warning"},
+		{"200%は危険", 200.0, "danger"},
+		{"999%は危険", 999.0, "danger"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			color := styles.GetVoltageColor(tt.voltage)
+			switch tt.expectedType {
+			case "normal":
+				if color != ColorSecondary {
+					t.Errorf("GetVoltageColor(%v) = %v, want ColorSecondary", tt.voltage, color)
+				}
+			case "warning":
+				if color != ColorWarning {
+					t.Errorf("GetVoltageColor(%v) = %v, want ColorWarning", tt.voltage, color)
+				}
+			case "danger":
+				if color != ColorDamage {
+					t.Errorf("GetVoltageColor(%v) = %v, want ColorDamage", tt.voltage, color)
+				}
+			}
+		})
+	}
+}
+
+// TestGetVoltageColorType はボルテージ色タイプ取得をテストします。
+func TestGetVoltageColorType(t *testing.T) {
+	styles := NewGameStyles()
+
+	tests := []struct {
+		name     string
+		voltage  float64
+		expected string
+	}{
+		{"100%は通常", 100.0, "normal"},
+		{"149%は通常", 149.0, "normal"},
+		{"150%は警告", 150.0, "warning"},
+		{"199%は警告", 199.0, "warning"},
+		{"200%は危険", 200.0, "danger"},
+		{"999%は危険", 999.0, "danger"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			colorType := styles.GetVoltageColorType(tt.voltage)
+			if colorType != tt.expected {
+				t.Errorf("GetVoltageColorType(%v) = %v, want %v", tt.voltage, colorType, tt.expected)
+			}
+		})
 	}
 }

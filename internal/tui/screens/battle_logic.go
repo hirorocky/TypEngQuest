@@ -17,8 +17,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// randFloat は0.0〜1.0の乱数を返します。
-func randFloat() float64 {
+// randFloat は0.0〜1.0の乱数を返す関数です。
+// テスト時にモック可能にするため変数として定義しています。
+var randFloat = func() float64 {
 	return rand.Float64()
 }
 

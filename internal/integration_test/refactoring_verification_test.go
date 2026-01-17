@@ -278,12 +278,11 @@ func TestRefactoring_DataConversionIntegration(t *testing.T) {
 func TestRefactoring_BattleFlowUnchanged(t *testing.T) {
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "goblin",
-			Name:               "ゴブリン",
-			BaseHP:             50,
-			BaseAttackPower:    5,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "goblin",
+			Name:            "ゴブリン",
+			BaseHP:          50,
+			BaseAttackPower: 5,
+			AttackType:      "physical",
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)
@@ -545,12 +544,11 @@ func TestRefactoring_AllComponentsIntegrated(t *testing.T) {
 	// 5. バトルエンジンの動作確認
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "slime",
-			Name:               "スライム",
-			BaseHP:             50,
-			BaseAttackPower:    5,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "slime",
+			Name:            "スライム",
+			BaseHP:          50,
+			BaseAttackPower: 5,
+			AttackType:      "physical",
 		},
 	}
 	engine := combat.NewBattleEngine(enemyTypes)

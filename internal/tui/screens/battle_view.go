@@ -84,16 +84,24 @@ func (s *BattleScreen) View() string {
 func (s *BattleScreen) renderEnemyArea() string {
 	var builder strings.Builder
 
-	// 敵名とフェーズ
+	// ボックス内の利用可能幅（ボックス幅 - パディング左右）
+	contentWidth := s.width - 4 - 4 // Width(s.width-4) - Padding(2,2)
+
+	// 1行目: 敵名（左）とボルテージ（右）
 	nameStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDamage)
-	builder.WriteString(nameStyle.Render(s.enemy.Name))
-	builder.WriteString(fmt.Sprintf(" Lv.%d", s.enemy.Level))
+	leftContent := nameStyle.Render(s.enemy.Name) + fmt.Sprintf(" Lv.%d", s.enemy.Level)
+	rightContent := s.styles.RenderVoltage(s.enemy.GetVoltage())
+
+	// 左側を左揃え、右側を右揃えで配置
+	leftStyle := lipgloss.NewStyle().Width(contentWidth - lipgloss.Width(rightContent)).Align(lipgloss.Left)
+	firstLine := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(leftContent), rightContent)
+	builder.WriteString(firstLine)
+	builder.WriteString("\n")
 
 	// パッシブスキル表示（フェーズに応じて通常または強化パッシブを表示）
 	passiveStyle := lipgloss.NewStyle().Foreground(styles.ColorBuff)
 	if s.enemy.IsEnhanced() {
 		phaseStyle := lipgloss.NewStyle().Foreground(styles.ColorDamage).Bold(true)
-		builder.WriteString("  ")
 		builder.WriteString(phaseStyle.Render("[強化フェーズ]"))
 		// 強化パッシブを表示
 		if s.enemy.Type.EnhancedPassive != nil {
@@ -103,7 +111,6 @@ func (s *BattleScreen) renderEnemyArea() string {
 	} else {
 		// 通常パッシブを表示
 		if s.enemy.Type.NormalPassive != nil {
-			builder.WriteString("  ")
 			builder.WriteString(passiveStyle.Render("★" + s.enemy.Type.NormalPassive.Description))
 		}
 	}

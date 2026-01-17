@@ -4,7 +4,6 @@ package combat
 import (
 	"math"
 	"testing"
-	"time"
 
 	"hirorocky/type-battle/internal/domain"
 	"hirorocky/type-battle/internal/usecase/typing"
@@ -63,12 +62,11 @@ func TestBattleEngine_TypingDone_PerfectRhythm(t *testing.T) {
 	// 敵タイプを作成
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -166,12 +164,11 @@ func TestBattleEngine_TypingDone_PerfectRhythm_NotTriggered(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -252,12 +249,11 @@ func TestBattleEngine_TypingDone_SpeedBreak(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -349,12 +345,11 @@ func TestBattleEngine_TypingDone_SpeedBreak_NotTriggered(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 
@@ -455,12 +450,11 @@ func TestBattleEngine_TypingDone_Combined(t *testing.T) {
 
 	enemyTypes := []domain.EnemyType{
 		{
-			ID:                 "test_enemy",
-			Name:               "テスト敵",
-			BaseHP:             10000,
-			BaseAttackPower:    10,
-			BaseAttackInterval: 3 * time.Second,
-			AttackType:         "physical",
+			ID:              "test_enemy",
+			Name:            "テスト敵",
+			BaseHP:          10000,
+			BaseAttackPower: 10,
+			AttackType:      "physical",
 		},
 	}
 

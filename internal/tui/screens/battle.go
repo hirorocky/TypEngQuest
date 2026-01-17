@@ -382,8 +382,10 @@ func (s *BattleScreen) handleTick() (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// バフ・デバフの持続時間を更新
-	s.updateEffectDurations(deltaSeconds)
+	// バフ・デバフの持続時間とボルテージを更新
+	if s.battleEngine != nil && s.battleState != nil {
+		s.battleEngine.UpdateEffects(s.battleState, deltaSeconds)
+	}
 
 	// 次のtickを返す
 	return s, s.tick()
